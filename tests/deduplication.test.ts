@@ -655,6 +655,13 @@ test("continuous controls share one latest-value drain", () => {
   assert.equal((workflow.match(/await drainLatestValue\(/g) ?? []).length, 2);
 });
 
+test("parameter encoder adjustment is shared by both app shells", () => {
+  const workflow = source("packages/typescript/qc-ui/src/use-parameter-workflow.ts");
+  assert.match(workflow, /const adjustEncoder = useCallback/);
+  assert.match(source("apps/windows/src/App.tsx"), /parameterWorkflow\.adjustEncoder\(role, delta, setNotice\)/);
+  assert.match(source("apps/android/src/App.tsx"), /parameterWorkflow\.adjustEncoder\(role, delta, appendAssistant, false\)/);
+});
+
 test("one generated USB profile owns the complete native ready budget", () => {
   const contract = JSON.parse(source("contracts/qc-usb-profile.v1.json"));
   const javaProfile = source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbProfile.java");

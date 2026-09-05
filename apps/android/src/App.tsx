@@ -4,7 +4,7 @@ import { demoSnapshot, QC_SCENE_COUNT } from "@ndsp-qc/client";
 import { assistantToolActionPrompt, footswitchLeds, parseAssistantIntent, parseAssistantReply, recentModelConversation, runToolConversation, sceneLetter, textModelConversationPrompt, validateAssistantToolCalls, type AssistantAccessMode as ControlAccessMode, type AssistantToolCall, type PublicRelayState as RelayState } from "@ndsp-qc/core";
 import { formFactors, skins } from "@ndsp-qc/form-factors";
 import { QC_BRAND, QC_COLORS, QC_VISUAL_ASSETS } from "@ndsp-qc/theme";
-import { AddBlockPanel, applyPreparedOfflineAssistantAction, AssistantAccessSelect, AssistantAttachmentList, browserWorkflowPrompts, consumeQcNativeStateFrame, corosFixtureConfiguration, corOsUnavailableContextActionMessage, executeAndReconcileQcAction, GridManagementPanel, MicrophoneIcon, offlineAssistantEditConfirmation, PARAMETER_ENCODER_ROLES, parameterEditorAccent, parameterEditorControlSlots, parameterEditorPageSize, parameterStep, qcParameterEditorBindings, QcHardwareSwitch, QcMasterVolumeKnob, QcUiIcon, QuadCortexSurface, readAssistantAccessMode, RoutingEditor, runOfflineAssistantIntent, SceneEditor, useAssistantAutoScroll, useAssistantConversation, useBlockEditorSession, useContinuousControlWorkflow, usePublicRelayWorkflow, useQcConnectionWorkflow, useQcController, useQcLiveState, useQcSurfaceActions, useQcWorkflows, writeAssistantAccessMode, type CorOsContextAction, type CorOsScreenView } from "@ndsp-qc/ui";
+import { AddBlockPanel, applyPreparedOfflineAssistantAction, AssistantAccessSelect, AssistantAttachmentList, browserWorkflowPrompts, consumeQcNativeStateFrame, corosFixtureConfiguration, corOsUnavailableContextActionMessage, executeAndReconcileQcAction, GridManagementPanel, MicrophoneIcon, offlineAssistantEditConfirmation, parameterEditorAccent, parameterEditorControlSlots, parameterEditorPageSize, qcParameterEditorBindings, QcHardwareSwitch, QcMasterVolumeKnob, QcUiIcon, QuadCortexSurface, readAssistantAccessMode, RoutingEditor, runOfflineAssistantIntent, SceneEditor, useAssistantAutoScroll, useAssistantConversation, useBlockEditorSession, useContinuousControlWorkflow, usePublicRelayWorkflow, useQcConnectionWorkflow, useQcController, useQcLiveState, useQcSurfaceActions, useQcWorkflows, writeAssistantAccessMode, type CorOsContextAction, type CorOsScreenView } from "@ndsp-qc/ui";
 import { androidGatewayTransport, createAndroidQcTransport, GeminiNative, publicRelay, QcUsbNative, subscribeRelayState, VoiceInputNative } from "./native-services";
 import { quotaSummary, recordGeminiUsage, type GeminiModelId, type GeminiQuotaLedger } from "./gemini-quota";
 
@@ -261,28 +261,8 @@ export function App() {
   };
 
   const adjustEditorParameter = useCallback((role: string, delta: number) => {
-    if (!blockDetails) return false;
-    const slot = PARAMETER_ENCODER_ROLES.indexOf(role as (typeof PARAMETER_ENCODER_ROLES)[number]);
-    if (slot < 0) return false;
-    const parameter = parameterEditorControlSlots(
-      blockDetails.parameters.filter((candidate) => candidate.normalizedValue !== null),
-      blockDetails.category,
-      editor.page,
-      parameterEditorPageSize(blockDetails.category, blockDetails.parameters)
-    )[slot];
-    if (!parameter) {
-      appendAssistant(`${role} is not assigned on this parameter page.`);
-      return true;
-    }
-    if (!parameter.writable) {
-      appendAssistant(`${blockDetails.name} · ${parameter.name} is read-only.`);
-      return true;
-    }
-    const current = parameterWorkflow.targetValue(parameter);
-    const value = Math.max(0, Math.min(1, current + Math.sign(delta) * parameterStep(parameter)));
-    parameterWorkflow.commit(parameter, value);
-    return true;
-  }, [appendAssistant, blockDetails, editor.page, parameterWorkflow]);
+    return parameterWorkflow.adjustEncoder(role, delta, appendAssistant, false);
+  }, [appendAssistant, parameterWorkflow]);
   const handleSurfaceAction = useQcSurfaceActions({
     snapshot,
     selectedBlockId,

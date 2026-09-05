@@ -3,7 +3,7 @@ import { demoSnapshot, type ConnectionState, type DeviceActionResult, type Diagn
 import { assistantHelp, demoBlockDetails, parseAssistantIntent, recentModelConversation, runToolConversation, sceneLetter, type AssistantAccessMode as ControlAccessMode, type ConversationMessage } from "@ndsp-qc/core";
 import { formFactors, skins } from "@ndsp-qc/form-factors";
 import { QC_BRAND } from "@ndsp-qc/theme";
-import { AddBlockPanel, applyPreparedOfflineAssistantAction, AssistantAccessSelect, browserWorkflowPrompts, corosFixtureConfiguration, corOsUnavailableContextActionMessage, executeAndReconcileQcAction, GridManagementPanel, PARAMETER_ENCODER_ROLES, parameterEditorControlSlots, parameterEditorPageSize, parameterStep, qcParameterEditorBindings, QcUiIcon, QuadCortexSurface, readAssistantAccessMode, RoutingEditor, runOfflineAssistantIntent, SceneEditor, useAssistantAutoScroll, useAssistantConversation, useBlockEditorSession, useContinuousControlWorkflow, usePublicRelayWorkflow, useQcConnectionWorkflow, useQcController, useQcLiveState, useQcSurfaceActions, useQcWorkflows, writeAssistantAccessMode, type CorOsContextAction, type PreparedOfflineAssistantAction } from "@ndsp-qc/ui";
+import { AddBlockPanel, applyPreparedOfflineAssistantAction, AssistantAccessSelect, browserWorkflowPrompts, corosFixtureConfiguration, corOsUnavailableContextActionMessage, executeAndReconcileQcAction, GridManagementPanel, qcParameterEditorBindings, QcUiIcon, QuadCortexSurface, readAssistantAccessMode, RoutingEditor, runOfflineAssistantIntent, SceneEditor, useAssistantAutoScroll, useAssistantConversation, useBlockEditorSession, useContinuousControlWorkflow, usePublicRelayWorkflow, useQcConnectionWorkflow, useQcController, useQcLiveState, useQcSurfaceActions, useQcWorkflows, writeAssistantAccessMode, type CorOsContextAction, type PreparedOfflineAssistantAction } from "@ndsp-qc/ui";
 import { assistantAccessPermitsChatTool, booleanArgument, chatCredentialInputProps, chatCredentialStatus, chatInstructions, chatProviderDefaults, isChatUnavailable, isLoopbackChatUrl, numericArgument, qcChatTools, type AntigravityModel, type ChatAttachment, type ChatQuota, type ChatSettings, type ChatToolCall, type ChatUsage, type GoogleProject } from "./model-chat";
 import { diagnosticsFiles, modelChat, publicRelay, reportVoiceCapability, reportVoiceEvent, tauriTransport, workspaceFiles } from "./tauri-transport";
 import { createWindowsQcTransport } from "./qc-transport";
@@ -97,11 +97,7 @@ export function App() {
   const [googleOauthClientSecret, setGoogleOauthClientSecret] = useState("");
   const [googleProjects, setGoogleProjects] = useState<GoogleProject[]>([]);
   const editor = useBlockEditorSession();
-  const {
-    details: blockDetails,
-    drafts: parameterDrafts,
-    page: parameterPage
-  } = editor;
+  const { details: blockDetails } = editor;
   const consumeLiveState = useQcLiveState({ reconcileFrame, editor });
   const [workspacePath, setWorkspacePath] = useState<string>();
   const [workspaceName, setWorkspaceName] = useState<string>();
@@ -238,7 +234,6 @@ export function App() {
   const copySelectedBlockSettings = gridWorkflow.copy;
   const pasteSelectedBlockSettings = gridWorkflow.paste;
   const draftParameterValue = parameterWorkflow.draft;
-  const queueParameterCommit = parameterWorkflow.commit;
   const applyParameterBatch = parameterWorkflow.commitBatch;
   const parameterEditorBindings = qcParameterEditorBindings({
     snapshot,
@@ -498,29 +493,8 @@ export function App() {
   const navigatePreset = performanceWorkflow.movePreset;
 
   const adjustEditorParameter = useCallback((role: string, delta: number) => {
-    if (!blockDetails) return false;
-    const slot = PARAMETER_ENCODER_ROLES.indexOf(role as (typeof PARAMETER_ENCODER_ROLES)[number]);
-    if (slot < 0) return false;
-    const parameter = parameterEditorControlSlots(
-      blockDetails.parameters.filter((candidate) => candidate.normalizedValue !== null),
-      blockDetails.category,
-      parameterPage,
-      parameterEditorPageSize(blockDetails.category, blockDetails.parameters)
-    )[slot];
-    if (!parameter) {
-      setNotice(`${role} is not assigned on this parameter page.`);
-      return true;
-    }
-    if (!parameter.writable) {
-      setNotice(`${blockDetails.name} · ${parameter.name} is read-only.`);
-      return true;
-    }
-    const current = parameterWorkflow.targetValue(parameter);
-    const value = Math.max(0, Math.min(1, current + Math.sign(delta) * parameterStep(parameter)));
-    queueParameterCommit(parameter, value);
-    setNotice(`${blockDetails.name} · ${parameter.name}`);
-    return true;
-  }, [blockDetails, parameterDrafts, parameterPage, queueParameterCommit]);
+    return parameterWorkflow.adjustEncoder(role, delta, setNotice);
+  }, [parameterWorkflow]);
 
   const queueTempo = continuousControls.queueTempo;
   const adjustTempo = continuousControls.adjustTempo;

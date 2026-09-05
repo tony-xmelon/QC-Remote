@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import type { BlockDetails, BlockParameter, GatewayTransport, PresetSnapshot } from "@ndsp-qc/client";
 import type { BlockEditorSessionController } from "./use-block-editor-session";
 import type { DeviceMutationWorkflowOptions } from "./workflow-options";
+import { PARAMETER_ENCODER_ROLES, parameterEditorControlSlots, parameterEditorPageSize, parameterStep } from "./parameter-model";
 
 type Preview = { row: number; column: number; parameterIndex: number; value: number; expectedValue: number; revision: number; expectedScene: number; expectedPresetName: string };
 
@@ -167,7 +168,36 @@ export function useParameterWorkflow(options: ParameterWorkflowOptions) {
   }, [connected, editor, fail, gateway, notice, pending, reconcile, setPending, snapshot]);
 
   const targetValue = useCallback((parameter: BlockParameter) => targets.current.get(parameter.index) ?? editor.drafts[parameter.index] ?? parameter.normalizedValue ?? 0, [editor.drafts]);
+  const adjustEncoder = useCallback((
+    role: string,
+    delta: number,
+    report: (message: string) => void,
+    announceCommit = true,
+  ) => {
+    const details = detailsRef.current;
+    if (!details) return false;
+    const slot = PARAMETER_ENCODER_ROLES.indexOf(role as (typeof PARAMETER_ENCODER_ROLES)[number]);
+    if (slot < 0) return false;
+    const parameter = parameterEditorControlSlots(
+      details.parameters.filter((candidate) => candidate.normalizedValue !== null),
+      details.category,
+      editor.page,
+      parameterEditorPageSize(details.category, details.parameters),
+    )[slot];
+    if (!parameter) {
+      report(`${role} is not assigned on this parameter page.`);
+      return true;
+    }
+    if (!parameter.writable) {
+      report(`${details.name} · ${parameter.name} is read-only.`);
+      return true;
+    }
+    const value = Math.max(0, Math.min(1, targetValue(parameter) + Math.sign(delta) * parameterStep(parameter)));
+    commit(parameter, value);
+    if (announceCommit) report(`${details.name} · ${parameter.name}`);
+    return true;
+  }, [commit, editor.page, targetValue]);
   const hasPendingChanges = useCallback(() => timers.current.size > 0 || targets.current.size > 0, []);
 
-  return { draft, commit, commitBatch, applyResolvedParameter, cancel, targetValue, hasPendingChanges, updateDetails: (details: typeof editor.details) => { detailsRef.current = details; if (details) editor.load(details); } };
+  return { draft, commit, commitBatch, applyResolvedParameter, adjustEncoder, cancel, targetValue, hasPendingChanges, updateDetails: (details: typeof editor.details) => { detailsRef.current = details; if (details) editor.load(details); } };
 }
