@@ -47,6 +47,11 @@ jobs:
       - name: Verify shared contracts, apps, and native runtimes
         run: npm run test:parity:software
 
+      - name: Verify pinned pyquadcortex pull request metadata
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run parity:pyquadcortex:github
+
   ui-conformance:
     name: Responsive and accessible app surfaces
     runs-on: windows-latest

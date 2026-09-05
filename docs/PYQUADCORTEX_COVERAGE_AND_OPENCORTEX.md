@@ -7,6 +7,9 @@ Sources reviewed:
 - `stokes-audio/pyquadcortex` main at `7cd7efcadc3620bcb8cc3a9974a9baee78e42e12`
   (checked 2026-09-05), including ADR-0020's device-profile decision and the
   corrected identity-aware `version()` read.
+- Open pyquadcortex PRs #42 and #44-#50 at their pinned head commits in
+  `contracts/pyquadcortex-parity.v1.json`. Together they add eight public
+  `QuadCortex` methods and several catalog/session improvements.
 - `VanIseghemThomas/OpenCortex` main at
   `c9f9f983881ba908a45d2087ed64d434f97ed5d5` (2026-08-13).
 - Neural DSP's Quad Cortex manual for the user-visible product surface.
@@ -71,10 +74,11 @@ source-only compatibility oracle and can intentionally omit native-only
 workflows. Generation and parity tests fail when an action or native RPC is
 absent from a required layer.
 
-The pinned upstream `QuadCortex` class has 111 unique public methods. The
-machine-readable audit in `contracts/pyquadcortex-parity.v1.json` accounts for
-all 111 with native Rust commands, projections, runtime services, or pure
-helpers. The upstream tuner HID no-op is superseded with Neural DSP's documented
+The pinned upstream `QuadCortex` class has 111 unique public methods, and the
+tracked pending PRs add eight more. The machine-readable audit in
+`contracts/pyquadcortex-parity.v1.json` accounts for all 119 with native Rust
+commands, projections, runtime services, or pure helpers. The upstream tuner HID
+no-op is superseded with Neural DSP's documented
 MIDI CC 45 control. The host-capture-dialog acknowledgement exists as an exact
 low-level Rust protocol primitive, but is deliberately not a product action
 because neither implementation includes the capture recorder/trainer workflow.
@@ -82,6 +86,9 @@ Run `npm run parity:pyquadcortex` to reject non-native, missing, duplicated,
 unknown, or stale evidence; when `PYQUADCORTEX_CLIENT` is supplied, the audit
 also verifies the pinned upstream source hash after normalizing text line
 endings, so the same upstream revision verifies on Windows and Unix checkouts.
+CI additionally runs `npm run parity:pyquadcortex:github`, which fails whenever
+upstream main or a tracked PR's head, state, draft flag, or added public methods
+drift from the reviewed snapshot.
 
 This 100% figure describes native supersession, not promotion of unsafe,
 partially researched, or internal helpers into product commands. Capability
@@ -179,10 +186,10 @@ a candidate field does not mean its operation, units, sequencing, side effects o
 failure behavior are understood. QC Control must expose only verified behavior
 through typed contracts and keep unsupported operations explicit.
 
-Likewise, several ModelRepo parameter attributes remain unexplained or only
-partially used, including display ordering, parameter hiding/replacement,
-footswitch toggle metadata, tooltips, and middle labels. These are useful future
-UI-fidelity investigations, not permission to infer behavior.
+The live ModelRepo parser resolves clone inheritance and replacements and
+projects display ordering, visibility, footswitch-toggle metadata, linked scene
+mode, tooltips, and midpoint labels. Unknown future attributes remain evidence
+for investigation rather than permission to infer behavior.
 
 ## Revisit triggers
 

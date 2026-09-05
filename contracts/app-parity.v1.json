@@ -90,8 +90,8 @@
       "parity": "required",
       "owner": "shared",
       "sharedEvidence": [{ "path": "packages/typescript/qc-core/src/assistant-intent-resolution.ts", "contains": "resolveOfflineAssistantIntent" }],
-      "windows": { "status": "implemented", "evidence": [{ "path": "apps/windows/src/App.tsx", "contains": "resolveOfflineAssistantIntent(intent" }] },
-      "android": { "status": "implemented", "evidence": [{ "path": "apps/android/src/App.tsx", "contains": "resolveOfflineAssistantIntent(intent" }] }
+      "windows": { "status": "implemented", "evidence": [{ "path": "apps/windows/src/App.tsx", "contains": "runOfflineAssistantIntent(intent, {" }] },
+      "android": { "status": "implemented", "evidence": [{ "path": "apps/android/src/App.tsx", "contains": "runOfflineAssistantIntent(intent, {" }] }
     },
     {
       "id": "conversational-tools",
