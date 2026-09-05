@@ -32,11 +32,13 @@ test("the installed Windows runtime has no Python gateway or backup sidecar", ()
   const bundle = source("apps/windows/src-tauri/tauri.conf.json");
   const installer = source("scripts/build-windows-installer.ps1");
   const worker = source("services/device-broker/src/worker.rs");
-  const usb = source("services/device-broker/src/usb.rs");
   assert.doesNotMatch(tauri, /QC_GATEWAY_RUNTIME|qc-device-gateway|\.venv|python\.exe/i);
   assert.doesNotMatch(`${bundle}\n${installer}`, /qc-backup-helper|PyInstaller|backup_helper\.py/i);
-  assert.match(worker, /connected\.usb\.create_backup/);
-  assert.match(usb, /BackupAssembler/);
+  // The broker requests and assembles the document itself, on its own device
+  // loop, with no helper process and no nested read loop.
+  assert.match(worker, /commands::create_local_backup\(\)/);
+  assert.match(worker, /BackupAssembler/);
+  assert.doesNotMatch(source("services/device-broker/src/usb.rs"), /fn create_backup/);
 });
 
 test("realtime surface commands have one shared cross-platform workflow", () => {
@@ -635,7 +637,9 @@ test("one generated profile owns native backup limits across both hosts", () => 
   const javaProfile = source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbProfile.java");
   const rustProfile = source("packages/rust/qc-protocol/src/profile.rs");
   const android = source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java");
-  const windowsUsb = source("services/device-broker/src/usb.rs");
+  // Windows collects the backup on the device loop in worker.rs; Android's
+  // equivalent state lives in QcUsbPlugin. Both read the generated profile.
+  const windowsWorker = source("services/device-broker/src/worker.rs");
   const windowsRpc = source("services/device-broker/src/rpc.rs");
   const responses = source("packages/rust/qc-protocol/src/responses.rs");
   for (const value of [contract.backupTotalTimeoutMs, contract.backupFirstChunkTimeoutMs, contract.backupStreamStallTimeoutMs, contract.backupMaximumAttempts, contract.backupMaximumDocumentBytes]) {
@@ -647,9 +651,9 @@ test("one generated profile owns native backup limits across both hosts", () => 
   assert.match(android, /QcUsbProfile\.BACKUP_STREAM_STALL_TIMEOUT_MS/);
   assert.match(android, /QcUsbProfile\.BACKUP_MAXIMUM_ATTEMPTS/);
   assert.match(android, /QcUsbProfile\.BACKUP_MAXIMUM_DOCUMENT_BYTES/);
-  assert.match(windowsUsb, /profile::BACKUP_FIRST_CHUNK_TIMEOUT_MS/);
-  assert.match(windowsUsb, /profile::BACKUP_STREAM_STALL_TIMEOUT_MS/);
-  assert.match(windowsUsb, /profile::BACKUP_MAXIMUM_ATTEMPTS/);
+  assert.match(windowsWorker, /profile::BACKUP_FIRST_CHUNK_TIMEOUT_MS/);
+  assert.match(windowsWorker, /profile::BACKUP_STREAM_STALL_TIMEOUT_MS/);
+  assert.match(windowsWorker, /profile::BACKUP_MAXIMUM_ATTEMPTS/);
   assert.match(windowsRpc, /profile::BACKUP_TOTAL_TIMEOUT_MS/);
   assert.match(responses, /profile::BACKUP_MAXIMUM_DOCUMENT_BYTES/);
 });

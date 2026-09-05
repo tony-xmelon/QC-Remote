@@ -98,7 +98,18 @@ impl FlightRecorder {
     fn push(&mut self, entry: FlightEntry) {
         self.document.entries.push_back(entry);
         while self.document.entries.len() > MAX_ENTRIES {
-            self.document.entries.pop_front();
+            // A healthy idle link emits nothing but Version probe/reply pairs,
+            // roughly 90% of all traffic on this session. Evicting oldest-first
+            // let eight idle minutes overwrite the whole record, so a hang
+            // investigated afterwards had no trace of the operation that hung.
+            // Drop the oldest routine probe before any real operation.
+            let evict = self
+                .document
+                .entries
+                .iter()
+                .position(is_routine_liveness)
+                .unwrap_or(0);
+            self.document.entries.remove(evict);
         }
         // Rewriting the bounded JSON document synchronously for every 129-byte
         // HID report used to stretch Cortex Control's initialization burst by
@@ -133,6 +144,17 @@ impl Drop for FlightRecorder {
     fn drop(&mut self) {
         self.persist();
     }
+}
+
+/// True for the idle keepalive Version probe and its reply.
+///
+/// These are the highest-volume, lowest-value entries in the record: they are
+/// by definition the "nothing happened" case. They stay recorded so an idle
+/// stretch is still visible, but they are the first thing evicted.
+fn is_routine_liveness(entry: &FlightEntry) -> bool {
+    matches!(entry.event.as_str(), "outbound" | "inbound")
+        && entry.message_type == Some(qc_protocol::profile::MESSAGE_TYPE_VERSION)
+        && entry.report_count == Some(1)
 }
 
 fn now_unix_ms() -> u128 {
@@ -172,6 +194,41 @@ mod tests {
         assert_eq!(json["entries"][0]["messageType"], 40);
         assert_eq!(json["entries"][0]["reportCount"], 1191);
         assert!(json.to_string().find("payload").is_none());
+    }
+
+    #[test]
+    fn idle_liveness_traffic_never_evicts_a_real_operation() {
+        let mut recorder = FlightRecorder::for_test();
+        recorder.event("handshake-reply");
+        recorder.outbound(15, 1);
+        recorder.inbound(40, 1191);
+
+        // A healthy idle link produces nothing but Version probe/reply pairs.
+        // Eight minutes of them used to overwrite the entire record, so a hang
+        // investigated afterwards had no evidence of the operation that hung.
+        for _ in 0..(MAX_ENTRIES * 2) {
+            recorder.outbound(qc_protocol::profile::MESSAGE_TYPE_VERSION, 1);
+            recorder.inbound(qc_protocol::profile::MESSAGE_TYPE_VERSION, 1);
+        }
+
+        assert_eq!(recorder.document.entries.len(), MAX_ENTRIES);
+        let events: Vec<&str> = recorder
+            .document
+            .entries
+            .iter()
+            .map(|entry| entry.event.as_str())
+            .collect();
+        assert!(events.contains(&"handshake-reply"));
+        assert!(recorder
+            .document
+            .entries
+            .iter()
+            .any(|entry| entry.message_type == Some(15)));
+        assert!(recorder
+            .document
+            .entries
+            .iter()
+            .any(|entry| entry.message_type == Some(40) && entry.report_count == Some(1191)));
     }
 
     #[test]
