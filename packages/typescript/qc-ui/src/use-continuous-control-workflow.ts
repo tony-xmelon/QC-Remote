@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import type { GatewayTransport, PresetSnapshot } from "@ndsp-qc/client";
+import type { DeviceActionResult, GatewayTransport, PresetSnapshot } from "@ndsp-qc/client";
 import type { DeviceHistoryEntry } from "./use-device-history";
 import type { QcController } from "./use-qc-controller";
 
@@ -33,6 +33,46 @@ type VolumeQueue = {
   target?: number;
 };
 
+type LatestValueQueue = {
+  timer?: number;
+  running: boolean;
+  expected?: number;
+  target?: number;
+};
+
+async function drainLatestValue<Q extends LatestValueQueue>(queue: Q, handlers: {
+  write(target: number, expected: number, queue: Q): Promise<DeviceActionResult>;
+  accept(result: DeviceActionResult, target: number, queue: Q): void;
+  drained?(queue: Q): void;
+  error(error: unknown, queue: Q): void | Promise<void>;
+  idle?(queue: Q): void;
+  reschedule(): void;
+}) {
+  if (queue.running || queue.target === undefined || queue.expected === undefined) return;
+  queue.running = true;
+  if (queue.timer !== undefined) window.clearTimeout(queue.timer);
+  queue.timer = undefined;
+  try {
+    while (queue.target !== undefined) {
+      const target = queue.target;
+      const expected = queue.expected;
+      queue.target = undefined;
+      const result = await handlers.write(target, expected, queue);
+      handlers.accept(result, target, queue);
+    }
+    handlers.drained?.(queue);
+  } catch (error) {
+    await handlers.error(error, queue);
+  } finally {
+    queue.running = false;
+    if (queue.target !== undefined) queue.timer = window.setTimeout(handlers.reschedule, 0);
+    else {
+      queue.expected = undefined;
+      handlers.idle?.(queue);
+    }
+  }
+}
+
 /** Coalesced realtime encoders with one in-flight write and latest-value wins. */
 export function useContinuousControlWorkflow(options: ContinuousControlWorkflowOptions) {
   const { controller, gateway, connected, demo, reconcile, recordHistory, notice, fail } = options;
@@ -41,43 +81,33 @@ export function useContinuousControlWorkflow(options: ContinuousControlWorkflowO
 
   const drainTempo = useCallback(async () => {
     const queue = tempo.current;
-    if (queue.running || queue.target === undefined || queue.expected === undefined) return;
-    queue.running = true;
-    if (queue.timer !== undefined) window.clearTimeout(queue.timer);
-    queue.timer = undefined;
-    try {
-      while (queue.target !== undefined) {
-        const target = queue.target;
-        const expected = queue.expected;
-        const source = queue.source;
-        queue.target = undefined;
-        const result = await gateway.setTempo(target, expected, controller.snapshotRef.current.presetName);
-        queue.expected = result.snapshot?.tempo ?? target;
+    await drainLatestValue(queue, {
+      write: (target, expected) => gateway.setTempo(target, expected, controller.snapshotRef.current.presetName),
+      accept: (result, target, current) => {
+        const source = current.source;
+        current.expected = result.snapshot?.tempo ?? target;
         if (result.snapshot) reconcile(controller.reconcileSnapshot(result.snapshot));
         notice(result.detail ?? `${source} tempo set to ${target} BPM and verified on the Quad Cortex.`);
-      }
-      const original = queue.original;
-      const finalValue = queue.expected;
-      if (original !== undefined && finalValue !== undefined && original !== finalValue) {
-        recordHistory?.({
-          label: "tempo change",
-          execute: (current) => gateway.setTempo(original, finalValue, current.presetName),
-          redo: (current) => gateway.setTempo(finalValue, original, current.presetName)
-        });
-      }
-    } catch (error) {
-      if (queue.token) controller.failCommand(queue.token);
-      fail(error);
-      try { reconcile(controller.reconcileSnapshot(await gateway.currentSnapshot())); } catch { /* Preserve the command error. */ }
-    } finally {
-      queue.running = false;
-      if (queue.target !== undefined) {
-        queue.timer = window.setTimeout(() => void drainTempo(), 0);
-      } else {
-        queue.expected = undefined;
-        queue.original = undefined;
-      }
-    }
+      },
+      drained: (current) => {
+        const original = current.original;
+        const finalValue = current.expected;
+        if (original !== undefined && finalValue !== undefined && original !== finalValue) {
+          recordHistory?.({
+            label: "tempo change",
+            execute: (current) => gateway.setTempo(original, finalValue, current.presetName),
+            redo: (current) => gateway.setTempo(finalValue, original, current.presetName)
+          });
+        }
+      },
+      error: async (error, current) => {
+        if (current.token) controller.failCommand(current.token);
+        fail(error);
+        try { reconcile(controller.reconcileSnapshot(await gateway.currentSnapshot())); } catch { /* Preserve the command error. */ }
+      },
+      idle: (current) => { current.original = undefined; },
+      reschedule: () => void drainTempo()
+    });
   }, [controller, fail, gateway, notice, reconcile, recordHistory]);
 
   const queueTempo = useCallback((requestedBpm: number, source: TempoSource = "Encoder") => {
@@ -107,28 +137,19 @@ export function useContinuousControlWorkflow(options: ContinuousControlWorkflowO
 
   const drainVolume = useCallback(async () => {
     const queue = volume.current;
-    if (queue.running || queue.target === undefined || queue.expected === undefined) return;
-    queue.running = true;
-    if (queue.timer !== undefined) window.clearTimeout(queue.timer);
-    queue.timer = undefined;
-    try {
-      while (queue.target !== undefined) {
-        const target = queue.target;
-        const expected = queue.expected;
-        queue.target = undefined;
-        const result = await gateway.setMasterVolume(target, expected);
-        queue.expected = result.snapshot?.masterVolume ?? target;
+    await drainLatestValue(queue, {
+      write: (target, expected) => gateway.setMasterVolume(target, expected),
+      accept: (result, target, current) => {
+        current.expected = result.snapshot?.masterVolume ?? target;
         if (result.snapshot) reconcile(result.snapshot);
         notice(result.detail ?? `Master Volume set to ${target}.`);
-      }
-    } catch (error) {
-      fail(error);
-      try { reconcile(await gateway.currentSnapshot()); } catch { /* Preserve the command error. */ }
-    } finally {
-      queue.running = false;
-      if (queue.target !== undefined) queue.timer = window.setTimeout(() => void drainVolume(), 0);
-      else queue.expected = undefined;
-    }
+      },
+      error: async (error) => {
+        fail(error);
+        try { reconcile(await gateway.currentSnapshot()); } catch { /* Preserve the command error. */ }
+      },
+      reschedule: () => void drainVolume()
+    });
   }, [fail, gateway, notice, reconcile]);
 
   const adjustMasterVolume = useCallback((delta: number) => {
