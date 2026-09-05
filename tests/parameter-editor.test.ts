@@ -6,6 +6,20 @@ import { demoBlockDetails } from "../packages/typescript/qc-core/src/demo-parame
 import { PARAMETER_ENCODER_ROLES, parameterControlKind, parameterDisplay, parameterEditorAccent, parameterEditorControlSlots, parameterEditorFamily, parameterEditorIsFullScreen, parameterEditorPageSize, parameterEditorPageSlots, parameterEditorTabs, parameterNormalizedValue, parameterRealValue, parameterStep } from "../packages/typescript/qc-ui/src/parameter-model.ts";
 import { parameterContextMenuItems } from "../packages/typescript/qc-ui/src/parameter-menu.ts";
 
+test("physical parameter editor styles live in the always-loaded shared surface", () => {
+  const sharedCss = readFileSync(new URL("../packages/typescript/qc-ui/src/reference-parameter-editor.css", import.meta.url), "utf8");
+  const fixtureCss = readFileSync(new URL("../packages/typescript/qc-ui/src/remaining-fixtures-fixes.css", import.meta.url), "utf8");
+
+  assert.match(sharedCss, /editor-digital-flanger\.is-bypassed/);
+  assert.match(sharedCss, /coros-cab-editor \.cab-values/);
+  assert.match(sharedCss, /editor-ambience \.parameter-size/);
+  assert.doesNotMatch(
+    fixtureCss,
+    /coros-(?:reference-)?parameter-editor|editor-(?:simple-gate|chief-ds1|digital-flanger|ukc30-topboost|ambience)|coros-(?:cab|eq)-editor/,
+    "visiting a lazy fixture must not change a subsequently opened shared parameter editor"
+  );
+});
+
 test("the ten QC encoders map to parameters in the official physical order", () => {
   assert.deepEqual(PARAMETER_ENCODER_ROLES, [
     "footswitch:A", "footswitch:B", "footswitch:C", "footswitch:D", "footswitch:E",

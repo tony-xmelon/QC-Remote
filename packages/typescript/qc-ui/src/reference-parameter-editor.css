@@ -213,6 +213,19 @@
 .editor-digital-flanger > header .editor-done { left: 90.75%; width: 8.25%; }
 .editor-digital-flanger .coros-parameter-controls label > small { position: absolute; left: 1.5cqw; bottom: 2cqw; }
 .editor-digital-flanger .coros-parameter-controls label:not(.is-toggle) .coros-dial { translate: 4.375cqw 0; }
+.coros-parameter-editor.editor-digital-flanger.is-bypassed .coros-parameter-controls { filter: brightness(.35); background: #2e392e; }
+.coros-parameter-editor.editor-digital-flanger .coros-parameter-controls label { border-right-color: #2e2e2e; }
+.coros-parameter-editor.editor-digital-flanger .coros-parameter-controls.is-two-row label:nth-child(-n+5) { border-bottom-color: #2e2e2e; }
+.coros-parameter-editor.editor-digital-flanger .coros-dial { border-color: #172e17; background: #2e452e; }
+.coros-parameter-editor.editor-digital-flanger .coros-toggle > i { background: #172e17; }
+.coros-parameter-editor.editor-digital-flanger .editor-bypass .flanger-link-icon { width: 3cqw; fill: none; stroke: #7130ff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.coros-reference-parameter-editor:not(.coros-special-editor):not(.editor-digital-flanger) .editor-bypass svg { width: 3cqw; height: 3cqw; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.coros-reference-parameter-editor:not(.coros-special-editor) .editor-title small { transform: translate(1px, -1px); }
+.coros-reference-parameter-editor:not(.coros-special-editor) .editor-title strong { font-size: 2.5cqw; transform: translate(1px, 3px); }
+.coros-reference-parameter-editor .editor-stomp { grid-template-columns: 65% 35%; }
+.coros-reference-parameter-editor .editor-stomp svg { transform: translate(4px, -3px) scale(2.2, 1.3); }
+.coros-reference-parameter-editor .editor-scene > button:first-child svg { transform: translateX(4px); }
+.coros-reference-parameter-editor .editor-scene > button:last-child svg { transform: translateX(-4px); }
 .editor-digital-flanger .coros-parameter-controls label:nth-child(-n+5) .coros-dial { transform: translateY(8px) rotate(var(--dial-angle)); }
 .editor-digital-flanger .coros-parameter-controls label:nth-child(n+6) .coros-dial { transform: translateY(8px) rotate(var(--dial-angle)); }
 .editor-digital-flanger .parameter-rate .coros-dial { transform: translateY(8px) rotate(-110deg) !important; }
@@ -223,6 +236,14 @@
 .editor-digital-flanger .parameter-polarity .coros-toggle { padding-left: .75cqw; gap: 2.125cqw; }
 .editor-digital-flanger .parameter-sync .coros-toggle { transform: translateY(.75cqw); }
 .editor-digital-flanger .parameter-polarity .coros-toggle { transform: translateY(.5cqw); }
+.editor-ukc30-topboost .parameter-boost .coros-toggle { transform: translateY(1.25cqw); }
+.editor-ambience .parameter-trails .coros-toggle { transform: translateY(1cqw); }
+.editor-ambience .parameter-size .coros-dial { width: 40%; border-width: .375cqw; box-shadow: none; }
+.editor-ambience .parameter-size .coros-dial::before { content: ""; position: absolute; left: 50%; top: -1.5cqw; width: .75cqw; height: .75cqw; translate: -50% 0; border-radius: 50%; background: #24e6d2; }
+.editor-ambience .parameter-size .coros-dial::after { content: ""; position: absolute; right: -1.125cqw; bottom: -.5cqw; width: .625cqw; height: .625cqw; border-radius: 50%; background: #12391e; }
+.editor-ambience .parameter-pre-delay .coros-dial { transform: rotate(-35deg) !important; }
+.editor-ambience .parameter-high-pass .coros-dial { transform: rotate(-75deg) !important; }
+.editor-ambience .parameter-low-pass .coros-dial { transform: rotate(34deg) !important; }
 .editor-ukc30-topboost .coros-parameter-controls.is-two-row,
 .editor-ambience .coros-parameter-controls.is-two-row { grid-template-rows: 49.5% 50.5%; }
 .coros-cab-editor .cab-speaker::before,
@@ -238,6 +259,43 @@
 .coros-eq-editor .eq-axis-labels b:nth-child(1) { left: 21.75%; }
 .coros-eq-editor .eq-axis-labels b:nth-child(2) { left: 58.5%; }
 .coros-eq-editor .eq-axis-labels b:nth-child(3) { left: 94%; }
+.coros-eq-editor .eq-bypass-value strong .editor-power-icon { color: #eee; }
+.coros-reference-parameter-editor.coros-cab-editor,
+.coros-reference-parameter-editor.coros-cab-editor * { font-family: Roboto, Arial, sans-serif; }
+.coros-reference-parameter-editor.coros-cab-editor,
+.coros-reference-parameter-editor.coros-cab-editor .cab-editor-header { background: #101010; }
+.coros-reference-parameter-editor.coros-cab-editor .cab-editor-header .editor-more,
+.coros-reference-parameter-editor.coros-cab-editor .cab-editor-header .editor-stomp,
+.coros-reference-parameter-editor.coros-cab-editor .cab-editor-header .editor-scene,
+.coros-reference-parameter-editor.coros-cab-editor .cab-editor-header .editor-bypass { background: #181c18; color: #fff; }
+.coros-reference-parameter-editor.coros-cab-editor .cab-editor-header .editor-done,
+.coros-reference-parameter-editor.coros-cab-editor .cab-editor-header .cab-header-mode.is-active { background: #292c29; color: #fff; }
+.coros-reference-parameter-editor.coros-cab-editor .cab-editor-header .cab-header-mode:not(.is-active) { background: #181c18; }
+.coros-reference-parameter-editor.coros-cab-editor .cab-editor-header .editor-scene { left: 39.5%; width: 16.625%; display: grid !important; grid-template-columns: 36px 58px 1fr; gap: 0; }
+.coros-reference-parameter-editor.coros-cab-editor .cab-editor-header .editor-scene > button { height: 100%; display: grid; place-items: center; }
+.coros-reference-parameter-editor.coros-cab-editor .cab-editor-header .editor-scene > b { position: relative; height: 100%; display: grid; place-items: center; padding: 0; border-left: 1px solid #353a36; border-right: 1px solid #353a36; border-radius: 0; background: transparent; isolation: isolate; }
+.coros-reference-parameter-editor.coros-cab-editor .cab-editor-header .editor-scene > b::before { content: ""; position: absolute; z-index: -1; left: 50%; top: 50%; width: 24px; height: 24px; translate: -50% -50%; border-radius: 4px; background: #ffd331; }
+.coros-reference-parameter-editor.coros-cab-editor .cab-halves > section { background: #292c29; }
+.coros-reference-parameter-editor.coros-cab-editor .cab-speaker { top: 21.5%; translate: 0 1px; background: radial-gradient(circle, #151916 0 22%, #0c110e 23% 49%, #252a27 50% 70%, #101310 71%); }
+.coros-reference-parameter-editor.coros-cab-editor .cab-speaker > i { top: 42.75%; left: 22.75%; width: 17%; transform: none; }
+.coros-reference-parameter-editor.coros-cab-editor .cab-halves > section:nth-child(2) .cab-speaker > i { left: 59.75%; }
+.coros-reference-parameter-editor.coros-cab-editor .cab-footer { bottom: 1.5%; height: 11%; grid-template-columns: 17.65% 1fr 17.65%; }
+.coros-reference-parameter-editor.coros-cab-editor .cab-footer button { background: #181c18; color: #fff; }
+.coros-reference-parameter-editor.coros-cab-editor .cab-values { position: relative; display: block; height: 8.75cqw; padding: 0; }
+.coros-reference-parameter-editor.coros-cab-editor .cab-values > span { position: absolute; top: 2cqw; width: 10.25cqw; display: block; font-size: 2cqw; }
+.coros-reference-parameter-editor.coros-cab-editor .cab-values > span:nth-child(1) { left: 1.375cqw; }
+.coros-reference-parameter-editor.coros-cab-editor .cab-values > span:nth-child(2) { left: 13.5cqw; }
+.coros-reference-parameter-editor.coros-cab-editor .cab-values > span:nth-child(3) { left: 25.625cqw; }
+.coros-reference-parameter-editor.coros-cab-editor .cab-values > span:nth-child(4) { left: 37.75cqw; }
+.coros-reference-parameter-editor.coros-cab-editor .cab-values > span::after { right: 0; top: 3.1cqw; }
+.coros-reference-parameter-editor.coros-cab-editor .cab-values b { position: absolute; left: 0; top: 5cqw; margin: 0; white-space: nowrap; }
+.coros-reference-parameter-editor.coros-cab-editor .cab-halves > section:first-child .cab-values > span:nth-child(2)::after,
+.coros-reference-parameter-editor.coros-cab-editor .cab-halves > section:first-child .cab-values > span:nth-child(4)::after,
+.coros-reference-parameter-editor.coros-cab-editor .cab-halves > section:nth-child(2) .cab-values > span:nth-child(2)::after,
+.coros-reference-parameter-editor.coros-cab-editor .cab-halves > section:nth-child(2) .cab-values > span:nth-child(4)::after { background: linear-gradient(90deg, var(--cab-accent) 0 2.5%, #080a09 2.5%); }
+.coros-reference-parameter-editor.coros-cab-editor .cab-halves > section:first-child .cab-values > span:nth-child(3)::after { background: linear-gradient(90deg, var(--cab-accent) 0 52%, #080a09 52%); }
+.coros-reference-parameter-editor.coros-cab-editor .cab-halves > section:nth-child(2) .cab-values > span:nth-child(1)::after { background: linear-gradient(90deg, var(--cab-accent) 0 40%, #080a09 40%); }
+.coros-reference-parameter-editor.coros-cab-editor .cab-halves > section:nth-child(2) .cab-values > span:nth-child(3)::after { background: linear-gradient(90deg, var(--cab-accent) 0 50%, #080a09 50%); }
 .coros-eq-editor .eq-graph span:nth-of-type(1) { left: 6.1%; top: 38.5%; width: 7.65%; background: #087ee1; }
 .coros-eq-editor .eq-graph span:nth-of-type(n+2) { top: 41.25%; width: 5.8%; background: #292c29; }
 .coros-eq-editor .eq-graph span:nth-of-type(2) { left: 17.9%; }

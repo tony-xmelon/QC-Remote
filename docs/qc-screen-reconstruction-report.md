@@ -7,8 +7,8 @@ Reference: physical Quad Cortex, CorOS 4.1.0, 800x480 framebuffer corpus
 
 | Client | Physical corpus rendered | Mean structural match | Mean color similarity |
 | --- | ---: | ---: | ---: |
-| Windows | 41/41 (100%) | **90.75%** | **97.25%** |
-| Android | 41/41 (100%) | **90.76%** | **97.25%** |
+| Windows | 41/41 (100%) | **91.23%** | **97.30%** |
+| Android | 41/41 (100%) | **91.23%** | **97.30%** |
 
 These are native-size measurements, not audit estimates. Both hosts render the
 same versioned `coros410` scratch-preset fixture through `@ndsp-qc/ui`; each
@@ -20,8 +20,8 @@ frame. An earlier driver did not wait for asynchronous editor opening and
 therefore compared the underlying Grid for seven editor states; those invalid
 measurements have been replaced. Both capture drivers now exclude the decorative
 host bezel and measure the same raw 800x480 framebuffer; their aggregate
-structural scores differ by only 0.01 point. The live Grid, Directory, routing,
-and parameter editor implementations are shared.
+structural scores are identical. The live Grid, Directory, routing, and
+parameter editor implementations are shared.
 
 The complete product target is larger than the measured corpus. The canonical
 inventory contains **103 CorOS screen/state rows** plus **16 Cortex Control-only
@@ -137,13 +137,13 @@ join is in [the canonical coverage matrix](qc-screen-coverage-matrix.md).
 | `device-browser-root` | **86.04%** | **86.05%** |
 | `device-browser-models` | **89.75%** | **89.75%** |
 | `device-browser-models-clean` | **87.11%** | **87.11%** |
-| `editor-simple-gate` | **90.64%** | **90.64%** |
-| `editor-chief-ds1` | **90.93%** | **90.93%** |
-| `editor-digital-flanger` | **83.08%** | **83.08%** |
-| `editor-ukc30-topboost` | **89.03%** | **89.03%** |
-| `editor-ukc30-cab` | **85.19%** | **85.19%** |
-| `editor-parametric-8` | **88.41%** | **88.41%** |
-| `editor-ambience` | **88.88%** | **88.88%** |
+| `editor-simple-gate` | **92.56%** | **92.56%** |
+| `editor-chief-ds1` | **92.33%** | **92.33%** |
+| `editor-digital-flanger` | **87.27%** | **87.27%** |
+| `editor-ukc30-topboost` | **91.06%** | **91.06%** |
+| `editor-ukc30-cab` | **93.18%** | **93.18%** |
+| `editor-parametric-8` | **88.50%** | **88.50%** |
+| `editor-ambience` | **90.88%** | **90.88%** |
 | `gig-view` | **94.41%** | **94.41%** |
 | `grid-restored` | **93.42%** | **93.42%** |
 | `grid-scene-b` | **93.43%** | **93.43%** |
@@ -172,6 +172,16 @@ join is in [the canonical coverage matrix](qc-screen-coverage-matrix.md).
 
 ## Improvements in this pass
 
+- Consolidated all physical parameter-editor measurements into the
+  always-loaded shared stylesheet and removed competing rules from the lazy
+  fixture bundle. This also makes editor appearance independent of whether a
+  fixture screen was visited earlier. Cab rises from **85.19% to 93.18%**,
+  Digital Flanger from **83.08% to 87.27%**, Simple Gate from **90.64% to
+  92.56%**, Chief DS1 from **90.93% to 92.33%**, UK C30 TopBoost from **89.03%
+  to 91.06%**, Ambience from **88.88% to 90.88%**, and Parametric-8 from
+  **88.41% to 88.50%** structural match on both hosts. The complete 41-frame
+  benchmark rises to **91.23% structural / 97.30% color** on Windows and
+  Android; no non-editor frame changed.
 - Reconstructed Input Gate Control's dimmed Grid and lower editor from its
   physical framebuffer with shared vector glyphs, measured CorOS title metrics,
   exact route geometry, and aligned control/value baselines. The state rises
