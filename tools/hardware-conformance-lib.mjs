@@ -372,6 +372,11 @@ export function gatewayArguments(actionName, args) {
   const output = {};
   for (const [key, value] of Object.entries(args ?? {})) {
     if (key === "confirm_risky_operation" || key === "confirm_persistent_write") continue;
+    // Both MCP implementations apply the user-facing model query after the
+    // parameterless device.listModels read. Keep direct-gateway hardware runs
+    // on that same canonical projection instead of leaking the MCP-only input
+    // into the native broker boundary.
+    if (actionName === "list_models" && key === "query") continue;
     const target = actionName === "rename_current_preset" && key === "new_name" ? "name" : snakeToCamel(key);
     output[target] = value;
   }

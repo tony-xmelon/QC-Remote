@@ -191,6 +191,7 @@ function assert(condition, message) { if (!condition) fail(message); }
 const sleep = (ms) => new Promise((resolveSleep) => setTimeout(resolveSleep, ms));
 const timestamp = () => new Date().toISOString();
 const uniqueName = (prefix, suffix) => `${prefix}-${Date.now().toString(36)}-${suffix}`.slice(0, 63);
+const screenDigest = (screen) => createHash("sha256").update(screen?.pngBase64 ?? "").digest("hex");
 function evidenceFor(name, value) {
   if (name === "get_current_preset") return redactEvidence({ presetName: value?.presetName, presetLocation: value?.presetLocation, presetPosition: value?.presetPosition, setlistKey: value?.setlistKey, activeScene: value?.activeScene, tempo: value?.tempo, masterVolume: value?.masterVolume, dirty: value?.dirty, blockCount: value?.blocks?.length, routeCount: value?.routes?.length });
   if (name === "get_state_events") return { native: value?.native, frameCount: value?.frames?.length ?? 0, latestSequence: value?.frames?.at(-1)?.sequence };
@@ -424,6 +425,7 @@ async function main() {
   let originalGlobalTempoSettings;
   let originalFavorites;
   let originalPinnedModels;
+  let baselineDeviceScreen;
   let transportStarted = false;
   let deviceAuthorized = false;
   let firstScreenTapSent = false;
@@ -717,6 +719,7 @@ async function main() {
     await call("list_captures", {}, (value) => assert(Array.isArray(value.entries), "Capture library list is invalid."));
     await call("list_irs", { folder: null }, (value) => assert(Array.isArray(value.entries), "IR library list is invalid."));
     const capturedScreen = await call("capture_screen", {}, (value) => assert(pngSignatureIsValid(value, 800, 480), "Live screen PNG is invalid."));
+    baselineDeviceScreen = capturedScreen;
     if (config.discoveryScreenPath && typeof capturedScreen?.pngBase64 === "string") {
       const screenPath = resolve(root, config.discoveryScreenPath);
       await mkdir(dirname(screenPath), { recursive: true });
@@ -759,6 +762,46 @@ async function main() {
       const laneParameter = laneDetails.parameters?.find((candidate) => candidate.writable && Number.isFinite(candidate.normalizedValue));
       assert(laneParameter, "Scratch preset Input Gate has no writable normalized parameter.");
       config.runtimeLaneParameter = { row: config.parameter.row, control: "inputGate", parameter: laneParameter };
+      if (enabledHazards.has("live")) {
+        const laneOriginalValue = laneParameter.normalizedValue;
+        const laneTestValue = Math.abs(laneOriginalValue - 0.55) >= 0.1 ? 0.55 : 0.35;
+        await call("preview_lane_control_parameter", {
+          row: config.parameter.row, control: "inputGate", parameter_index: laneParameter.index,
+          value: laneTestValue, expected_value: laneOriginalValue, expected_preset_name: currentSnapshot.presetName
+        });
+        const previewedLaneParameter = await waitForLaneControlDetails(config.parameter.row, "inputGate", (value) =>
+          Math.abs(value.parameters?.find((candidate) => candidate.index === laneParameter.index)?.normalizedValue - laneTestValue) < 0.002);
+        verified("preview_lane_control_parameter", {
+          row: config.parameter.row, control: "inputGate", parameterIndex: laneParameter.index,
+          normalizedValue: previewedLaneParameter.parameters?.find((candidate) => candidate.index === laneParameter.index)?.normalizedValue,
+          observedAt: previewedLaneParameter.observedAt
+        });
+        await call("set_lane_control_parameter", {
+          row: config.parameter.row, control: "inputGate", parameter_index: laneParameter.index,
+          value: laneOriginalValue, expected_value: laneTestValue, expected_preset_name: currentSnapshot.presetName
+        });
+        const restoredLaneParameter = await waitForLaneControlDetails(config.parameter.row, "inputGate", (value) =>
+          Math.abs(value.parameters?.find((candidate) => candidate.index === laneParameter.index)?.normalizedValue - laneOriginalValue) < 0.002);
+        verified("set_lane_control_parameter", {
+          row: config.parameter.row, control: "inputGate", parameterIndex: laneParameter.index,
+          normalizedValue: restoredLaneParameter.parameters?.find((candidate) => candidate.index === laneParameter.index)?.normalizedValue,
+          observedAt: restoredLaneParameter.observedAt
+        });
+
+        const laneOriginalSceneMode = Boolean(laneParameter.sceneMode);
+        await call("set_lane_control_scene_mode", {
+          row: config.parameter.row, control: "inputGate", parameter_index: laneParameter.index,
+          enabled: !laneOriginalSceneMode, expected_preset_name: currentSnapshot.presetName
+        });
+        await waitForLaneControlDetails(config.parameter.row, "inputGate", (value) =>
+          value.parameters?.find((candidate) => candidate.index === laneParameter.index)?.sceneMode === !laneOriginalSceneMode);
+        await transport.call("set_lane_control_scene_mode", {
+          row: config.parameter.row, control: "inputGate", parameter_index: laneParameter.index,
+          enabled: laneOriginalSceneMode, expected_preset_name: currentSnapshot.presetName
+        });
+        await waitForLaneControlDetails(config.parameter.row, "inputGate", (value) =>
+          value.parameters?.find((candidate) => candidate.index === laneParameter.index)?.sceneMode === laneOriginalSceneMode);
+      }
     } else {
       const block = originalSnapshot.blocks.find((candidate) => candidate.modelId !== undefined);
       if (block) await call("get_block_details", { row: block.row, column: block.column, expected_preset_name: originalSnapshot.presetName }, (value) => assert(Array.isArray(value.parameters), "Block details are invalid."));
@@ -800,8 +843,16 @@ async function main() {
       }
 
       await call("show_tuner", { shown: true });
+      const tunerScreen = await transport.call("capture_screen", {});
+      assert(pngSignatureIsValid(tunerScreen, 800, 480), "Tuner device-screen verification returned an invalid PNG.");
+      assert(screenDigest(tunerScreen) !== screenDigest(baselineDeviceScreen), "Opening the tuner did not change the physical QC screen.");
+      verified("show_tuner", { width: tunerScreen.width, height: tunerScreen.height, sha256: screenDigest(tunerScreen) });
       await transport.call("show_tuner", { shown: false });
       await call("show_gig_view", { shown: true });
+      const gigScreen = await transport.call("capture_screen", {});
+      assert(pngSignatureIsValid(gigScreen, 800, 480), "Gig View device-screen verification returned an invalid PNG.");
+      assert(screenDigest(gigScreen) !== screenDigest(baselineDeviceScreen), "Opening Gig View did not change the physical QC screen.");
+      verified("show_gig_view", { width: gigScreen.width, height: gigScreen.height, sha256: screenDigest(gigScreen) });
       await transport.call("show_gig_view", { shown: false });
 
       const modeBySlot = ["PRESET", "SCENE", "STOMP"];
@@ -814,16 +865,29 @@ async function main() {
       assert(currentSnapshot.mode === modeBySlot[config.performance.restoreModeSlot], "Mode-slot restoration did not reach authoritative device state.");
 
       await call("control_looper", { command: "open", value: null });
+      const looperScreen = await transport.call("capture_screen", {});
+      assert(pngSignatureIsValid(looperScreen, 800, 480), "Looper device-screen verification returned an invalid PNG.");
+      assert(screenDigest(looperScreen) !== screenDigest(baselineDeviceScreen), "Opening Looper X did not change the physical QC screen.");
+      verified("control_looper", { width: looperScreen.width, height: looperScreen.height, sha256: screenDigest(looperScreen) });
       await transport.call("control_looper", { command: "close", value: null });
+      currentSnapshot = await snapshot();
+      const volumeAfterScreenRecovery = await transport.call("get_master_volume", {});
+      report.highVolumeRecovery = {
+        masterVolumeBefore: originalMasterVolume,
+        masterVolumeAfter: volumeAfterScreenRecovery.value,
+        observedAt: volumeAfterScreenRecovery.observedAt
+      };
+      assert(Math.abs(volumeAfterScreenRecovery.value - originalMasterVolume) <= 1,
+        `High-volume screen verification changed Master Volume by more than one quantization step (${originalMasterVolume} to ${volumeAfterScreenRecovery.value}).`);
 
-      const originalVolume = originalMasterVolume;
+      const originalVolume = volumeAfterScreenRecovery.value;
       await call("set_master_volume", { value: config.performance.masterVolume, expected_value: originalVolume, confirm_risky_operation: true });
       const changedVolume = await waitForMasterVolume(config.performance.masterVolume);
       assert(changedVolume?.value === config.performance.masterVolume, "Master volume did not reach the configured test value.");
       verified("set_master_volume", changedVolume);
-      await transport.call("set_master_volume", { value: originalVolume, expected_value: config.performance.masterVolume, confirm_risky_operation: true });
-      const restoredVolume = await waitForMasterVolume(originalVolume);
-      assert(restoredVolume?.value === originalVolume, "Master volume did not restore to its authoritative starting value.");
+      await transport.call("set_master_volume", { value: originalMasterVolume, expected_value: config.performance.masterVolume, confirm_risky_operation: true });
+      const restoredVolume = await waitForMasterVolume(originalMasterVolume);
+      assert(restoredVolume?.value === originalMasterVolume, "Master volume did not restore to its authoritative starting value.");
 
       const originalTempo = currentSnapshot.tempo;
       await call("set_tempo", { bpm: config.performance.tempo, expected_tempo: originalTempo, expected_preset_name: currentSnapshot.presetName });
@@ -868,42 +932,6 @@ async function main() {
         value: originalValue, expected_value: config.parameter.testValue, expected_scene: currentSnapshot.activeScene, expected_preset_name: currentSnapshot.presetName
       });
       await waitForBlockDetails(config.parameter.row, config.parameter.column, (value) => Math.abs(value.parameters?.find((candidate) => candidate.index === parameter.index)?.normalizedValue - originalValue) < 0.002);
-
-      const lane = config.runtimeLaneParameter;
-      const laneOriginalValue = lane.parameter.normalizedValue;
-      const laneTestValue = Math.abs(laneOriginalValue - 0.55) >= 0.1 ? 0.55 : 0.35;
-      await call("preview_lane_control_parameter", {
-        row: lane.row, control: lane.control, parameter_index: lane.parameter.index,
-        value: laneTestValue, expected_value: laneOriginalValue, expected_preset_name: currentSnapshot.presetName
-      });
-      const previewedLaneParameter = await waitForLaneControlDetails(lane.row, lane.control, (value) => Math.abs(value.parameters?.find((candidate) => candidate.index === lane.parameter.index)?.normalizedValue - laneTestValue) < 0.002);
-      verified("preview_lane_control_parameter", {
-        row: lane.row, control: lane.control, parameterIndex: lane.parameter.index,
-        normalizedValue: previewedLaneParameter.parameters?.find((candidate) => candidate.index === lane.parameter.index)?.normalizedValue,
-        observedAt: previewedLaneParameter.observedAt
-      });
-      await call("set_lane_control_parameter", {
-        row: lane.row, control: lane.control, parameter_index: lane.parameter.index,
-        value: laneOriginalValue, expected_value: laneTestValue, expected_preset_name: currentSnapshot.presetName
-      });
-      const restoredLaneParameter = await waitForLaneControlDetails(lane.row, lane.control, (value) => Math.abs(value.parameters?.find((candidate) => candidate.index === lane.parameter.index)?.normalizedValue - laneOriginalValue) < 0.002);
-      verified("set_lane_control_parameter", {
-        row: lane.row, control: lane.control, parameterIndex: lane.parameter.index,
-        normalizedValue: restoredLaneParameter.parameters?.find((candidate) => candidate.index === lane.parameter.index)?.normalizedValue,
-        observedAt: restoredLaneParameter.observedAt
-      });
-
-      const laneOriginalSceneMode = Boolean(lane.parameter.sceneMode);
-      await call("set_lane_control_scene_mode", {
-        row: lane.row, control: lane.control, parameter_index: lane.parameter.index,
-        enabled: !laneOriginalSceneMode, expected_preset_name: currentSnapshot.presetName
-      });
-      await waitForLaneControlDetails(lane.row, lane.control, (value) => value.parameters?.find((candidate) => candidate.index === lane.parameter.index)?.sceneMode === !laneOriginalSceneMode);
-      await transport.call("set_lane_control_scene_mode", {
-        row: lane.row, control: lane.control, parameter_index: lane.parameter.index,
-        enabled: laneOriginalSceneMode, expected_preset_name: currentSnapshot.presetName
-      });
-      await waitForLaneControlDetails(lane.row, lane.control, (value) => value.parameters?.find((candidate) => candidate.index === lane.parameter.index)?.sceneMode === laneOriginalSceneMode);
 
       const originalSceneMode = Boolean(parameter.sceneMode);
       await call("set_parameter_scene_mode", {
@@ -1102,8 +1130,78 @@ async function main() {
       await call("reload_preset", { expected_preset_name: currentSnapshot.presetName, expected_position: currentSnapshot.presetPosition, confirm_risky_operation: true });
       currentSnapshot = await snapshot();
 
-      await call("press_footswitch", { index: config.performance.footswitchIndex, expected_mode: currentSnapshot.mode, expected_preset_name: currentSnapshot.presetName });
-      currentSnapshot = await snapshot();
+      const modeBeforeFootswitch = currentSnapshot.mode;
+      if (modeBeforeFootswitch !== "STOMP") {
+        await transport.call("select_mode_slot", {
+          slot: modeBySlot.indexOf("STOMP"), expected_preset_name: currentSnapshot.presetName
+        });
+        currentSnapshot = await waitForSnapshot((value) => value.mode === "STOMP");
+      }
+      let assignedFootswitchBlock = currentSnapshot.blocks.find((block) => {
+        if (!Number.isInteger(block.footswitch)) return false;
+        const state = currentSnapshot.footswitchStates?.find((candidate) => candidate.index === block.footswitch);
+        return state?.momentary !== true;
+      });
+      if (!assignedFootswitchBlock) {
+        const occupiedFootswitches = new Set(currentSnapshot.blocks
+          .map((block) => block.footswitch)
+          .filter(Number.isInteger));
+        const temporaryFootswitch = Array.from({ length: 8 }, (_, index) => index)
+          .find((index) => !occupiedFootswitches.has(index));
+        const temporaryBlock = currentSnapshot.blocks.find((block) =>
+          Number.isInteger(block.modelId) && block.column >= 0 && block.column <= 7);
+        assert(Number.isInteger(temporaryFootswitch) && temporaryBlock,
+          "Scratch preset has no block and free A-H footswitch for authoritative testing.");
+        await transport.call("set_block_footswitch", {
+          row: temporaryBlock.row, column: temporaryBlock.column,
+          footswitch: temporaryFootswitch, expected_footswitch: temporaryBlock.footswitch ?? null,
+          expected_model_id: temporaryBlock.modelId, expected_preset_name: currentSnapshot.presetName
+        });
+        currentSnapshot = await waitForSnapshot((value) => value.blocks.some((block) =>
+          block.row === temporaryBlock.row && block.column === temporaryBlock.column
+            && block.footswitch === temporaryFootswitch));
+        const temporaryState = currentSnapshot.footswitchStates?.find((state) => state.index === temporaryFootswitch);
+        if (temporaryState?.momentary === true) {
+          await transport.call("set_stomp_momentary", {
+            footswitch: temporaryFootswitch, momentary: false,
+            expected_preset_name: currentSnapshot.presetName
+          });
+          currentSnapshot = await waitForSnapshot((value) =>
+            value.footswitchStates?.some((state) => state.index === temporaryFootswitch && state.momentary === false));
+        }
+        assignedFootswitchBlock = currentSnapshot.blocks.find((block) =>
+          block.row === temporaryBlock.row && block.column === temporaryBlock.column);
+      }
+      const assignedFootswitchBypass = Boolean(assignedFootswitchBlock.bypassed);
+      await call("press_footswitch", {
+        index: assignedFootswitchBlock.footswitch,
+        expected_mode: currentSnapshot.mode,
+        expected_preset_name: currentSnapshot.presetName
+      });
+      currentSnapshot = await waitForSnapshot((value) => value.blocks.some((block) =>
+        block.row === assignedFootswitchBlock.row && block.column === assignedFootswitchBlock.column
+          && Boolean(block.bypassed) !== assignedFootswitchBypass));
+      verified("press_footswitch", {
+        index: assignedFootswitchBlock.footswitch,
+        row: assignedFootswitchBlock.row,
+        column: assignedFootswitchBlock.column,
+        bypassed: !assignedFootswitchBypass,
+        observedAt: currentSnapshot.observedAt
+      });
+      await transport.call("press_footswitch", {
+        index: assignedFootswitchBlock.footswitch,
+        expected_mode: currentSnapshot.mode,
+        expected_preset_name: currentSnapshot.presetName
+      });
+      currentSnapshot = await waitForSnapshot((value) => value.blocks.some((block) =>
+        block.row === assignedFootswitchBlock.row && block.column === assignedFootswitchBlock.column
+          && Boolean(block.bypassed) === assignedFootswitchBypass));
+      if (modeBeforeFootswitch !== "STOMP") {
+        await transport.call("select_mode_slot", {
+          slot: modeBySlot.indexOf(modeBeforeFootswitch), expected_preset_name: currentSnapshot.presetName
+        });
+        currentSnapshot = await waitForSnapshot((value) => value.mode === modeBeforeFootswitch);
+      }
       await restoreScratch();
 
       await call("navigate_bank", { direction: 1, expected_preset_name: currentSnapshot.presetName, expected_position: currentSnapshot.presetPosition });
@@ -1474,10 +1572,28 @@ async function main() {
     }
 
     if (enabledHazards.has("screen")) {
+      const screenBeforeTap = await transport.call("capture_screen", {});
+      assert(pngSignatureIsValid(screenBeforeTap, 800, 480), "Screen-tap baseline returned an invalid PNG.");
       await call("tap_screen", { x: config.screenTap.x, y: config.screenTap.y, confirm_risky_operation: true });
       firstScreenTapSent = true;
+      const screenAfterTap = await waitForPhysicalObservation(
+        () => transport.call("capture_screen", {}),
+        (value) => pngSignatureIsValid(value, 800, 480)
+          && screenDigest(value) !== screenDigest(screenBeforeTap),
+        { timeoutMs: 5000, intervalMs: 150, label: "QC framebuffer change after tap_screen" }
+      );
+      verified("tap_screen", {
+        x: config.screenTap.x, y: config.screenTap.y,
+        beforeSha256: screenDigest(screenBeforeTap), afterSha256: screenDigest(screenAfterTap)
+      });
       await transport.call("tap_screen", { x: config.screenTap.restoreX, y: config.screenTap.restoreY, confirm_risky_operation: true });
       firstScreenTapSent = false;
+      await waitForPhysicalObservation(
+        () => transport.call("capture_screen", {}),
+        (value) => pngSignatureIsValid(value, 800, 480)
+          && screenDigest(value) !== screenDigest(screenAfterTap),
+        { timeoutMs: 5000, intervalMs: 150, label: "QC framebuffer restoration after tap_screen" }
+      );
     }
 
     // Backup is intentionally last: it is the longest operation and a bulk

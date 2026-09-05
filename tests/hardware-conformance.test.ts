@@ -183,6 +183,7 @@ test("direct gateway argument mapping matches the MCP adapter boundary", () => {
   assert.deepEqual(gatewayArguments("set_parameter", { parameter_index: 2, expected_value: 0.4, confirm_risky_operation: true }), { parameterIndex: 2, expectedValue: 0.4 });
   assert.deepEqual(gatewayArguments("preview_parameter", { parameter_index: 2, expected_value: 0.4 }), { parameterIndex: 2, expectedValue: 0.4 });
   assert.deepEqual(gatewayArguments("load_capture", { model_id: 14000, expected_model_id: null }), { modelId: 14000, expectedModelId: null });
+  assert.deepEqual(gatewayArguments("list_models", { query: "delay" }), {});
   assert.deepEqual(gatewayArguments("rename_current_preset", { new_name: "Test", confirm_persistent_write: true }), { name: "Test", confirmRename: true });
 });
 

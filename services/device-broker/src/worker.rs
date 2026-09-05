@@ -471,7 +471,12 @@ impl DeviceController {
     }
 
     pub fn send_operation(&self, operation: DeviceOperation) -> Result<(), String> {
-        for message in operation.try_encode().map_err(|error| error.to_string())? {
+        let sequenced_touch = matches!(operation, DeviceOperation::ScreenTap { .. });
+        let messages = operation.try_encode().map_err(|error| error.to_string())?;
+        if sequenced_touch {
+            return self.send_sequence(messages, Duration::ZERO, Duration::from_millis(20));
+        }
+        for message in messages {
             self.send_command(message)?;
         }
         Ok(())

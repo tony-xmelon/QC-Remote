@@ -2051,8 +2051,10 @@ pub fn screen_tap(x: f32, y: f32) -> [OutboundMessage; 2] {
         ..Default::default()
     };
     [
-        OutboundMessage::encoded(72, mouse(pa::remote_control_mouse::Type::Press as i32)),
+        // CorOS' runtime semantics are inverted against the recovered enum
+        // labels: RELEASE (wire value 1) begins the touch and PRESS (0) ends it.
         OutboundMessage::encoded(72, mouse(pa::remote_control_mouse::Type::Release as i32)),
+        OutboundMessage::encoded(72, mouse(pa::remote_control_mouse::Type::Press as i32)),
     ]
 }
 
@@ -2262,14 +2264,14 @@ mod tests {
         let tap = screen_tap(184.0, 147.0);
         assert_eq!(
             tap[0].payload,
-            [0x08, 0x01, 0x1a, 0x0a, 0x0d, 0x00, 0x00, 0x38, 0x43, 0x15, 0x00, 0x00, 0x13, 0x43]
-        );
-        assert_eq!(
-            tap[1].payload,
             [
                 0x08, 0x01, 0x1a, 0x0c, 0x0d, 0x00, 0x00, 0x38, 0x43, 0x15, 0x00, 0x00, 0x13, 0x43,
                 0x18, 0x01
             ]
+        );
+        assert_eq!(
+            tap[1].payload,
+            [0x08, 0x01, 0x1a, 0x0a, 0x0d, 0x00, 0x00, 0x38, 0x43, 0x15, 0x00, 0x00, 0x13, 0x43]
         );
     }
 
