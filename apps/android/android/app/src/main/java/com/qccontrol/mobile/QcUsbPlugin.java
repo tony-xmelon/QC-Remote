@@ -236,7 +236,6 @@ public class QcUsbPlugin extends Plugin {
         volatile int decodedMessages;
         volatile int lastRawReportBytes;
         volatile boolean recoveryStarted;
-        volatile long recoveryAfterState;
         volatile org.json.JSONObject savedResult;
 
         PendingBackup(String name) {
@@ -1440,15 +1439,11 @@ public class QcUsbPlugin extends Plugin {
                     pending.operation.started = update.getBoolean("started", pending.operation.started);
                     if (update.getBoolean("complete", false) && pendingBackup == pending) {
                         pending.operation.recoveryStarted = true;
-                        pending.operation.recoveryAfterState = lastStateAt;
                         org.json.JSONObject document = (org.json.JSONObject) update.get("backup");
                         metadataIo.execute(() -> {
                             try {
                                 pending.operation.savedResult = saveBackupDocument(document, pending.operation.name);
-                                commandIo.execute(() -> {
-                                    try { writeMessage(stateDecoder.readCommand(17)); }
-                                    catch (Exception error) { failPendingBackupRecovery(pending, error); }
-                                });
+                                recoverSessionAfterBackup(pending);
                             } catch (Exception error) {
                                 failPendingBackupRecovery(pending, error);
                             }
@@ -1484,11 +1479,9 @@ public class QcUsbPlugin extends Plugin {
         long sequence;
         synchronized (stateEventLock) { sequence = nextStateSequence++; }
         JSArray states = new JSArray();
-        boolean masterObserved = false;
         for (JSObject state : decodedStates) {
             String kind = state.getString("kind", "");
             if ("master".equals(kind) && state.has("masterVolume")) {
-                masterObserved = true;
                 double volume = state.optDouble("masterVolume", -1);
                 currentMasterVolume = volume < 0 ? -1 : (int) Math.round(volume <= 1 ? volume * 100 : volume);
             }
@@ -1504,7 +1497,6 @@ public class QcUsbPlugin extends Plugin {
             states.put(state);
         }
         stateDecoder.sessionStateObserved(observedAt, presetSynchronized);
-        if (masterObserved) completePendingBackupRecovery(observedAt);
         resolvePendingReady();
         resolvePendingGatewayTransactions(sequence, monotonicMillis());
         JSObject frame = new JSObject();
@@ -1528,14 +1520,27 @@ public class QcUsbPlugin extends Plugin {
         notifyListeners("qcStateBatch", frame, true);
     }
 
-    private void completePendingBackupRecovery(long observedAt) {
-        QcPendingOperations.Entry<PendingBackup> pending = pendingBackup;
-        if (pending == null || !pending.operation.recoveryStarted
-            || pending.operation.savedResult == null
-            || observedAt <= pending.operation.recoveryAfterState
-            || !isReady() || !presetSynchronized || currentSetlist == null) return;
+    private void recoverSessionAfterBackup(QcPendingOperations.Entry<PendingBackup> pending) {
+        // Current QC firmware can remain only partially responsive after the
+        // uncorrelated LocalBackup stream finishes. A same-session preset or
+        // master-volume refresh is insufficient: compiler-state reads can
+        // still time out. Remove the completed backup from the pending set so
+        // reconnect can own the connection lifecycle, then report success only
+        // after a fresh handshake and full preset synchronization.
+        if (pendingBackup != pending || pending.operation.savedResult == null) return;
         pendingBackup = null;
-        if (pendingOperations.remove(pending)) pending.result.complete(pending.operation.savedResult);
+        if (!pendingOperations.remove(pending)) return;
+        org.json.JSONObject savedResult = pending.operation.savedResult;
+        relayReconnect("USB session restored after device backup").whenComplete((ignored, error) -> {
+            if (error != null) {
+                pending.result.completeExceptionally(new RelayException(
+                    "USB_CONNECT_FAILED",
+                    "The backup was saved, but the Quad Cortex session did not recover: "
+                        + (error.getMessage() == null ? error.toString() : error.getMessage())));
+            } else {
+                pending.result.complete(savedResult);
+            }
+        });
     }
 
     private void failPendingBackupRecovery(

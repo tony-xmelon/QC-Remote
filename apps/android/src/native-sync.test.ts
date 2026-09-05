@@ -219,16 +219,18 @@ test("Android relay has exact gateway parity with Windows", () => {
   assert.match(servicesSource, /gatewayInvoke<T>\(options:/);
 });
 
-test("Android persists completed native backups without blocking USB reads", () => {
+test("Android persists backups and requires a fresh synchronized USB session before completion", () => {
   assert.match(javaSource, /MediaStore\.Downloads\.EXTERNAL_CONTENT_URI/);
   assert.match(javaSource, /R\.string\.download_folder/);
   assert.match(javaSource, /metadataIo\.execute\(\(\) -> \{[\s\S]*saveBackupDocument/);
   assert.match(javaSource, /QcUsbProfile\.BACKUP_MAXIMUM_DOCUMENT_BYTES/);
   assert.match(usbProfileSource, /BACKUP_MAXIMUM_DOCUMENT_BYTES = 33554432/);
   assert.doesNotMatch(javaSource, /pending\.result\.complete\(JSObject\.fromJSONObject\(\(org\.json\.JSONObject\) update\.get\("backup"\)\)\)/);
-  assert.match(javaSource, /writeMessage\(stateDecoder\.readCommand\(17\)\)/);
-  assert.match(javaSource, /masterObserved[\s\S]*completePendingBackupRecovery\(observedAt\)/);
-  assert.match(javaSource, /observedAt <= pending\.operation\.recoveryAfterState/);
+  assert.match(javaSource, /recoverSessionAfterBackup\(pending\)/);
+  assert.match(javaSource, /pendingBackup = null;[\s\S]*pendingOperations\.remove\(pending\)[\s\S]*relayReconnect\("USB session restored after device backup"\)/);
+  assert.match(javaSource, /relayReconnect\("USB session restored after device backup"\)[\s\S]*pending\.result\.complete\(savedResult\)/);
+  assert.match(javaSource, /The backup was saved, but the Quad Cortex session did not recover/);
+  assert.doesNotMatch(javaSource, /completePendingBackupRecovery|recoveryAfterState/);
   for (const method of ["device.captureScreen", "device.presetScreenshot", "device.captures", "device.irs"])
     assert.match(javaSource, new RegExp(method.replace(".", "\\.")));
   assert.match(javaSource, /relayReconnect\("USB session refreshed for high-volume read"\)/);
