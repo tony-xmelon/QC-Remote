@@ -419,4 +419,15 @@ test("text-only model providers use the generated tool contract", () => {
   assert.deepEqual(validateAssistantToolCalls({ actions: [{ name: "set_master_volume", args: { value: 100, expected_value: 40, confirm_risky_operation: "yes" } }] }), []);
   assert.deepEqual(validateAssistantToolCalls({ actions: [{ name: "set_tempo", args: { bpm: 96, expected_tempo: 120, expected_preset_name: "Brit 2203", raw_usb: true } }] }), []);
   assert.deepEqual(validateAssistantToolCalls({ actions: [{ name: "set_parameter", args: {} }] }, "performance"), []);
+  assert.deepEqual(validateAssistantToolCalls({ actions: [{ name: "set_mode_cycle", args: { slots: [0, 2, 4], confirm_persistent_write: true } }] }), [{
+    name: "set_mode_cycle",
+    arguments: { slots: [0, 2, 4], confirm_persistent_write: true }
+  }]);
+  assert.deepEqual(validateAssistantToolCalls({ actions: [{ name: "set_mode_cycle", args: { slots: [0, 0], confirm_persistent_write: true } }] }), []);
+  assert.deepEqual(validateAssistantToolCalls({ actions: [{ name: "set_global_bypass", args: { cab: [true, false, true, false], ir: [false, true, false, true], confirm_persistent_write: true } }] }).length, 1);
+  assert.deepEqual(validateAssistantToolCalls({ actions: [{ name: "set_global_bypass", args: { cab: [true, false], ir: [false, true, false, true], confirm_persistent_write: true } }] }), []);
+  assert.deepEqual(validateAssistantToolCalls({ actions: [{ name: "set_midi_out", args: { source: 1, messages: [{ type: 1, channel: 2, param1: 3, param2: 4, param3: 5 }], expected_preset_name: "Brit 2203" } }] }).length, 1);
+  assert.deepEqual(validateAssistantToolCalls({ actions: [{ name: "set_midi_out", args: { source: 1, messages: [{ type: 1, channel: 17, param1: 3, param2: 4, param3: 5 }], expected_preset_name: "Brit 2203" } }] }), []);
+  assert.deepEqual(validateAssistantToolCalls({ actions: [{ name: "copy_scene", args: { from_scene: 2, to_scene: 2, swap: false, expected_preset_name: "Brit 2203" } }] }), []);
+  assert.deepEqual(validateAssistantToolCalls({ actions: [{ name: "create_device_backup", args: { name: "bad\nname", confirm_persistent_write: true } }] }), []);
 });

@@ -66,12 +66,37 @@ function schemaAccepts(schema: Record<string, unknown>, value: unknown): boolean
     if (type === "string") return typeof value === "string";
     if (type === "number") return typeof value === "number" && Number.isFinite(value);
     if (type === "integer") return typeof value === "number" && Number.isInteger(value);
+    if (type === "array") return Array.isArray(value);
+    if (type === "object") return Boolean(value) && typeof value === "object" && !Array.isArray(value);
     return false;
   });
   if (!typeMatches) return false;
   if (typeof value === "number") {
     if (typeof schema.minimum === "number" && value < schema.minimum) return false;
     if (typeof schema.maximum === "number" && value > schema.maximum) return false;
+  }
+  if (typeof value === "string") {
+    if (typeof schema.minLength === "number" && value.length < schema.minLength) return false;
+    if (typeof schema.maxLength === "number" && value.length > schema.maxLength) return false;
+    if (typeof schema.pattern === "string" && !new RegExp(schema.pattern, "u").test(value)) return false;
+  }
+  if (Array.isArray(value)) {
+    if (typeof schema.minItems === "number" && value.length < schema.minItems) return false;
+    if (typeof schema.maxItems === "number" && value.length > schema.maxItems) return false;
+    if (schema.uniqueItems === true) {
+      const encoded = value.map((item) => JSON.stringify(item));
+      if (new Set(encoded).size !== encoded.length) return false;
+    }
+    if (schema.items && typeof schema.items === "object" && value.some((item) => !schemaAccepts(schema.items as Record<string, unknown>, item))) return false;
+  }
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const object = value as Record<string, unknown>;
+    const properties = schema.properties && typeof schema.properties === "object"
+      ? schema.properties as Record<string, Record<string, unknown>>
+      : {};
+    if (schema.additionalProperties === false && Object.keys(object).some((key) => !(key in properties))) return false;
+    if (Array.isArray(schema.required) && schema.required.some((key) => typeof key === "string" && !(key in object))) return false;
+    if (Object.entries(object).some(([key, item]) => properties[key] && !schemaAccepts(properties[key], item))) return false;
   }
   if (Array.isArray(schema.enum) && !schema.enum.includes(value)) return false;
   return true;
@@ -93,6 +118,10 @@ export function validateAssistantToolCalls(reply: unknown, mode: AssistantAccess
     if (Object.keys(values).some((key) => !(key in properties))) continue;
     if (definition.required.some((key) => !(key in values))) continue;
     if (Object.entries(values).some(([key, value]) => !schemaAccepts(properties[key], value))) continue;
+    const distinctArguments = "distinctArguments" in definition
+      ? definition.distinctArguments as readonly (readonly [string, string])[]
+      : [];
+    if (distinctArguments.some(([left, right]) => values[left] === values[right])) continue;
     const call = { name, arguments: values };
     const key = JSON.stringify(call);
     if (!seen.has(key)) {
