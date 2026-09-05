@@ -138,7 +138,11 @@ pub const PERFORMANCE_MIDI_METHODS: &[&str] = &[
 ];
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum GatewayResultKind { Object, PresetSnapshot, DeviceActionResult }
+pub enum GatewayResultKind {
+    Object,
+    PresetSnapshot,
+    DeviceActionResult,
+}
 
 pub fn result_kind(method: &str) -> Option<GatewayResultKind> {
     match method {
@@ -247,6 +251,58 @@ pub fn result_kind(method: &str) -> Option<GatewayResultKind> {
         "device.showGigView" => Some(GatewayResultKind::DeviceActionResult),
         _ => None,
     }
+}
+
+pub fn validate_result(method: &str, result: &serde_json::Value) -> Result<(), String> {
+    let result_kind =
+        result_kind(method).ok_or_else(|| format!("Unknown gateway result contract: {method}"))?;
+    let object = result
+        .as_object()
+        .ok_or_else(|| format!("{method} returned a malformed result"))?;
+    if result_kind == GatewayResultKind::PresetSnapshot
+        && (!object
+            .get("presetName")
+            .is_some_and(serde_json::Value::is_string)
+            || !object
+                .get("blocks")
+                .is_some_and(serde_json::Value::is_array))
+    {
+        return Err(format!(
+            "{method} returned a malformed PresetSnapshot result"
+        ));
+    }
+    let has_outcome = ["accepted", "verified", "verification"]
+        .iter()
+        .any(|key| object.contains_key(*key));
+    if result_kind == GatewayResultKind::DeviceActionResult && !has_outcome {
+        return Err(format!(
+            "{method} returned a device action result without verification semantics"
+        ));
+    }
+    if has_outcome {
+        let verified = object.get("verified").and_then(serde_json::Value::as_bool);
+        let expected = if verified == Some(true) {
+            "authoritative_readback"
+        } else {
+            "accepted_unverified"
+        };
+        if object.get("accepted").and_then(serde_json::Value::as_bool) != Some(true)
+            || verified.is_none()
+            || object
+                .get("verification")
+                .and_then(serde_json::Value::as_str)
+                != Some(expected)
+            || object
+                .get("detail")
+                .and_then(serde_json::Value::as_str)
+                .is_none_or(|detail| detail.chars().count() > 4096)
+        {
+            return Err(format!(
+                "{method} returned a malformed device action result"
+            ));
+        }
+    }
+    Ok(())
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -426,92 +482,469 @@ pub fn validate_params(method: &str, params: &serde_json::Value) -> Result<(), S
         "device.redo" => (&[], &[]),
         "device.inhibitedModules" => (&[], &[]),
         "device.tunerSettings" => (&[], &[]),
-        "device.setTunerInput" => (&["inputPortId", "confirmTunerActivation"], &["inputPortId", "confirmTunerActivation"]),
-        "device.setTunerMute" => (&["muted", "confirmTunerActivation"], &["muted", "confirmTunerActivation"]),
+        "device.setTunerInput" => (
+            &["inputPortId", "confirmTunerActivation"],
+            &["inputPortId", "confirmTunerActivation"],
+        ),
+        "device.setTunerMute" => (
+            &["muted", "confirmTunerActivation"],
+            &["muted", "confirmTunerActivation"],
+        ),
         "device.restoreTunerAudio" => (&["confirmPreferenceReset"], &["confirmPreferenceReset"]),
-        "device.setTunerReference" => (&["referenceOffsetHz", "confirmTunerActivation"], &["referenceOffsetHz", "confirmTunerActivation"]),
+        "device.setTunerReference" => (
+            &["referenceOffsetHz", "confirmTunerActivation"],
+            &["referenceOffsetHz", "confirmTunerActivation"],
+        ),
         "device.generalSettings" => (&[], &[]),
         "device.ioSettings" => (&[], &[]),
-        "device.setInputPort" => (&["inputPortId", "levelDb", "impedance", "inputType", "groundLift"], &["inputPortId", "levelDb", "impedance", "inputType", "groundLift"]),
-        "device.setOutputPort" => (&["outputPortId", "level", "groundLift", "mute"], &["outputPortId", "level", "groundLift", "mute"]),
-        "device.setUsbPort" => (&["level", "headphonesSource", "dryWet"], &["level", "headphonesSource", "dryWet"]),
+        "device.setInputPort" => (
+            &[
+                "inputPortId",
+                "levelDb",
+                "impedance",
+                "inputType",
+                "groundLift",
+            ],
+            &[
+                "inputPortId",
+                "levelDb",
+                "impedance",
+                "inputType",
+                "groundLift",
+            ],
+        ),
+        "device.setOutputPort" => (
+            &["outputPortId", "level", "groundLift", "mute"],
+            &["outputPortId", "level", "groundLift", "mute"],
+        ),
+        "device.setUsbPort" => (
+            &["level", "headphonesSource", "dryWet"],
+            &["level", "headphonesSource", "dryWet"],
+        ),
         "device.setMidiThru" => (&["enabled"], &["enabled"]),
-        "device.setOutputPairing" => (&["xlr12Linked", "out34Linked"], &["xlr12Linked", "out34Linked"]),
+        "device.setOutputPairing" => (
+            &["xlr12Linked", "out34Linked"],
+            &["xlr12Linked", "out34Linked"],
+        ),
         "device.globalEq" => (&[], &[]),
         "device.setGlobalEqBypassed" => (&["bypassed"], &["bypassed"]),
-        "device.setGlobalEqBand" => (&["band", "gain", "frequency", "q", "filterType", "enabled"], &["band", "gain", "frequency", "q", "filterType", "enabled"]),
+        "device.setGlobalEqBand" => (
+            &["band", "gain", "frequency", "q", "filterType", "enabled"],
+            &["band", "gain", "frequency", "q", "filterType", "enabled"],
+        ),
         "device.setGlobalEqOutput" => (&["level", "out12", "out34"], &["level", "out12", "out34"]),
         "device.modeCycle" => (&[], &[]),
         "device.setModeCycle" => (&["slots"], &["slots"]),
         "device.globalTempoSettings" => (&[], &[]),
-        "device.setTempoMetronome" => (&["ledEnabled", "volumeDb", "running", "pan", "timeSignature", "subdivision", "sound", "routing", "beats"], &["ledEnabled", "volumeDb", "running", "pan", "timeSignature", "subdivision", "sound", "routing", "beats"]),
+        "device.setTempoMetronome" => (
+            &[
+                "ledEnabled",
+                "volumeDb",
+                "running",
+                "pan",
+                "timeSignature",
+                "subdivision",
+                "sound",
+                "routing",
+                "beats",
+            ],
+            &[
+                "ledEnabled",
+                "volumeDb",
+                "running",
+                "pan",
+                "timeSignature",
+                "subdivision",
+                "sound",
+                "routing",
+                "beats",
+            ],
+        ),
         "device.setTempoMode" => (&["mode"], &["mode"]),
         "device.looperStatus" => (&[], &[]),
         "device.controlLooper" => (&["command", "value"], &["command", "value"]),
         "device.recents" => (&[], &[]),
         "device.favorites" => (&[], &[]),
-        "device.setFavorite" => (&["name", "folderKey", "folderName", "isFactory", "favorite"], &["name", "folderKey", "folderName", "isFactory", "favorite"]),
+        "device.setFavorite" => (
+            &["name", "folderKey", "folderName", "isFactory", "favorite"],
+            &["name", "folderKey", "folderName", "isFactory", "favorite"],
+        ),
         "device.pinnedModels" => (&[], &[]),
         "device.setModelPinned" => (&["modelId", "pinned"], &["modelId", "pinned"]),
         "device.captures" => (&[], &[]),
-        "device.loadCapture" => (&["row", "column", "key", "name", "modelId", "expectedModelId", "expectedPresetName"], &["row", "column", "key", "name", "modelId", "expectedModelId"]),
+        "device.loadCapture" => (
+            &[
+                "row",
+                "column",
+                "key",
+                "name",
+                "modelId",
+                "expectedModelId",
+                "expectedPresetName",
+            ],
+            &["row", "column", "key", "name", "modelId", "expectedModelId"],
+        ),
         "device.irs" => (&["folder"], &["folder"]),
-        "device.loadIr" => (&["row", "column", "key", "name", "slot", "modelId", "expectedModelId", "expectedPresetName"], &["row", "column", "key", "name", "slot", "modelId", "expectedModelId"]),
+        "device.loadIr" => (
+            &[
+                "row",
+                "column",
+                "key",
+                "name",
+                "slot",
+                "modelId",
+                "expectedModelId",
+                "expectedPresetName",
+            ],
+            &[
+                "row",
+                "column",
+                "key",
+                "name",
+                "slot",
+                "modelId",
+                "expectedModelId",
+            ],
+        ),
         "device.createSetlist" => (&["name"], &["name"]),
         "device.deleteSetlist" => (&["name"], &["name"]),
-        "device.duplicateSetlist" => (&["sourceSetlistKey", "destinationName", "limit", "expectedPresetName", "expectedPosition"], &["sourceSetlistKey", "destinationName", "limit", "expectedPosition"]),
+        "device.duplicateSetlist" => (
+            &[
+                "sourceSetlistKey",
+                "destinationName",
+                "limit",
+                "expectedPresetName",
+                "expectedPosition",
+            ],
+            &[
+                "sourceSetlistKey",
+                "destinationName",
+                "limit",
+                "expectedPosition",
+            ],
+        ),
         "device.deletePreset" => (&["setlistKey", "name"], &["setlistKey", "name"]),
-        "device.movePreset" => (&["setlistKey", "name", "position"], &["setlistKey", "name", "position"]),
+        "device.movePreset" => (
+            &["setlistKey", "name", "position"],
+            &["setlistKey", "name", "position"],
+        ),
         "device.setGeneralInteger" => (&["setting", "value"], &["setting", "value"]),
         "device.setGeneralToggle" => (&["setting", "enabled"], &["setting", "enabled"]),
         "device.setSceneBypassBehavior" => (&["behavior"], &["behavior"]),
-        "device.setMasterVolumeAssignment" => (&["out12", "out34", "send12", "headphones"], &["out12", "out34", "send12", "headphones"]),
+        "device.setMasterVolumeAssignment" => (
+            &["out12", "out34", "send12", "headphones"],
+            &["out12", "out34", "send12", "headphones"],
+        ),
         "device.setGlobalBypass" => (&["cab", "ir"], &["cab", "ir"]),
-        "device.presetScreenshot" => (&["folderName", "position", "isFactory"], &["folderName", "position"]),
+        "device.presetScreenshot" => (
+            &["folderName", "position", "isFactory"],
+            &["folderName", "position"],
+        ),
         "device.captureScreen" => (&[], &[]),
         "device.tapScreen" => (&["x", "y"], &["x", "y"]),
         "device.selectScene" => (&["scene", "expectedPresetName"], &["scene"]),
-        "device.copyScene" => (&["fromScene", "toScene", "swap", "expectedPresetName"], &["fromScene", "toScene"]),
-        "device.setSceneLabel" => (&["scene", "label", "expectedPresetName"], &["scene", "label"]),
-        "device.setSceneColor" => (&["scene", "color", "expectedPresetName"], &["scene", "color"]),
-        "device.toggleBypass" => (&["row", "column", "expectedScene", "expectedBypassed", "desiredBypassed", "expectedPresetName"], &["row", "column", "expectedScene", "expectedBypassed", "desiredBypassed"]),
-        "device.moveBlock" => (&["row", "fromColumn", "toColumn", "expectedModelId", "expectedPresetName"], &["row", "fromColumn", "toColumn", "expectedModelId"]),
-        "device.addBlock" => (&["row", "column", "modelId", "expectedPresetName"], &["row", "column", "modelId"]),
-        "device.removeBlock" => (&["row", "column", "expectedModelId", "expectedPresetName"], &["row", "column", "expectedModelId"]),
-        "device.setBlockFootswitch" => (&["row", "column", "footswitch", "expectedFootswitch", "expectedModelId", "expectedPresetName"], &["row", "column", "footswitch", "expectedFootswitch", "expectedModelId"]),
-        "device.setStompMomentary" => (&["footswitch", "momentary", "expectedPresetName"], &["footswitch", "momentary"]),
-        "device.setStompLabel" => (&["footswitch", "label", "expectedPresetName"], &["footswitch", "label"]),
-        "device.setMidiOut" => (&["source", "messages", "expectedPresetName"], &["source", "messages"]),
+        "device.copyScene" => (
+            &["fromScene", "toScene", "swap", "expectedPresetName"],
+            &["fromScene", "toScene"],
+        ),
+        "device.setSceneLabel" => (
+            &["scene", "label", "expectedPresetName"],
+            &["scene", "label"],
+        ),
+        "device.setSceneColor" => (
+            &["scene", "color", "expectedPresetName"],
+            &["scene", "color"],
+        ),
+        "device.toggleBypass" => (
+            &[
+                "row",
+                "column",
+                "expectedScene",
+                "expectedBypassed",
+                "desiredBypassed",
+                "expectedPresetName",
+            ],
+            &[
+                "row",
+                "column",
+                "expectedScene",
+                "expectedBypassed",
+                "desiredBypassed",
+            ],
+        ),
+        "device.moveBlock" => (
+            &[
+                "row",
+                "fromColumn",
+                "toColumn",
+                "expectedModelId",
+                "expectedPresetName",
+            ],
+            &["row", "fromColumn", "toColumn", "expectedModelId"],
+        ),
+        "device.addBlock" => (
+            &["row", "column", "modelId", "expectedPresetName"],
+            &["row", "column", "modelId"],
+        ),
+        "device.removeBlock" => (
+            &["row", "column", "expectedModelId", "expectedPresetName"],
+            &["row", "column", "expectedModelId"],
+        ),
+        "device.setBlockFootswitch" => (
+            &[
+                "row",
+                "column",
+                "footswitch",
+                "expectedFootswitch",
+                "expectedModelId",
+                "expectedPresetName",
+            ],
+            &[
+                "row",
+                "column",
+                "footswitch",
+                "expectedFootswitch",
+                "expectedModelId",
+            ],
+        ),
+        "device.setStompMomentary" => (
+            &["footswitch", "momentary", "expectedPresetName"],
+            &["footswitch", "momentary"],
+        ),
+        "device.setStompLabel" => (
+            &["footswitch", "label", "expectedPresetName"],
+            &["footswitch", "label"],
+        ),
+        "device.setMidiOut" => (
+            &["source", "messages", "expectedPresetName"],
+            &["source", "messages"],
+        ),
         "device.setPresetLoadMidiOut" => (&["messages", "expectedPresetName"], &["messages"]),
-        "device.setExpressionBypass" => (&["row", "column", "pedal", "mode", "invert", "delayMs", "latchEmulation", "expectedPresetName"], &["row", "column", "pedal", "mode", "invert", "delayMs", "latchEmulation"]),
-        "device.setChainInput" => (&["row", "inputId", "expectedInputId", "expectedPresetName"], &["row", "inputId", "expectedInputId"]),
-        "device.setChainOutput" => (&["row", "outputId", "expectedOutputId", "expectedPresetName"], &["row", "outputId", "expectedOutputId"]),
-        "device.setChainSplit" => (&["row", "splitColumn", "mixColumn", "expectedSplitColumn", "expectedMixColumn", "expectedPresetName"], &["row", "splitColumn", "mixColumn", "expectedSplitColumn", "expectedMixColumn"]),
-        "device.setSplitMute" => (&["row", "muted", "expectedMuted", "expectedPresetName"], &["row", "muted", "expectedMuted"]),
+        "device.setExpressionBypass" => (
+            &[
+                "row",
+                "column",
+                "pedal",
+                "mode",
+                "invert",
+                "delayMs",
+                "latchEmulation",
+                "expectedPresetName",
+            ],
+            &[
+                "row",
+                "column",
+                "pedal",
+                "mode",
+                "invert",
+                "delayMs",
+                "latchEmulation",
+            ],
+        ),
+        "device.setChainInput" => (
+            &["row", "inputId", "expectedInputId", "expectedPresetName"],
+            &["row", "inputId", "expectedInputId"],
+        ),
+        "device.setChainOutput" => (
+            &["row", "outputId", "expectedOutputId", "expectedPresetName"],
+            &["row", "outputId", "expectedOutputId"],
+        ),
+        "device.setChainSplit" => (
+            &[
+                "row",
+                "splitColumn",
+                "mixColumn",
+                "expectedSplitColumn",
+                "expectedMixColumn",
+                "expectedPresetName",
+            ],
+            &[
+                "row",
+                "splitColumn",
+                "mixColumn",
+                "expectedSplitColumn",
+                "expectedMixColumn",
+            ],
+        ),
+        "device.setSplitMute" => (
+            &["row", "muted", "expectedMuted", "expectedPresetName"],
+            &["row", "muted", "expectedMuted"],
+        ),
         "device.listPresets" => (&["refresh", "setlistKey"], &["setlistKey"]),
         "device.listPresetFolders" => (&["refresh"], &[]),
-        "device.navigateBank" => (&["direction", "expectedPresetName", "expectedPosition"], &["direction", "expectedPosition"]),
-        "device.recallPreset" => (&["setlistKey", "position", "expectedPresetName", "expectedPosition"], &["setlistKey", "position", "expectedPosition"]),
-        "device.reloadPreset" => (&["expectedPresetName", "expectedPosition"], &["expectedPosition"]),
+        "device.navigateBank" => (
+            &["direction", "expectedPresetName", "expectedPosition"],
+            &["direction", "expectedPosition"],
+        ),
+        "device.recallPreset" => (
+            &[
+                "setlistKey",
+                "position",
+                "expectedPresetName",
+                "expectedPosition",
+            ],
+            &["setlistKey", "position", "expectedPosition"],
+        ),
+        "device.reloadPreset" => (
+            &["expectedPresetName", "expectedPosition"],
+            &["expectedPosition"],
+        ),
         "device.blockDetails" => (&["row", "column", "expectedPresetName"], &["row", "column"]),
-        "device.laneControlDetails" => (&["row", "control", "expectedPresetName"], &["row", "control"]),
-        "device.previewParameter" => (&["row", "column", "parameterIndex", "value", "expectedValue", "expectedScene", "expectedPresetName"], &["row", "column", "parameterIndex", "value", "expectedValue", "expectedScene"]),
-        "device.previewLaneControlParameter" => (&["row", "control", "parameterIndex", "value", "expectedValue", "expectedPresetName"], &["row", "control", "parameterIndex", "value", "expectedValue"]),
-        "device.setParameter" => (&["row", "column", "parameterIndex", "value", "expectedValue", "expectedScene", "expectedPresetName"], &["row", "column", "parameterIndex", "value", "expectedValue", "expectedScene"]),
-        "device.setLaneControlParameter" => (&["row", "control", "parameterIndex", "value", "expectedValue", "expectedPresetName"], &["row", "control", "parameterIndex", "value", "expectedValue"]),
-        "device.setLaneControlSceneMode" => (&["row", "control", "parameterIndex", "enabled", "expectedPresetName"], &["row", "control", "parameterIndex", "enabled"]),
-        "device.setParameterSceneMode" => (&["row", "column", "parameterIndex", "enabled", "expectedPresetName"], &["row", "column", "parameterIndex", "enabled"]),
-        "device.setParameterExpression" => (&["row", "column", "parameterIndex", "pedal", "minimum", "maximum", "expectedPresetName"], &["row", "column", "parameterIndex", "pedal", "minimum", "maximum"]),
-        "device.setTempo" => (&["bpm", "expectedTempo", "expectedPresetName"], &["bpm", "expectedTempo"]),
+        "device.laneControlDetails" => (
+            &["row", "control", "expectedPresetName"],
+            &["row", "control"],
+        ),
+        "device.previewParameter" => (
+            &[
+                "row",
+                "column",
+                "parameterIndex",
+                "value",
+                "expectedValue",
+                "expectedScene",
+                "expectedPresetName",
+            ],
+            &[
+                "row",
+                "column",
+                "parameterIndex",
+                "value",
+                "expectedValue",
+                "expectedScene",
+            ],
+        ),
+        "device.previewLaneControlParameter" => (
+            &[
+                "row",
+                "control",
+                "parameterIndex",
+                "value",
+                "expectedValue",
+                "expectedPresetName",
+            ],
+            &["row", "control", "parameterIndex", "value", "expectedValue"],
+        ),
+        "device.setParameter" => (
+            &[
+                "row",
+                "column",
+                "parameterIndex",
+                "value",
+                "expectedValue",
+                "expectedScene",
+                "expectedPresetName",
+            ],
+            &[
+                "row",
+                "column",
+                "parameterIndex",
+                "value",
+                "expectedValue",
+                "expectedScene",
+            ],
+        ),
+        "device.setLaneControlParameter" => (
+            &[
+                "row",
+                "control",
+                "parameterIndex",
+                "value",
+                "expectedValue",
+                "expectedPresetName",
+            ],
+            &["row", "control", "parameterIndex", "value", "expectedValue"],
+        ),
+        "device.setLaneControlSceneMode" => (
+            &[
+                "row",
+                "control",
+                "parameterIndex",
+                "enabled",
+                "expectedPresetName",
+            ],
+            &["row", "control", "parameterIndex", "enabled"],
+        ),
+        "device.setParameterSceneMode" => (
+            &[
+                "row",
+                "column",
+                "parameterIndex",
+                "enabled",
+                "expectedPresetName",
+            ],
+            &["row", "column", "parameterIndex", "enabled"],
+        ),
+        "device.setParameterExpression" => (
+            &[
+                "row",
+                "column",
+                "parameterIndex",
+                "pedal",
+                "minimum",
+                "maximum",
+                "expectedPresetName",
+            ],
+            &[
+                "row",
+                "column",
+                "parameterIndex",
+                "pedal",
+                "minimum",
+                "maximum",
+            ],
+        ),
+        "device.setTempo" => (
+            &["bpm", "expectedTempo", "expectedPresetName"],
+            &["bpm", "expectedTempo"],
+        ),
         "device.setMasterVolume" => (&["value", "expectedValue"], &["value", "expectedValue"]),
         "device.masterVolume" => (&[], &[]),
-        "device.pressFootswitch" => (&["index", "expectedMode", "expectedPresetName"], &["index", "expectedMode"]),
+        "device.pressFootswitch" => (
+            &["index", "expectedMode", "expectedPresetName"],
+            &["index", "expectedMode"],
+        ),
         "device.tapTempo" => (&["expectedMode", "expectedPresetName"], &["expectedMode"]),
         "device.selectModeSlot" => (&["slot", "expectedPresetName"], &["slot"]),
         "device.listPresetSlots" => (&[], &[]),
-        "device.savePresetAs" => (&["setlistKey", "position", "name", "expectedPresetName", "expectedPosition", "confirmOverwrite"], &["setlistKey", "position", "name", "expectedPosition"]),
-        "device.copyPreset" => (&["sourceSetlistKey", "sourcePosition", "sourceName", "destinationSetlistKey", "destinationPosition", "expectedPresetName", "expectedPosition", "confirmOverwrite"], &["sourceSetlistKey", "sourcePosition", "destinationSetlistKey", "destinationPosition", "expectedPosition"]),
-        "device.renameCurrentPreset" => (&["name", "expectedPresetName", "expectedPosition", "confirmRename"], &["name", "expectedPosition"]),
+        "device.savePresetAs" => (
+            &[
+                "setlistKey",
+                "position",
+                "name",
+                "expectedPresetName",
+                "expectedPosition",
+                "confirmOverwrite",
+            ],
+            &["setlistKey", "position", "name", "expectedPosition"],
+        ),
+        "device.copyPreset" => (
+            &[
+                "sourceSetlistKey",
+                "sourcePosition",
+                "sourceName",
+                "destinationSetlistKey",
+                "destinationPosition",
+                "expectedPresetName",
+                "expectedPosition",
+                "confirmOverwrite",
+            ],
+            &[
+                "sourceSetlistKey",
+                "sourcePosition",
+                "destinationSetlistKey",
+                "destinationPosition",
+                "expectedPosition",
+            ],
+        ),
+        "device.renameCurrentPreset" => (
+            &[
+                "name",
+                "expectedPresetName",
+                "expectedPosition",
+                "confirmRename",
+            ],
+            &["name", "expectedPosition"],
+        ),
         "device.createBackup" => (&["name"], &[]),
         "device.showTuner" => (&["shown"], &[]),
         "device.showGigView" => (&["shown"], &[]),
@@ -544,101 +977,381 @@ pub fn validate_params(method: &str, params: &serde_json::Value) -> Result<(), S
             "device.redo" => &[],
             "device.inhibitedModules" => &[],
             "device.tunerSettings" => &[],
-            "device.setTunerInput" => &[("inputPortId", "integer"), ("confirmTunerActivation", "boolean")],
+            "device.setTunerInput" => &[
+                ("inputPortId", "integer"),
+                ("confirmTunerActivation", "boolean"),
+            ],
             "device.setTunerMute" => &[("muted", "boolean"), ("confirmTunerActivation", "boolean")],
             "device.restoreTunerAudio" => &[("confirmPreferenceReset", "boolean")],
-            "device.setTunerReference" => &[("referenceOffsetHz", "number"), ("confirmTunerActivation", "boolean")],
+            "device.setTunerReference" => &[
+                ("referenceOffsetHz", "number"),
+                ("confirmTunerActivation", "boolean"),
+            ],
             "device.generalSettings" => &[],
             "device.ioSettings" => &[],
-            "device.setInputPort" => &[("inputPortId", "integer"), ("levelDb", "nullable-number"), ("impedance", "nullable-number"), ("inputType", "nullable-number"), ("groundLift", "nullable-number")],
-            "device.setOutputPort" => &[("outputPortId", "integer"), ("level", "nullable-number"), ("groundLift", "nullable-number"), ("mute", "nullable-boolean")],
-            "device.setUsbPort" => &[("level", "nullable-number"), ("headphonesSource", "nullable-number"), ("dryWet", "nullable-number")],
+            "device.setInputPort" => &[
+                ("inputPortId", "integer"),
+                ("levelDb", "nullable-number"),
+                ("impedance", "nullable-number"),
+                ("inputType", "nullable-number"),
+                ("groundLift", "nullable-number"),
+            ],
+            "device.setOutputPort" => &[
+                ("outputPortId", "integer"),
+                ("level", "nullable-number"),
+                ("groundLift", "nullable-number"),
+                ("mute", "nullable-boolean"),
+            ],
+            "device.setUsbPort" => &[
+                ("level", "nullable-number"),
+                ("headphonesSource", "nullable-number"),
+                ("dryWet", "nullable-number"),
+            ],
             "device.setMidiThru" => &[("enabled", "boolean")],
-            "device.setOutputPairing" => &[("xlr12Linked", "nullable-boolean"), ("out34Linked", "nullable-boolean")],
+            "device.setOutputPairing" => &[
+                ("xlr12Linked", "nullable-boolean"),
+                ("out34Linked", "nullable-boolean"),
+            ],
             "device.globalEq" => &[],
             "device.setGlobalEqBypassed" => &[("bypassed", "boolean")],
-            "device.setGlobalEqBand" => &[("band", "integer"), ("gain", "nullable-number"), ("frequency", "nullable-number"), ("q", "nullable-number"), ("filterType", "nullable-integer"), ("enabled", "nullable-boolean")],
-            "device.setGlobalEqOutput" => &[("level", "nullable-number"), ("out12", "nullable-boolean"), ("out34", "nullable-boolean")],
+            "device.setGlobalEqBand" => &[
+                ("band", "integer"),
+                ("gain", "nullable-number"),
+                ("frequency", "nullable-number"),
+                ("q", "nullable-number"),
+                ("filterType", "nullable-integer"),
+                ("enabled", "nullable-boolean"),
+            ],
+            "device.setGlobalEqOutput" => &[
+                ("level", "nullable-number"),
+                ("out12", "nullable-boolean"),
+                ("out34", "nullable-boolean"),
+            ],
             "device.modeCycle" => &[],
             "device.setModeCycle" => &[("slots", "integer")],
             "device.globalTempoSettings" => &[],
-            "device.setTempoMetronome" => &[("ledEnabled", "nullable-boolean"), ("volumeDb", "nullable-number"), ("running", "nullable-boolean"), ("pan", "nullable-number"), ("timeSignature", "nullable-string"), ("subdivision", "nullable-string"), ("sound", "nullable-string"), ("routing", "nullable-string"), ("beats", "nullable-array")],
+            "device.setTempoMetronome" => &[
+                ("ledEnabled", "nullable-boolean"),
+                ("volumeDb", "nullable-number"),
+                ("running", "nullable-boolean"),
+                ("pan", "nullable-number"),
+                ("timeSignature", "nullable-string"),
+                ("subdivision", "nullable-string"),
+                ("sound", "nullable-string"),
+                ("routing", "nullable-string"),
+                ("beats", "nullable-array"),
+            ],
             "device.setTempoMode" => &[("mode", "string")],
             "device.looperStatus" => &[],
             "device.controlLooper" => &[("command", "string"), ("value", "nullable-integer")],
             "device.recents" => &[],
             "device.favorites" => &[],
-            "device.setFavorite" => &[("name", "string"), ("folderKey", "string"), ("folderName", "string"), ("isFactory", "boolean"), ("favorite", "boolean")],
+            "device.setFavorite" => &[
+                ("name", "string"),
+                ("folderKey", "string"),
+                ("folderName", "string"),
+                ("isFactory", "boolean"),
+                ("favorite", "boolean"),
+            ],
             "device.pinnedModels" => &[],
             "device.setModelPinned" => &[("modelId", "integer"), ("pinned", "boolean")],
             "device.captures" => &[],
-            "device.loadCapture" => &[("row", "integer"), ("column", "integer"), ("key", "string"), ("name", "string"), ("modelId", "nullable-integer"), ("expectedModelId", "nullable-integer"), ("expectedPresetName", "string")],
+            "device.loadCapture" => &[
+                ("row", "integer"),
+                ("column", "integer"),
+                ("key", "string"),
+                ("name", "string"),
+                ("modelId", "nullable-integer"),
+                ("expectedModelId", "nullable-integer"),
+                ("expectedPresetName", "string"),
+            ],
             "device.irs" => &[("folder", "nullable-string")],
-            "device.loadIr" => &[("row", "integer"), ("column", "integer"), ("key", "string"), ("name", "string"), ("slot", "integer"), ("modelId", "nullable-integer"), ("expectedModelId", "nullable-integer"), ("expectedPresetName", "string")],
+            "device.loadIr" => &[
+                ("row", "integer"),
+                ("column", "integer"),
+                ("key", "string"),
+                ("name", "string"),
+                ("slot", "integer"),
+                ("modelId", "nullable-integer"),
+                ("expectedModelId", "nullable-integer"),
+                ("expectedPresetName", "string"),
+            ],
             "device.createSetlist" => &[("name", "string")],
             "device.deleteSetlist" => &[("name", "string")],
-            "device.duplicateSetlist" => &[("sourceSetlistKey", "string"), ("destinationName", "string"), ("limit", "nullable-integer"), ("expectedPresetName", "string"), ("expectedPosition", "integer")],
+            "device.duplicateSetlist" => &[
+                ("sourceSetlistKey", "string"),
+                ("destinationName", "string"),
+                ("limit", "nullable-integer"),
+                ("expectedPresetName", "string"),
+                ("expectedPosition", "integer"),
+            ],
             "device.deletePreset" => &[("setlistKey", "string"), ("name", "string")],
-            "device.movePreset" => &[("setlistKey", "string"), ("name", "string"), ("position", "integer")],
+            "device.movePreset" => &[
+                ("setlistKey", "string"),
+                ("name", "string"),
+                ("position", "integer"),
+            ],
             "device.setGeneralInteger" => &[("setting", "string"), ("value", "integer")],
             "device.setGeneralToggle" => &[("setting", "string"), ("enabled", "boolean")],
             "device.setSceneBypassBehavior" => &[("behavior", "string")],
-            "device.setMasterVolumeAssignment" => &[("out12", "boolean"), ("out34", "boolean"), ("send12", "boolean"), ("headphones", "boolean")],
+            "device.setMasterVolumeAssignment" => &[
+                ("out12", "boolean"),
+                ("out34", "boolean"),
+                ("send12", "boolean"),
+                ("headphones", "boolean"),
+            ],
             "device.setGlobalBypass" => &[("cab", "array"), ("ir", "array")],
-            "device.presetScreenshot" => &[("folderName", "string"), ("position", "integer"), ("isFactory", "boolean")],
+            "device.presetScreenshot" => &[
+                ("folderName", "string"),
+                ("position", "integer"),
+                ("isFactory", "boolean"),
+            ],
             "device.captureScreen" => &[],
             "device.tapScreen" => &[("x", "integer"), ("y", "integer")],
             "device.selectScene" => &[("scene", "integer"), ("expectedPresetName", "string")],
-            "device.copyScene" => &[("fromScene", "integer"), ("toScene", "integer"), ("swap", "boolean"), ("expectedPresetName", "string")],
-            "device.setSceneLabel" => &[("scene", "integer"), ("label", "nullable-string"), ("expectedPresetName", "string")],
-            "device.setSceneColor" => &[("scene", "integer"), ("color", "integer"), ("expectedPresetName", "string")],
-            "device.toggleBypass" => &[("row", "integer"), ("column", "integer"), ("expectedScene", "integer"), ("expectedBypassed", "boolean"), ("desiredBypassed", "boolean"), ("expectedPresetName", "string")],
-            "device.moveBlock" => &[("row", "integer"), ("fromColumn", "integer"), ("toColumn", "integer"), ("expectedModelId", "integer"), ("expectedPresetName", "string")],
-            "device.addBlock" => &[("row", "integer"), ("column", "integer"), ("modelId", "integer"), ("expectedPresetName", "string")],
-            "device.removeBlock" => &[("row", "integer"), ("column", "integer"), ("expectedModelId", "integer"), ("expectedPresetName", "string")],
-            "device.setBlockFootswitch" => &[("row", "integer"), ("column", "integer"), ("footswitch", "nullable-integer"), ("expectedFootswitch", "nullable-integer"), ("expectedModelId", "integer"), ("expectedPresetName", "string")],
-            "device.setStompMomentary" => &[("footswitch", "integer"), ("momentary", "boolean"), ("expectedPresetName", "string")],
-            "device.setStompLabel" => &[("footswitch", "integer"), ("label", "string"), ("expectedPresetName", "string")],
-            "device.setMidiOut" => &[("source", "integer"), ("messages", "array"), ("expectedPresetName", "string")],
-            "device.setPresetLoadMidiOut" => &[("messages", "array"), ("expectedPresetName", "string")],
-            "device.setExpressionBypass" => &[("row", "integer"), ("column", "integer"), ("pedal", "integer"), ("mode", "integer"), ("invert", "boolean"), ("delayMs", "integer"), ("latchEmulation", "boolean"), ("expectedPresetName", "string")],
-            "device.setChainInput" => &[("row", "integer"), ("inputId", "integer"), ("expectedInputId", "integer"), ("expectedPresetName", "string")],
-            "device.setChainOutput" => &[("row", "integer"), ("outputId", "integer"), ("expectedOutputId", "integer"), ("expectedPresetName", "string")],
-            "device.setChainSplit" => &[("row", "integer"), ("splitColumn", "nullable-integer"), ("mixColumn", "nullable-integer"), ("expectedSplitColumn", "nullable-integer"), ("expectedMixColumn", "nullable-integer"), ("expectedPresetName", "string")],
-            "device.setSplitMute" => &[("row", "integer"), ("muted", "boolean"), ("expectedMuted", "boolean"), ("expectedPresetName", "string")],
+            "device.copyScene" => &[
+                ("fromScene", "integer"),
+                ("toScene", "integer"),
+                ("swap", "boolean"),
+                ("expectedPresetName", "string"),
+            ],
+            "device.setSceneLabel" => &[
+                ("scene", "integer"),
+                ("label", "nullable-string"),
+                ("expectedPresetName", "string"),
+            ],
+            "device.setSceneColor" => &[
+                ("scene", "integer"),
+                ("color", "integer"),
+                ("expectedPresetName", "string"),
+            ],
+            "device.toggleBypass" => &[
+                ("row", "integer"),
+                ("column", "integer"),
+                ("expectedScene", "integer"),
+                ("expectedBypassed", "boolean"),
+                ("desiredBypassed", "boolean"),
+                ("expectedPresetName", "string"),
+            ],
+            "device.moveBlock" => &[
+                ("row", "integer"),
+                ("fromColumn", "integer"),
+                ("toColumn", "integer"),
+                ("expectedModelId", "integer"),
+                ("expectedPresetName", "string"),
+            ],
+            "device.addBlock" => &[
+                ("row", "integer"),
+                ("column", "integer"),
+                ("modelId", "integer"),
+                ("expectedPresetName", "string"),
+            ],
+            "device.removeBlock" => &[
+                ("row", "integer"),
+                ("column", "integer"),
+                ("expectedModelId", "integer"),
+                ("expectedPresetName", "string"),
+            ],
+            "device.setBlockFootswitch" => &[
+                ("row", "integer"),
+                ("column", "integer"),
+                ("footswitch", "nullable-integer"),
+                ("expectedFootswitch", "nullable-integer"),
+                ("expectedModelId", "integer"),
+                ("expectedPresetName", "string"),
+            ],
+            "device.setStompMomentary" => &[
+                ("footswitch", "integer"),
+                ("momentary", "boolean"),
+                ("expectedPresetName", "string"),
+            ],
+            "device.setStompLabel" => &[
+                ("footswitch", "integer"),
+                ("label", "string"),
+                ("expectedPresetName", "string"),
+            ],
+            "device.setMidiOut" => &[
+                ("source", "integer"),
+                ("messages", "array"),
+                ("expectedPresetName", "string"),
+            ],
+            "device.setPresetLoadMidiOut" => {
+                &[("messages", "array"), ("expectedPresetName", "string")]
+            }
+            "device.setExpressionBypass" => &[
+                ("row", "integer"),
+                ("column", "integer"),
+                ("pedal", "integer"),
+                ("mode", "integer"),
+                ("invert", "boolean"),
+                ("delayMs", "integer"),
+                ("latchEmulation", "boolean"),
+                ("expectedPresetName", "string"),
+            ],
+            "device.setChainInput" => &[
+                ("row", "integer"),
+                ("inputId", "integer"),
+                ("expectedInputId", "integer"),
+                ("expectedPresetName", "string"),
+            ],
+            "device.setChainOutput" => &[
+                ("row", "integer"),
+                ("outputId", "integer"),
+                ("expectedOutputId", "integer"),
+                ("expectedPresetName", "string"),
+            ],
+            "device.setChainSplit" => &[
+                ("row", "integer"),
+                ("splitColumn", "nullable-integer"),
+                ("mixColumn", "nullable-integer"),
+                ("expectedSplitColumn", "nullable-integer"),
+                ("expectedMixColumn", "nullable-integer"),
+                ("expectedPresetName", "string"),
+            ],
+            "device.setSplitMute" => &[
+                ("row", "integer"),
+                ("muted", "boolean"),
+                ("expectedMuted", "boolean"),
+                ("expectedPresetName", "string"),
+            ],
             "device.listPresets" => &[("refresh", "boolean"), ("setlistKey", "nullable-string")],
             "device.listPresetFolders" => &[("refresh", "boolean")],
-            "device.navigateBank" => &[("direction", "integer"), ("expectedPresetName", "string"), ("expectedPosition", "integer")],
-            "device.recallPreset" => &[("setlistKey", "string"), ("position", "integer"), ("expectedPresetName", "string"), ("expectedPosition", "integer")],
-            "device.reloadPreset" => &[("expectedPresetName", "string"), ("expectedPosition", "integer")],
-            "device.blockDetails" => &[("row", "integer"), ("column", "integer"), ("expectedPresetName", "string")],
-            "device.laneControlDetails" => &[("row", "integer"), ("control", "string"), ("expectedPresetName", "string")],
-            "device.previewParameter" => &[("row", "integer"), ("column", "integer"), ("parameterIndex", "integer"), ("value", "number"), ("expectedValue", "number"), ("expectedScene", "integer"), ("expectedPresetName", "string")],
-            "device.previewLaneControlParameter" => &[("row", "integer"), ("control", "string"), ("parameterIndex", "integer"), ("value", "number"), ("expectedValue", "number"), ("expectedPresetName", "string")],
-            "device.setParameter" => &[("row", "integer"), ("column", "integer"), ("parameterIndex", "integer"), ("value", "number"), ("expectedValue", "number"), ("expectedScene", "integer"), ("expectedPresetName", "string")],
-            "device.setLaneControlParameter" => &[("row", "integer"), ("control", "string"), ("parameterIndex", "integer"), ("value", "number"), ("expectedValue", "number"), ("expectedPresetName", "string")],
-            "device.setLaneControlSceneMode" => &[("row", "integer"), ("control", "string"), ("parameterIndex", "integer"), ("enabled", "boolean"), ("expectedPresetName", "string")],
-            "device.setParameterSceneMode" => &[("row", "integer"), ("column", "integer"), ("parameterIndex", "integer"), ("enabled", "boolean"), ("expectedPresetName", "string")],
-            "device.setParameterExpression" => &[("row", "integer"), ("column", "integer"), ("parameterIndex", "integer"), ("pedal", "integer"), ("minimum", "number"), ("maximum", "number"), ("expectedPresetName", "string")],
-            "device.setTempo" => &[("bpm", "integer"), ("expectedTempo", "integer"), ("expectedPresetName", "string")],
+            "device.navigateBank" => &[
+                ("direction", "integer"),
+                ("expectedPresetName", "string"),
+                ("expectedPosition", "integer"),
+            ],
+            "device.recallPreset" => &[
+                ("setlistKey", "string"),
+                ("position", "integer"),
+                ("expectedPresetName", "string"),
+                ("expectedPosition", "integer"),
+            ],
+            "device.reloadPreset" => &[
+                ("expectedPresetName", "string"),
+                ("expectedPosition", "integer"),
+            ],
+            "device.blockDetails" => &[
+                ("row", "integer"),
+                ("column", "integer"),
+                ("expectedPresetName", "string"),
+            ],
+            "device.laneControlDetails" => &[
+                ("row", "integer"),
+                ("control", "string"),
+                ("expectedPresetName", "string"),
+            ],
+            "device.previewParameter" => &[
+                ("row", "integer"),
+                ("column", "integer"),
+                ("parameterIndex", "integer"),
+                ("value", "number"),
+                ("expectedValue", "number"),
+                ("expectedScene", "integer"),
+                ("expectedPresetName", "string"),
+            ],
+            "device.previewLaneControlParameter" => &[
+                ("row", "integer"),
+                ("control", "string"),
+                ("parameterIndex", "integer"),
+                ("value", "number"),
+                ("expectedValue", "number"),
+                ("expectedPresetName", "string"),
+            ],
+            "device.setParameter" => &[
+                ("row", "integer"),
+                ("column", "integer"),
+                ("parameterIndex", "integer"),
+                ("value", "number"),
+                ("expectedValue", "number"),
+                ("expectedScene", "integer"),
+                ("expectedPresetName", "string"),
+            ],
+            "device.setLaneControlParameter" => &[
+                ("row", "integer"),
+                ("control", "string"),
+                ("parameterIndex", "integer"),
+                ("value", "number"),
+                ("expectedValue", "number"),
+                ("expectedPresetName", "string"),
+            ],
+            "device.setLaneControlSceneMode" => &[
+                ("row", "integer"),
+                ("control", "string"),
+                ("parameterIndex", "integer"),
+                ("enabled", "boolean"),
+                ("expectedPresetName", "string"),
+            ],
+            "device.setParameterSceneMode" => &[
+                ("row", "integer"),
+                ("column", "integer"),
+                ("parameterIndex", "integer"),
+                ("enabled", "boolean"),
+                ("expectedPresetName", "string"),
+            ],
+            "device.setParameterExpression" => &[
+                ("row", "integer"),
+                ("column", "integer"),
+                ("parameterIndex", "integer"),
+                ("pedal", "integer"),
+                ("minimum", "number"),
+                ("maximum", "number"),
+                ("expectedPresetName", "string"),
+            ],
+            "device.setTempo" => &[
+                ("bpm", "integer"),
+                ("expectedTempo", "integer"),
+                ("expectedPresetName", "string"),
+            ],
             "device.setMasterVolume" => &[("value", "integer"), ("expectedValue", "integer")],
             "device.masterVolume" => &[],
-            "device.pressFootswitch" => &[("index", "integer"), ("expectedMode", "string"), ("expectedPresetName", "string")],
+            "device.pressFootswitch" => &[
+                ("index", "integer"),
+                ("expectedMode", "string"),
+                ("expectedPresetName", "string"),
+            ],
             "device.tapTempo" => &[("expectedMode", "string"), ("expectedPresetName", "string")],
             "device.selectModeSlot" => &[("slot", "integer"), ("expectedPresetName", "string")],
             "device.listPresetSlots" => &[],
-            "device.savePresetAs" => &[("setlistKey", "string"), ("position", "integer"), ("name", "string"), ("expectedPresetName", "string"), ("expectedPosition", "integer"), ("confirmOverwrite", "boolean")],
-            "device.copyPreset" => &[("sourceSetlistKey", "string"), ("sourcePosition", "integer"), ("sourceName", "string"), ("destinationSetlistKey", "string"), ("destinationPosition", "integer"), ("expectedPresetName", "string"), ("expectedPosition", "integer"), ("confirmOverwrite", "boolean")],
-            "device.renameCurrentPreset" => &[("name", "string"), ("expectedPresetName", "string"), ("expectedPosition", "integer"), ("confirmRename", "boolean")],
+            "device.savePresetAs" => &[
+                ("setlistKey", "string"),
+                ("position", "integer"),
+                ("name", "string"),
+                ("expectedPresetName", "string"),
+                ("expectedPosition", "integer"),
+                ("confirmOverwrite", "boolean"),
+            ],
+            "device.copyPreset" => &[
+                ("sourceSetlistKey", "string"),
+                ("sourcePosition", "integer"),
+                ("sourceName", "string"),
+                ("destinationSetlistKey", "string"),
+                ("destinationPosition", "integer"),
+                ("expectedPresetName", "string"),
+                ("expectedPosition", "integer"),
+                ("confirmOverwrite", "boolean"),
+            ],
+            "device.renameCurrentPreset" => &[
+                ("name", "string"),
+                ("expectedPresetName", "string"),
+                ("expectedPosition", "integer"),
+                ("confirmRename", "boolean"),
+            ],
             "device.createBackup" => &[("name", "string")],
             "device.showTuner" => &[("shown", "boolean")],
             "device.showGigView" => &[("shown", "boolean")],
             _ => &[],
         };
         for (key, kind) in kinds {
-            let Some(value) = object.get(*key) else { continue };
-            let (nullable, base) = kind.strip_prefix("nullable-").map_or((false, *kind), |base| (true, base));
-            if nullable && value.is_null() { continue; }
+            let Some(value) = object.get(*key) else {
+                continue;
+            };
+            let (nullable, base) = kind
+                .strip_prefix("nullable-")
+                .map_or((false, *kind), |base| (true, base));
+            if nullable && value.is_null() {
+                continue;
+            }
             let valid = match base {
                 "boolean" => value.is_boolean(),
                 "integer" => value.is_i64() || value.is_u64(),
@@ -647,7 +1360,9 @@ pub fn validate_params(method: &str, params: &serde_json::Value) -> Result<(), S
                 "array" => value.is_array(),
                 _ => false,
             };
-            if !valid { return Err(format!("{method}.{key} must be {kind}")); }
+            if !valid {
+                return Err(format!("{method}.{key} must be {kind}"));
+            }
         }
     }
     Ok(())

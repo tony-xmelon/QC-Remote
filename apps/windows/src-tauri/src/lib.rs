@@ -278,49 +278,7 @@ impl GatewayProcess {
 }
 
 fn validate_gateway_result(method: &str, result: &Value) -> Result<(), GatewayRequestFailure> {
-    let kind = generated_gateway::result_kind(method).ok_or_else(|| {
-        GatewayRequestFailure::Transport(format!("Unknown gateway result contract: {method}"))
-    })?;
-    let object = result.as_object().ok_or_else(|| {
-        GatewayRequestFailure::Transport(format!("{method} returned a malformed result"))
-    })?;
-    if kind == generated_gateway::GatewayResultKind::PresetSnapshot
-        && (!object.get("presetName").is_some_and(Value::is_string)
-            || !object.get("blocks").is_some_and(Value::is_array))
-    {
-        return Err(GatewayRequestFailure::Transport(format!(
-            "{method} returned a malformed PresetSnapshot result"
-        )));
-    }
-    let has_outcome = ["accepted", "verified", "verification"]
-        .iter()
-        .any(|key| object.contains_key(*key));
-    if kind == generated_gateway::GatewayResultKind::DeviceActionResult && !has_outcome {
-        return Err(GatewayRequestFailure::Transport(format!(
-            "{method} returned a device action result without verification semantics"
-        )));
-    }
-    if has_outcome {
-        let verified = object.get("verified").and_then(Value::as_bool);
-        let expected = if verified == Some(true) {
-            "authoritative_readback"
-        } else {
-            "accepted_unverified"
-        };
-        if object.get("accepted").and_then(Value::as_bool) != Some(true)
-            || verified.is_none()
-            || object.get("verification").and_then(Value::as_str) != Some(expected)
-            || object
-                .get("detail")
-                .and_then(Value::as_str)
-                .is_none_or(|detail| detail.chars().count() > 4096)
-        {
-            return Err(GatewayRequestFailure::Transport(format!(
-                "{method} returned a malformed device action result"
-            )));
-        }
-    }
-    Ok(())
+    generated_gateway::validate_result(method, result).map_err(GatewayRequestFailure::Transport)
 }
 
 fn locate_native_broker(executable_directory: Option<&Path>) -> Option<PathBuf> {

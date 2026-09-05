@@ -113,3 +113,55 @@ pub fn result_kind(method: &str) -> Option<ResultKind> {
         _ => None,
     }
 }
+
+pub fn validate_result(method: &str, result: &serde_json::Value) -> Result<(), String> {
+    let result_kind =
+        result_kind(method).ok_or_else(|| format!("Unknown gateway result contract: {method}"))?;
+    let object = result
+        .as_object()
+        .ok_or_else(|| format!("{method} returned a malformed result"))?;
+    if result_kind == ResultKind::PresetSnapshot
+        && (!object
+            .get("presetName")
+            .is_some_and(serde_json::Value::is_string)
+            || !object
+                .get("blocks")
+                .is_some_and(serde_json::Value::is_array))
+    {
+        return Err(format!(
+            "{method} returned a malformed PresetSnapshot result"
+        ));
+    }
+    let has_outcome = ["accepted", "verified", "verification"]
+        .iter()
+        .any(|key| object.contains_key(*key));
+    if result_kind == ResultKind::DeviceActionResult && !has_outcome {
+        return Err(format!(
+            "{method} returned a device action result without verification semantics"
+        ));
+    }
+    if has_outcome {
+        let verified = object.get("verified").and_then(serde_json::Value::as_bool);
+        let expected = if verified == Some(true) {
+            "authoritative_readback"
+        } else {
+            "accepted_unverified"
+        };
+        if object.get("accepted").and_then(serde_json::Value::as_bool) != Some(true)
+            || verified.is_none()
+            || object
+                .get("verification")
+                .and_then(serde_json::Value::as_str)
+                != Some(expected)
+            || object
+                .get("detail")
+                .and_then(serde_json::Value::as_str)
+                .is_none_or(|detail| detail.chars().count() > 4096)
+        {
+            return Err(format!(
+                "{method} returned a malformed device action result"
+            ));
+        }
+    }
+    Ok(())
+}

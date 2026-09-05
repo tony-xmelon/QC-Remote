@@ -289,6 +289,15 @@ test("one generated gateway manifest owns dispatch and both native bindings", ()
   assert.doesNotMatch(transport, /callTauri<[^>]+>\("(?:select_scene|toggle_bypass|current_snapshot)"/);
 });
 
+test("one generated Rust validator guards Windows and remote MCP results", () => {
+  const generator = source("scripts/generate-gateway-bindings.mjs");
+  assert.match(generator, /const rustResultValidation =/);
+  assert.match(source("packages/rust/qc-device-runtime/src/generated_gateway.rs"), /pub fn validate_result/);
+  assert.match(source("services/rust-mcp/src/generated_result_kinds.rs"), /pub fn validate_result/);
+  assert.match(source("apps/windows/src-tauri/src/lib.rs"), /generated_gateway::validate_result\(method, result\)/);
+  assert.match(source("services/rust-mcp/src/server.rs"), /generated_result_kinds::validate_result\(method, result\)/);
+});
+
 test("one shared action registry drives model tools and MCP safety classes", () => {
   const actions = JSON.parse(source("contracts/qc-actions.v1.json")).actions;
   const chat = source("apps/windows/src/model-chat.ts");

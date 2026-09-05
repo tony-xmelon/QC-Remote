@@ -1,4 +1,4 @@
-use crate::generated_result_kinds::{ResultKind, result_kind};
+use crate::generated_result_kinds;
 use crate::{
     ACTIONS, ActionSpec, BackendError, Classification, MCP_INSTRUCTIONS, PrincipalRoute, QcBackend,
 };
@@ -85,50 +85,7 @@ fn validate_backend_result(method: &str, result: &Value) -> Result<(), String> {
             "{method} returned a result larger than the gateway frame limit"
         ));
     }
-    let kind =
-        result_kind(method).ok_or_else(|| format!("unknown gateway result contract: {method}"))?;
-    let object = result
-        .as_object()
-        .ok_or_else(|| format!("{method} returned a malformed {kind:?} result"))?;
-    if kind == ResultKind::PresetSnapshot
-        && (!object.get("presetName").is_some_and(Value::is_string)
-            || !object.get("blocks").is_some_and(Value::is_array))
-    {
-        return Err(format!(
-            "{method} returned a malformed PresetSnapshot result"
-        ));
-    }
-    let has_outcome = ["accepted", "verified", "verification"]
-        .iter()
-        .any(|key| object.contains_key(*key));
-    if kind == ResultKind::DeviceActionResult && !has_outcome {
-        return Err(format!(
-            "{method} returned a device action result without verification semantics"
-        ));
-    }
-    if !has_outcome {
-        return Ok(());
-    }
-    let verified = object.get("verified").and_then(Value::as_bool);
-    let expected = if verified == Some(true) {
-        "authoritative_readback"
-    } else {
-        "accepted_unverified"
-    };
-    let valid = object.get("accepted").and_then(Value::as_bool) == Some(true)
-        && verified.is_some()
-        && object.get("verification").and_then(Value::as_str) == Some(expected)
-        && object
-            .get("detail")
-            .and_then(Value::as_str)
-            .is_some_and(|detail| detail.chars().count() <= 4096);
-    if valid {
-        Ok(())
-    } else {
-        Err(format!(
-            "{method} returned a malformed device action result"
-        ))
-    }
+    generated_result_kinds::validate_result(method, result)
 }
 
 fn filter_models(mut result: Value, query: &str) -> Result<Value, String> {
