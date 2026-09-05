@@ -9,7 +9,13 @@ import test from "node:test";
 import {
   CASES,
   FULL_RUN_MINIMUM_TRANSPORT_TIMEOUT_MS,
+  MAXIMUM_EVENT_MEDIAN_MS,
+  MAXIMUM_EVENT_P95_MS,
+  MAXIMUM_SEND_LATENCY_MS,
+  MINIMUM_CONTROL_REPETITIONS,
+  MINIMUM_RAPID_PAIRS,
   MUTATION_ACK,
+  REPEATABLE_PHYSICAL_CONTROLS,
   actionPlan,
   assertDisposableSlots,
   assertMutationAcknowledged,
@@ -21,6 +27,7 @@ import {
   summarizePhysicalResults,
   validateConfig,
   validateCoverage,
+  validatePerformanceEvidence,
   validateReleaseReports,
   validateTransportHealthEvidence,
   waitForPhysicalObservation
@@ -203,9 +210,20 @@ test("release gate requires complete Windows and Android evidence for the curren
     readerRequestActive: true, readerRequestCount: 32, maxHidWriteDurationMs: 5,
     maxMidiQueueDelayMs: 2
   }));
+  const performanceEvidence = {
+    controls: Object.fromEntries(REPEATABLE_PHYSICAL_CONTROLS.map((control) => [control, {
+      repetitions: MINIMUM_CONTROL_REPETITIONS, rapidPairs: MINIMUM_RAPID_PAIRS, failures: 0
+    }])),
+    sendLatencyMs: { max: MAXIMUM_SEND_LATENCY_MS },
+    eventLatencyMs: {
+      sampleCount: REPEATABLE_PHYSICAL_CONTROLS.length * MINIMUM_CONTROL_REPETITIONS,
+      median: MAXIMUM_EVENT_MEDIAN_MS,
+      p95: MAXIMUM_EVENT_P95_MS
+    }
+  };
   const base = { contractSha256: contractDigest(contract), results, restoration: [{ name: "starting-preset", status: "passed" }], summary: { complete: true } };
-  const windows = { ...base, target: "windows", transportHealth: windowsHealth, releaseCandidate: { platform: "windows", sourceCommit: "abc123", size: 10, sha256: "win" } };
-  const android = { ...base, target: "android", transportHealth: androidHealth, releaseCandidate: { platform: "android", sourceCommit: "abc123", size: 20, sha256: "android" } };
+  const windows = { ...base, target: "windows", transportHealth: windowsHealth, performanceEvidence, releaseCandidate: { platform: "windows", sourceCommit: "abc123", size: 10, sha256: "win" } };
+  const android = { ...base, target: "android", transportHealth: androidHealth, performanceEvidence, releaseCandidate: { platform: "android", sourceCommit: "abc123", size: 20, sha256: "android" } };
   const result = validateReleaseReports(contract, [windows, android], manifest);
   assert.equal(result.actionsPerTarget, contract.actions.length);
   assert.equal(result.sourceCommit, "abc123");
@@ -215,6 +233,7 @@ test("release gate requires complete Windows and Android evidence for the curren
   assert.throws(() => validateReleaseReports(contract, [windows, android], { ...manifest, source: { commit: "abc123", dirty: true } }), /clean source commit/);
   assert.throws(() => validateReleaseReports(contract, [{ ...windows, transportHealth: [] }, android], manifest), /windows report has no before-system-recovery USB health sample/);
   assert.throws(() => validateReleaseReports(contract, [windows, { ...android, transportHealth: androidHealth.map((entry) => ({ ...entry, maxHidWriteDurationMs: 21 })) }], manifest), /Android USB HID write latency exceeded/i);
+  assert.throws(() => validateReleaseReports(contract, [{ ...windows, performanceEvidence: undefined }, android], manifest), /windows report has no physical performance evidence/);
 });
 
 test("physical transport health rejects disconnected, unsynchronized, stale, and slow evidence", () => {
@@ -238,4 +257,28 @@ test("physical transport health rejects disconnected, unsynchronized, stale, and
   assert.ok(errors.some((error) => error.includes("HID write latency")));
   assert.ok(errors.some((error) => error.includes("MIDI queue latency")));
   assert.ok(errors.some((error) => error.includes("reader reported an error")));
+});
+
+test("physical performance evidence enforces repetitions, rapid pairs, and latency percentiles", () => {
+  const controls = Object.fromEntries(REPEATABLE_PHYSICAL_CONTROLS.map((control) => [control, {
+    repetitions: 20, rapidPairs: 5, failures: 0
+  }]));
+  const healthy = {
+    controls,
+    sendLatencyMs: { max: 20 },
+    eventLatencyMs: { sampleCount: 280, median: 50, p95: 100 }
+  };
+  assert.deepEqual(validatePerformanceEvidence("android", healthy), []);
+  const broken = structuredClone(healthy);
+  broken.controls.footswitch_a = { repetitions: 19, rapidPairs: 4, failures: 1 };
+  broken.sendLatencyMs.max = 21;
+  broken.eventLatencyMs = { sampleCount: 279, median: 51, p95: 101 };
+  const errors = validatePerformanceEvidence("android", broken);
+  assert.ok(errors.some((error) => error.includes("footswitch_a was not exercised")));
+  assert.ok(errors.some((error) => error.includes("rapid pairs")));
+  assert.ok(errors.some((error) => error.includes("contains failures")));
+  assert.ok(errors.some((error) => error.includes("send latency")));
+  assert.ok(errors.some((error) => error.includes("fewer than 280 samples")));
+  assert.ok(errors.some((error) => error.includes("median")));
+  assert.ok(errors.some((error) => error.includes("p95")));
 });

@@ -41,6 +41,16 @@ export async function waitForPhysicalObservation(read, matches, {
 
 export const MUTATION_ACK = "I_ACCEPT_QC_HARDWARE_MUTATIONS";
 export const FULL_RUN_MINIMUM_TRANSPORT_TIMEOUT_MS = 210_000;
+export const REPEATABLE_PHYSICAL_CONTROLS = Object.freeze([
+  "footswitch_a", "footswitch_b", "footswitch_c", "footswitch_d",
+  "footswitch_e", "footswitch_f", "footswitch_g", "footswitch_h",
+  "up", "down", "mode", "scene", "tempo", "master_volume"
+]);
+export const MINIMUM_CONTROL_REPETITIONS = 20;
+export const MINIMUM_RAPID_PAIRS = 5;
+export const MAXIMUM_SEND_LATENCY_MS = 20;
+export const MAXIMUM_EVENT_MEDIAN_MS = 50;
+export const MAXIMUM_EVENT_P95_MS = 100;
 
 export const CASES = Object.freeze({
   reconnect_device: { phase: "system", hazard: "system" },
@@ -279,6 +289,42 @@ export function validateTransportHealthEvidence(target, transportHealth) {
   return errors;
 }
 
+export function validatePerformanceEvidence(target, performance) {
+  const errors = [];
+  if (!performance || typeof performance !== "object") return [`${target} report has no physical performance evidence`];
+  for (const control of REPEATABLE_PHYSICAL_CONTROLS) {
+    const evidence = performance.controls?.[control];
+    if (!evidence) {
+      errors.push(`${target} report has no repetition evidence for ${control}`);
+      continue;
+    }
+    if (!(Number.isInteger(evidence.repetitions) && evidence.repetitions >= MINIMUM_CONTROL_REPETITIONS)) {
+      errors.push(`${target} ${control} was not exercised ${MINIMUM_CONTROL_REPETITIONS} times`);
+    }
+    if (!(Number.isInteger(evidence.rapidPairs) && evidence.rapidPairs >= MINIMUM_RAPID_PAIRS)) {
+      errors.push(`${target} ${control} did not complete ${MINIMUM_RAPID_PAIRS} rapid pairs`);
+    }
+    if (evidence.failures !== 0) errors.push(`${target} ${control} repetition evidence contains failures`);
+  }
+  if (!(Number.isFinite(performance.sendLatencyMs?.max) && performance.sendLatencyMs.max <= MAXIMUM_SEND_LATENCY_MS)) {
+    errors.push(`${target} direct-control send latency exceeded or lacked the ${MAXIMUM_SEND_LATENCY_MS} ms gate`);
+  }
+  const minimumEventSamples = REPEATABLE_PHYSICAL_CONTROLS.length * MINIMUM_CONTROL_REPETITIONS;
+  if (!(Number.isInteger(performance.eventLatencyMs?.sampleCount)
+      && performance.eventLatencyMs.sampleCount >= minimumEventSamples)) {
+    errors.push(`${target} event-latency evidence has fewer than ${minimumEventSamples} samples`);
+  }
+  if (!(Number.isFinite(performance.eventLatencyMs?.median)
+      && performance.eventLatencyMs.median <= MAXIMUM_EVENT_MEDIAN_MS)) {
+    errors.push(`${target} event-latency median exceeded or lacked the ${MAXIMUM_EVENT_MEDIAN_MS} ms gate`);
+  }
+  if (!(Number.isFinite(performance.eventLatencyMs?.p95)
+      && performance.eventLatencyMs.p95 <= MAXIMUM_EVENT_P95_MS)) {
+    errors.push(`${target} event-latency p95 exceeded or lacked the ${MAXIMUM_EVENT_P95_MS} ms gate`);
+  }
+  return errors;
+}
+
 export function validateReleaseReports(contract, reports, manifest) {
   const expectedNames = validateCoverage(contract);
   const expectedDigest = contractDigest(contract);
@@ -309,6 +355,7 @@ export function validateReleaseReports(contract, reports, manifest) {
     for (const name of ["system.status", ...expectedNames]) if (!passed.has(name)) errors.push(`${target} did not pass ${name}`);
     if (report.restoration?.some((item) => item.status !== "passed")) errors.push(`${target} restoration failed`);
     errors.push(...validateTransportHealthEvidence(target, report.transportHealth));
+    errors.push(...validatePerformanceEvidence(target, report.performanceEvidence));
   }
   if (errors.length) throw new Error(`Hardware release gate failed: ${errors.join("; ")}.`);
   return { targets: ["windows", "android"], sourceCommit: manifest.source.commit, contractSha256: expectedDigest, actionsPerTarget: expectedNames.length };
