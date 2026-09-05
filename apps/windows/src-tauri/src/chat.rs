@@ -7,7 +7,7 @@ use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 use sha2::{Digest, Sha256};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::PathBuf;
 use std::process::{Command as StdCommand, Stdio};
@@ -856,11 +856,7 @@ fn parse_antigravity_response(
             "toolCalls": []
         })
     });
-    let allowed: std::collections::HashSet<&str> = request
-        .tools
-        .iter()
-        .map(|tool| tool.name.as_str())
-        .collect();
+    let allowed = allowed_tool_names(&request.tools);
     let tool_calls = parsed
         .get("toolCalls")
         .and_then(Value::as_array)
@@ -1462,21 +1458,8 @@ pub fn set_api_key(bridge: &ChatBridge, api_key: String) -> Result<ChatSettingsV
             false,
         ));
     }
-    let current = bridge
-        .settings
-        .lock()
-        .map_err(|_| ChatError::new("internal", "Chat settings are unavailable.", true))?
-        .clone();
-    let url = validate_settings(&current)?;
-    {
-        let _guard = bridge.credential_access.lock().map_err(|_| {
-            ChatError::new(
-                "credential_store",
-                "Windows Credential Manager is unavailable.",
-                true,
-            )
-        })?;
-        credential_entry(&current, &url)?
+    with_credential_store(bridge, |current, url| {
+        credential_entry(current, url)?
             .set_password(normalized)
             .map_err(|_| {
                 ChatError::new(
@@ -1484,27 +1467,14 @@ pub fn set_api_key(bridge: &ChatBridge, api_key: String) -> Result<ChatSettingsV
                     "Could not save the model credential in Windows Credential Manager.",
                     true,
                 )
-            })?;
-    }
+            })
+    })?;
     settings(bridge)
 }
 
 pub fn clear_api_key(bridge: &ChatBridge) -> Result<ChatSettingsView, ChatError> {
-    let current = bridge
-        .settings
-        .lock()
-        .map_err(|_| ChatError::new("internal", "Chat settings are unavailable.", true))?
-        .clone();
-    let url = validate_settings(&current)?;
-    {
-        let _guard = bridge.credential_access.lock().map_err(|_| {
-            ChatError::new(
-                "credential_store",
-                "Windows Credential Manager is unavailable.",
-                true,
-            )
-        })?;
-        match credential_entry(&current, &url)?.delete_credential() {
+    with_credential_store(bridge, |current, url| {
+        match credential_entry(current, url)?.delete_credential() {
             Ok(()) | Err(keyring::Error::NoEntry) => {}
             Err(_) => {
                 return Err(ChatError::new(
@@ -1515,7 +1485,7 @@ pub fn clear_api_key(bridge: &ChatBridge) -> Result<ChatSettingsView, ChatError>
             }
         }
         if current.provider == DEFAULT_PROVIDER {
-            match legacy_credential_entry(&url)?.delete_credential() {
+            match legacy_credential_entry(url)?.delete_credential() {
                 Ok(()) | Err(keyring::Error::NoEntry) => {}
                 Err(_) => {
                     return Err(ChatError::new(
@@ -1526,8 +1496,29 @@ pub fn clear_api_key(bridge: &ChatBridge) -> Result<ChatSettingsView, ChatError>
                 }
             }
         }
-    }
+        Ok(())
+    })?;
     settings(bridge)
+}
+
+fn with_credential_store<T>(
+    bridge: &ChatBridge,
+    operation: impl FnOnce(&ChatSettings, &Url) -> Result<T, ChatError>,
+) -> Result<T, ChatError> {
+    let current = bridge
+        .settings
+        .lock()
+        .map_err(|_| ChatError::new("internal", "Chat settings are unavailable.", true))?
+        .clone();
+    let url = validate_settings(&current)?;
+    let _guard = bridge.credential_access.lock().map_err(|_| {
+        ChatError::new(
+            "credential_store",
+            "Windows Credential Manager is unavailable.",
+            true,
+        )
+    })?;
+    operation(&current, &url)
 }
 
 fn responses_url(mut base: Url) -> Result<Url, ChatError> {
@@ -1920,15 +1911,16 @@ fn anthropic_request_body(settings: &ChatSettings, request: &ChatRequest) -> Val
     })
 }
 
+fn allowed_tool_names(tools: &[ChatTool]) -> HashSet<&str> {
+    tools.iter().map(|tool| tool.name.as_str()).collect()
+}
+
 fn parse_response(
     request_id: &str,
     value: Value,
     allowed_tools: &[ChatTool],
 ) -> Result<ChatResponse, ChatError> {
-    let allowed: std::collections::HashSet<&str> = allowed_tools
-        .iter()
-        .map(|tool| tool.name.as_str())
-        .collect();
+    let allowed = allowed_tool_names(allowed_tools);
     let mut text_parts = Vec::new();
     let mut tool_calls = Vec::new();
     for item in value
@@ -2008,10 +2000,7 @@ fn parse_gemini_response(
     value: Value,
     allowed_tools: &[ChatTool],
 ) -> Result<ChatResponse, ChatError> {
-    let allowed: std::collections::HashSet<&str> = allowed_tools
-        .iter()
-        .map(|tool| tool.name.as_str())
-        .collect();
+    let allowed = allowed_tool_names(allowed_tools);
     let choice = value
         .get("choices")
         .and_then(Value::as_array)
@@ -2095,10 +2084,7 @@ fn parse_gemini_native_response(
     value: Value,
     allowed_tools: &[ChatTool],
 ) -> Result<ChatResponse, ChatError> {
-    let allowed: std::collections::HashSet<&str> = allowed_tools
-        .iter()
-        .map(|tool| tool.name.as_str())
-        .collect();
+    let allowed = allowed_tool_names(allowed_tools);
     let candidate = value
         .get("candidates")
         .and_then(Value::as_array)
@@ -2179,10 +2165,7 @@ fn parse_anthropic_response(
     value: Value,
     allowed_tools: &[ChatTool],
 ) -> Result<ChatResponse, ChatError> {
-    let allowed: std::collections::HashSet<&str> = allowed_tools
-        .iter()
-        .map(|tool| tool.name.as_str())
-        .collect();
+    let allowed = allowed_tool_names(allowed_tools);
     let mut text_parts = Vec::new();
     let mut tool_calls = Vec::new();
     for item in value

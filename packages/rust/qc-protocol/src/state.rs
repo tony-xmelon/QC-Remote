@@ -776,22 +776,14 @@ impl StateDecoder {
         let mut current_values = HashMap::new();
         for (positional, parameter) in model.params.iter().enumerate() {
             let index = param_index(parameter, positional as u32);
-            let mut options = if parameter.dynamic_steps.is_empty() {
-                info.and_then(|item| item.parameters.get(&index))
-                    .map(|item| item.options.clone())
-                    .unwrap_or_default()
-            } else {
-                parameter.dynamic_steps.clone()
-            };
-            if options.is_empty() && matches!(index, 1 | 9) {
-                options = cab_microphone_options(
-                    model_id,
-                    effective_string_parameter(parameter, self.active_scene),
-                );
-            }
-            if options.is_empty() {
-                options = routing_parameter_options(routing_node, index);
-            }
+            let options = parameter_options(
+                info,
+                parameter,
+                index,
+                model_id,
+                self.active_scene,
+                routing_node,
+            );
             current_values.insert(
                 index,
                 self.parameter_overrides
@@ -839,20 +831,14 @@ impl StateDecoder {
             if routing_node == Some("mixer") && spec.is_some_and(|item| item.name == "SPLIT MODE") {
                 continue;
             }
-            let mut options = if parameter.dynamic_steps.is_empty() {
-                spec.map(|item| item.options.clone()).unwrap_or_default()
-            } else {
-                parameter.dynamic_steps.clone()
-            };
-            if options.is_empty() && matches!(index, 1 | 9) {
-                options = cab_microphone_options(
-                    model_id,
-                    effective_string_parameter(parameter, self.active_scene),
-                );
-            }
-            if options.is_empty() {
-                options = routing_parameter_options(routing_node, index);
-            }
+            let options = parameter_options(
+                info,
+                parameter,
+                index,
+                model_id,
+                self.active_scene,
+                routing_node,
+            );
             let scene_mode = param_scene_mode(parameter);
             let Some(normalized) = self
                 .parameter_overrides
@@ -1581,6 +1567,33 @@ fn cab_microphone_options(model_id: u32, value: Option<&str>) -> Vec<String> {
         .iter()
         .map(|microphone| format!("{prefix}_{microphone}"))
         .collect()
+}
+
+fn parameter_options(
+    info: Option<&ModelInfo>,
+    parameter: &Param,
+    index: u32,
+    model_id: u32,
+    active_scene: u32,
+    routing_node: Option<&str>,
+) -> Vec<String> {
+    let mut options = if parameter.dynamic_steps.is_empty() {
+        info.and_then(|item| item.parameters.get(&index))
+            .map(|item| item.options.clone())
+            .unwrap_or_default()
+    } else {
+        parameter.dynamic_steps.clone()
+    };
+    if options.is_empty() && matches!(index, 1 | 9) {
+        options = cab_microphone_options(
+            model_id,
+            effective_string_parameter(parameter, active_scene),
+        );
+    }
+    if options.is_empty() {
+        options = routing_parameter_options(routing_node, index);
+    }
+    options
 }
 
 fn param_expression(parameter: &Param) -> Option<i32> {
