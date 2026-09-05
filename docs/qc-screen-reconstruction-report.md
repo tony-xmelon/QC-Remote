@@ -171,6 +171,16 @@ join is in [the canonical coverage matrix](qc-screen-coverage-matrix.md).
 
 ## Improvements in this pass
 
+- Moved measured parameter-editor geometry out of a reference-only stylesheet
+  and into the shared editor that both applications actually render. Digital
+  Flanger rises from **71.40% to 83.08%**, UK C30 TopBoost from **79.55% to
+  89.03%**, Ambience from **80.38% to 88.88%**, the UK C30 cabinet from
+  **81.14% to 85.19%**, and Parametric-8 from **85.53% to 88.41%** structural
+  match on both Windows and Android. A complete rerun found no regressions in
+  the other 36 physical frames and raises the 41-frame benchmark from
+  **89.49% to 90.38% structural**, with **97.22% color similarity**. The
+  independent 36-frame official corpus remains unchanged at **90.79%
+  structural / 97.11% color** on both hosts.
 - Added the first physical Input Gate Control framebuffer, replacing a
   speculative full-page settings mock with CorOS's actual lower editor over a
   dimmed Grid. Measured structural match rose from **47.22% to 74.23% on

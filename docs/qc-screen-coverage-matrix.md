@@ -12,7 +12,7 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 
 | Corpus | Windows structural | Windows color | Android structural | Android color |
 | --- | ---: | ---: | ---: | ---: |
-| Physical device | 89.49% | 97.16% | 89.49% | 97.16% |
+| Physical device | 90.38% | 97.22% | 90.38% | 97.22% |
 | Official manual | 90.79% | 97.11% | 90.79% | 97.11% |
 
 Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` color similarity. A canonical state that references multiple frames reports their mean. Detail evidence is scoped and therefore never promoted into a full-frame score.
@@ -91,10 +91,10 @@ Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` col
 | DB-07 | Device browser | Plugin device list / license state | physical frame + official frame | Built | Built | 90.40% / 90.41% | 97.28% / 97.28% | 89.66% / 89.66% | 97.82% / 97.82% |
 | DB-08 | Device browser | Plugin refresh state | official detail | Built | Built | — / — | — / — | — / — | — / — |
 | DB-09 | Device browser | Locked plugin / license-not-found models | physical frame | Built | Built | 92.04% / 92.04% | 96.00% / 96.00% | — / — | — / — |
-| ED-01 | Editor | Standard rotary parameter editor | physical frame | Built | Built | 82.58% / 82.58% | 97.08% / 97.08% | — / — | — / — |
+| ED-01 | Editor | Standard rotary parameter editor | physical frame | Built | Built | 88.51% / 88.51% | 97.18% / 97.18% | — / — | — / — |
 | ED-02 | Editor | Multi-page parameter editor | official detail | Built | Built | — / — | — / — | — / — | — / — |
-| ED-03 | Editor | Cab editor | physical frame | Built | Built | 81.14% / 81.14% | 95.36% / 95.36% | — / — | — / — |
-| ED-04 | Editor | Parametric EQ editor | physical frame | Built | Built | 85.53% / 85.53% | 98.02% / 98.02% | — / — | — / — |
+| ED-03 | Editor | Cab editor | physical frame | Built | Built | 85.19% / 85.19% | 97.06% / 97.06% | — / — | — / — |
+| ED-04 | Editor | Parametric EQ editor | physical frame | Built | Built | 88.41% / 88.41% | 98.17% / 98.17% | — / — | — / — |
 | ED-05 | Editor | Neural Capture block editor | smoke only | Built | Built | — / — | — / — | — / — | — / — |
 | ED-06 | Editor | Looper X editor | official frame | Built | Built | — / — | — / — | 87.37% / 87.37% | 96.95% / 96.95% |
 | ED-07 | Editor | Virtual Device preset browser | physical frame + official frame | Built | Built | 90.42% / 90.42% | 97.49% / 97.49% | 88.56% / 88.55% | 96.61% / 96.61% |
@@ -181,7 +181,7 @@ These states are implemented and captured on both hosts, but only against determ
 
 ## Score source files
 
-- Physical Windows: `.artifacts/ui-physical-input-gate/windows-comparison/summary.json`
-- Physical Android: `.artifacts/ui-physical-input-gate/android-comparison/summary.json`
-- Official Windows: `.artifacts/ui-official-input-gate/windows-comparison/summary.json`
-- Official Android: `.artifacts/ui-official-input-gate/android-comparison/summary.json`
+- Physical Windows: `.artifacts/ui-shared-editor-fix/windows-comparison/summary.json`
+- Physical Android: `.artifacts/ui-shared-editor-fix/android-comparison/summary.json`
+- Official Windows: `.artifacts/ui-official-shared-editor-fix/windows-comparison/summary.json`
+- Official Android: `.artifacts/ui-official-shared-editor-fix/android-comparison/summary.json`
