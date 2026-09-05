@@ -16,6 +16,9 @@ pub enum Kind {
     VisibleString {
         max_chars: usize,
     },
+    NullableVisibleString {
+        max_chars: usize,
+    },
     NullableString,
     NullableInteger {
         min: i64,
@@ -36,6 +39,7 @@ pub enum Kind {
         min: i64,
         max: Option<i64>,
     },
+    IntegerEnum(&'static [i64]),
     Number {
         min: f64,
         max: Option<f64>,
@@ -66,6 +70,7 @@ pub struct ActionSpec {
     pub classification: Classification,
     pub description: &'static str,
     pub properties: &'static [Property],
+    pub distinct_arguments: &'static [(&'static str, &'static str)],
 }
 
 macro_rules! p {
@@ -164,6 +169,9 @@ fn schema_for(kind: Kind) -> Value {
         Kind::VisibleString { max_chars } => {
             json!({"type":"string","minLength":1,"maxLength":max_chars,"pattern":"^[^\\u0000-\\u001F\\u007F]*$"})
         }
+        Kind::NullableVisibleString { max_chars } => {
+            json!({"type":["string","null"],"maxLength":max_chars,"pattern":"^[^\\u0000-\\u001F\\u007F]*$"})
+        }
         Kind::NullableString => json!({"type":["string","null"]}),
         Kind::NullableInteger { min, max } => ranged_schema(["integer", "null"], min, max),
         Kind::NullableBoolean => json!({"type":["boolean","null"]}),
@@ -176,6 +184,7 @@ fn schema_for(kind: Kind) -> Value {
         }
         Kind::Boolean => json!({"type":"boolean"}),
         Kind::Integer { min, max } => ranged_schema("integer", min, max),
+        Kind::IntegerEnum(values) => json!({"type":"integer","enum":values}),
         Kind::Number { min, max } => ranged_number_schema("number", min, max),
         Kind::MidiMessages => {
             json!({"type":"array","maxItems":12,"items":{"type":"object","additionalProperties":false,"properties":{"type":{"type":"integer","minimum":1,"maximum":3},"channel":{"type":"integer","minimum":1,"maximum":16},"param1":{"type":"integer","minimum":0,"maximum":127},"param2":{"type":"integer","minimum":0,"maximum":127},"param3":{"type":"integer","minimum":0,"maximum":127}},"required":["type","channel","param1","param2","param3"]}})

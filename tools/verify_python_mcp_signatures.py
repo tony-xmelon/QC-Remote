@@ -10,9 +10,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = json.loads((ROOT / "contracts" / "qc-actions.v1.json").read_text(encoding="utf-8"))
 TREE = ast.parse(
-    (ROOT / "services" / "mcp-server" / "src" / "qc_mcp_server" / "server.py").read_text(encoding="utf-8")
+    (ROOT / "services" / "mcp-server" / "src" / "qc_mcp_server" / "generated_tools.py").read_text(encoding="utf-8")
 )
-TOOLS = next(node for node in TREE.body if isinstance(node, ast.ClassDef) and node.name == "QcTools")
+TOOLS = next(node for node in TREE.body if isinstance(node, ast.ClassDef) and node.name == "GeneratedQcTools")
 METHODS = {node.name: node for node in TOOLS.body if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))}
 
 for action in CONTRACT["actions"]:
@@ -40,4 +40,4 @@ tap_annotations = {argument.arg: ast.unparse(argument.annotation) for argument i
 if tap_annotations.get("x") != "int" or tap_annotations.get("y") != "int":
     raise SystemExit("Python MCP tap_screen coordinates must remain integer pixels")
 
-print(json.dumps({"verified": True, "actions": len(CONTRACT["actions"]), "implementation": "QcTools"}))
+print(json.dumps({"verified": True, "actions": len(CONTRACT["actions"]), "implementation": "GeneratedQcTools"}))

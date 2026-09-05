@@ -11,10 +11,19 @@ const accessModes = manifest.accessModes;
 if (!Array.isArray(accessModes) || accessModes.join(",") !== "read-only,performance,modify,full") {
   throw new Error("QC access modes must define the cumulative read-only, performance, modify, full order");
 }
-const schemaType = (kind) => {
-  if (kind === "string") return { type: "string", minLength: 1 };
+const schemaType = (kind, action, name) => {
+  if (kind === "string") {
+    const maxLength = action.name === "set_stomp_label" && name === "label" ? 32
+      : (["create_device_backup", "set_device_name", "create_setlist", "delete_setlist"].includes(action.name) && name === "name")
+        || (action.name === "duplicate_setlist" && name === "destination_name") ? 64 : undefined;
+    return {
+      type: "string", minLength: 1, ...(maxLength ? {
+        maxLength, pattern: "^[^\\x00-\\x1F\\x7F]*$"
+      } : {})
+    };
+  }
   if (kind === "nullable-string") return { type: ["string", "null"] };
-  if (kind === "nullable-integer") return { type: ["integer", "null"] };
+  if (kind === "nullable-visible-string") return { type: ["string", "null"], maxLength: 32, pattern: "^[^\\x00-\\x1F\\x7F]*$" };
   if (kind === "nullable-boolean") return { type: ["boolean", "null"] };
   if (kind === "nullable-normalized") return { type: ["number", "null"], minimum: 0, maximum: 1 };
   if (kind === "nullable-input-gain") return { type: ["number", "null"], minimum: -12, maximum: 60 };
@@ -60,6 +69,33 @@ const schemaType = (kind) => {
   if (kind === "pedal") return { type: "integer", minimum: 1, maximum: 2 };
   if (kind === "expression-switch-mode") return { type: "integer", minimum: 0, maximum: 2 };
   if (kind === "bypass-delay") return { type: "integer", minimum: 0, maximum: 5000 };
+  if (kind === "number") return action.name === "set_tuner_reference"
+    ? { type: "number" } : { type: "number", minimum: 0, maximum: 1 };
+  if (kind === "integer") {
+    if (name === "color") return { type: "integer", minimum: 0, maximum: 0xFFFFFFFF };
+    if (action.name === "press_footswitch" && name === "index") return { type: "integer", minimum: 0, maximum: 10 };
+    if (action.name === "navigate_bank" && name === "direction") return { type: "integer", enum: [-1, 1] };
+    if (action.name === "select_mode_slot" && name === "slot") return { type: "integer", minimum: 0, maximum: 2 };
+    if (action.name === "set_parameter_expression" && name === "pedal") return { type: "integer", minimum: 0, maximum: 2 };
+    if (action.name === "set_midi_out" && name === "source") return { type: "integer", minimum: 0, maximum: 9 };
+    if (action.name === "set_global_eq_band" && name === "band") return { type: "integer", minimum: 1, maximum: 5 };
+    if (action.name === "load_ir" && name === "slot") return { type: "integer", minimum: 0, maximum: 1 };
+    if ((action.name === "duplicate_setlist" && name === "expected_position") || (action.name === "move_preset" && name === "position")) {
+      return { type: "integer", minimum: 0, maximum: 255 };
+    }
+    if (action.name === "set_master_volume" && ["value", "expected_value"].includes(name)) return { type: "integer", minimum: 0, maximum: 100 };
+    if (["add_block", "set_model_pinned"].includes(action.name) && name === "model_id") return { type: "integer", minimum: 1 };
+    if (action.name === "set_tuner_input" && name === "input_port_id") return { type: "integer", minimum: 1, maximum: 9 };
+    if (action.name === "set_general_integer" && name === "value") return { type: "integer", minimum: 0, maximum: 100 };
+    return { type: "integer", minimum: 0 };
+  }
+  if (kind === "nullable-integer") {
+    if (["footswitch", "expected_footswitch"].includes(name)) return { type: ["integer", "null"], minimum: 0, maximum: 7 };
+    if (["split_column", "mix_column", "expected_split_column", "expected_mix_column"].includes(name)) return { type: ["integer", "null"], minimum: -1, maximum: 7 };
+    if (name === "model_id") return { type: ["integer", "null"], minimum: 1 };
+    if (name === "limit") return { type: ["integer", "null"], minimum: 0, maximum: 256 };
+    return { type: ["integer", "null"], minimum: 0 };
+  }
   return { type: kind };
 };
 const description = (value) => value
@@ -86,15 +122,32 @@ const actions = manifest.actions.map((action) => ({
   description: description(action.description),
   inputSchema: {
     type: "object",
-    properties: Object.fromEntries(Object.entries(action.properties).map(([name, kind]) => [name, schemaType(kind)])),
+    properties: Object.fromEntries(Object.entries(action.properties).map(([name, kind]) => [name, schemaType(kind, action, name)])),
     required: action.required,
     additionalProperties: false
   }
 }));
 const snakeName = (value) => value.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
+const gatewayProjection = (action) => {
+  const gatewayMethod = gatewayManifest.methods.find((candidate) => candidate.rpc === action.rpc);
+  if (!gatewayMethod) throw new Error(`Action ${action.name} has no gateway method`);
+  const gatewayNames = (gatewayMethod.args ?? []).map((argument) =>
+    typeof argument === "string" ? argument : argument.name);
+  const gatewayNameSet = new Set(gatewayNames);
+  const mappings = Object.keys(action.properties).flatMap((name) => {
+    const target = action.name === "rename_current_preset" && name === "new_name"
+      ? "name" : name.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+    return gatewayNameSet.has(target) ? [[name, target]] : [];
+  });
+  const mappedTargets = new Set(mappings.map(([, target]) => target));
+  return {
+    method: gatewayMethod,
+    mappings,
+    gatewayTrueArguments: gatewayNames.filter((name) => name.startsWith("confirm") && !mappedTargets.has(name))
+  };
+};
 const gatewaySchemas = Object.fromEntries(actions.map((action) => {
-  const method = gatewayManifest.methods.find((candidate) => candidate.rpc === action.rpc);
-  if (!method) throw new Error(`Action ${action.name} has no gateway method`);
+  const { method } = gatewayProjection(action);
   const properties = Object.fromEntries((method.args ?? []).map((argument) => {
     const name = typeof argument === "string" ? argument : argument.name;
     const actionName = action.rpc === "device.renameCurrentPreset" && name === "name" ? "new_name" : snakeName(name);
@@ -132,14 +185,48 @@ export type SharedQcActionName = typeof SHARED_QC_ACTIONS[number]["name"];
 `;
 const python = `# Generated by scripts/generate-qc-actions.mjs. Do not edit by hand.
 MCP_INSTRUCTIONS = ${JSON.stringify(manifest.mcpInstructions)}
+MCP_ACTION_SCHEMAS = ${pyLiteral(Object.fromEntries(actions.map((action) => [action.name, action.inputSchema.properties])))}
+MCP_ACTION_DISTINCT_ARGUMENTS = ${pyLiteral(Object.fromEntries(actions.filter((action) => action.distinctArguments).map((action) => [action.name, action.distinctArguments])))}
 MCP_GATEWAY_ARGUMENTS = ${JSON.stringify(Object.fromEntries(actions.map((action) => {
   const method = gatewayManifest.methods.find((candidate) => candidate.rpc === action.rpc);
   if (!method) throw new Error(`Action ${action.name} has no gateway method`);
   return [action.name, (method.args ?? []).map((argument) => typeof argument === "string" ? argument : argument.name)];
 })), null, 2)}
 MCP_GATEWAY_SCHEMAS = ${pyLiteral(gatewaySchemas)}
+MCP_GATEWAY_MAPPINGS = ${pyLiteral(Object.fromEntries(actions.map((action) => [action.name, gatewayProjection(action).mappings])))}
+MCP_GATEWAY_TRUE_ARGUMENTS = ${pyLiteral(Object.fromEntries(actions.map((action) => [action.name, gatewayProjection(action).gatewayTrueArguments])))}
 SHARED_QC_ACTIONS = ${JSON.stringify(Object.fromEntries(actions.map(({ name, rpc, classification, access, description }) => [name, { rpc, classification, access, description }])), null, 2)
   .replaceAll("true", "True").replaceAll("false", "False").replaceAll("null", "None")}
+`;
+const pythonType = (kind) => {
+  if (kind === "boolean") return "bool";
+  if (kind === "nullable-boolean") return "bool | None";
+  if (["integer", "grid-row", "grid-column", "parameter-column", "scene-index", "tempo", "screen-x", "screen-y", "pedal", "expression-switch-mode", "bypass-delay", "io-input-port", "io-output-port"].includes(kind)) return "int";
+  if (["nullable-integer", "global-eq-filter"].includes(kind)) return "int | None";
+  if (["number", "normalized"].includes(kind)) return "float";
+  if (["nullable-normalized", "nullable-input-gain", "nullable-pan", "nullable-tempo-volume-db"].includes(kind)) return "float | None";
+  if (["string", "lane-control", "general-integer-setting", "general-toggle-setting", "scene-bypass-behavior", "tempo-mode", "looper-command"].includes(kind)) return "str";
+  if (["nullable-string", "nullable-visible-string", "nullable-time-signature", "nullable-tempo-subdivision", "nullable-metronome-sound", "nullable-metronome-routing"].includes(kind)) return "str | None";
+  if (kind === "midi-message-array") return "list[dict[str, int]]";
+  if (kind === "mode-cycle") return "list[int]";
+  if (kind === "boolean-row-array") return "list[bool]";
+  if (kind === "nullable-metronome-beats") return "list[str] | None";
+  if (kind === "nullable-looper-value") return "int | None";
+  throw new Error(`No Python MCP annotation mapping for ${kind}`);
+};
+const pythonTools = `# Generated by scripts/generate-qc-actions.mjs. Do not edit by hand.
+from __future__ import annotations
+
+from typing import Any
+
+
+class GeneratedQcTools:
+${actions.map((action) => `    def ${action.name}(
+        self,
+${Object.entries(action.properties).map(([name, kind]) => `        ${name}: ${pythonType(kind)},`).join("\n")}
+    ) -> Any:
+        \"\"\"${action.description.replaceAll("\"\"\"", "\\\"\\\"\\\"")}\"\"\"
+        return self._invoke_generated_action(${JSON.stringify(action.name)}, locals())`).join("\n\n")}
 `;
 const javaValues = (values) => values.map((value) => `        ${JSON.stringify(value)}`).join(",\n");
 const remoteMethods = ["system.status", ...new Set(actions.map(({ rpc }) => rpc))];
@@ -255,7 +342,7 @@ const rustKind = (action, name, kind) => {
     "expression-switch-mode": "EXPRESSION_SWITCH_MODE", "grid-column": "GRID_COLUMN",
     "grid-row": "GRID_ROW", "parameter-column": "PARAMETER_COLUMN", "scene-index": "SCENE",
     tempo: "TEMPO", pedal: "PEDAL", "midi-message-array": "Kind::MidiMessages",
-    "nullable-string": "Kind::NullableString", "nullable-boolean": "Kind::NullableBoolean",
+    "nullable-string": "Kind::NullableString", "nullable-visible-string": "Kind::NullableVisibleString { max_chars: 32 }", "nullable-boolean": "Kind::NullableBoolean",
     "nullable-looper-value": "Kind::NullableInteger { min: 0, max: Some(13) }",
     "nullable-normalized": "Kind::NullableNumber { min: 0.0, max: Some(1.0) }",
     "nullable-input-gain": "Kind::NullableNumber { min: -12.0, max: Some(60.0) }",
@@ -281,7 +368,7 @@ const rustKind = (action, name, kind) => {
   if (kind === "integer") {
     if (name === "color") return "Kind::Integer { min: 0, max: Some(u32::MAX as i64) }";
     if (action.name === "press_footswitch" && name === "index") return "Kind::Integer { min: 0, max: Some(10) }";
-    if (action.name === "navigate_bank" && name === "direction") return "Kind::Integer { min: -1, max: Some(1) }";
+    if (action.name === "navigate_bank" && name === "direction") return "Kind::IntegerEnum(&[-1, 1])";
     if (action.name === "select_mode_slot" && name === "slot") return "Kind::Integer { min: 0, max: Some(2) }";
     if (action.name === "set_parameter_expression" && name === "pedal") return "Kind::Integer { min: 0, max: Some(2) }";
     if (action.name === "set_midi_out" && name === "source") return "Kind::Integer { min: 0, max: Some(9) }";
@@ -314,6 +401,7 @@ pub static ACTIONS: &[ActionSpec] = &[\n${actions.map((action) => `    ActionSpe
         classification: Classification::${rustClassification[action.classification]},\n\
         description: ${JSON.stringify(action.description)},\n\
         properties: &[${Object.entries(action.properties).map(([name, kind]) => `${action.required.includes(name) ? "p!" : "p!"}(${action.required.includes(name) ? "" : "? "}${JSON.stringify(name)}, ${rustKind(action, name, kind)})`).join(", ")}],\n\
+        distinct_arguments: &[${(action.distinctArguments ?? []).map(([left, right]) => `(${JSON.stringify(left)}, ${JSON.stringify(right)})`).join(", ")}],\n\
     }`).join(",\n")}\n];\n`;
 const rustMcpActions = execFileSync("rustfmt", ["--edition", "2024"], {
   input: rustMcpActionsRaw,
@@ -328,7 +416,6 @@ const relayClass = {
   "risky-write": "RiskyWrite",
   "persistent-write": "PersistentWrite"
 };
-const snakeToCamel = (value) => value.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
 const relayRust = `// Generated by scripts/generate-qc-actions.mjs. Do not edit by hand.
 use crate::protocol::{ActionClass, ActionPolicy};
 
@@ -349,18 +436,7 @@ ${actions.map((action) => {
   const required = confirmations.length
     ? `&[${confirmations.map((name) => JSON.stringify(name)).join(", ")}]`
     : "NONE";
-  const gatewayMethod = gatewayManifest.methods.find((candidate) => candidate.rpc === action.rpc);
-  if (!gatewayMethod) throw new Error(`Action ${action.name} has no gateway method`);
-  const gatewayNames = new Set((gatewayMethod.args ?? []).map((argument) =>
-    typeof argument === "string" ? argument : argument.name));
-  const mappings = Object.keys(action.properties).flatMap((name) => {
-    const target = action.name === "rename_current_preset" && name === "new_name"
-      ? "name" : snakeToCamel(name);
-    return gatewayNames.has(target) ? [[name, target]] : [];
-  });
-  const mappedTargets = new Set(mappings.map(([, target]) => target));
-  const gatewayTrueArguments = [...gatewayNames].filter((name) =>
-    name.startsWith("confirm") && !mappedTargets.has(name));
+  const { mappings, gatewayTrueArguments } = gatewayProjection(action);
   return `    ActionPolicy {
         name: ${JSON.stringify(action.name)},
         rpc: ${JSON.stringify(action.rpc)},
@@ -377,6 +453,7 @@ ${actions.map((action) => {
 const outputs = [
   [resolve(root, "packages/typescript/qc-core/src/generated-actions.ts"), typescript],
   [resolve(root, "services/mcp-server/src/qc_mcp_server/generated_actions.py"), python],
+  [resolve(root, "services/mcp-server/src/qc_mcp_server/generated_tools.py"), pythonTools],
   [resolve(root, "services/rust-mcp/src/generated_instructions.rs"), rustMcpInstructions],
   [resolve(root, "services/rust-mcp/src/generated_actions.rs"), rustMcpActions],
   [resolve(root, "apps/android/android/app/src/main/java/com/qccontrol/mobile/GeneratedRemoteActions.java"), java],

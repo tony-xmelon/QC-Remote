@@ -333,6 +333,9 @@ fn validate(spec: &ActionSpec, args: &Map<String, Value>) -> Result<(), String> 
                     && s.chars().count() <= max_chars
                     && !s.chars().any(char::is_control)
             }),
+            Kind::NullableVisibleString { max_chars } => value.is_null() || value.as_str().is_some_and(|s| {
+                s.chars().count() <= max_chars && !s.chars().any(char::is_control)
+            }),
             Kind::NullableString => value.is_null() || value.is_string(),
             Kind::NullableInteger { min, max } => {
                 value.is_null()
@@ -367,6 +370,7 @@ fn validate(spec: &ActionSpec, args: &Map<String, Value>) -> Result<(), String> 
             Kind::Integer { min, max } => value
                 .as_i64()
                 .is_some_and(|n| n >= min && max.is_none_or(|m| n <= m)),
+            Kind::IntegerEnum(values) => value.as_i64().is_some_and(|n| values.contains(&n)),
             Kind::Number { min, max } => value
                 .as_f64()
                 .is_some_and(|n| n >= min && max.is_none_or(|m| n <= m)),
@@ -400,24 +404,10 @@ fn validate(spec: &ActionSpec, args: &Map<String, Value>) -> Result<(), String> 
             return Err(format!("invalid {}", p.name));
         }
     }
-    if spec.name == "navigate_bank"
-        && !matches!(args.get("direction").and_then(Value::as_i64), Some(-1 | 1))
-    {
-        return Err("direction must be -1 or 1".into());
-    }
-    if spec.name == "copy_scene"
-        && args.get("from_scene").and_then(Value::as_i64)
-            == args.get("to_scene").and_then(Value::as_i64)
-    {
-        return Err("from_scene and to_scene must be different".into());
-    }
-    if spec.name == "set_scene_label"
-        && args
-            .get("label")
-            .and_then(Value::as_str)
-            .is_some_and(|label| label.chars().count() > 32 || label.chars().any(char::is_control))
-    {
-        return Err("label must contain at most 32 non-control characters".into());
+    for (left, right) in spec.distinct_arguments {
+        if args.get(*left) == args.get(*right) {
+            return Err(format!("{left} and {right} must be different"));
+        }
     }
     Ok(())
 }
@@ -471,6 +461,7 @@ fn gateway_params(spec: &ActionSpec, args: Map<String, Value>) -> Map<String, Va
                         property.kind,
                         crate::actions::Kind::NullableInteger { .. }
                             | crate::actions::Kind::NullableString
+                            | crate::actions::Kind::NullableVisibleString { .. }
                             | crate::actions::Kind::NullableBoolean
                             | crate::actions::Kind::NullableNumber { .. }
                     )

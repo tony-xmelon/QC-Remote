@@ -110,10 +110,12 @@ export const SHARED_QC_ACTIONS = [
       "type": "object",
       "properties": {
         "after_sequence": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "limit": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         }
       },
       "required": [
@@ -406,7 +408,9 @@ export const SHARED_QC_ACTIONS = [
       "type": "object",
       "properties": {
         "input_port_id": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9
         },
         "confirm_tuner_activation": {
           "type": "boolean"
@@ -552,7 +556,8 @@ export const SHARED_QC_ACTIONS = [
           "minLength": 1
         },
         "position": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "is_factory": {
           "type": "boolean"
@@ -619,13 +624,18 @@ export const SHARED_QC_ACTIONS = [
           "maximum": 9
         },
         "parameter_index": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "value": {
-          "type": "number"
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
         },
         "expected_value": {
-          "type": "number"
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
         },
         "expected_scene": {
           "type": "integer",
@@ -687,13 +697,18 @@ export const SHARED_QC_ACTIONS = [
           ]
         },
         "parameter_index": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "value": {
-          "type": "number"
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
         },
         "expected_value": {
-          "type": "number"
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
         },
         "expected_preset_name": {
           "type": "string",
@@ -730,7 +745,9 @@ export const SHARED_QC_ACTIONS = [
       "properties": {
         "name": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[^\\x00-\\x1F\\x7F]*$"
         },
         "confirm_persistent_write": {
           "type": "boolean"
@@ -762,7 +779,9 @@ export const SHARED_QC_ACTIONS = [
       "properties": {
         "name": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[^\\x00-\\x1F\\x7F]*$"
         },
         "confirm_persistent_write": {
           "type": "boolean"
@@ -917,6 +936,12 @@ export const SHARED_QC_ACTIONS = [
       "swap",
       "expected_preset_name"
     ],
+    "distinctArguments": [
+      [
+        "from_scene",
+        "to_scene"
+      ]
+    ],
     "access": "modify",
     "inputSchema": {
       "type": "object",
@@ -955,7 +980,7 @@ export const SHARED_QC_ACTIONS = [
     "description": "Set or clear the label of one scene in the current preset.",
     "properties": {
       "scene": "scene-index",
-      "label": "nullable-string",
+      "label": "nullable-visible-string",
       "expected_preset_name": "string"
     },
     "required": [
@@ -976,7 +1001,9 @@ export const SHARED_QC_ACTIONS = [
           "type": [
             "string",
             "null"
-          ]
+          ],
+          "maxLength": 32,
+          "pattern": "^[^\\x00-\\x1F\\x7F]*$"
         },
         "expected_preset_name": {
           "type": "string",
@@ -1016,7 +1043,9 @@ export const SHARED_QC_ACTIONS = [
           "maximum": 7
         },
         "color": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
         },
         "expected_preset_name": {
           "type": "string",
@@ -1051,7 +1080,9 @@ export const SHARED_QC_ACTIONS = [
       "type": "object",
       "properties": {
         "index": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10
         },
         "expected_mode": {
           "type": "string",
@@ -1123,14 +1154,19 @@ export const SHARED_QC_ACTIONS = [
       "type": "object",
       "properties": {
         "direction": {
-          "type": "integer"
+          "type": "integer",
+          "enum": [
+            -1,
+            1
+          ]
         },
         "expected_preset_name": {
           "type": "string",
           "minLength": 1
         },
         "expected_position": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         }
       },
       "required": [
@@ -1209,7 +1245,9 @@ export const SHARED_QC_ACTIONS = [
       "type": "object",
       "properties": {
         "slot": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2
         },
         "expected_preset_name": {
           "type": "string",
@@ -1243,10 +1281,14 @@ export const SHARED_QC_ACTIONS = [
       "type": "object",
       "properties": {
         "value": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
         },
         "expected_value": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
         },
         "confirm_risky_operation": {
           "type": "boolean"
@@ -1286,14 +1328,16 @@ export const SHARED_QC_ACTIONS = [
           "minLength": 1
         },
         "position": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "expected_preset_name": {
           "type": "string",
           "minLength": 1
         },
         "expected_position": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         }
       },
       "required": [
@@ -1329,7 +1373,8 @@ export const SHARED_QC_ACTIONS = [
           "minLength": 1
         },
         "expected_position": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "confirm_risky_operation": {
           "type": "boolean"
@@ -1485,13 +1530,18 @@ export const SHARED_QC_ACTIONS = [
           "maximum": 9
         },
         "parameter_index": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "value": {
-          "type": "number"
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
         },
         "expected_value": {
-          "type": "number"
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
         },
         "expected_scene": {
           "type": "integer",
@@ -1549,7 +1599,8 @@ export const SHARED_QC_ACTIONS = [
           "maximum": 9
         },
         "parameter_index": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "enabled": {
           "type": "boolean"
@@ -1607,16 +1658,23 @@ export const SHARED_QC_ACTIONS = [
           "maximum": 9
         },
         "parameter_index": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "pedal": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2
         },
         "minimum": {
-          "type": "number"
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
         },
         "maximum": {
-          "type": "number"
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
         },
         "expected_preset_name": {
           "type": "string",
@@ -1673,13 +1731,18 @@ export const SHARED_QC_ACTIONS = [
           ]
         },
         "parameter_index": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "value": {
-          "type": "number"
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
         },
         "expected_value": {
-          "type": "number"
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
         },
         "expected_preset_name": {
           "type": "string",
@@ -1733,7 +1796,8 @@ export const SHARED_QC_ACTIONS = [
           ]
         },
         "parameter_index": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "enabled": {
           "type": "boolean"
@@ -1870,7 +1934,8 @@ export const SHARED_QC_ACTIONS = [
           "maximum": 7
         },
         "expected_model_id": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "expected_preset_name": {
           "type": "string",
@@ -1919,7 +1984,8 @@ export const SHARED_QC_ACTIONS = [
           "maximum": 7
         },
         "model_id": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 1
         },
         "expected_preset_name": {
           "type": "string",
@@ -1967,7 +2033,8 @@ export const SHARED_QC_ACTIONS = [
           "maximum": 7
         },
         "expected_model_id": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "expected_preset_name": {
           "type": "string",
@@ -2022,16 +2089,21 @@ export const SHARED_QC_ACTIONS = [
           "type": [
             "integer",
             "null"
-          ]
+          ],
+          "minimum": 0,
+          "maximum": 7
         },
         "expected_footswitch": {
           "type": [
             "integer",
             "null"
-          ]
+          ],
+          "minimum": 0,
+          "maximum": 7
         },
         "expected_model_id": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "expected_preset_name": {
           "type": "string",
@@ -2069,7 +2141,8 @@ export const SHARED_QC_ACTIONS = [
       "type": "object",
       "properties": {
         "footswitch": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "momentary": {
           "type": "boolean"
@@ -2107,11 +2180,14 @@ export const SHARED_QC_ACTIONS = [
       "type": "object",
       "properties": {
         "footswitch": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "label": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "maxLength": 32,
+          "pattern": "^[^\\x00-\\x1F\\x7F]*$"
         },
         "expected_preset_name": {
           "type": "string",
@@ -2146,7 +2222,9 @@ export const SHARED_QC_ACTIONS = [
       "type": "object",
       "properties": {
         "source": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9
         },
         "messages": {
           "type": "array",
@@ -2301,10 +2379,12 @@ export const SHARED_QC_ACTIONS = [
           "maximum": 3
         },
         "input_id": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "expected_input_id": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "expected_preset_name": {
           "type": "string",
@@ -2347,10 +2427,12 @@ export const SHARED_QC_ACTIONS = [
           "maximum": 3
         },
         "output_id": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "expected_output_id": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "expected_preset_name": {
           "type": "string",
@@ -2400,25 +2482,33 @@ export const SHARED_QC_ACTIONS = [
           "type": [
             "integer",
             "null"
-          ]
+          ],
+          "minimum": -1,
+          "maximum": 7
         },
         "mix_column": {
           "type": [
             "integer",
             "null"
-          ]
+          ],
+          "minimum": -1,
+          "maximum": 7
         },
         "expected_split_column": {
           "type": [
             "integer",
             "null"
-          ]
+          ],
+          "minimum": -1,
+          "maximum": 7
         },
         "expected_mix_column": {
           "type": [
             "integer",
             "null"
-          ]
+          ],
+          "minimum": -1,
+          "maximum": 7
         },
         "expected_preset_name": {
           "type": "string",
@@ -2514,7 +2604,8 @@ export const SHARED_QC_ACTIONS = [
           "minLength": 1
         },
         "position": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "name": {
           "type": "string",
@@ -2525,7 +2616,8 @@ export const SHARED_QC_ACTIONS = [
           "minLength": 1
         },
         "expected_position": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "confirm_overwrite": {
           "type": "boolean"
@@ -2576,7 +2668,8 @@ export const SHARED_QC_ACTIONS = [
           "minLength": 1
         },
         "expected_position": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "confirm_persistent_write": {
           "type": "boolean"
@@ -2627,7 +2720,8 @@ export const SHARED_QC_ACTIONS = [
           "minLength": 1
         },
         "source_position": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "source_name": {
           "type": "string",
@@ -2638,14 +2732,16 @@ export const SHARED_QC_ACTIONS = [
           "minLength": 1
         },
         "destination_position": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "expected_preset_name": {
           "type": "string",
           "minLength": 1
         },
         "expected_position": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "confirm_overwrite": {
           "type": "boolean"
@@ -3045,7 +3141,9 @@ export const SHARED_QC_ACTIONS = [
       "type": "object",
       "properties": {
         "band": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
         },
         "gain": {
           "type": [
@@ -3618,7 +3716,8 @@ export const SHARED_QC_ACTIONS = [
       "type": "object",
       "properties": {
         "model_id": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 1
         },
         "pinned": {
           "type": "boolean"
@@ -3699,13 +3798,15 @@ export const SHARED_QC_ACTIONS = [
           "type": [
             "integer",
             "null"
-          ]
+          ],
+          "minimum": 1
         },
         "expected_model_id": {
           "type": [
             "integer",
             "null"
-          ]
+          ],
+          "minimum": 0
         },
         "expected_preset_name": {
           "type": "string",
@@ -3800,19 +3901,23 @@ export const SHARED_QC_ACTIONS = [
           "minLength": 1
         },
         "slot": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1
         },
         "model_id": {
           "type": [
             "integer",
             "null"
-          ]
+          ],
+          "minimum": 1
         },
         "expected_model_id": {
           "type": [
             "integer",
             "null"
-          ]
+          ],
+          "minimum": 0
         },
         "expected_preset_name": {
           "type": "string",
@@ -3851,7 +3956,9 @@ export const SHARED_QC_ACTIONS = [
       "properties": {
         "name": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[^\\x00-\\x1F\\x7F]*$"
         },
         "confirm_persistent_write": {
           "type": "boolean"
@@ -3883,7 +3990,9 @@ export const SHARED_QC_ACTIONS = [
       "properties": {
         "name": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[^\\x00-\\x1F\\x7F]*$"
         },
         "confirm_persistent_write": {
           "type": "boolean"
@@ -3927,20 +4036,26 @@ export const SHARED_QC_ACTIONS = [
         },
         "destination_name": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[^\\x00-\\x1F\\x7F]*$"
         },
         "limit": {
           "type": [
             "integer",
             "null"
-          ]
+          ],
+          "minimum": 0,
+          "maximum": 256
         },
         "expected_preset_name": {
           "type": "string",
           "minLength": 1
         },
         "expected_position": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
         },
         "confirm_persistent_write": {
           "type": "boolean"
@@ -4026,7 +4141,9 @@ export const SHARED_QC_ACTIONS = [
           "minLength": 1
         },
         "position": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
         },
         "confirm_persistent_write": {
           "type": "boolean"
@@ -4071,7 +4188,9 @@ export const SHARED_QC_ACTIONS = [
           ]
         },
         "value": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
         },
         "confirm_persistent_write": {
           "type": "boolean"

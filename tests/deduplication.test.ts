@@ -294,6 +294,7 @@ test("one shared action registry drives model tools and MCP safety classes", () 
   const chat = source("apps/windows/src/model-chat.ts");
   const assistantTools = source("packages/typescript/qc-core/src/assistant-tools.ts");
   const mcp = source("services/mcp-server/src/qc_mcp_server/server.py");
+  const generatedPythonTools = source("services/mcp-server/src/qc_mcp_server/generated_tools.py");
   const rustRuntime = source("services/rust-mcp/src/actions.rs");
   const rustGenerated = source("services/rust-mcp/src/generated_actions.rs");
   const pythonParityTests = source("services/mcp-server/tests/test_mcp_server.py");
@@ -306,6 +307,10 @@ test("one shared action registry drives model tools and MCP safety classes", () 
   assert.match(assistantTools, /action\.classification === "read"/);
   assert.match(mcp, /for name, action in SHARED_QC_ACTIONS\.items\(\)/);
   assert.match(mcp, /annotations\[action\["classification"\]\]/);
+  assert.match(mcp, /class QcTools\(GeneratedQcTools\)/);
+  assert.match(mcp, /def _invoke_generated_action/);
+  assert.doesNotMatch(mcp, /def set_parameter\(/);
+  assert.equal((generatedPythonTools.match(/^    def /gm) ?? []).length, actions.length);
   assert.match(rustRuntime, /include!\("generated_actions\.rs"\)/);
   assert.doesNotMatch(rustRuntime, /name:\s*"reconnect_device"/);
   assert.equal((rustGenerated.match(/\bActionSpec \{/g) ?? []).length, actions.length);

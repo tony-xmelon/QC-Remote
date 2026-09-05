@@ -6,6 +6,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::RiskyWrite,
         description: "Reconnect the native Quad Cortex transport after explicit confirmation.",
         properties: &[p!("confirm_risky_operation", BOOL)],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "reset_device_session",
@@ -13,6 +14,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::RiskyWrite,
         description: "Reset and re-synchronize the native Quad Cortex communication session after explicit confirmation.",
         properties: &[p!("confirm_risky_operation", BOOL)],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "disconnect_device",
@@ -20,6 +22,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::RiskyWrite,
         description: "Close the native Quad Cortex transport after explicit confirmation.",
         properties: &[p!("confirm_risky_operation", BOOL)],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "get_current_preset",
@@ -27,6 +30,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::Read,
         description: "Read the authoritative current preset, scene, tempo and Grid state.",
         properties: &[],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "get_state_events",
@@ -34,6 +38,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::Read,
         description: "Read native state frames after a sequence cursor.",
         properties: &[p!("after_sequence", UINT), p!("limit", UINT)],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "get_tempo_clock",
@@ -41,6 +46,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::Read,
         description: "Read the most recent native metronome beat, bar and tick state.",
         properties: &[],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "get_block_details",
@@ -52,6 +58,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("column", PARAMETER_COLUMN),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "get_lane_control_details",
@@ -63,6 +70,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("control", Kind::StringEnum(&["inputGate", "laneOutput"])),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "list_models",
@@ -70,6 +78,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::Read,
         description: "Find installed block models and their numeric IDs.",
         properties: &[p!("query", Kind::NullableString)],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "list_presets",
@@ -77,6 +86,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::Read,
         description: "List presets in a setlist, optionally refreshing the device index.",
         properties: &[p!("refresh", BOOL), p!("setlist_key", Kind::NullableString)],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "list_preset_folders",
@@ -84,6 +94,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::Read,
         description: "List preset folders and setlists, optionally refreshing the device index.",
         properties: &[p!("refresh", BOOL)],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "list_preset_slots",
@@ -91,6 +102,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::Read,
         description: "List preset destinations and their occupancy before a persistent write.",
         properties: &[],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "get_master_volume",
@@ -98,6 +110,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::Read,
         description: "Read the authoritative master output volume.",
         properties: &[],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "get_device_identity",
@@ -105,6 +118,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::Read,
         description: "Read the connected Quad Cortex serial number, firmware version, type and custom name.",
         properties: &[],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "get_inhibited_modules",
@@ -112,6 +126,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::Read,
         description: "Read the authoritative Global Gate and Global EQ inhibition state.",
         properties: &[],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "get_tuner_settings",
@@ -119,6 +134,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::Read,
         description: "Read the tuner input, mute preference, and reference pitch without changing or engaging the tuner.",
         properties: &[],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_tuner_input",
@@ -136,6 +152,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_tuner_activation", BOOL),
             p!("confirm_risky_operation", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_tuner_mute",
@@ -147,6 +164,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_tuner_activation", BOOL),
             p!("confirm_risky_operation", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "restore_tuner_audio",
@@ -157,6 +175,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_preference_reset", BOOL),
             p!("confirm_risky_operation", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_tuner_reference",
@@ -174,6 +193,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_tuner_activation", BOOL),
             p!("confirm_risky_operation", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "get_preset_screenshot",
@@ -185,6 +205,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("position", UINT),
             p!("is_factory", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "capture_screen",
@@ -192,6 +213,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::Read,
         description: "Capture the current Quad Cortex touchscreen as a PNG image.",
         properties: &[],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "preview_parameter",
@@ -207,6 +229,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_scene", SCENE),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "preview_lane_control_parameter",
@@ -221,6 +244,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_value", NORMALIZED),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "create_device_backup",
@@ -231,6 +255,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("name", Kind::VisibleString { max_chars: 64 }),
             p!("confirm_persistent_write", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_device_name",
@@ -241,6 +266,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("name", Kind::VisibleString { max_chars: 64 }),
             p!("confirm_persistent_write", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "undo_device",
@@ -248,6 +274,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::RiskyWrite,
         description: "Undo the most recent device edit after explicit confirmation.",
         properties: &[p!("confirm_risky_operation", BOOL)],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "redo_device",
@@ -255,6 +282,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::RiskyWrite,
         description: "Redo the most recently undone device edit after explicit confirmation.",
         properties: &[p!("confirm_risky_operation", BOOL)],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "tap_screen",
@@ -278,6 +306,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             ),
             p!("confirm_risky_operation", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "select_scene",
@@ -285,6 +314,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Immediately select a performance scene, numbered 0 through 7.",
         properties: &[p!("scene", SCENE), p!("expected_preset_name", TEXT)],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "copy_scene",
@@ -297,6 +327,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("swap", BOOL),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[("from_scene", "to_scene")],
     },
     ActionSpec {
         name: "set_scene_label",
@@ -305,9 +336,10 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Set or clear the label of one scene in the current preset.",
         properties: &[
             p!("scene", SCENE),
-            p!("label", Kind::NullableString),
+            p!("label", Kind::NullableVisibleString { max_chars: 32 }),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_scene_color",
@@ -325,6 +357,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             ),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "press_footswitch",
@@ -342,6 +375,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_mode", TEXT),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "tap_tempo",
@@ -349,6 +383,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Tap the dedicated Quad Cortex tempo control through its official MIDI command.",
         properties: &[p!("expected_mode", TEXT), p!("expected_preset_name", TEXT)],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "navigate_bank",
@@ -356,16 +391,11 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Immediately navigate one performance bank down (-1) or up (1).",
         properties: &[
-            p!(
-                "direction",
-                Kind::Integer {
-                    min: -1,
-                    max: Some(1)
-                }
-            ),
+            p!("direction", Kind::IntegerEnum(&[-1, 1])),
             p!("expected_preset_name", TEXT),
             p!("expected_position", UINT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "show_tuner",
@@ -373,6 +403,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Show or hide the tuner.",
         properties: &[p!("shown", BOOL)],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "show_gig_view",
@@ -380,6 +411,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Show or hide Gig View.",
         properties: &[p!("shown", BOOL)],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "select_mode_slot",
@@ -396,6 +428,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             ),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_master_volume",
@@ -407,6 +440,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_value", PERCENT),
             p!("confirm_risky_operation", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "recall_preset",
@@ -419,6 +453,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
             p!("expected_position", UINT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "reload_preset",
@@ -430,6 +465,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_position", UINT),
             p!("confirm_risky_operation", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_tempo",
@@ -441,6 +477,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_tempo", TEMPO),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_bypass",
@@ -455,6 +492,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_scene", SCENE),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_parameter",
@@ -470,6 +508,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_scene", SCENE),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_parameter_scene_mode",
@@ -483,6 +522,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("enabled", BOOL),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_parameter_expression",
@@ -504,6 +544,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("maximum", NORMALIZED),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_lane_control_parameter",
@@ -518,6 +559,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_value", NORMALIZED),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_lane_control_scene_mode",
@@ -531,6 +573,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("enabled", BOOL),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_expression_bypass",
@@ -547,6 +590,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("latch_emulation", BOOL),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "move_block",
@@ -560,6 +604,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_model_id", UINT),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "add_block",
@@ -572,6 +617,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("model_id", Kind::Integer { min: 1, max: None }),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "remove_block",
@@ -584,6 +630,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_model_id", UINT),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_block_footswitch",
@@ -610,6 +657,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_model_id", UINT),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_stomp_momentary",
@@ -621,6 +669,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("momentary", BOOL),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_stomp_label",
@@ -632,6 +681,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("label", Kind::VisibleString { max_chars: 32 }),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_midi_out",
@@ -649,6 +699,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("messages", Kind::MidiMessages),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_preset_load_midi_out",
@@ -659,6 +710,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("messages", Kind::MidiMessages),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_chain_input",
@@ -671,6 +723,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_input_id", UINT),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_chain_output",
@@ -683,6 +736,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_output_id", UINT),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_chain_split",
@@ -721,6 +775,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             ),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_split_mute",
@@ -733,6 +788,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_muted", BOOL),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "save_preset_as",
@@ -748,6 +804,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_overwrite", BOOL),
             p!("confirm_persistent_write", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "rename_current_preset",
@@ -760,6 +817,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_position", UINT),
             p!("confirm_persistent_write", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "copy_preset",
@@ -777,6 +835,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_overwrite", BOOL),
             p!("confirm_persistent_write", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "get_general_settings",
@@ -784,6 +843,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::Read,
         description: "Read the QC Device Settings and System settings without changing them.",
         properties: &[],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "get_io_settings",
@@ -791,6 +851,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::Read,
         description: "Read complete input, output, headphone, USB, MIDI, expression-pedal, connection, and output-pairing settings.",
         properties: &[],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_input_port",
@@ -835,6 +896,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             ),
             p!("confirm_persistent_write", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_output_port",
@@ -866,6 +928,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("mute", Kind::NullableBoolean),
             p!("confirm_persistent_write", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_usb_port",
@@ -896,6 +959,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             ),
             p!("confirm_persistent_write", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_midi_thru",
@@ -903,6 +967,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::PersistentWrite,
         description: "Enable or disable the QC MIDI Thru setting after explicit confirmation.",
         properties: &[p!("enabled", BOOL), p!("confirm_persistent_write", BOOL)],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_output_pairing",
@@ -914,6 +979,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("out34_linked", Kind::NullableBoolean),
             p!("confirm_persistent_write", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "get_global_eq",
@@ -921,6 +987,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::Read,
         description: "Read Global EQ bypass state and all 28 normalized parameters.",
         properties: &[],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_global_eq_bypassed",
@@ -928,6 +995,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::PersistentWrite,
         description: "Enable or bypass the global EQ after explicit confirmation.",
         properties: &[p!("bypassed", BOOL), p!("confirm_persistent_write", BOOL)],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_global_eq_band",
@@ -973,6 +1041,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("enabled", Kind::NullableBoolean),
             p!("confirm_persistent_write", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_global_eq_output",
@@ -991,6 +1060,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("out34", Kind::NullableBoolean),
             p!("confirm_persistent_write", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "get_mode_cycle",
@@ -998,6 +1068,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::Read,
         description: "Read the configured footswitch modes in cycle order.",
         properties: &[],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_mode_cycle",
@@ -1017,6 +1088,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             ),
             p!("confirm_persistent_write", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "get_global_tempo_settings",
@@ -1024,6 +1096,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::Read,
         description: "Read the device-global tempo block, including PRESET/GLOBAL mode, metronome options, routing, and all thirteen beat cells.",
         properties: &[],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_tempo_metronome",
@@ -1096,6 +1169,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             ),
             p!("confirm_persistent_write", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_tempo_mode",
@@ -1106,6 +1180,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("mode", Kind::StringEnum(&["PRESET", "GLOBAL"])),
             p!("confirm_persistent_write", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "get_looper_status",
@@ -1113,6 +1188,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::Read,
         description: "Read the complete Looper X transport and progress state when a looper is present.",
         properties: &[],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "control_looper",
@@ -1148,6 +1224,7 @@ pub static ACTIONS: &[ActionSpec] = &[
                 }
             ),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "list_recents",
@@ -1155,6 +1232,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::Read,
         description: "List recently used presets with authoritative folder metadata.",
         properties: &[],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "list_favorites",
@@ -1162,6 +1240,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::Read,
         description: "List favorite presets using request correlation even when the reply omits its favorites flag.",
         properties: &[],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_favorite",
@@ -1176,6 +1255,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("favorite", BOOL),
             p!("confirm_persistent_write", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "list_pinned_models",
@@ -1183,6 +1263,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::Read,
         description: "List model IDs and capture keys pinned in the device model browser.",
         properties: &[],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_model_pinned",
@@ -1194,6 +1275,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("pinned", BOOL),
             p!("confirm_persistent_write", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "list_captures",
@@ -1201,6 +1283,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::Read,
         description: "List loadable Neural Captures with their content keys and names.",
         properties: &[],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "load_capture",
@@ -1219,6 +1302,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             ),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "list_irs",
@@ -1226,6 +1310,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::Read,
         description: "List loadable Impulse Responses from the whole library or a selected device folder.",
         properties: &[p!("folder", Kind::NullableString)],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "load_ir",
@@ -1251,6 +1336,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             ),
             p!("expected_preset_name", TEXT),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "create_setlist",
@@ -1261,6 +1347,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("name", Kind::VisibleString { max_chars: 64 }),
             p!("confirm_persistent_write", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "delete_setlist",
@@ -1271,6 +1358,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("name", Kind::VisibleString { max_chars: 64 }),
             p!("confirm_persistent_write", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "duplicate_setlist",
@@ -1297,6 +1385,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             ),
             p!("confirm_persistent_write", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "delete_preset",
@@ -1308,6 +1397,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("name", TEXT),
             p!("confirm_persistent_write", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "move_preset",
@@ -1326,6 +1416,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             ),
             p!("confirm_persistent_write", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_general_integer",
@@ -1346,6 +1437,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("value", PERCENT),
             p!("confirm_persistent_write", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_general_toggle",
@@ -1370,6 +1462,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("enabled", BOOL),
             p!("confirm_persistent_write", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_scene_bypass_behavior",
@@ -1383,6 +1476,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             ),
             p!("confirm_persistent_write", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_master_volume_assignment",
@@ -1396,6 +1490,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("headphones", BOOL),
             p!("confirm_persistent_write", BOOL),
         ],
+        distinct_arguments: &[],
     },
     ActionSpec {
         name: "set_global_bypass",
@@ -1407,5 +1502,6 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("ir", Kind::BooleanRows),
             p!("confirm_persistent_write", BOOL),
         ],
+        distinct_arguments: &[],
     },
 ];
