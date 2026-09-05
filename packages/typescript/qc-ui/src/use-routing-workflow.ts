@@ -1,23 +1,12 @@
 import { useCallback, useMemo, useState, type Dispatch, type SetStateAction } from "react";
-import type { GatewayTransport, PresetSnapshot } from "@ndsp-qc/client";
+import type { GatewayTransport } from "@ndsp-qc/client";
 import { inputRouteOptions, outputRouteOptions, routeDraftsFromSnapshot, routeOptionValue, routeOptionsForRow, type RouteDrafts } from "@ndsp-qc/core";
 import type { CorOsRoutingPickerState } from "./quad-cortex-surface";
-import type { DeviceHistoryEntry } from "./use-device-history";
-import type { WorkflowPrompts } from "./use-preset-workflow";
+import type { DeviceMutationWorkflowOptions } from "./workflow-options";
 
 export type RoutePicker = { row: number; side: "input" | "output" };
 
-export interface RoutingWorkflowOptions {
-  gateway: GatewayTransport;
-  snapshot: PresetSnapshot;
-  connected: boolean;
-  pending: boolean;
-  setPending(pending: boolean): void;
-  reconcile(snapshot: PresetSnapshot): void;
-  recordHistory(entry: DeviceHistoryEntry): void;
-  prompts: WorkflowPrompts;
-  notice(message: string): void;
-  fail(error: unknown): void;
+export interface RoutingWorkflowOptions extends DeviceMutationWorkflowOptions {
   onOpenAdvanced?(): void;
 }
 

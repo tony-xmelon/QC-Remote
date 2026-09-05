@@ -32,7 +32,8 @@ export type { DeviceHistoryEntry, DeviceHistoryOptions } from "./use-device-hist
 export { useGridWorkflow } from "./use-grid-workflow";
 export type { GridWorkflowOptions } from "./use-grid-workflow";
 export { usePresetWorkflow } from "./use-preset-workflow";
-export type { PresetClipboard, PresetWorkflowController, UsePresetWorkflowOptions, WorkflowPrompts } from "./use-preset-workflow";
+export type { PresetClipboard, PresetWorkflowController, UsePresetWorkflowOptions } from "./use-preset-workflow";
+export type { DeviceMutationWorkflowOptions, WorkflowPrompts } from "./workflow-options";
 export { useRoutingWorkflow } from "./use-routing-workflow";
 export type { RoutePicker, RoutingWorkflowController, RoutingWorkflowOptions } from "./use-routing-workflow";
 export { useParameterWorkflow } from "./use-parameter-workflow";

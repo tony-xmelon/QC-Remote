@@ -1,15 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import type { GatewayTransport, PresetEntry, PresetList, PresetSnapshot, SavePresetResult } from "@ndsp-qc/client";
 import type { PresetDirectoryState } from "./quad-cortex-surface";
+import type { WorkflowPrompts } from "./workflow-options";
 
 export type PresetClipboard = Pick<PresetSnapshot,
   "setlistKey" | "setlistName" | "presetPosition" | "presetLocation" | "presetName"
 >;
-
-export interface WorkflowPrompts {
-  confirm(message: string): boolean | Promise<boolean>;
-  prompt(message: string, initialValue: string): string | null | Promise<string | null>;
-}
 
 export interface UsePresetWorkflowOptions {
   gateway: GatewayTransport;

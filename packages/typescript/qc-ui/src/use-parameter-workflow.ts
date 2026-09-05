@@ -1,21 +1,12 @@
 import { useCallback, useEffect, useRef } from "react";
 import type { BlockDetails, BlockParameter, GatewayTransport, PresetSnapshot } from "@ndsp-qc/client";
 import type { BlockEditorSessionController } from "./use-block-editor-session";
-import type { DeviceHistoryEntry } from "./use-device-history";
+import type { DeviceMutationWorkflowOptions } from "./workflow-options";
 
 type Preview = { row: number; column: number; parameterIndex: number; value: number; expectedValue: number; revision: number; expectedScene: number; expectedPresetName: string };
 
-export interface ParameterWorkflowOptions {
-  gateway: GatewayTransport;
-  snapshot: PresetSnapshot;
+export interface ParameterWorkflowOptions extends Omit<DeviceMutationWorkflowOptions, "prompts"> {
   editor: BlockEditorSessionController;
-  connected: boolean;
-  pending: boolean;
-  setPending(pending: boolean): void;
-  reconcile(snapshot: PresetSnapshot): void;
-  recordHistory(entry: DeviceHistoryEntry): void;
-  notice(message: string): void;
-  fail(error: unknown): void;
 }
 
 /** Shared low-latency parameter preview, coalescing, verified commit, and recovery. */

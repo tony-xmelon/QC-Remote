@@ -1,4 +1,4 @@
-import type { WorkflowPrompts } from "./use-preset-workflow";
+import type { WorkflowPrompts } from "./workflow-options";
 
 /** Browser-backed confirmation adapter shared by the two webview shells. */
 export const browserWorkflowPrompts: WorkflowPrompts = {

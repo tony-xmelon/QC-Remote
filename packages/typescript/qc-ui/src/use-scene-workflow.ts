@@ -1,19 +1,9 @@
 import { useCallback, useState } from "react";
-import { QC_SCENE_COLORS, type GatewayTransport, type PresetSnapshot } from "@ndsp-qc/client";
+import { QC_SCENE_COLORS, type GatewayTransport } from "@ndsp-qc/client";
 import type { DeviceHistoryEntry } from "./use-device-history";
-import type { WorkflowPrompts } from "./use-preset-workflow";
+import type { DeviceMutationWorkflowOptions } from "./workflow-options";
 
-export interface SceneWorkflowOptions {
-  gateway: GatewayTransport;
-  snapshot: PresetSnapshot;
-  connected: boolean;
-  pending: boolean;
-  setPending(pending: boolean): void;
-  reconcile(snapshot: PresetSnapshot): void;
-  recordHistory(entry: DeviceHistoryEntry): void;
-  prompts: WorkflowPrompts;
-  notice(message: string): void;
-  fail(error: unknown): void;
+export interface SceneWorkflowOptions extends DeviceMutationWorkflowOptions {
   onOpen?(): void;
   onClose?(): void;
 }

@@ -636,6 +636,15 @@ test("one generated profile owns native backup limits across both hosts", () => 
   assert.match(responses, /profile::BACKUP_MAXIMUM_DOCUMENT_BYTES/);
 });
 
+test("verified mutation workflows share one dependency contract", () => {
+  const common = source("packages/typescript/qc-ui/src/workflow-options.ts");
+  assert.match(common, /interface DeviceMutationWorkflowOptions/);
+  for (const file of ["use-grid-workflow.ts", "use-routing-workflow.ts", "use-scene-workflow.ts"]) {
+    assert.match(source(`packages/typescript/qc-ui/src/${file}`), /extends DeviceMutationWorkflowOptions/);
+  }
+  assert.match(source("packages/typescript/qc-ui/src/use-parameter-workflow.ts"), /extends Omit<DeviceMutationWorkflowOptions, "prompts">/);
+});
+
 test("one generated USB profile owns the complete native ready budget", () => {
   const contract = JSON.parse(source("contracts/qc-usb-profile.v1.json"));
   const javaProfile = source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbProfile.java");

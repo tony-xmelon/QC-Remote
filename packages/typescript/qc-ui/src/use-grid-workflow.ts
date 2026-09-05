@@ -3,22 +3,12 @@ import type { BlockDetails, DeviceActionResult, GatewayTransport, GridBlock, Mod
 import { demoBlockDetails, sceneLetter } from "@ndsp-qc/core";
 import type { BlockEditorSessionController } from "./use-block-editor-session";
 import type { DeviceHistoryEntry } from "./use-device-history";
-import type { WorkflowPrompts } from "./use-preset-workflow";
+import type { DeviceMutationWorkflowOptions } from "./workflow-options";
 
-export interface GridWorkflowOptions {
-  gateway: GatewayTransport;
-  snapshot: PresetSnapshot;
+export interface GridWorkflowOptions extends DeviceMutationWorkflowOptions {
   selectedBlockId: string;
   setSelectedBlockId: Dispatch<SetStateAction<string>>;
   editor: BlockEditorSessionController;
-  connected: boolean;
-  pending: boolean;
-  setPending(pending: boolean): void;
-  reconcile(snapshot: PresetSnapshot): void;
-  recordHistory(entry: DeviceHistoryEntry): void;
-  prompts: WorkflowPrompts;
-  notice(message: string): void;
-  fail(error: unknown): void;
   closePresetDirectory?(): void;
   onOpenManagement?(): void;
   onOpenAdd?(): void;
