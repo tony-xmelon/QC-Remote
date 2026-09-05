@@ -53,6 +53,15 @@ test("physical suite has exactly one case for every MCP device action", () => {
   assert.equal(actionPlan(contract, new Set(["read"])).filter((item) => item.enabled).length, contract.actions.filter((action: { classification: string }) => action.classification === "read").length);
 });
 
+test("physical runner executes every contract action instead of only registering metadata", () => {
+  const runner = readFileSync(new URL("../tools/hardware-conformance.mjs", import.meta.url), "utf8");
+  const invoked = new Set([...runner.matchAll(/call\("([^"]+)"/g)].map((match) => match[1]));
+  assert.deepEqual(
+    contract.actions.map((action: { name: string }) => action.name).filter((name: string) => !invoked.has(name)),
+    []
+  );
+});
+
 test("full execution requires explicit fixtures and distinct disposable slots", () => {
   assert.deepEqual(validateConfig(example, { requireAll: true }), []);
   assert.equal(example.transport.timeoutMs, 240_000);

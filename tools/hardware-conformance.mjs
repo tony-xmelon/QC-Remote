@@ -413,6 +413,7 @@ async function main() {
   let originalIoSettings;
   let originalGlobalEq;
   let originalModeCycle;
+  let originalGlobalTempoSettings;
   let originalFavorites;
   let originalPinnedModels;
   let transportStarted = false;
@@ -488,6 +489,12 @@ async function main() {
     return waitForPhysicalObservation(
       () => transport.call("get_mode_cycle", {}), predicate,
       { timeoutMs, intervalMs: 500, label: "QC mode-cycle settings" }
+    );
+  };
+  const waitForGlobalTempoSettings = async (predicate, timeoutMs = 12000) => {
+    return waitForPhysicalObservation(
+      () => transport.call("get_global_tempo_settings", {}), predicate,
+      { timeoutMs, intervalMs: 500, label: "QC global tempo settings" }
     );
   };
   const waitForFavorites = async (predicate, timeoutMs = 12000) => {
@@ -655,6 +662,10 @@ async function main() {
     originalModeCycle = await call("get_mode_cycle", {}, (value) => assert(
       Array.isArray(value.slots) && value.slots.length >= 1 && value.slots.length <= 3,
       "Mode cycle did not include one through three slots."
+    ));
+    await call("get_global_tempo_settings", {}, (value) => assert(
+      ["PRESET", "GLOBAL"].includes(value.mode) && Array.isArray(value.beats) && value.beats.length === 13,
+      "Global tempo settings did not include a valid mode and thirteen beat cells."
     ));
     await call("get_looper_status", {}, (value) => assert(value && typeof value === "object", "Looper status is invalid."));
     await call("list_recents", {}, (value) => assert(Array.isArray(value.entries), "Recent preset list is invalid."));
@@ -1027,6 +1038,60 @@ async function main() {
 
     if (enabledHazards.has("persistent")) {
       await restoreScratch();
+      originalGlobalTempoSettings = await transport.call("get_global_tempo_settings", {});
+      assert(
+        ["PRESET", "GLOBAL"].includes(originalGlobalTempoSettings.mode)
+          && typeof originalGlobalTempoSettings.ledEnabled === "boolean",
+        "Restorable global tempo mode and LED settings are required."
+      );
+      const testTempoLed = !originalGlobalTempoSettings.ledEnabled;
+      await call("set_tempo_metronome", {
+        led_enabled: testTempoLed,
+        volume_db: null,
+        running: null,
+        pan: null,
+        time_signature: null,
+        subdivision: null,
+        sound: null,
+        routing: null,
+        beats: null,
+        confirm_persistent_write: true
+      });
+      let tempoSettings = await waitForGlobalTempoSettings((value) => value.ledEnabled === testTempoLed);
+      assert(tempoSettings.ledEnabled === testTempoLed, "Tempo LED setting did not read back.");
+      await transport.call("set_tempo_metronome", {
+        led_enabled: originalGlobalTempoSettings.ledEnabled,
+        volume_db: null,
+        running: null,
+        pan: null,
+        time_signature: null,
+        subdivision: null,
+        sound: null,
+        routing: null,
+        beats: null,
+        confirm_persistent_write: true
+      });
+      tempoSettings = await waitForGlobalTempoSettings(
+        (value) => value.ledEnabled === originalGlobalTempoSettings.ledEnabled
+      );
+      assert(
+        tempoSettings.ledEnabled === originalGlobalTempoSettings.ledEnabled,
+        "Tempo LED setting was not restored."
+      );
+
+      const testTempoMode = originalGlobalTempoSettings.mode === "GLOBAL" ? "PRESET" : "GLOBAL";
+      await call("set_tempo_mode", { mode: testTempoMode, confirm_persistent_write: true });
+      tempoSettings = await waitForGlobalTempoSettings((value) => value.mode === testTempoMode);
+      assert(tempoSettings.mode === testTempoMode, "Tempo mode did not read back.");
+      await transport.call("set_tempo_mode", {
+        mode: originalGlobalTempoSettings.mode,
+        confirm_persistent_write: true
+      });
+      tempoSettings = await waitForGlobalTempoSettings(
+        (value) => value.mode === originalGlobalTempoSettings.mode
+      );
+      assert(tempoSettings.mode === originalGlobalTempoSettings.mode, "Tempo mode was not restored.");
+
       const originalHold = originalGeneralSettings.holdTimingIndex;
       assert(Number.isInteger(originalHold) && originalHold >= 0 && originalHold <= 5, "A restorable hold timing is required.");
       const testHold = originalHold === 5 ? 4 : originalHold + 1;
@@ -1465,6 +1530,28 @@ async function main() {
         await restoreAttempt("mode-cycle", () => transport.call("set_mode_cycle", {
           slots: originalModeCycle.slots, confirm_persistent_write: true
         }));
+      }
+      if (enabledHazards.has("persistent") && originalGlobalTempoSettings) {
+        await restoreAttempt("global-tempo-settings", async () => {
+          await transport.call("set_tempo_metronome", {
+            led_enabled: originalGlobalTempoSettings.ledEnabled ?? null,
+            volume_db: originalGlobalTempoSettings.volumeDb ?? null,
+            running: originalGlobalTempoSettings.running ?? null,
+            pan: originalGlobalTempoSettings.pan ?? null,
+            time_signature: originalGlobalTempoSettings.timeSignature ?? null,
+            subdivision: originalGlobalTempoSettings.subdivision ?? null,
+            sound: originalGlobalTempoSettings.sound ?? null,
+            routing: originalGlobalTempoSettings.routing ?? null,
+            beats: Array.isArray(originalGlobalTempoSettings.beats)
+              ? originalGlobalTempoSettings.beats
+              : null,
+            confirm_persistent_write: true
+          });
+          await transport.call("set_tempo_mode", {
+            mode: originalGlobalTempoSettings.mode,
+            confirm_persistent_write: true
+          });
+        });
       }
       await restoreAttempt("starting-preset", async () => {
         let current = await transport.call("get_current_preset", {});
