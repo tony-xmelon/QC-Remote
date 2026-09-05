@@ -22,6 +22,7 @@ import {
   validateConfig,
   validateCoverage,
   validateReleaseReports,
+  validateTransportHealthEvidence,
   waitForPhysicalObservation
 } from "../tools/hardware-conformance-lib.mjs";
 
@@ -194,9 +195,17 @@ test("release gate requires complete Windows and Android evidence for the curren
       { path: "artifacts/android/QC-Control-Android.apk", size: 20, sha256: "android" }
     ]
   };
+  const windowsHealth = ["before-system-recovery", "final"].map((stage) => ({
+    stage, connected: true, synchronized: true, messagesReceived: 10
+  }));
+  const androidHealth = ["before-system-recovery", "final"].map((stage) => ({
+    stage, connected: true, synchronized: true, messagesReceived: 10, decodeErrors: 0,
+    readerRequestActive: true, readerRequestCount: 32, maxHidWriteDurationMs: 5,
+    maxMidiQueueDelayMs: 2
+  }));
   const base = { contractSha256: contractDigest(contract), results, restoration: [{ name: "starting-preset", status: "passed" }], summary: { complete: true } };
-  const windows = { ...base, target: "windows", releaseCandidate: { platform: "windows", sourceCommit: "abc123", size: 10, sha256: "win" } };
-  const android = { ...base, target: "android", releaseCandidate: { platform: "android", sourceCommit: "abc123", size: 20, sha256: "android" } };
+  const windows = { ...base, target: "windows", transportHealth: windowsHealth, releaseCandidate: { platform: "windows", sourceCommit: "abc123", size: 10, sha256: "win" } };
+  const android = { ...base, target: "android", transportHealth: androidHealth, releaseCandidate: { platform: "android", sourceCommit: "abc123", size: 20, sha256: "android" } };
   const result = validateReleaseReports(contract, [windows, android], manifest);
   assert.equal(result.actionsPerTarget, contract.actions.length);
   assert.equal(result.sourceCommit, "abc123");
@@ -204,4 +213,29 @@ test("release gate requires complete Windows and Android evidence for the curren
   assert.throws(() => validateReleaseReports(contract, [windows, { ...android, summary: { complete: false } }], manifest), /android report is incomplete/);
   assert.throws(() => validateReleaseReports(contract, [windows, { ...android, releaseCandidate: { ...android.releaseCandidate, sha256: "stale" } }], manifest), /android report candidate digest does not match/);
   assert.throws(() => validateReleaseReports(contract, [windows, android], { ...manifest, source: { commit: "abc123", dirty: true } }), /clean source commit/);
+  assert.throws(() => validateReleaseReports(contract, [{ ...windows, transportHealth: [] }, android], manifest), /windows report has no before-system-recovery USB health sample/);
+  assert.throws(() => validateReleaseReports(contract, [windows, { ...android, transportHealth: androidHealth.map((entry) => ({ ...entry, maxHidWriteDurationMs: 21 })) }], manifest), /Android USB HID write latency exceeded/i);
+});
+
+test("physical transport health rejects disconnected, unsynchronized, stale, and slow evidence", () => {
+  const healthy = ["before-system-recovery", "final"].map((stage) => ({
+    stage, connected: true, synchronized: true, messagesReceived: 1, decodeErrors: 0,
+    readerRequestActive: true, readerRequestCount: 32, maxHidWriteDurationMs: 3,
+    maxMidiQueueDelayMs: 1
+  }));
+  assert.deepEqual(validateTransportHealthEvidence("android", healthy), []);
+  assert.deepEqual(validateTransportHealthEvidence("windows", healthy), []);
+  const errors = validateTransportHealthEvidence("android", healthy.map((entry) => ({
+    ...entry, connected: false, synchronized: false, messagesReceived: 0, decodeErrors: 1,
+    readerRequestActive: false, maxHidWriteDurationMs: 25, maxMidiQueueDelayMs: 30,
+    lastReaderError: "reader stopped"
+  })));
+  assert.ok(errors.some((error) => error.includes("not connected")));
+  assert.ok(errors.some((error) => error.includes("not synchronized")));
+  assert.ok(errors.some((error) => error.includes("no device messages")));
+  assert.ok(errors.some((error) => error.includes("decoder was not clean")));
+  assert.ok(errors.some((error) => error.includes("reader was not active")));
+  assert.ok(errors.some((error) => error.includes("HID write latency")));
+  assert.ok(errors.some((error) => error.includes("MIDI queue latency")));
+  assert.ok(errors.some((error) => error.includes("reader reported an error")));
 });

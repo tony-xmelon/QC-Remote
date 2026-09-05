@@ -247,6 +247,38 @@ export function contractDigest(contract) {
   return createHash("sha256").update(JSON.stringify(contract)).digest("hex");
 }
 
+export function validateTransportHealthEvidence(target, transportHealth) {
+  const errors = [];
+  if (!Array.isArray(transportHealth)) return [`${target} report has no USB transport-health evidence`];
+  const byStage = new Map(transportHealth.map((entry) => [entry?.stage, entry]));
+  for (const stage of ["before-system-recovery", "final"]) {
+    const health = byStage.get(stage);
+    if (!health) {
+      errors.push(`${target} report has no ${stage} USB health sample`);
+      continue;
+    }
+    if (health.connected !== true) errors.push(`${target} USB was not connected at ${stage}`);
+    if (health.synchronized !== true) errors.push(`${target} USB was not synchronized at ${stage}`);
+    if (!(Number.isFinite(health.messagesReceived) && health.messagesReceived > 0)) {
+      errors.push(`${target} USB observed no device messages at ${stage}`);
+    }
+    if (target === "android") {
+      if (health.decodeErrors !== 0) errors.push(`${target} USB decoder was not clean at ${stage}`);
+      if (health.readerRequestActive !== true || !(health.readerRequestCount > 0)) {
+        errors.push(`${target} USB reader was not active at ${stage}`);
+      }
+      if (!(Number.isFinite(health.maxHidWriteDurationMs) && health.maxHidWriteDurationMs <= 20)) {
+        errors.push(`${target} USB HID write latency exceeded or lacked the 20 ms gate at ${stage}`);
+      }
+      if (!(Number.isFinite(health.maxMidiQueueDelayMs) && health.maxMidiQueueDelayMs <= 20)) {
+        errors.push(`${target} performance MIDI queue latency exceeded or lacked the 20 ms gate at ${stage}`);
+      }
+      if (health.lastReaderError) errors.push(`${target} USB reader reported an error at ${stage}`);
+    }
+  }
+  return errors;
+}
+
 export function validateReleaseReports(contract, reports, manifest) {
   const expectedNames = validateCoverage(contract);
   const expectedDigest = contractDigest(contract);
@@ -276,6 +308,7 @@ export function validateReleaseReports(contract, reports, manifest) {
     const passed = new Set(report.results?.filter((result) => result.status === "passed").map((result) => result.name));
     for (const name of ["system.status", ...expectedNames]) if (!passed.has(name)) errors.push(`${target} did not pass ${name}`);
     if (report.restoration?.some((item) => item.status !== "passed")) errors.push(`${target} restoration failed`);
+    errors.push(...validateTransportHealthEvidence(target, report.transportHealth));
   }
   if (errors.length) throw new Error(`Hardware release gate failed: ${errors.join("; ")}.`);
   return { targets: ["windows", "android"], sourceCommit: manifest.source.commit, contractSha256: expectedDigest, actionsPerTarget: expectedNames.length };

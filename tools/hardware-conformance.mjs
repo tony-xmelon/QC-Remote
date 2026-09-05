@@ -433,7 +433,11 @@ async function main() {
     const diagnostics = status?.usbDiagnostics;
     if (!diagnostics || typeof diagnostics !== "object") return;
     report.transportHealth ??= [];
-    report.transportHealth.push({ stage, ...redactEvidence(diagnostics) });
+    report.transportHealth.push({
+      stage,
+      synchronized: status?.synchronized ?? diagnostics.synchronized,
+      ...redactEvidence(diagnostics)
+    });
     assert(diagnostics.connected === true, `USB transport was disconnected at ${stage}.`);
     assert(diagnostics.synchronized !== false, `USB state was not synchronized at ${stage}.`);
     if (Number.isFinite(diagnostics.decodeErrors)) {
