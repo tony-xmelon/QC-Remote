@@ -68,8 +68,8 @@ comparison.
 
 | Client | Official frames rendered | Mean structural match | Mean color similarity |
 | --- | ---: | ---: | ---: |
-| Windows | 36/36 (100%) | **91.11%** | **97.12%** |
-| Android | 36/36 (100%) | **91.11%** | **97.12%** |
+| Windows | 36/36 (100%) | **91.88%** | **97.15%** |
+| Android | 36/36 (100%) | **91.88%** | **97.15%** |
 
 This broader corpus is deliberately reported separately from the 41-frame
 physical-device regression pack. It adds authoritative coverage for I/O,
@@ -104,14 +104,14 @@ join is in [the canonical coverage matrix](qc-screen-coverage-matrix.md).
 | `official-device-preset-actions` | **89.08%** | **89.08%** |
 | `official-expression-bypass` | **91.73%** | **91.79%** |
 | `official-looper` | **90.72%** | **90.73%** |
-| `official-directory-presets` | **91.97%** | **91.97%** |
-| `official-directory-favorites` | **91.22%** | **91.22%** |
-| `official-directory-captures` | **89.13%** | **89.13%** |
-| `official-directory-irs` | **89.71%** | **89.77%** |
-| `official-directory-plugin-presets` | **96.39%** | **96.38%** |
-| `official-directory-search-results` | **88.38%** | **88.38%** |
-| `official-directory-nested` | **90.10%** | **90.10%** |
-| `official-directory-upload` | **91.02%** | **91.01%** |
+| `official-directory-presets` | **96.73%** | **96.73%** |
+| `official-directory-favorites` | **94.58%** | **94.58%** |
+| `official-directory-captures` | **92.53%** | **92.54%** |
+| `official-directory-irs` | **93.14%** | **93.15%** |
+| `official-directory-plugin-presets` | **96.42%** | **96.42%** |
+| `official-directory-search-results` | **92.72%** | **92.71%** |
+| `official-directory-nested` | **93.71%** | **93.72%** |
+| `official-directory-upload` | **96.01%** | **95.82%** |
 | `official-capture-settings` | **92.87%** | **92.87%** |
 | `official-capture-process` | **90.61%** | **90.65%** |
 | `official-capture-ab-test` | **88.57%** | **88.57%** |
@@ -172,6 +172,14 @@ join is in [the canonical coverage matrix](qc-screen-coverage-matrix.md).
 
 ## Improvements in this pass
 
+- Extended the shared official Directory canvas through the measured bottom
+  edge, while retaining Plugin Presets' distinct 8 px inset. All seven affected
+  authoritative frames improve on both hosts: Presets reaches **96.73%**,
+  Favorites **94.58%**, Captures **92.53% / 92.54%**, IRs **93.14% / 93.15%**,
+  Search Results **92.72% / 92.71%**, Nested **93.71% / 93.72%**, and Cloud
+  Upload **96.01% / 95.82%**. The complete official corpus rises again from
+  **91.11% to 91.88% structural** and from **97.12% to 97.15% color** on both
+  hosts, with Plugin Presets preserved at **96.42%**.
 - Corrected the official Plugin Folders browser so both content panels fill the
   physical framebuffer instead of stopping at mid-screen. The frame rises from
   **87.92% / 87.91% to 96.44% / 96.44% structural** and from **99.05% to

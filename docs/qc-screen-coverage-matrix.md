@@ -13,7 +13,7 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 | Corpus | Windows structural | Windows color | Android structural | Android color |
 | --- | ---: | ---: | ---: | ---: |
 | Physical device | 91.55% | 97.39% | 91.54% | 97.39% |
-| Official manual | 91.11% | 97.12% | 91.11% | 97.12% |
+| Official manual | 91.88% | 97.15% | 91.88% | 97.15% |
 
 Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` color similarity. A canonical state that references multiple frames reports their mean. Detail evidence is scoped and therefore never promoted into a full-frame score.
 
@@ -109,21 +109,21 @@ Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` col
 | ED-16 | Virtual Device preset | Factory preset row actions | physical frame + official frame | Built | Built | 96.10% / 96.10% | 96.58% / 96.58% | 89.09% / 89.09% | 96.07% / 96.07% |
 | ED-17 | Virtual Device preset | Empty User preset tab | physical frame | Built | Built | 89.71% / 89.70% | 98.29% / 98.29% | — / — | — / — |
 | DR-01 | Directory | Category chooser | official detail | Built | Built | — / — | — / — | — / — | — / — |
-| DR-02 | Directory | Presets browser | physical frame + official frame | Built | Built | 92.37% / 92.38% | 97.73% / 97.73% | 91.97% / 91.96% | 97.85% / 97.85% |
-| DR-03 | Directory | Neural Captures browser | official frame | Built | Built | — / — | — / — | 89.12% / 89.13% | 97.46% / 97.46% |
-| DR-04 | Directory | Impulse Responses browser | official frame | Built | Built | — / — | — / — | 89.70% / 89.72% | 97.81% / 97.81% |
+| DR-02 | Directory | Presets browser | physical frame + official frame | Built | Built | 92.37% / 92.38% | 97.73% / 97.73% | 96.73% / 96.73% | 98.00% / 98.00% |
+| DR-03 | Directory | Neural Captures browser | official frame | Built | Built | — / — | — / — | 92.53% / 92.54% | 97.61% / 97.61% |
+| DR-04 | Directory | Impulse Responses browser | official frame | Built | Built | — / — | — / — | 93.14% / 93.15% | 97.94% / 97.94% |
 | DR-05 | Directory | Plugin Presets browser | official frame | Built | Built | — / — | — / — | 96.42% / 96.42% | 98.53% / 98.53% |
-| DR-06 | Directory | Favorites and Recent | official frame | Built | Built | — / — | — / — | 91.21% / 91.20% | 97.71% / 97.71% |
+| DR-06 | Directory | Favorites and Recent | official frame | Built | Built | — / — | — / — | 94.58% / 94.58% | 97.86% / 97.86% |
 | DR-07 | Directory | Search entry | official detail | Built | Built | — / — | — / — | — / — | — / — |
-| DR-08 | Directory | Search results | official frame | Built | Built | — / — | — / — | 88.37% / 88.36% | 97.28% / 97.28% |
+| DR-08 | Directory | Search results | official frame | Built | Built | — / — | — / — | 92.72% / 92.71% | 97.42% / 97.42% |
 | DR-09 | Directory | Sort menu | official detail | Built | Built | — / — | — / — | — / — | — / — |
 | DR-10 | Directory | Filter menu | official detail | Built | Built | — / — | — / — | — / — | — / — |
 | DR-11 | Directory | Arrange / multiselect mode | official detail | Built | Built | — / — | — / — | — / — | — / — |
 | DR-12 | Directory | Multiselect copy destination | official detail | Built | Built | — / — | — / — | — / — | — / — |
-| DR-13 | Directory | Nested folder browser | official frame | Built | Built | — / — | — / — | 90.11% / 90.11% | 97.69% / 97.69% |
+| DR-13 | Directory | Nested folder browser | official frame | Built | Built | — / — | — / — | 93.71% / 93.72% | 97.85% / 97.85% |
 | DR-14 | Directory | New folder / setlist editor | official detail | Built | Built | — / — | — / — | — / — | — / — |
 | DR-15 | Directory | Item contextual menu | smoke only | Built | Built | — / — | — / — | — / — | — / — |
-| DR-16 | Directory | Cortex Cloud upload mode | official frame | Built | Built | — / — | — / — | 91.16% / 90.96% | 98.16% / 98.16% |
+| DR-16 | Directory | Cortex Cloud upload mode | official frame | Built | Built | — / — | — / — | 96.01% / 95.82% | 98.32% / 98.32% |
 | NC-01 | Capture V1 | Capture introduction | official detail | Built | Built | — / — | — / — | — / — | — / — |
 | NC-02 | Capture V1 | Capture type selection | smoke only | Built | Built | — / — | — / — | — / — | — / — |
 | NC-03 | Capture V1 | Connection and routing | official detail | Built | Built | — / — | — / — | — / — | — / — |

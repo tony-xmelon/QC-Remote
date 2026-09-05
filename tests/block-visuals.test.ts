@@ -36,6 +36,13 @@ test("official plugin-folder panels fill the physical framebuffer", () => {
   assert.doesNotMatch(css, /\.plugin-folders-official > main \{[^}]*height:\s*51\.5cqw;/s);
 });
 
+test("official directory panels retain the measured bottom edge", () => {
+  const css = readFileSync("packages/typescript/qc-ui/src/official-directory.css", "utf8");
+  assert.match(css, /\.directory-official > main \{[^}]*position: absolute;[^}]*inset: 7\.5cqw 0 0;/s);
+  assert.doesNotMatch(css, /\.directory-search-official > main \{[^}]*height:\s*51\.5cqw;/s);
+  assert.match(css, /\.directory-official\.is-plugins > main \{[^}]*bottom: 1cqw;/s);
+});
+
 test("vendored block sprite remains byte-identical to the verified Neural DSP SVG", () => {
   const canonical = readFileSync("apps/windows/public/qc-block-samples.svg", "utf8").replaceAll("\r\n", "\n");
   assert.equal(createHash("sha256").update(canonical).digest("hex"), "aa32a2304e05fc62a783df4ed94c31780c18ff7c1e5f34a73aa1371f748919fc");
