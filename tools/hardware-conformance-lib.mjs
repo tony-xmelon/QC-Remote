@@ -1,5 +1,25 @@
 import { createHash } from "node:crypto";
 
+export async function retryTransientRead(read, {
+  attempts = 3,
+  intervalMs = 100
+} = {}) {
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await read();
+    } catch (error) {
+      lastError = error;
+      const message = error instanceof Error ? `${error.message} ${error.cause?.code ?? ""}` : String(error);
+      if (!/terminated|fetch failed|ECONNRESET|UND_ERR_SOCKET/i.test(message) || attempt === attempts) {
+        throw error;
+      }
+      await new Promise((resolveWait) => setTimeout(resolveWait, intervalMs));
+    }
+  }
+  throw lastError;
+}
+
 export async function waitForPhysicalObservation(read, matches, {
   timeoutMs = 5000,
   intervalMs = 100,

@@ -17,11 +17,33 @@ import {
   gatewayArguments,
   pngSignatureIsValid,
   redactEvidence,
+  retryTransientRead,
   validateConfig,
   validateCoverage,
   validateReleaseReports,
   waitForPhysicalObservation
 } from "../tools/hardware-conformance-lib.mjs";
+
+test("physical HTTP reads retry transient relay disconnects without retrying ordinary failures", async () => {
+  let attempts = 0;
+  const recovered = await retryTransientRead(async () => {
+    attempts += 1;
+    if (attempts < 3) throw new TypeError("terminated");
+    return "ready";
+  }, { attempts: 3, intervalMs: 0 });
+  assert.equal(recovered, "ready");
+  assert.equal(attempts, 3);
+
+  attempts = 0;
+  await assert.rejects(
+    retryTransientRead(async () => {
+      attempts += 1;
+      throw new Error("device rejected request");
+    }, { attempts: 3, intervalMs: 0 }),
+    /device rejected request/
+  );
+  assert.equal(attempts, 1);
+});
 
 const contract = JSON.parse(readFileSync(new URL("../contracts/qc-actions.v1.json", import.meta.url), "utf8"));
 const example = JSON.parse(readFileSync(new URL("../tools/hardware-conformance.example.json", import.meta.url), "utf8"));

@@ -13,6 +13,7 @@ import {
   gatewayArguments,
   pngSignatureIsValid,
   redactEvidence,
+  retryTransientRead,
   resultSnapshot,
   validateConfig,
   validateCoverage,
@@ -157,7 +158,10 @@ class McpHttpTransport {
   }
 
   async call(name, args) {
-    const result = await this.post("tools/call", { name, arguments: args ?? {} });
+    const invoke = () => this.post("tools/call", { name, arguments: args ?? {} });
+    const result = CASES[name]?.hazard === "read"
+      ? await retryTransientRead(invoke)
+      : await invoke();
     if (result?.isError) throw new Error(result.content?.map((item) => item.text).filter(Boolean).join("\n") || `${name} failed.`);
     if (result?.structuredContent !== undefined) return result.structuredContent;
     const text = result?.content?.find((item) => item.type === "text")?.text;
