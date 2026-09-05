@@ -126,6 +126,27 @@ mutation groups and backup together. Add `--stress` to collect the repeated
 performance evidence used by the release gate. Use `--stress-only --live` while
 iterating on the performance layer without rerunning unrelated one-pass cases.
 
+To verify that the real Windows UI, Tauri host, selected broker artifact, and QC
+all converge on the same live value, launch a development app with WebView2
+inspection and an explicit broker path, then run the reversible UI smoke test:
+
+```powershell
+$env:QC_GATEWAY_EXECUTABLE = (Resolve-Path services/device-broker/target/release/qc-device-broker.exe)
+$env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = "--remote-debugging-port=9223"
+npm run tauri:dev --workspace @ndsp-qc/windows -- --no-watch
+```
+
+In a second terminal:
+
+```powershell
+$env:QC_HARDWARE_TEST_ACK = "I_ACCEPT_QC_HARDWARE_MUTATIONS"
+node tools/windows-live-ui-smoke.mjs --output artifacts/hardware-conformance/windows-ui-smoke.json
+```
+
+The smoke test changes Master Volume by one step, requires the visible slider
+and the native gateway readback to agree, and restores the exact starting value.
+It never performs persistent, system, screen, or backup operations.
+
 Finally, gate the release against both immutable reports:
 
 ```powershell
