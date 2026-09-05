@@ -73,7 +73,7 @@ placeholder or a separate prototype.
 | IO-05 | I/O | USB I/O detail | Official | Built | Built |
 | IO-06 | I/O | Headphones detail | Manual | Built | Built |
 | IO-07 | I/O | Global EQ | Official | Built | Built |
-| IO-08 | I/O | Global input gate and bypass | Manual | Built | Built |
+| IO-08 | I/O | Global input gate and bypass | Capture | Built | Built |
 | GR-01 | Routing | Input route selector | Capture | Built | Built |
 | GR-02 | Routing | Output route selector | Capture | Built | Built |
 | GR-03 | Routing | Splitter/Mixer placement handles | Capture + Manual | Built | Built |
@@ -175,13 +175,13 @@ coverage.
 
 - **103** canonical device screen/state rows are tracked (GL through OV).
 - **16** Cortex Control-only companion rows are tracked separately.
-- **40** physical framebuffer captures currently exist; they are the first
+- **41** physical framebuffer captures currently exist; they are the first
   regression pack, not the denominator for total product coverage.
 - **37** official native-size manual frames are checksummed locally: 36 full-size
   Quad Cortex screens map to the shared renderer and one Quad Cortex mini frame
   is tracked separately rather than compared to the full-size device.
-- **58** canonical states currently have full-frame physical or official-manual
-  image evidence, and **78** have either full-frame or scoped official-detail
+- **59** canonical states currently have full-frame physical or official-manual
+  image evidence, and **79** have either full-frame or scoped official-detail
   evidence. All **103** have a verified exact-size capture path on both
   hosts: 84 through the general smoke pack and the remaining 19 through their
   physical or official-reference regression packs. These sets overlap and are

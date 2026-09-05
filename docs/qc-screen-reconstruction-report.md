@@ -34,19 +34,19 @@ rows**. Current canonical CorOS implementation counts are:
 | Shell only | 0 | 0 |
 | Missing | 0 | 0 |
 
-“40/40” therefore means every physical regression state has a renderer. All 103
-cataloged states are built, but only 40 currently have matching device captures.
+“41/41” therefore means every physical regression state has a renderer. All 103
+cataloged states are built, but only 41 currently have matching device captures.
 
 The separate manual-reference smoke corpus now contains **85 states / 170 exact
 800x480 host captures** (Windows and Android). These validate shared composition
 and framebuffer containment but are intentionally excluded from the physical
 similarity percentages until matching device captures exist.
 
-Across the physical and official full-frame corpora, **58 canonical states**
+Across the physical and official full-frame corpora, **59 canonical states**
 have directly comparable 800x480 evidence. A separate checksummed corpus of
 **27 official manual SVG details** supplies scoped control, editor-fragment,
 interaction, or hardware-diagram evidence for additional states, bringing the
-number with some authoritative visual evidence to **78/103**. Detail assets do
+number with some authoritative visual evidence to **79/103**. Detail assets do
 not enter full-screen similarity averages.
 
 Two UI-bearing details now also have crop-level regression measurements. These
@@ -171,6 +171,15 @@ join is in [the canonical coverage matrix](qc-screen-coverage-matrix.md).
 
 ## Improvements in this pass
 
+- Added the first physical Input Gate Control framebuffer, replacing a
+  speculative full-page settings mock with CorOS's actual lower editor over a
+  dimmed Grid. Measured structural match rose from **47.22% to 74.23% on
+  Windows** and **47.24% to 74.25% on Android**, while color similarity rose
+  from **94.32% to 95.92%**. The expanded physical corpus now covers **41/41**
+  frames and measures **89.49% structural / 97.16% color** on both hosts; the
+  independent 36-frame official corpus remains green at **90.79% structural /
+  97.11% color**. This closes IO-08 and leaves **24** smoke-only acquisition
+  gaps.
 - Removed the obsolete scene selector from the official Tempo header and
   aligned the three control dials to the CorOS 4.1 framebuffer. Tempo rises
   from **87.72% / 87.62% to 90.80%** structural match on Windows / Android.
@@ -1270,7 +1279,7 @@ covered by a gateway test. No preset content was changed.
 5. Add visual thresholds once deliberately variable content and font rendering
    have per-family tolerances.
 
-The 25 states with smoke-only evidence now have a checked physical-acquisition
+The 24 states with smoke-only evidence now have a checked physical-acquisition
 ledger at
 `references/qc-ui-coverage/coros-4.1.0/physical-capture-plan.json`. It separates
 18 safe navigation captures from 5 controlled transient captures, 1 scheduled

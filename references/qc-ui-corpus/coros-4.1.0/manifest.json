@@ -1230,6 +1230,28 @@
           "seconds": 0.7
         }
       ]
+    },
+    {
+      "id": "input-gate-control",
+      "label": "Input Gate Control — Path 1",
+      "screen": "input-gate-control",
+      "image": "input-gate-control.png",
+      "sha256": "c4161c9371ca6abd8ef8ce55aaf75f0cf3cb7924c4e0ba0c5274c3e4ee337f82",
+      "bytes": 28736,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T10:26:13Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 30,
+          "y": 147
+        },
+        {
+          "type": "wait",
+          "seconds": 0.7
+        }
+      ]
     }
   ]
 }

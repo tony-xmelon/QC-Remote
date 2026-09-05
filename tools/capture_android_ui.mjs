@@ -103,7 +103,7 @@ for (const [id, mode] of [["gig-view", "STOMP"], ["gig-view-preset", "PRESET"], 
   await load({ screen: "gig", mode });
   await capture(id);
 }
-for (const [id, view] of [["device-browser-plugin-list", "plugin-list"], ["device-browser-plugin-models", "plugin-models"], ["device-browser-plugin-locked", "plugin-locked"], ["device-presets-exotic-z-boost", "device-presets"], ["device-presets-user", "device-presets-user"], ["device-preset-actions", "device-preset-actions"], ["splitter-editor", "splitter-editor"], ["mixer-editor", "mixer-editor"], ["tempo-metronome", "tempo"], ["tuner", "tuner"], ["tuner-live-enabled", "tuner-live-enabled"], ["gig-view-live-tuner", "gig-live-tuner"], ["preset-midi-out", "midi-out"], ["modes-configuration", "modes"], ["save-as-editor", "save-as"], ["edit-details-editor", "edit-details"]]) {
+for (const [id, view] of [["device-browser-plugin-list", "plugin-list"], ["device-browser-plugin-models", "plugin-models"], ["device-browser-plugin-locked", "plugin-locked"], ["device-presets-exotic-z-boost", "device-presets"], ["device-presets-user", "device-presets-user"], ["device-preset-actions", "device-preset-actions"], ["splitter-editor", "splitter-editor"], ["mixer-editor", "mixer-editor"], ["input-gate-control", "fixture-input-gate"], ["tempo-metronome", "tempo"], ["tuner", "tuner"], ["tuner-live-enabled", "tuner-live-enabled"], ["gig-view-live-tuner", "gig-live-tuner"], ["preset-midi-out", "midi-out"], ["modes-configuration", "modes"], ["save-as-editor", "save-as"], ["edit-details-editor", "edit-details"]]) {
   if (!shouldCapture(id)) continue;
   await load({ screen: view, ...(view === "tempo" ? { tempo: "56" } : {}) });
   await capture(id);

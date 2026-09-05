@@ -35,7 +35,7 @@
     { "id": "IO-05", "renderer": "io-usb", "official": ["official-io-settings-usb"], "smoke": ["io-usb"] },
     { "id": "IO-06", "renderer": "io-headphones", "smoke": ["io-headphones"] },
     { "id": "IO-07", "renderer": "global-eq", "official": ["official-global-eq"], "smoke": ["global-eq"] },
-    { "id": "IO-08", "renderer": "fixture-input-gate", "smoke": ["fixture-input-gate"] },
+    { "id": "IO-08", "renderer": "fixture-input-gate", "physical": ["input-gate-control"], "smoke": ["fixture-input-gate"] },
 
     { "id": "GR-01", "renderer": "grid", "physical": ["input-route-selector"] },
     { "id": "GR-02", "renderer": "grid", "physical": ["output-route-selector"] },
