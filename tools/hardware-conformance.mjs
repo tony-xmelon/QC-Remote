@@ -11,6 +11,7 @@ import {
   assertMutationAcknowledged,
   contractDigest,
   gatewayArguments,
+  markPhysicalResultVerified,
   pngSignatureIsValid,
   redactEvidence,
   retryTransientRead,
@@ -465,6 +466,7 @@ async function main() {
     const metadata = CASES[name];
     report.results.push({ name, phase: metadata.phase, hazard: metadata.hazard, status: "skipped", reason });
   };
+  const verified = (name, observation) => markPhysicalResultVerified(report.results, name, observation);
 
   const call = async (name, args = {}, verify) => {
     const metadata = CASES[name];
@@ -772,6 +774,7 @@ async function main() {
       await call("select_scene", { scene: selectedScene, expected_preset_name: currentSnapshot.presetName });
       currentSnapshot = await waitForSnapshot((value) => value.activeScene === selectedScene);
       assert(currentSnapshot.activeScene === selectedScene, "Scene selection did not persist to snapshot.");
+      verified("select_scene", { activeScene: currentSnapshot.activeScene, observedAt: currentSnapshot.observedAt });
       await transport.call("select_scene", { scene: originalScene, expected_preset_name: currentSnapshot.presetName });
       currentSnapshot = await waitForSnapshot((value) => value.activeScene === originalScene);
 
@@ -805,6 +808,7 @@ async function main() {
       await call("select_mode_slot", { slot: config.performance.modeSlot, expected_preset_name: currentSnapshot.presetName });
       currentSnapshot = await waitForSnapshot((value) => value.mode === modeBySlot[config.performance.modeSlot]);
       assert(currentSnapshot.mode === modeBySlot[config.performance.modeSlot], "Mode-slot selection did not reach authoritative device state.");
+      verified("select_mode_slot", { mode: currentSnapshot.mode, observedAt: currentSnapshot.observedAt });
       await transport.call("select_mode_slot", { slot: config.performance.restoreModeSlot, expected_preset_name: currentSnapshot.presetName });
       currentSnapshot = await waitForSnapshot((value) => value.mode === modeBySlot[config.performance.restoreModeSlot]);
       assert(currentSnapshot.mode === modeBySlot[config.performance.restoreModeSlot], "Mode-slot restoration did not reach authoritative device state.");
@@ -816,17 +820,20 @@ async function main() {
       await call("set_master_volume", { value: config.performance.masterVolume, expected_value: originalVolume, confirm_risky_operation: true });
       const changedVolume = await waitForMasterVolume(config.performance.masterVolume);
       assert(changedVolume?.value === config.performance.masterVolume, "Master volume did not reach the configured test value.");
+      verified("set_master_volume", changedVolume);
       await transport.call("set_master_volume", { value: originalVolume, expected_value: config.performance.masterVolume, confirm_risky_operation: true });
       const restoredVolume = await waitForMasterVolume(originalVolume);
       assert(restoredVolume?.value === originalVolume, "Master volume did not restore to its authoritative starting value.");
 
       const originalTempo = currentSnapshot.tempo;
       await call("set_tempo", { bpm: config.performance.tempo, expected_tempo: originalTempo, expected_preset_name: currentSnapshot.presetName });
-      currentSnapshot = await snapshot();
+      currentSnapshot = await waitForSnapshot((value) => value.tempo === config.performance.tempo);
+      verified("set_tempo", { tempo: currentSnapshot.tempo, observedAt: currentSnapshot.observedAt });
       await call("tap_tempo", { expected_mode: currentSnapshot.mode, expected_preset_name: currentSnapshot.presetName });
       await sleep(350);
       await transport.call("tap_tempo", { expected_mode: currentSnapshot.mode, expected_preset_name: currentSnapshot.presetName });
       currentSnapshot = await waitForSnapshot((value) => value.tempo !== config.performance.tempo);
+      verified("tap_tempo", { tempo: currentSnapshot.tempo, observedAt: currentSnapshot.observedAt });
       await transport.call("set_tempo", { bpm: originalTempo, expected_tempo: currentSnapshot.tempo, expected_preset_name: currentSnapshot.presetName });
 
       const originalBypass = Boolean(currentSnapshot.blocks.find((candidate) => candidate.row === config.parameter.row && candidate.column === config.parameter.column)?.bypassed);
@@ -835,6 +842,10 @@ async function main() {
         expected_bypassed: originalBypass, expected_scene: currentSnapshot.activeScene, expected_preset_name: currentSnapshot.presetName
       });
       currentSnapshot = await waitForSnapshot((value) => value.blocks.some((block) => block.row === config.parameter.row && block.column === config.parameter.column && Boolean(block.bypassed) === !originalBypass));
+      verified("set_bypass", {
+        row: config.parameter.row, column: config.parameter.column, bypassed: !originalBypass,
+        observedAt: currentSnapshot.observedAt
+      });
       await transport.call("set_bypass", {
         row: config.parameter.row, column: config.parameter.column, desired_bypassed: originalBypass,
         expected_bypassed: !originalBypass, expected_scene: currentSnapshot.activeScene, expected_preset_name: currentSnapshot.presetName
@@ -846,7 +857,12 @@ async function main() {
         row: config.parameter.row, column: config.parameter.column, parameter_index: parameter.index,
         value: config.parameter.testValue, expected_value: originalValue, expected_scene: currentSnapshot.activeScene, expected_preset_name: currentSnapshot.presetName
       });
-      await waitForBlockDetails(config.parameter.row, config.parameter.column, (value) => Math.abs(value.parameters?.find((candidate) => candidate.index === parameter.index)?.normalizedValue - config.parameter.testValue) < 0.002);
+      const previewedParameter = await waitForBlockDetails(config.parameter.row, config.parameter.column, (value) => Math.abs(value.parameters?.find((candidate) => candidate.index === parameter.index)?.normalizedValue - config.parameter.testValue) < 0.002);
+      verified("preview_parameter", {
+        row: config.parameter.row, column: config.parameter.column, parameterIndex: parameter.index,
+        normalizedValue: previewedParameter.parameters?.find((candidate) => candidate.index === parameter.index)?.normalizedValue,
+        observedAt: previewedParameter.observedAt
+      });
       await transport.call("set_parameter", {
         row: config.parameter.row, column: config.parameter.column, parameter_index: parameter.index,
         value: originalValue, expected_value: config.parameter.testValue, expected_scene: currentSnapshot.activeScene, expected_preset_name: currentSnapshot.presetName
@@ -860,12 +876,22 @@ async function main() {
         row: lane.row, control: lane.control, parameter_index: lane.parameter.index,
         value: laneTestValue, expected_value: laneOriginalValue, expected_preset_name: currentSnapshot.presetName
       });
-      await waitForLaneControlDetails(lane.row, lane.control, (value) => Math.abs(value.parameters?.find((candidate) => candidate.index === lane.parameter.index)?.normalizedValue - laneTestValue) < 0.002);
+      const previewedLaneParameter = await waitForLaneControlDetails(lane.row, lane.control, (value) => Math.abs(value.parameters?.find((candidate) => candidate.index === lane.parameter.index)?.normalizedValue - laneTestValue) < 0.002);
+      verified("preview_lane_control_parameter", {
+        row: lane.row, control: lane.control, parameterIndex: lane.parameter.index,
+        normalizedValue: previewedLaneParameter.parameters?.find((candidate) => candidate.index === lane.parameter.index)?.normalizedValue,
+        observedAt: previewedLaneParameter.observedAt
+      });
       await call("set_lane_control_parameter", {
         row: lane.row, control: lane.control, parameter_index: lane.parameter.index,
         value: laneOriginalValue, expected_value: laneTestValue, expected_preset_name: currentSnapshot.presetName
       });
-      await waitForLaneControlDetails(lane.row, lane.control, (value) => Math.abs(value.parameters?.find((candidate) => candidate.index === lane.parameter.index)?.normalizedValue - laneOriginalValue) < 0.002);
+      const restoredLaneParameter = await waitForLaneControlDetails(lane.row, lane.control, (value) => Math.abs(value.parameters?.find((candidate) => candidate.index === lane.parameter.index)?.normalizedValue - laneOriginalValue) < 0.002);
+      verified("set_lane_control_parameter", {
+        row: lane.row, control: lane.control, parameterIndex: lane.parameter.index,
+        normalizedValue: restoredLaneParameter.parameters?.find((candidate) => candidate.index === lane.parameter.index)?.normalizedValue,
+        observedAt: restoredLaneParameter.observedAt
+      });
 
       const laneOriginalSceneMode = Boolean(lane.parameter.sceneMode);
       await call("set_lane_control_scene_mode", {
@@ -1054,9 +1080,19 @@ async function main() {
       });
       await waitForBlockDetails(config.parameter.row, config.parameter.column, (value) => Math.abs(value.parameters?.find((candidate) => candidate.index === parameter.index)?.normalizedValue - config.parameter.testValue) < 0.002);
       await call("undo_device", { confirm_risky_operation: true });
-      await waitForBlockDetails(config.parameter.row, config.parameter.column, (value) => Math.abs(value.parameters?.find((candidate) => candidate.index === parameter.index)?.normalizedValue - originalValue) < 0.002);
+      const undoneParameter = await waitForBlockDetails(config.parameter.row, config.parameter.column, (value) => Math.abs(value.parameters?.find((candidate) => candidate.index === parameter.index)?.normalizedValue - originalValue) < 0.002);
+      verified("undo_device", {
+        parameterIndex: parameter.index,
+        normalizedValue: undoneParameter.parameters?.find((candidate) => candidate.index === parameter.index)?.normalizedValue,
+        observedAt: undoneParameter.observedAt
+      });
       await call("redo_device", { confirm_risky_operation: true });
-      await waitForBlockDetails(config.parameter.row, config.parameter.column, (value) => Math.abs(value.parameters?.find((candidate) => candidate.index === parameter.index)?.normalizedValue - config.parameter.testValue) < 0.002);
+      const redoneParameter = await waitForBlockDetails(config.parameter.row, config.parameter.column, (value) => Math.abs(value.parameters?.find((candidate) => candidate.index === parameter.index)?.normalizedValue - config.parameter.testValue) < 0.002);
+      verified("redo_device", {
+        parameterIndex: parameter.index,
+        normalizedValue: redoneParameter.parameters?.find((candidate) => candidate.index === parameter.index)?.normalizedValue,
+        observedAt: redoneParameter.observedAt
+      });
       await transport.call("set_parameter", {
         row: config.parameter.row, column: config.parameter.column, parameter_index: parameter.index,
         value: originalValue, expected_value: config.parameter.testValue, expected_scene: currentSnapshot.activeScene, expected_preset_name: currentSnapshot.presetName

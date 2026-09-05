@@ -21,6 +21,7 @@ import {
   assertMutationAcknowledged,
   contractDigest,
   gatewayArguments,
+  markPhysicalResultVerified,
   pngSignatureIsValid,
   redactEvidence,
   retryTransientRead,
@@ -235,6 +236,22 @@ test("release gate requires complete Windows and Android evidence for the curren
   assert.throws(() => validateReleaseReports(contract, [{ ...windows, transportHealth: [] }, android], manifest), /windows report has no before-system-recovery USB health sample/);
   assert.throws(() => validateReleaseReports(contract, [windows, { ...android, transportHealth: androidHealth.map((entry) => ({ ...entry, maxHidWriteDurationMs: 21 })) }], manifest), /Android USB HID write latency exceeded/i);
   assert.throws(() => validateReleaseReports(contract, [{ ...windows, performanceEvidence: undefined }, android], manifest), /windows report has no physical performance evidence/);
+});
+
+test("later physical observations upgrade immediate acknowledgements without adding duplicate action rows", () => {
+  const results = [{
+    name: "set_tempo", status: "passed",
+    evidence: { accepted: true, verified: false, verification: "accepted_unverified" }
+  }];
+  const row = markPhysicalResultVerified(results, "set_tempo", {
+    tempo: 123, stateSequence: 42, serial: "private"
+  });
+  assert.equal(results.length, 1);
+  assert.equal(row.evidence.verified, true);
+  assert.equal(row.evidence.verification, "authoritative_physical_observation");
+  assert.equal(row.evidence.physicalObservation.tempo, 123);
+  assert.match(row.evidence.physicalObservation.serial, /^sha256:/);
+  assert.throws(() => markPhysicalResultVerified(results, "missing", {}), /has no passed result/);
 });
 
 test("physical transport health rejects disconnected, unsynchronized, stale, and slow evidence", () => {

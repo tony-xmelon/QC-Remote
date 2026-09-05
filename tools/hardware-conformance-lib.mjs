@@ -395,6 +395,18 @@ export function redactEvidence(value) {
   return output;
 }
 
+export function markPhysicalResultVerified(results, name, observation) {
+  const row = [...results].reverse().find((result) => result.name === name && result.status === "passed");
+  if (!row) throw new Error(`Cannot attach physical verification: ${name} has no passed result.`);
+  row.evidence = {
+    ...(row.evidence ?? {}),
+    verified: true,
+    verification: "authoritative_physical_observation",
+    physicalObservation: redactEvidence(observation)
+  };
+  return row;
+}
+
 export function actionPlan(contract, enabledHazards = new Set(["read"])) {
   return validateCoverage(contract).map((name) => ({
     name,
