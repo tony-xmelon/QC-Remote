@@ -59,9 +59,18 @@ fn probe() -> ProbeResult {
 
 fn main() {
     if std::env::args().any(|argument| argument == "--stdio") {
-        if let Err(error) =
-            qc_device_broker::rpc::serve_stdio(DeviceController::start_disconnected())
-        {
+        // A first broker starts idle so it cannot race its client's explicit
+        // reconnect. A replacement spawned after a transport failure is the
+        // opposite case: its client already had a session and has no step that
+        // asks for another one, so without this it answers every device call
+        // with "not connected" for the life of the process.
+        let auto_connect = std::env::args().any(|argument| argument == "--auto-connect");
+        let controller = if auto_connect {
+            DeviceController::start()
+        } else {
+            DeviceController::start_disconnected()
+        };
+        if let Err(error) = qc_device_broker::rpc::serve_stdio(controller) {
             eprintln!("{error}");
             std::process::exit(1);
         }

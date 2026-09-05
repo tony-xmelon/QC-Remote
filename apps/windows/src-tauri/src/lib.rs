@@ -83,7 +83,14 @@ impl Drop for GatewayProcess {
 }
 
 impl GatewayProcess {
-    fn start(event_tx: Option<mpsc::SyncSender<Value>>) -> Result<Self, String> {
+    /// `auto_connect` is set only for a broker replacing a failed one, so it
+    /// restores the device session the client already had without waiting to be
+    /// asked. A first broker stays idle and lets the client's connection flow
+    /// own the handshake.
+    fn start(
+        event_tx: Option<mpsc::SyncSender<Value>>,
+        auto_connect: bool,
+    ) -> Result<Self, String> {
         let executable_directory = std::env::current_exe()
             .ok()
             .and_then(|path| path.parent().map(Path::to_path_buf));
@@ -97,8 +104,11 @@ impl GatewayProcess {
         };
         #[cfg(windows)]
         command.creation_flags(CREATE_NO_WINDOW);
+        command.arg("--stdio");
+        if auto_connect {
+            command.arg("--auto-connect");
+        }
         let mut child = command
-            .arg("--stdio")
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
@@ -393,6 +403,9 @@ struct ReferenceAudioResult {
 #[derive(Default)]
 struct Gateway {
     process: Option<GatewayProcess>,
+    /// True once a broker has been spawned, so a later spawn is known to be
+    /// replacing one rather than starting the session for the first time.
+    started_once: bool,
     connected: bool,
     voice_recognition_available: Option<bool>,
     voice_last_event: Option<String>,
@@ -407,10 +420,20 @@ impl Gateway {
         params: Value,
     ) -> Result<Value, GatewayRequestFailure> {
         if self.process.is_none() {
+            // Anything after the first spawn is replacing a broker this app
+            // killed on a transport failure. The caller that triggers it is an
+            // ordinary device poll, not a connection step, so nothing would
+            // ever ask the replacement to open a session: it would answer every
+            // device call with "not connected" while the UI showed the device
+            // offline and the broker stayed perfectly healthy. Reconnecting is
+            // left to the replacement itself because device.reconnect blocks
+            // for up to the ready-wait timeout and must not stall this request.
+            let replacing = self.started_once;
             self.process = Some(
-                GatewayProcess::start(self.event_tx.clone())
+                GatewayProcess::start(self.event_tx.clone(), replacing)
                     .map_err(GatewayRequestFailure::Transport)?,
             );
+            self.started_once = true;
         }
         let result = self
             .process
@@ -1495,6 +1518,7 @@ mod tests {
     fn runtime_health_contains_only_operational_metadata() {
         let gateway = Gateway {
             process: None,
+            started_once: false,
             connected: true,
             voice_recognition_available: Some(true),
             voice_last_event: Some("submitted".into()),
