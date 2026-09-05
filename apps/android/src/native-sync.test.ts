@@ -256,6 +256,16 @@ test("Android rebuilds a stale USB session and retries correlated reads once", (
   assert.doesNotMatch(javaSource, /USB session recovered after read timeout[\s\S]*relayGatewayRead\(method, readParams\)/);
 });
 
+test("Android verifies timed-out structural writes after reconnect without replaying them", () => {
+  assert.match(javaSource, /recoverGatewayWriteVerification\(result, plan\)/);
+  assert.match(javaSource, /gatewayWriteRecoveries\+\+/);
+  assert.match(javaSource, /relayReconnect\("USB session recovered after write verification timeout"\)[\s\S]*verifyGatewayWriteAfterReconnect\(plan\)/);
+  assert.match(javaSource, /gatewayTransactionState\([\s\S]*plan, 0, now \+ 1_000, observationSequence, now\)/);
+  assert.match(javaSource, /"verification", "authoritative_reconnect_readback"/);
+  assert.match(javaSource, /the write was not replayed/i);
+  assert.match(javaSource, /result\.put\("gatewayWriteRecoveries", gatewayWriteRecoveries\)/);
+});
+
 test("modern Android keeps a buffered interrupt-read ring queued across idle periods", () => {
   assert.match(javaSource, /Build\.VERSION\.SDK_INT >= Build\.VERSION_CODES\.O/);
   assert.match(javaSource, /@TargetApi\(Build\.VERSION_CODES\.O\)[\s\S]*readInputReportsAsync/);

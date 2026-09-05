@@ -104,6 +104,7 @@ public class QcUsbPlugin extends Plugin {
     private volatile boolean lastHidWriteIncludedReportId;
     private volatile String lastGatewayReadMismatch;
     private volatile long gatewayReadRecoveries;
+    private volatile long gatewayWriteRecoveries;
     private volatile boolean readerWaiting;
     private volatile long readerExitedAt;
     private volatile String lastReaderError;
@@ -285,6 +286,44 @@ public class QcUsbPlugin extends Plugin {
         pendingOperations.timeout(pending, QcUsbProfile.READY_WAIT_TIMEOUT_MS, keepalive,
             () -> new RelayException("READBACK_TIMEOUT", "The Quad Cortex did not finish synchronizing in time."));
         return result;
+    }
+
+    private CompletableFuture<org.json.JSONObject> recoverGatewayWriteVerification(
+        CompletableFuture<org.json.JSONObject> result,
+        QcNativeStateDecoder.PlannedGatewayWrite plan
+    ) {
+        return result.handle((value, error) -> {
+            if (error == null) return CompletableFuture.completedFuture(value);
+            Throwable cause = unwrapCompletion(error);
+            if (!(cause instanceof RelayException)
+                || !"READBACK_TIMEOUT".equals(((RelayException) cause).code)) {
+                return QcUsbPlugin.<org.json.JSONObject>failedFuture(cause);
+            }
+            gatewayWriteRecoveries++;
+            return relayReconnect("USB session recovered after write verification timeout")
+                .thenCompose(ignored -> verifyGatewayWriteAfterReconnect(plan));
+        }).thenCompose(recovered -> recovered);
+    }
+
+    private CompletableFuture<org.json.JSONObject> verifyGatewayWriteAfterReconnect(
+        QcNativeStateDecoder.PlannedGatewayWrite plan
+    ) {
+        long observationSequence;
+        synchronized (stateEventLock) { observationSequence = nextStateSequence - 1; }
+        long now = monotonicMillis();
+        int state = stateDecoder.gatewayTransactionState(
+            plan, 0, now + 1_000, observationSequence, now);
+        if (state != 1) return failedRelay(
+            "READBACK_MISMATCH",
+            "The QC did not confirm the requested state after USB session recovery; the write was not replayed.");
+        try {
+            return CompletableFuture.completedFuture(new org.json.JSONObject()
+                .put("accepted", true).put("verified", true)
+                .put("verification", "authoritative_reconnect_readback")
+                .put("stateSequence", observationSequence).put("detail", plan.detail));
+        } catch (Exception error) {
+            return QcUsbPlugin.<org.json.JSONObject>failedFuture(error);
+        }
     }
 
     private void scheduleAutomaticReconnect(String detail) {
@@ -591,7 +630,8 @@ public class QcUsbPlugin extends Plugin {
                 });
             }, Math.max(250, timeoutMs / 3), TimeUnit.MILLISECONDS);
         }
-        return result;
+        if (registered == null) return result;
+        return recoverGatewayWriteVerification(result, plan);
     }
 
     private CompletableFuture<org.json.JSONObject> relayGatewayWorkflow(
@@ -935,6 +975,7 @@ public class QcUsbPlugin extends Plugin {
         result.put("lastHidWriteResult", lastHidWriteResult);
         result.put("lastHidWriteIncludedReportId", lastHidWriteIncludedReportId);
         result.put("gatewayReadRecoveries", gatewayReadRecoveries);
+        result.put("gatewayWriteRecoveries", gatewayWriteRecoveries);
         if (lastGatewayReadMismatch != null) result.put("lastGatewayReadMismatch", lastGatewayReadMismatch);
         UsbRequest[] inputRequests = activeInputRequests;
         result.put("readerRequestActive", inputRequests != null && inputRequests.length > 0);
