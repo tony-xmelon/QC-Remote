@@ -248,6 +248,14 @@ test("Android exposes the latest rejected gateway frame correlation in diagnosti
   assert.match(javaSource, /lastGatewayReadMismatch = "type " \+ messageType/);
 });
 
+test("Android rebuilds a stale USB session and retries correlated reads once", () => {
+  assert.match(javaSource, /"READBACK_TIMEOUT"\.equals\(\(\(RelayException\) cause\)\.code\)/);
+  assert.match(javaSource, /gatewayReadRecoveries\+\+/);
+  assert.match(javaSource, /relayReconnect\("USB session recovered after read timeout"\)[\s\S]*relayGatewayReadOnCurrentSession\(method, readParams\)/);
+  assert.match(javaSource, /result\.put\("gatewayReadRecoveries", gatewayReadRecoveries\)/);
+  assert.doesNotMatch(javaSource, /USB session recovered after read timeout[\s\S]*relayGatewayRead\(method, readParams\)/);
+});
+
 test("modern Android keeps a buffered interrupt-read ring queued across idle periods", () => {
   assert.match(javaSource, /Build\.VERSION\.SDK_INT >= Build\.VERSION_CODES\.O/);
   assert.match(javaSource, /@TargetApi\(Build\.VERSION_CODES\.O\)[\s\S]*readInputReportsAsync/);

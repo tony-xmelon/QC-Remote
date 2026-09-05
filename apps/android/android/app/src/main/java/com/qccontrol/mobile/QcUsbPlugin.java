@@ -103,6 +103,7 @@ public class QcUsbPlugin extends Plugin {
     private volatile int lastHidWriteResult;
     private volatile boolean lastHidWriteIncludedReportId;
     private volatile String lastGatewayReadMismatch;
+    private volatile long gatewayReadRecoveries;
     private volatile boolean readerWaiting;
     private volatile long readerExitedAt;
     private volatile String lastReaderError;
@@ -614,7 +615,34 @@ public class QcUsbPlugin extends Plugin {
                 catch (Exception error) { return failedRelay("DEVICE_ERROR", error.getMessage()); }
             });
         }
-        return relayGatewayReadOnCurrentSession(method, params);
+        org.json.JSONObject readParams = new org.json.JSONObject(params.toString());
+        return relayGatewayReadOnCurrentSession(method, readParams).handle((value, error) -> {
+            if (error == null) return CompletableFuture.completedFuture(value);
+            Throwable cause = unwrapCompletion(error);
+            if (!(cause instanceof RelayException)
+                || !"READBACK_TIMEOUT".equals(((RelayException) cause).code)) {
+                return QcUsbPlugin.<org.json.JSONObject>failedFuture(cause);
+            }
+            gatewayReadRecoveries++;
+            return relayReconnect("USB session recovered after read timeout").thenCompose(ignored -> {
+                try { return relayGatewayReadOnCurrentSession(method, readParams); }
+                catch (Exception retryError) { return QcUsbPlugin.<org.json.JSONObject>failedFuture(retryError); }
+            });
+        }).thenCompose(result -> result);
+    }
+
+    private static Throwable unwrapCompletion(Throwable error) {
+        Throwable current = error;
+        while (current instanceof CompletionException && current.getCause() != null) {
+            current = current.getCause();
+        }
+        return current;
+    }
+
+    private static <T> CompletableFuture<T> failedFuture(Throwable error) {
+        CompletableFuture<T> result = new CompletableFuture<>();
+        result.completeExceptionally(error);
+        return result;
     }
 
     private CompletableFuture<org.json.JSONObject> restoreUsbSessionAfterHighVolumeRead(
@@ -906,6 +934,7 @@ public class QcUsbPlugin extends Plugin {
         result.put("lastHidWriteDurationMs", lastHidWriteDurationMs);
         result.put("lastHidWriteResult", lastHidWriteResult);
         result.put("lastHidWriteIncludedReportId", lastHidWriteIncludedReportId);
+        result.put("gatewayReadRecoveries", gatewayReadRecoveries);
         if (lastGatewayReadMismatch != null) result.put("lastGatewayReadMismatch", lastGatewayReadMismatch);
         UsbRequest[] inputRequests = activeInputRequests;
         result.put("readerRequestActive", inputRequests != null && inputRequests.length > 0);
