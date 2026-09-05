@@ -1308,12 +1308,16 @@ fn run(
                     install_connection_status(&state, &connected, handshake_ms);
                     *latest_messages.lock_recover() = connected.latest_messages.clone();
                     {
-                        let mut log = raw_events.log.lock_recover();
-                        log.clear();
                         // Replay the burst as it arrived. Replaying only the
                         // newest message per type dropped every incremental
                         // push, and a preset-folder listing is one message per
                         // folder.
+                        //
+                        // The history lock is taken last and never wraps the
+                        // preset-library lock: ingest_incoming releases the
+                        // history lock before touching the library, so nesting
+                        // them the other way round here would invert the order
+                        // and deadlock the device loop against an RPC thread.
                         let initial = connected.initial_messages.clone();
                         for message in &initial {
                             if message.message_type == 4 {
@@ -1326,6 +1330,8 @@ fn run(
                                 message.clone(),
                             ));
                         }
+                        let mut log = raw_events.log.lock_recover();
+                        log.clear();
                         log.extend(initial);
                     }
                     // The QC reports its initial preset before its control loop

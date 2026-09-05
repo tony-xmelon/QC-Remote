@@ -152,9 +152,12 @@ impl Drop for FlightRecorder {
 /// by definition the "nothing happened" case. They stay recorded so an idle
 /// stretch is still visible, but they are the first thing evicted.
 fn is_routine_liveness(entry: &FlightEntry) -> bool {
+    // Both directions, at any size: the probe is a single report but the QC
+    // answers it with several, so matching only one-report entries evicted the
+    // probe while keeping its reply — leaving a record of inbound Version
+    // traffic with no outbound cause.
     matches!(entry.event.as_str(), "outbound" | "inbound")
         && entry.message_type == Some(qc_protocol::profile::MESSAGE_TYPE_VERSION)
-        && entry.report_count == Some(1)
 }
 
 fn now_unix_ms() -> u128 {
@@ -229,6 +232,36 @@ mod tests {
             .entries
             .iter()
             .any(|entry| entry.message_type == Some(40) && entry.report_count == Some(1191)));
+    }
+
+    #[test]
+    fn the_liveness_reply_is_evicted_with_its_probe() {
+        // The probe is one report but the QC answers it with three, so keying
+        // "routine" on a single report evicted the probe and kept the reply —
+        // the record then showed inbound Version traffic with no outbound
+        // cause, which is exactly backwards for diagnosing a silent link.
+        let mut recorder = FlightRecorder::for_test();
+        for message_type in 0..MAX_ENTRIES {
+            recorder.outbound(message_type as u16 % 9 + 20, 1);
+        }
+        for _ in 0..MAX_ENTRIES {
+            recorder.outbound(qc_protocol::profile::MESSAGE_TYPE_VERSION, 1);
+            recorder.inbound(qc_protocol::profile::MESSAGE_TYPE_VERSION, 3);
+        }
+
+        assert_eq!(recorder.document.entries.len(), MAX_ENTRIES);
+        let version_entries = recorder
+            .document
+            .entries
+            .iter()
+            .filter(|entry| {
+                entry.message_type == Some(qc_protocol::profile::MESSAGE_TYPE_VERSION)
+            })
+            .count();
+        assert_eq!(
+            version_entries, 0,
+            "idle Version traffic must never displace real operations"
+        );
     }
 
     #[test]

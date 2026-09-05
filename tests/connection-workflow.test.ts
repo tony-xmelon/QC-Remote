@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { qcConnectionPresentation } from "../packages/typescript/qc-ui/src/use-qc-connection-workflow.ts";
 import { isQcConnectionFailure, qcConnectionIsVerified, qcDeviceStatusDetail, qcVisibleStatusNotice, runtimeHasSynchronizedQc } from "../apps/windows/src/qc-readiness.ts";
@@ -55,4 +56,24 @@ test("connection details cannot repeat stale synchronized text after readiness i
   assert.equal(qcVisibleStatusNotice("No QC preset has been synced yet", true, "6B · Test"), "Quad Cortex live and synchronized · 6B · Test");
   assert.equal(qcVisibleStatusNotice("Tempo set to 120 BPM", true, "6B · Test"), "Tempo set to 120 BPM");
   assert.equal(qcVisibleStatusNotice("No QC preset has been synced yet", false, "6B · Test"), "No QC preset has been synced yet");
+});
+
+test("a broker replacing a failed one restores the session without being asked", () => {
+  const host = readFileSync(new URL("../apps/windows/src-tauri/src/lib.rs", import.meta.url), "utf8");
+  const brokerMain = readFileSync(new URL("../services/device-broker/src/main.rs", import.meta.url), "utf8");
+
+  // The host kills the broker on any transport failure, and the call that
+  // spawns the replacement is an ordinary device poll rather than a connection
+  // step. Without this, nothing ever asks the replacement to open a session and
+  // every later device call answers "not connected" for the life of the process.
+  assert.match(host, /let replacing = self\.started_once;[\s\S]{0,120}GatewayProcess::start\(self\.event_tx\.clone\(\), replacing\)/);
+  assert.match(host, /if auto_connect \{[\s\S]{0,80}--auto-connect/);
+
+  // The first broker still starts idle so it cannot race the client's own
+  // connection flow; only a replacement connects on its own.
+  assert.match(brokerMain, /if auto_connect \{[\s\S]{0,160}DeviceController::start\(\)[\s\S]{0,160}DeviceController::start_disconnected\(\)/);
+
+  // Reconnecting is the replacement's own job: device.reconnect waits for
+  // readiness, so issuing it inline would stall the poll that triggered it.
+  assert.doesNotMatch(host, /GatewayProcess::start\([\s\S]{0,200}request\(rpc::RECONNECT/);
 });
