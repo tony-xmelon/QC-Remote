@@ -68,8 +68,8 @@ comparison.
 
 | Client | Official frames rendered | Mean structural match | Mean color similarity |
 | --- | ---: | ---: | ---: |
-| Windows | 36/36 (100%) | **91.89%** | **97.15%** |
-| Android | 36/36 (100%) | **91.89%** | **97.15%** |
+| Windows | 36/36 (100%) | **91.91%** | **97.15%** |
+| Android | 36/36 (100%) | **91.91%** | **97.15%** |
 
 This broader corpus is deliberately reported separately from the 41-frame
 physical-device regression pack. It adds authoritative coverage for I/O,
@@ -101,7 +101,7 @@ join is in [the canonical coverage matrix](qc-screen-coverage-matrix.md).
 | `official-empty-slot` | **94.02%** | **94.02%** |
 | `official-device-browser-amp` | **87.14%** | **87.14%** |
 | `official-device-presets` | **88.56%** | **88.55%** |
-| `official-device-preset-actions` | **89.08%** | **89.08%** |
+| `official-device-preset-actions` | **89.97%** | **89.97%** |
 | `official-expression-bypass` | **91.73%** | **91.79%** |
 | `official-looper` | **90.72%** | **90.73%** |
 | `official-directory-presets` | **96.73%** | **96.73%** |
@@ -172,6 +172,10 @@ join is in [the canonical coverage matrix](qc-screen-coverage-matrix.md).
 
 ## Improvements in this pass
 
+- Replaced the Device Preset Actions screen's tiny fallback diamond with the
+  full wireframe sixth-category glyph observed in the official frame. The
+  screen rises from **89.09% to 89.97% structural** on both hosts, bringing the
+  complete official corpus to **91.91% structural** on Windows and Android.
 - Matched the official Tuner's larger, lower 440 Hz encoder without changing
   the physical Tuner state. The frame rises from **88.62% / 88.63% to 88.87% /
   88.88% structural** on Windows / Android, and the complete official corpus

@@ -48,6 +48,11 @@ test("official tuner retains the measured 440 Hz encoder geometry", () => {
   assert.match(css, /\.tuner-official \.tuner-frequency > i \{[^}]*top: \.55cqw;[^}]*width: 7\.75cqw;[^}]*height: 7\.75cqw;/s);
 });
 
+test("official device-preset actions retain the observed sixth category glyph", () => {
+  const css = readFileSync("packages/typescript/qc-ui/src/official-device-browser.css", "utf8");
+  assert.match(css, /\.coros-device-presets\.is-official-actions > nav button:nth-child\(6\) i > span \{[^}]*width: 5cqw;[^}]*data:image\/svg\+xml/);
+});
+
 test("vendored block sprite remains byte-identical to the verified Neural DSP SVG", () => {
   const canonical = readFileSync("apps/windows/public/qc-block-samples.svg", "utf8").replaceAll("\r\n", "\n");
   assert.equal(createHash("sha256").update(canonical).digest("hex"), "aa32a2304e05fc62a783df4ed94c31780c18ff7c1e5f34a73aa1371f748919fc");

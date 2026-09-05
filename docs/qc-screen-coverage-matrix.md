@@ -13,7 +13,7 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 | Corpus | Windows structural | Windows color | Android structural | Android color |
 | --- | ---: | ---: | ---: | ---: |
 | Physical device | 91.55% | 97.39% | 91.54% | 97.39% |
-| Official manual | 91.89% | 97.15% | 91.89% | 97.15% |
+| Official manual | 91.91% | 97.15% | 91.91% | 97.15% |
 
 Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` color similarity. A canonical state that references multiple frames reports their mean. Detail evidence is scoped and therefore never promoted into a full-frame score.
 
@@ -106,7 +106,7 @@ Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` col
 | ED-13 | Editor | Block contextual actions | smoke only | Built | Built | — / — | — / — | — / — | — / — |
 | ED-14 | Grid | I/O clipping warning | smoke only | Built | Built | — / — | — / — | — / — | — / — |
 | ED-15 | Grid | DSP/side-chain limit warning | smoke only | Built | Built | — / — | — / — | — / — | — / — |
-| ED-16 | Virtual Device preset | Factory preset row actions | physical frame + official frame | Built | Built | 96.10% / 96.10% | 96.58% / 96.58% | 89.09% / 89.09% | 96.07% / 96.07% |
+| ED-16 | Virtual Device preset | Factory preset row actions | physical frame + official frame | Built | Built | 96.10% / 96.10% | 96.58% / 96.58% | 89.97% / 89.97% | 96.06% / 96.06% |
 | ED-17 | Virtual Device preset | Empty User preset tab | physical frame | Built | Built | 89.71% / 89.70% | 98.29% / 98.29% | — / — | — / — |
 | DR-01 | Directory | Category chooser | official detail | Built | Built | — / — | — / — | — / — | — / — |
 | DR-02 | Directory | Presets browser | physical frame + official frame | Built | Built | 92.37% / 92.38% | 97.73% / 97.73% | 96.73% / 96.73% | 98.00% / 98.00% |
