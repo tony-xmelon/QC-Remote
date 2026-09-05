@@ -848,6 +848,7 @@ async function main() {
       assert(screenDigest(tunerScreen) !== screenDigest(baselineDeviceScreen), "Opening the tuner did not change the physical QC screen.");
       verified("show_tuner", { width: tunerScreen.width, height: tunerScreen.height, sha256: screenDigest(tunerScreen) });
       await transport.call("show_tuner", { shown: false });
+      delete report.manualActionRequired;
       await call("show_gig_view", { shown: true });
       const gigScreen = await transport.call("capture_screen", {});
       assert(pngSignatureIsValid(gigScreen, 800, 480), "Gig View device-screen verification returned an invalid PNG.");
