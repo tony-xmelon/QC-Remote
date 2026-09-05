@@ -7,8 +7,8 @@ Reference: physical Quad Cortex, CorOS 4.1.0, 800x480 framebuffer corpus
 
 | Client | Physical corpus rendered | Mean structural match | Mean color similarity |
 | --- | ---: | ---: | ---: |
-| Windows | 41/41 (100%) | **91.23%** | **97.30%** |
-| Android | 41/41 (100%) | **91.23%** | **97.30%** |
+| Windows | 41/41 (100%) | **91.45%** | **97.39%** |
+| Android | 41/41 (100%) | **91.43%** | **97.39%** |
 
 These are native-size measurements, not audit estimates. Both hosts render the
 same versioned `coros410` scratch-preset fixture through `@ndsp-qc/ui`; each
@@ -20,7 +20,7 @@ frame. An earlier driver did not wait for asynchronous editor opening and
 therefore compared the underlying Grid for seven editor states; those invalid
 measurements have been replaced. Both capture drivers now exclude the decorative
 host bezel and measure the same raw 800x480 framebuffer; their aggregate
-structural scores are identical. The live Grid, Directory, routing, and
+structural scores remain within 0.02 percentage points. The live Grid, Directory, routing, and
 parameter editor implementations are shared.
 
 The complete product target is larger than the measured corpus. The canonical
@@ -68,8 +68,8 @@ comparison.
 
 | Client | Official frames rendered | Mean structural match | Mean color similarity |
 | --- | ---: | ---: | ---: |
-| Windows | 36/36 (100%) | **90.79%** | **97.11%** |
-| Android | 36/36 (100%) | **90.79%** | **97.11%** |
+| Windows | 36/36 (100%) | **90.78%** | **97.11%** |
+| Android | 36/36 (100%) | **90.77%** | **97.11%** |
 
 This broader corpus is deliberately reported separately from the 41-frame
 physical-device regression pack. It adds authoritative coverage for I/O,
@@ -97,7 +97,7 @@ join is in [the canonical coverage matrix](qc-screen-coverage-matrix.md).
 | `official-io-settings-analog` | **87.71%** | **87.70%** |
 | `official-io-settings-usb` | **88.08%** | **88.08%** |
 | `official-global-eq` | **90.51%** | **90.51%** |
-| `official-grid-brit-2203` | **92.12%** | **92.11%** |
+| `official-grid-brit-2203` | **92.25%** | **92.26%** |
 | `official-empty-slot` | **94.02%** | **94.02%** |
 | `official-device-browser-amp` | **87.14%** | **87.14%** |
 | `official-device-presets` | **88.56%** | **88.55%** |
@@ -134,9 +134,9 @@ join is in [the canonical coverage matrix](qc-screen-coverage-matrix.md).
 | `preset-directory` | **92.23%** | **92.25%** |
 | `input-route-selector` | **88.26%** | **88.31%** |
 | `output-route-selector` | **88.91%** | **88.95%** |
-| `device-browser-root` | **86.04%** | **86.05%** |
-| `device-browser-models` | **89.75%** | **89.75%** |
-| `device-browser-models-clean` | **87.11%** | **87.11%** |
+| `device-browser-root` | **87.48%** | **87.50%** |
+| `device-browser-models` | **91.05%** | **91.05%** |
+| `device-browser-models-clean` | **88.64%** | **88.64%** |
 | `editor-simple-gate` | **92.56%** | **92.56%** |
 | `editor-chief-ds1` | **92.33%** | **92.33%** |
 | `editor-digital-flanger` | **87.27%** | **87.27%** |
@@ -172,6 +172,18 @@ join is in [the canonical coverage matrix](qc-screen-coverage-matrix.md).
 
 ## Improvements in this pass
 
+- Reconstructed the physical device browser's selected empty slot, corrected
+  the dimmed Grid opacity, restored the eight-pixel category scrollbar gutter,
+  and aligned the centered `New` badge. A browser-specific header variant now
+  preserves the physical scratch preset's condensed title and red `H` without
+  changing the official Brit preset's full-size green `A`. Browser Root rises
+  from **86.04% / 86.05% to 87.48% / 87.50%**, Models from **89.75% to
+  91.05%**, and Models Clean from **87.11% to 88.64%** structural match on
+  Windows / Android. Their mean rises from **87.45% to 89.06%**, while mean
+  color similarity rises from **96.10% to 97.49%**. The complete physical
+  benchmark reaches **91.45% / 97.39%** on Windows and **91.43% / 97.39%** on
+  Android; the independently rendered official Grid also improves to **92.25%
+  / 92.26%**.
 - Consolidated all physical parameter-editor measurements into the
   always-loaded shared stylesheet and removed competing rules from the lazy
   fixture bundle. This also makes editor appearance independent of whether a

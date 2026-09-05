@@ -805,3 +805,12 @@ test("preset bank, slot, and name use natural inline text flow", () => {
   assert.match(surfaceSource, /<text x="14" y="75"><tspan[^>]*>\{presetBank\}<\/tspan><tspan[^>]*>\{presetSlot\}<\/tspan><tspan[^>]*dx="16"/);
   assert.doesNotMatch(surfaceSource, /presetLocationExtraWidth|x=\{56 \+|x=\{114 \+/);
 });
+
+test("physical device browser preserves its measured Grid chrome and selected slot", () => {
+  const fixtureSource = readFileSync(new URL("../packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", import.meta.url), "utf8");
+  const fixtureStyles = readFileSync(new URL("../packages/typescript/qc-ui/src/fixture-live-surface.css", import.meta.url), "utf8");
+  assert.match(fixtureSource, /CorOsOfficialGrid snapshot=\{snapshot\} browserChrome/);
+  assert.match(fixtureSource, /className="coros-device-empty-slot"/);
+  assert.match(fixtureStyles, /\.coros-device-empty-slot \{[^}]*z-index: 31;[^}]*left: 322px;[^}]*top: 206px;/);
+  assert.match(fixtureStyles, /\.coros-device-dismiss \{[^}]*background: #dfe3de49;/);
+});

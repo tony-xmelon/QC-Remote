@@ -748,7 +748,7 @@ const CORPUS_DEVICE_CATEGORIES = [
 ] as const;
 const CORPUS_OVERDRIVE_MODELS = ["Exotic Z Boost", "81 Creations Drive", "Brit Blues", "Brit Governor", "Chief BD2", "Chief DS1", "Chief MT", "Chief OD1", "Chief SD1", "Exotic", "Facial Fuzz", "Freeman BOD"];
 
-function CorOsOfficialGrid({ snapshot, children }: { snapshot: PresetSnapshot; children?: ReactNode }) {
+function CorOsOfficialGrid({ snapshot, children, browserChrome = false }: { snapshot: PresetSnapshot; children?: ReactNode; browserChrome?: boolean }) {
   const columns = [101, 187, 272, 357, 443, 529, 615, 701];
   const rowY = [147, 241, 335, 429];
   const screenBlocks = snapshot.blocks.filter((block) => block.row >= 0 && block.row < 4 && block.column >= 0 && block.column < 8);
@@ -766,7 +766,7 @@ function CorOsOfficialGrid({ snapshot, children }: { snapshot: PresetSnapshot; c
   return <div className="qc-screen coros-vector-screen" aria-label="CorOS Grid">
     <svg className="coros-vector-canvas" viewBox="0 0 800 480" preserveAspectRatio="none" role="img" aria-label={`${snapshot.presetLocation} ${snapshot.presetName}, ${snapshot.mode} mode`}>
       <rect width="800" height="480" fill="#020202" />
-      <text x="14" y="76" fill="#f4f4f4" fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="64"><tspan letterSpacing="-2">{snapshot.presetLocation.slice(0, -1)}</tspan><tspan fill="#2df36a" letterSpacing="-2">{snapshot.presetLocation.slice(-1)}</tspan><tspan dx="14" fill="#f4f4f4" letterSpacing="-2">{snapshot.presetName}</tspan></text>
+      <text x="14" y="76" fill="#f4f4f4" fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="64"><tspan letterSpacing="-2">{snapshot.presetLocation.slice(0, -1)}</tspan><tspan fill={browserChrome ? "#d63b3e" : "#2df36a"} letterSpacing="-2">{snapshot.presetLocation.slice(-1)}</tspan><tspan dx="14" fill="#f4f4f4" fontSize={browserChrome ? 40 : 64} letterSpacing={browserChrome ? 0 : -2}>{snapshot.presetName}</tspan></text>
       <g fill="none" stroke="#f0f0f0" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="M620 13A13 13 0 1 1 607 26" /><path d="M613 15L621 9V20Z" fill="#f0f0f0" stroke="none" /></g>
       <g transform="translate(-7 0)" fill="#f0f0f0"><path d="M726 23H715V17H721V20H723V17H726V23Z" /><path d="M733 17.9863V23.7568C732.398 23.2743 731.726 22.8769 731 22.583V18.8047L727.252 15H714.001C713.448 15 713 15.4477 713 16V32C713 32.5523 713.448 33 714.001 33H720.584C720.878 33.7258 721.274 34.3984 721.757 35H714.002C712.344 34.9999 711 33.6568 711 32V16C711 14.3432 712.344 13.0001 714.002 13H728.09L733 17.9863Z" /></g>
       <g className="grid-scene-badge"><rect x="656" y="12" width="25" height="25" rx="3" fill="#f2cf32" /><text x="668.5" y="33" textAnchor="middle" fill="#141414" fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="22">A</text></g>
@@ -787,7 +787,8 @@ function CorOsOfficialGrid({ snapshot, children }: { snapshot: PresetSnapshot; c
 
 function CorOsCorpusDeviceBrowser({ snapshot, view }: { snapshot: PresetSnapshot; view: "corpus-device-browser-root" | "corpus-device-browser-models" | "corpus-device-browser-models-clean" }) {
   const models = view !== "corpus-device-browser-root";
-  return <CorOsOfficialGrid snapshot={snapshot}>
+  return <CorOsOfficialGrid snapshot={snapshot} browserChrome>
+    <svg className="coros-device-empty-slot" viewBox="0 0 70 70" aria-hidden="true"><rect width="70" height="70" rx="14" fill="#050505" /><path d="M25 35h20M35 25v20" fill="none" stroke="#dedede" strokeWidth="1.7" strokeLinecap="round" /></svg>
     <button className="coros-device-dismiss" aria-label="Close device browser" />
     <section className="coros-device-browser" aria-label="Virtual Device browser">
       <nav>{CORPUS_DEVICE_CATEGORIES.map(([label, glyph, color]) => <button key={label} className={models && label === "Overdrive" ? "is-active" : ""} style={{ "--device-color": color } as CSSProperties}><i><DeviceCategoryGlyph label={label} fallback={glyph} /></i><span>{label}</span>{label === "Delay" && <b>New</b>}</button>)}</nav>

@@ -102,7 +102,8 @@
 .coros-route-picker.is-output .route-picker-list button { padding-left: 6%; }
 .coros-route-picker.is-output .route-picker-list button.output-usb-tail { transform: translateY(-2.5cqw); }
 
-.coros-device-dismiss { right: 50%; width: 50%; background: #dfe3de42; }
+.coros-device-dismiss { right: 50%; width: 50%; background: #dfe3de49; }
+.coros-device-empty-slot { position: absolute; z-index: 31; left: 322px; top: 206px; width: 70px; height: 70px; }
 .coros-device-browser {
   position: absolute;
   z-index: 31;
@@ -119,7 +120,7 @@
 .coros-device-browser:has(.coros-device-models) > nav button > span,
 .coros-device-browser:has(.coros-device-models) > nav button > b { display: none; }
 .coros-device-browser > nav { overflow-y: auto; padding: 2% 0; border-right: 1px solid #303332; scrollbar-width: none; }
-.coros-device-browser:not(:has(.coros-device-models)) > nav { scrollbar-width: thin; scrollbar-color: #353a35 transparent; }
+.coros-device-browser:not(:has(.coros-device-models)) > nav { width: calc(100% - 8px); scrollbar-width: thin; scrollbar-color: #353a35 transparent; }
 .coros-device-browser:not(:has(.coros-device-models)) > nav::-webkit-scrollbar { width: 3px; }
 .coros-device-browser:not(:has(.coros-device-models)) > nav::-webkit-scrollbar-thumb { border-radius: 2px; background: #353a35; }
 .coros-device-browser > nav button {
@@ -150,7 +151,7 @@
 .coros-device-browser > nav i > svg { width: 72%; height: 72%; }
 .coros-device-browser > nav i > span { font-size: 3.75cqw; }
 .coros-device-browser > nav span { font-size: clamp(8px, 1.9cqw, 16px); }
-.coros-device-browser > nav b { position: absolute; right: 6%; bottom: 10%; padding: 5px 12px; border-radius: 14px; background: #ffd331; color: #181818; font-size: 11px; font-weight: 400; }
+.coros-device-browser > nav b { position: absolute; right: 4%; top: 50%; padding: 7px 16px; border-radius: 14px; background: #ffd331; color: #181818; font-size: 11px; font-weight: 400; transform: translateY(-50%); }
 .coros-device-models { overflow-y: auto; background: #292c29; scrollbar-color: #343736 transparent; scrollbar-width: thin; }
 .coros-device-models header { position: sticky; z-index: 1; top: 0; height: 7.75cqw; display: flex; background: #181c18; }
 .coros-device-models header button { width: 34%; border: 0; background: #141615; color: #858585; font-size: clamp(8px, 1.9cqw, 16px); }
