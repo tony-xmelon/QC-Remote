@@ -119,6 +119,32 @@ test("partial configs expose missing physical fixtures without weakening the ful
   assert.throws(() => validateConfig(partial, { requireAll: true }), /library\.ir\.key/);
 });
 
+test("the disposable physical IR fixture is deterministic QC-sized PCM", () => {
+  const directory = mkdtempSync(join(tmpdir(), "qc-hardware-ir-"));
+  try {
+    const output = join(directory, "QC-MCP-TEST-IR.wav");
+    const generator = fileURLToPath(new URL("../tools/generate-hardware-test-ir.mjs", import.meta.url));
+    const first = spawnSync(process.execPath, [generator, "--output", output], { encoding: "utf8" });
+    assert.equal(first.status, 0, first.stderr);
+    const metadata = JSON.parse(first.stdout);
+    const bytes = readFileSync(output);
+    assert.equal(bytes.subarray(0, 4).toString("ascii"), "RIFF");
+    assert.equal(bytes.subarray(8, 12).toString("ascii"), "WAVE");
+    assert.equal(bytes.readUInt16LE(20), 1);
+    assert.equal(bytes.readUInt16LE(22), 1);
+    assert.equal(bytes.readUInt32LE(24), 48_000);
+    assert.equal(bytes.readUInt16LE(34), 24);
+    assert.equal(bytes.readUInt32LE(40), 1_024 * 3);
+    assert.equal(metadata.sha256, createHash("sha256").update(bytes).digest("hex"));
+
+    const second = spawnSync(process.execPath, [generator, "--output", output], { encoding: "utf8" });
+    assert.equal(second.status, 0, second.stderr);
+    assert.equal(JSON.parse(second.stdout).sha256, metadata.sha256);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test("full dry run validates and identifies the exact staged candidate", () => {
   const directory = mkdtempSync(join(tmpdir(), "qc-hardware-candidate-"));
   try {

@@ -30,6 +30,19 @@ Create a dedicated stored preset whose name begins with `QC MCP TEST`. Give it:
 Choose a harmless touchscreen coordinate and its explicit recovery coordinate.
 Disconnect Cortex Control before either app claims the QC USB interfaces.
 
+`load_ir` needs one disposable IR already present in the QC library; the public
+MCP intentionally does not implement host-to-device IR import. Generate a small
+test-only WAV locally, import it once with Cortex Control, then rerun discovery
+and copy its suggested `library.ir` fixture into the private hardware config:
+
+```powershell
+node tools/generate-hardware-test-ir.mjs
+node tools/hardware-conformance.mjs --config C:\secure\qc-hardware-windows.json --execute --discover
+```
+
+The generated `QC-MCP-TEST-IR.wav` is mono 24-bit PCM at 48 kHz with 1,024
+samples, contains no third-party audio, and is deliberately low-level.
+
 Copy `tools/hardware-conformance.example.json` outside source control, fill in
 the serial suffix and fixtures, and keep OAuth tokens only in the named
 environment variable.
