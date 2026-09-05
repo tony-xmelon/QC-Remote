@@ -6,6 +6,7 @@ import { resolveOfflineAssistantIntent } from "../packages/typescript/qc-core/sr
 import { SHARED_QC_ASSISTANT_TOOLS } from "../packages/typescript/qc-core/src/assistant-tools.ts";
 import { demoSnapshot } from "../packages/typescript/qc-client/src/index.ts";
 import { ASSISTANT_ACCESS_MODE_STORAGE_KEY, readAssistantAccessMode, writeAssistantAccessMode } from "../packages/typescript/qc-ui/src/assistant-access-storage.ts";
+import { applyPreparedOfflineAssistantAction, runOfflineAssistantIntent } from "../packages/typescript/qc-ui/src/offline-assistant-workflow.ts";
 import { assistantAccessPermitsChatTool, booleanArgument, chatCredentialInputProps, chatCredentialStatus, chatErrorMessage, chatInstructions, chatProviderDefaults, isChatUnavailable, isLoopbackChatUrl, isReadOnlyChatTool, numericArgument, qcChatTools } from "../apps/windows/src/model-chat.ts";
 
 test("parses immediate performance commands", () => {
@@ -55,6 +56,52 @@ test("resolves offline assistant workflows identically for native shells", () =>
   assert.throws(
     () => resolveOfflineAssistantIntent({ kind: "parameter", parameter: "gain", value: "50%" }, demoSnapshot, "missing", "modify"),
     /Select a block/
+  );
+});
+
+test("one shared offline assistant workflow owns execution and edit preparation", async () => {
+  const calls: string[] = [];
+  const bypassBlock = demoSnapshot.blocks.find((candidate) => candidate.bypassed !== undefined);
+  assert.ok(bypassBlock);
+  const performance = {
+    selectScene: async (scene: number) => { calls.push(`scene:${scene}`); },
+    setBlockBypass: async (_block: typeof bypassBlock, bypassed: boolean) => {
+      calls.push(`bypass:${bypassed}`);
+      return "Bypass applied.";
+    },
+    navigateBank: async (direction: -1 | 1) => `Bank ${direction > 0 ? "up" : "down"}.`,
+    runAssistantDeviceCommand: async () => "Performance command completed."
+  };
+  const preset = { recallLocation: async (location: string) => `${location} recalled.` };
+  const base = {
+    gateway: {} as Parameters<typeof runOfflineAssistantIntent>[1]["gateway"],
+    snapshot: demoSnapshot,
+    selectedBlockId: bypassBlock.id,
+    accessMode: "full" as const,
+    connected: false,
+    demo: true,
+    performance,
+    preset
+  };
+
+  assert.deepEqual(await runOfflineAssistantIntent({ kind: "scene", index: 2 }, base), {
+    kind: "completed",
+    detail: "Scene C selected in the preview."
+  });
+  assert.deepEqual(calls, ["scene:2"]);
+
+  const prepared = await runOfflineAssistantIntent({ kind: "bypass", desired: "toggle" }, base);
+  assert.equal(prepared.kind, "prepared");
+  if (prepared.kind !== "prepared") return;
+  assert.match(prepared.action.label, /Scene A$/);
+  assert.equal(await applyPreparedOfflineAssistantAction(prepared.action, performance, {
+    applyResolvedParameter: async () => "Parameter applied."
+  }), "Bypass applied.");
+  assert.deepEqual(calls, ["scene:2", `bypass:${!bypassBlock.bypassed}`]);
+
+  await assert.rejects(
+    runOfflineAssistantIntent({ kind: "tempo", bpm: 120 }, { ...base, accessMode: "read-only" }),
+    /does not permit/
   );
 });
 

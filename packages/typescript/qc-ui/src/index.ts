@@ -55,6 +55,8 @@ export { useQcSurfaceActions } from "./use-qc-surface-actions";
 export type { QcSurfaceActionOptions } from "./use-qc-surface-actions";
 export { prepareAssistantParameterEdit, resolveAssistantParameterEdit } from "./assistant-parameter-edit";
 export type { AssistantParameterEdit, PreparedAssistantParameterEdit } from "./assistant-parameter-edit";
+export { applyPreparedOfflineAssistantAction, offlineAssistantEditConfirmation, runOfflineAssistantIntent } from "./offline-assistant-workflow";
+export type { OfflineAssistantParameterPort, OfflineAssistantPerformancePort, OfflineAssistantPresetPort, OfflineAssistantWorkflowOptions, OfflineAssistantWorkflowOutcome, PreparedOfflineAssistantAction } from "./offline-assistant-workflow";
 export { useAssistantConversation } from "./use-assistant-conversation";
 export type { AssistantConversationOptions, AssistantSubmission } from "./use-assistant-conversation";
 export { qcConnectionPresentation, useQcConnectionWorkflow } from "./use-qc-connection-workflow";

@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ClipboardEvent as ReactClipboardEvent } from "react";
-import { demoSnapshot, type BlockDetails, type BlockParameter, type ConnectionState, type DeviceActionResult, type DiagnosticsReport, type GridBlock, type PresetSnapshot, type RuntimeStatus, type WorkspaceDocument } from "@ndsp-qc/client";
-import { assistantHelp, demoBlockDetails, parseAssistantIntent, recentModelConversation, resolveOfflineAssistantIntent, runToolConversation, sceneLetter, type AssistantAccessMode as ControlAccessMode, type ConversationMessage } from "@ndsp-qc/core";
+import { demoSnapshot, type ConnectionState, type DeviceActionResult, type DiagnosticsReport, type PresetSnapshot, type RuntimeStatus, type WorkspaceDocument } from "@ndsp-qc/client";
+import { assistantHelp, demoBlockDetails, parseAssistantIntent, recentModelConversation, runToolConversation, sceneLetter, type AssistantAccessMode as ControlAccessMode, type ConversationMessage } from "@ndsp-qc/core";
 import { formFactors, skins } from "@ndsp-qc/form-factors";
 import { QC_BRAND } from "@ndsp-qc/theme";
-import { AddBlockPanel, AssistantAccessSelect, browserWorkflowPrompts, corosFixtureConfiguration, corOsUnavailableContextActionMessage, executeAndReconcileQcAction, GridManagementPanel, PARAMETER_ENCODER_ROLES, parameterEditorControlSlots, parameterEditorPageSize, parameterStep, prepareAssistantParameterEdit, qcParameterEditorBindings, QcUiIcon, QuadCortexSurface, readAssistantAccessMode, RoutingEditor, SceneEditor, useAssistantAutoScroll, useAssistantConversation, useBlockEditorSession, useContinuousControlWorkflow, usePublicRelayWorkflow, useQcConnectionWorkflow, useQcController, useQcLiveState, useQcSurfaceActions, useQcWorkflows, writeAssistantAccessMode, type CorOsContextAction } from "@ndsp-qc/ui";
+import { AddBlockPanel, applyPreparedOfflineAssistantAction, AssistantAccessSelect, browserWorkflowPrompts, corosFixtureConfiguration, corOsUnavailableContextActionMessage, executeAndReconcileQcAction, GridManagementPanel, PARAMETER_ENCODER_ROLES, parameterEditorControlSlots, parameterEditorPageSize, parameterStep, qcParameterEditorBindings, QcUiIcon, QuadCortexSurface, readAssistantAccessMode, RoutingEditor, runOfflineAssistantIntent, SceneEditor, useAssistantAutoScroll, useAssistantConversation, useBlockEditorSession, useContinuousControlWorkflow, usePublicRelayWorkflow, useQcConnectionWorkflow, useQcController, useQcLiveState, useQcSurfaceActions, useQcWorkflows, writeAssistantAccessMode, type CorOsContextAction, type PreparedOfflineAssistantAction } from "@ndsp-qc/ui";
 import { assistantAccessPermitsChatTool, booleanArgument, chatCredentialInputProps, chatCredentialStatus, chatInstructions, chatProviderDefaults, isChatUnavailable, isLoopbackChatUrl, numericArgument, qcChatTools, type AntigravityModel, type ChatAttachment, type ChatQuota, type ChatSettings, type ChatToolCall, type ChatUsage, type GoogleProject } from "./model-chat";
 import { diagnosticsFiles, modelChat, publicRelay, reportVoiceCapability, reportVoiceEvent, tauriTransport, workspaceFiles } from "./tauri-transport";
 import { createWindowsQcTransport } from "./qc-transport";
@@ -19,10 +19,6 @@ const { enabled: corpusFixtureEnabled, screenView: fixtureScreenView, initialSna
 type DialogName = "settings" | "about" | "device-info" | "shortcuts" | "privacy" | "legal" | "notices" | "guide" | "feedback" | "parameters" | "add-block" | "routing" | "scenes" | "workspace" | null;
 type SettingsTab = "model" | "providers" | "voice" | "general";
 type ConversationEntry = ConversationMessage<ChatAttachment>;
-type PendingAssistantAction =
-  | { kind: "bypass"; block: GridBlock; targetBypassed: boolean; label: string }
-  | { kind: "parameter"; block: BlockDetails; parameter: BlockParameter; value: number; label: string };
-
 const initialConnection: ConnectionState = {
   phase: "disconnected",
   detail: "Device gateway is not connected",
@@ -81,7 +77,7 @@ export function App() {
   const [chatAttachments, setChatAttachments] = useState<ChatAttachment[]>([]);
   const conversation = useAssistantConversation<ChatAttachment>();
   const { input: message, setInput: setMessage, messages, pending: assistantPending } = conversation;
-  const [pendingAssistantAction, setPendingAssistantAction] = useState<PendingAssistantAction>();
+  const [pendingAssistantAction, setPendingAssistantAction] = useState<PreparedOfflineAssistantAction>();
   const [listening, setListening] = useState(false);
   const [commandPending, setCommandPending] = useState(false);
   const [modelWarming, setModelWarming] = useState(false);
@@ -1062,49 +1058,26 @@ export function App() {
   };
 
   const executeImmediateAssistantIntent = async (intent: ReturnType<typeof parseAssistantIntent>) => {
-    if (intent.kind === "parameter" && connection.demo) throw new Error("Connect the Quad Cortex before preparing a live parameter edit.");
-    const resolution = resolveOfflineAssistantIntent(intent, snapshot, selectedBlockId, assistantAccessMode);
-    if (resolution.kind === "response") {
-      appendMessage("assistant", resolution.detail);
-      setNotice(resolution.intent === "inspect" ? "Current QC context summarized locally." : "Typed QC command examples are shown in chat.");
-      return;
-    }
-    if (resolution.kind === "denied") throw new Error(resolution.detail);
-    if (resolution.kind === "bypass") {
-      if (!resolution.changed) {
-        appendMessage("assistant", `${resolution.block.name} is already ${resolution.targetBypassed ? "bypassed" : "enabled"}.`);
-        setNotice(`${resolution.block.name} already matches the requested bypass state.`);
-        return;
-      }
-      setPendingAssistantAction({ kind: "bypass", block: resolution.block, targetBypassed: resolution.targetBypassed, label: resolution.label });
-      appendMessage("assistant", "I prepared a temporary Grid edit. Review it below before applying.");
-      setNotice("Temporary bypass edit is waiting for review.");
-      return;
-    }
-    if (connection.demo) throw new Error("Connect the Quad Cortex before running that performance command.");
-    if (resolution.kind === "parameter") {
-      const prepared = await prepareAssistantParameterEdit(tauriTransport, snapshot, resolution.block, resolution.parameter, resolution.value);
-      setPendingAssistantAction({ kind: "parameter", block: prepared.details, parameter: prepared.parameter, value: prepared.normalized, label: prepared.label });
-      appendMessage("assistant", "I prepared a temporary parameter edit. Review it below before applying.");
-      setNotice("Temporary parameter edit is waiting for review.");
-      return;
-    }
-    if (resolution.kind === "command") {
-      const deviceCommand = resolution.command;
-      const detail = await performanceWorkflow.runAssistantDeviceCommand(deviceCommand, true)
-        ?? "Performance command completed.";
-      appendMessage("tool", detail);
-      return;
-    }
-    if (resolution.kind === "bank") {
-      const detail = await performanceWorkflow.navigateBank(resolution.direction, true);
-      if (detail) appendMessage("tool", detail);
-      return;
-    }
-    if (resolution.kind === "recall") {
-      const detail = await presetWorkflow.recallLocation(resolution.location);
-      appendMessage("tool", detail);
-      setNotice(detail);
+    const outcome = await runOfflineAssistantIntent(intent, {
+      gateway: tauriTransport,
+      snapshot,
+      selectedBlockId,
+      accessMode: assistantAccessMode,
+      connected: connection.phase === "ready" && !connection.demo,
+      demo: connection.demo,
+      performance: performanceWorkflow,
+      preset: presetWorkflow
+    });
+    if (outcome.kind === "response") {
+      appendMessage("assistant", outcome.detail);
+      setNotice(outcome.notice);
+    } else if (outcome.kind === "prepared") {
+      setPendingAssistantAction(outcome.action);
+      appendMessage("assistant", outcome.detail);
+      setNotice(outcome.notice);
+    } else {
+      appendMessage("tool", outcome.detail);
+      setNotice(outcome.detail);
     }
   };
 
@@ -1394,15 +1367,7 @@ export function App() {
     setCommandPending(true);
     setNotice(`Applying: ${pending.label}…`);
     try {
-      if (pending.kind === "bypass") {
-        const detail = await performanceWorkflow.setBlockBypass(pending.block, pending.targetBypassed, true)
-          ?? `${pending.block.name} ${pending.targetBypassed ? "bypassed" : "enabled"}.`;
-        appendMessage("tool", detail);
-      } else {
-        const detail = await parameterWorkflow.applyResolvedParameter(pending.block, pending.parameter, pending.value, true)
-          ?? `${pending.block.name} · ${pending.parameter.name} already has that value.`;
-        appendMessage("tool", detail);
-      }
+      appendMessage("tool", await applyPreparedOfflineAssistantAction(pending, performanceWorkflow, parameterWorkflow));
       setPendingAssistantAction(undefined);
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);

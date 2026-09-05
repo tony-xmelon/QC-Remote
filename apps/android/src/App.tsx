@@ -1,10 +1,10 @@
 import { Capacitor } from "@capacitor/core";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { demoSnapshot, QC_SCENE_COUNT } from "@ndsp-qc/client";
-import { assistantToolActionPrompt, footswitchLeds, parseAssistantIntent, parseAssistantReply, recentModelConversation, resolveOfflineAssistantIntent, runToolConversation, sceneLetter, textModelConversationPrompt, validateAssistantToolCalls, type AssistantAccessMode as ControlAccessMode, type AssistantToolCall, type PublicRelayState as RelayState } from "@ndsp-qc/core";
+import { assistantToolActionPrompt, footswitchLeds, parseAssistantIntent, parseAssistantReply, recentModelConversation, runToolConversation, sceneLetter, textModelConversationPrompt, validateAssistantToolCalls, type AssistantAccessMode as ControlAccessMode, type AssistantToolCall, type PublicRelayState as RelayState } from "@ndsp-qc/core";
 import { formFactors, skins } from "@ndsp-qc/form-factors";
 import { QC_BRAND, QC_VISUAL_ASSETS } from "@ndsp-qc/theme";
-import { AddBlockPanel, AssistantAccessSelect, AssistantAttachmentList, browserWorkflowPrompts, consumeQcNativeStateFrame, corosFixtureConfiguration, corOsUnavailableContextActionMessage, executeAndReconcileQcAction, GridManagementPanel, MicrophoneIcon, prepareAssistantParameterEdit, qcParameterEditorBindings, QcUiIcon, QuadCortexSurface, readAssistantAccessMode, RoutingEditor, SceneEditor, useAssistantAutoScroll, useAssistantConversation, useBlockEditorSession, usePublicRelayWorkflow, useQcConnectionWorkflow, useQcController, useQcLiveState, useQcSurfaceActions, useQcWorkflows, writeAssistantAccessMode, type CorOsContextAction } from "@ndsp-qc/ui";
+import { AddBlockPanel, applyPreparedOfflineAssistantAction, AssistantAccessSelect, AssistantAttachmentList, browserWorkflowPrompts, consumeQcNativeStateFrame, corosFixtureConfiguration, corOsUnavailableContextActionMessage, executeAndReconcileQcAction, GridManagementPanel, MicrophoneIcon, offlineAssistantEditConfirmation, qcParameterEditorBindings, QcUiIcon, QuadCortexSurface, readAssistantAccessMode, RoutingEditor, runOfflineAssistantIntent, SceneEditor, useAssistantAutoScroll, useAssistantConversation, useBlockEditorSession, usePublicRelayWorkflow, useQcConnectionWorkflow, useQcController, useQcLiveState, useQcSurfaceActions, useQcWorkflows, writeAssistantAccessMode, type CorOsContextAction } from "@ndsp-qc/ui";
 import { androidGatewayTransport, createAndroidQcTransport, GeminiNative, publicRelay, QcUsbNative, subscribeRelayState, VoiceInputNative } from "./native-services";
 import { quotaSummary, recordGeminiUsage, type GeminiModelId, type GeminiQuotaLedger } from "./gemini-quota";
 
@@ -248,7 +248,6 @@ export function App() {
     await attemptUsbConnection(true);
   };
 
-  const selectScene = performanceWorkflow.selectScene;
   const movePreset = performanceWorkflow.movePreset;
   const tapTempo = performanceWorkflow.tapTempo;
   const handleSurfaceAction = useQcSurfaceActions({
@@ -268,39 +267,30 @@ export function App() {
 
   const localFallback = async (input: string): Promise<string> => {
     const intent = parseAssistantIntent(input);
-    if (intent.kind === "parameter" && !usbConnected) return "Connect the Quad Cortex over USB first.";
     try {
-      const resolution = resolveOfflineAssistantIntent(intent, snapshot, selectedBlockId, controlAccessMode);
-      if (resolution.kind === "response") {
-        if (resolution.intent === "inspect") return resolution.detail;
+      const outcome = await runOfflineAssistantIntent(intent, {
+        gateway: androidGatewayTransport,
+        snapshot,
+        selectedBlockId,
+        accessMode: controlAccessMode,
+        connected: usbConnected,
+        demo: !native,
+        performance: performanceWorkflow,
+        preset: presetWorkflow
+      });
+      if (outcome.kind === "response") {
+        if (outcome.intent === "inspect") return outcome.detail;
         return native
-          ? `Gemini is unavailable right now. ${resolution.detail}`
+          ? `Gemini is unavailable right now. ${outcome.detail}`
           : "Browser preview is offline. On Android, Gemini chat, voice input, and direct Quad Cortex USB are enabled.";
       }
-      if (resolution.kind === "denied") return resolution.detail;
-      if (resolution.kind === "parameter") {
-        const prepared = await prepareAssistantParameterEdit(androidGatewayTransport, snapshot, resolution.block, resolution.parameter, resolution.value);
-        if (!window.confirm(`${prepared.label}?\n\nThis changes the live Grid but does not save the preset.`)) return "Temporary parameter edit cancelled.";
-        return await parameterWorkflow.applyResolvedParameter(prepared.details, prepared.parameter, prepared.normalized, true)
-          ?? `${prepared.details.name} · ${prepared.parameter.name} already has that value.`;
+      if (outcome.kind === "prepared") {
+        if (!await browserWorkflowPrompts.confirm(offlineAssistantEditConfirmation(outcome.action))) {
+          return `Temporary ${outcome.action.kind} edit cancelled.`;
+        }
+        return applyPreparedOfflineAssistantAction(outcome.action, performanceWorkflow, parameterWorkflow);
       }
-      if (resolution.kind === "bypass") {
-        if (resolution.changed && !window.confirm(`${resolution.label}?\n\nThis changes the live Grid but does not save the preset.`)) return "Temporary bypass edit cancelled.";
-        if (!resolution.changed) return `${resolution.block.name} is already ${resolution.targetBypassed ? "bypassed" : "enabled"}.`;
-        if (!usbConnected) return "Connect the Quad Cortex over USB first.";
-        return await performanceWorkflow.setBlockBypass(resolution.block, resolution.targetBypassed, true)
-          ?? `${resolution.block.name} ${resolution.targetBypassed ? "bypassed" : "enabled"}.`;
-      }
-      if (resolution.kind === "bank") return await performanceWorkflow.navigateBank(resolution.direction, true) ?? "Bank changed.";
-      if (resolution.kind === "recall") return await presetWorkflow.recallLocation(resolution.location);
-      const deviceCommand = resolution.command;
-      if (deviceCommand.kind === "scene" && !usbConnected) {
-        await selectScene(deviceCommand.scene, false);
-        return `Scene ${sceneLetter(deviceCommand.scene)} selected in the preview.`;
-      }
-      if (!usbConnected) return "Connect the Quad Cortex over USB first.";
-      return await performanceWorkflow.runAssistantDeviceCommand(deviceCommand, true)
-        ?? "Performance command completed.";
+      return outcome.detail;
     } catch (error) {
       return error instanceof Error ? error.message : "That QC command could not be completed.";
     }

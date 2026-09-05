@@ -79,9 +79,7 @@ test("typed assistant edits reuse shared parameter, bypass, and history workflow
   assert.match(performanceWorkflow, /setBlockBypass[\s\S]*recordHistory\?\.\(\{/);
   assert.match(performanceWorkflow, /runAssistantDeviceCommand[\s\S]*command\.kind === "tempo"[\s\S]*recordHistory\?\.\(\{/);
   for (const app of [windows, android]) {
-    assert.match(app, /parameterWorkflow\.applyResolvedParameter/);
-    assert.match(app, /performanceWorkflow\.setBlockBypass/);
-    assert.match(app, /performanceWorkflow\.runAssistantDeviceCommand/);
+    assert.match(app, /applyPreparedOfflineAssistantAction/);
     assert.doesNotMatch(app, /\brunAssistantCommand\b/);
     assert.doesNotMatch(app, /\bassistantCommandDetail\b/);
     assert.doesNotMatch(app, /(?:tauriTransport|androidGatewayTransport)\.(?:setParameter|toggleBypass)/);
@@ -89,6 +87,21 @@ test("typed assistant edits reuse shared parameter, bypass, and history workflow
   assert.match(source("packages/typescript/qc-ui/src/use-preset-workflow.ts"), /saveCurrentUnsaved/);
   assert.match(windows, /presetWorkflow\.saveCurrentUnsaved/);
   assert.doesNotMatch(windows, /tauriTransport\.savePresetAs/);
+});
+
+test("offline assistant orchestration has one cross-platform workflow owner", () => {
+  const workflow = source("packages/typescript/qc-ui/src/offline-assistant-workflow.ts");
+  const apps = [source("apps/windows/src/App.tsx"), source("apps/android/src/App.tsx")];
+  assert.match(workflow, /resolveOfflineAssistantIntent/);
+  assert.match(workflow, /prepareAssistantParameterEdit/);
+  assert.match(workflow, /applyPreparedOfflineAssistantAction/);
+  for (const app of apps) {
+    assert.match(app, /runOfflineAssistantIntent\(intent,/);
+    assert.match(app, /applyPreparedOfflineAssistantAction/);
+    assert.doesNotMatch(app, /resolveOfflineAssistantIntent/);
+    assert.doesNotMatch(app, /prepareAssistantParameterEdit/);
+    assert.doesNotMatch(app, /resolution\.kind === "(?:response|denied|bypass|parameter|bank|recall|command)"/);
+  }
 });
 
 test("both native shells route Grid menus and footswitches through shared policy", () => {
@@ -394,10 +407,11 @@ test("assistant actions use one shared provider-neutral executor", () => {
   assert.match(intentResolver, /resolveOfflineAssistantIntent/);
   assert.match(controller, /const runAssistantCommand/);
   assert.match(performance, /controller\.runAssistantCommand\(transport, command\)/);
-  assert.match(windows, /resolveOfflineAssistantIntent\(intent, snapshot, selectedBlockId, assistantAccessMode\)/);
-  assert.match(android, /resolveOfflineAssistantIntent\(intent, snapshot, selectedBlockId, controlAccessMode\)/);
-  assert.match(windows, /performanceWorkflow\.runAssistantDeviceCommand\(deviceCommand, true\)/);
-  assert.match(android, /performanceWorkflow\.runAssistantDeviceCommand\(deviceCommand, true\)/);
+  const offlineWorkflow = source("packages/typescript/qc-ui/src/offline-assistant-workflow.ts");
+  assert.match(offlineWorkflow, /resolveOfflineAssistantIntent\(intent, snapshot, selectedBlockId, accessMode\)/);
+  assert.match(offlineWorkflow, /performance\.runAssistantDeviceCommand\(resolution\.command, true\)/);
+  assert.match(windows, /runOfflineAssistantIntent\(intent,/);
+  assert.match(android, /runOfflineAssistantIntent\(intent,/);
   assert.match(android, /assistantToolActionPrompt\(snapshotRef\.current,/);
   assert.match(android, /validateAssistantToolCalls\(parsed, controlAccessMode\)/);
   assert.match(windows, /executeAndReconcileQcAction\(call,/);
@@ -405,7 +419,7 @@ test("assistant actions use one shared provider-neutral executor", () => {
   assert.match(executor, /export async function executeQcAction/);
   assert.match(source("packages/typescript/qc-ui/src/assistant-parameter-edit.ts"), /prepareAssistantParameterEdit/);
   for (const app of [windows, android]) {
-    assert.match(app, /prepareAssistantParameterEdit/);
+    assert.doesNotMatch(app, /prepareAssistantParameterEdit/);
     assert.doesNotMatch(app, /(?:tauriTransport|androidGatewayTransport)\.blockDetails/);
     assert.doesNotMatch(app, /assistantIntentCommand|assistantIntentToolName/);
   }
