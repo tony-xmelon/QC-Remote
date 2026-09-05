@@ -19,7 +19,8 @@ import {
   redactEvidence,
   validateConfig,
   validateCoverage,
-  validateReleaseReports
+  validateReleaseReports,
+  waitForPhysicalObservation
 } from "../tools/hardware-conformance-lib.mjs";
 
 const contract = JSON.parse(readFileSync(new URL("../contracts/qc-actions.v1.json", import.meta.url), "utf8"));
@@ -87,6 +88,25 @@ test("full dry run validates and identifies the exact staged candidate", () => {
 test("mutations require an exact out-of-band acknowledgement", () => {
   assert.throws(() => assertMutationAcknowledged({}), /QC_HARDWARE_TEST_ACK/);
   assert.doesNotThrow(() => assertMutationAcknowledged({ QC_HARDWARE_TEST_ACK: MUTATION_ACK }));
+});
+
+test("physical observation waits fail closed instead of returning stale state", async () => {
+  await assert.rejects(
+    waitForPhysicalObservation(
+      async () => ({ connected: true, tempo: 100 }),
+      (value) => value.tempo === 120,
+      { timeoutMs: 0, intervalMs: 0, label: "tempo 120" }
+    ),
+    /Timed out waiting for tempo 120/
+  );
+
+  const observations = [false, true, true];
+  const confirmed = await waitForPhysicalObservation(
+    async () => ({ confirmed: observations.shift() }),
+    (value) => value.confirmed === true,
+    { timeoutMs: 100, intervalMs: 0, consecutiveMatches: 2 }
+  );
+  assert.equal(confirmed.confirmed, true);
 });
 
 test("direct gateway argument mapping matches the MCP adapter boundary", () => {

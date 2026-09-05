@@ -15,7 +15,8 @@ import {
   redactEvidence,
   resultSnapshot,
   validateConfig,
-  validateCoverage
+  validateCoverage,
+  waitForPhysicalObservation
 } from "./hardware-conformance-lib.mjs";
 
 const root = resolve(import.meta.dirname, "..");
@@ -450,140 +451,84 @@ async function main() {
     return value;
   };
   const waitForSnapshot = async (predicate, timeoutMs = 5000) => {
-    const deadline = Date.now() + timeoutMs;
-    let value;
-    let consecutiveMatches = 0;
-    do {
-      value = await snapshot();
-      consecutiveMatches = predicate(value) ? consecutiveMatches + 1 : 0;
-      if (consecutiveMatches >= 2) return value;
-      await sleep(100);
-    } while (Date.now() < deadline);
-    return value;
+    return waitForPhysicalObservation(snapshot, predicate, {
+      timeoutMs, intervalMs: 100, consecutiveMatches: 2, label: "two stable QC preset snapshots"
+    });
   };
   const waitForMasterVolume = async (expected, timeoutMs = 5000) => {
-    const deadline = Date.now() + timeoutMs;
-    let value;
-    let consecutiveMatches = 0;
-    do {
-      value = await transport.call("get_master_volume", {});
-      consecutiveMatches = value?.value === expected ? consecutiveMatches + 1 : 0;
-      if (consecutiveMatches >= 2) return value;
-      await sleep(100);
-    } while (Date.now() < deadline);
-    return value;
+    return waitForPhysicalObservation(
+      () => transport.call("get_master_volume", {}),
+      (value) => value?.value === expected,
+      { timeoutMs, intervalMs: 100, consecutiveMatches: 2, label: `master volume ${expected}` }
+    );
   };
   const waitForGeneralSettings = async (predicate, timeoutMs = 12000) => {
-    const deadline = Date.now() + timeoutMs;
-    let value;
-    do {
-      value = await transport.call("get_general_settings", {});
-      if (predicate(value)) return value;
-      await sleep(500);
-    } while (Date.now() < deadline);
-    return value;
+    return waitForPhysicalObservation(
+      () => transport.call("get_general_settings", {}), predicate,
+      { timeoutMs, intervalMs: 500, label: "QC general settings" }
+    );
   };
   const waitForIoSettings = async (predicate, timeoutMs = 20000) => {
-    const deadline = Date.now() + timeoutMs;
-    let value;
-    do {
-      value = await transport.call("get_io_settings", {});
-      if (predicate(value)) return value;
-      await sleep(1000);
-    } while (Date.now() < deadline);
-    return value;
+    return waitForPhysicalObservation(
+      () => transport.call("get_io_settings", {}), predicate,
+      { timeoutMs, intervalMs: 1000, label: "QC I/O settings" }
+    );
   };
   const waitForGlobalEq = async (predicate, timeoutMs = 12000) => {
-    const deadline = Date.now() + timeoutMs;
-    let value;
-    do {
-      value = await transport.call("get_global_eq", {});
-      if (predicate(value)) return value;
-      await sleep(500);
-    } while (Date.now() < deadline);
-    return value;
+    return waitForPhysicalObservation(
+      () => transport.call("get_global_eq", {}), predicate,
+      { timeoutMs, intervalMs: 500, label: "QC global EQ" }
+    );
   };
   const waitForModeCycle = async (predicate, timeoutMs = 12000) => {
-    const deadline = Date.now() + timeoutMs;
-    let value;
-    do {
-      value = await transport.call("get_mode_cycle", {});
-      if (predicate(value)) return value;
-      await sleep(500);
-    } while (Date.now() < deadline);
-    return value;
+    return waitForPhysicalObservation(
+      () => transport.call("get_mode_cycle", {}), predicate,
+      { timeoutMs, intervalMs: 500, label: "QC mode-cycle settings" }
+    );
   };
   const waitForFavorites = async (predicate, timeoutMs = 12000) => {
-    const deadline = Date.now() + timeoutMs;
-    let value;
-    do {
-      value = await transport.call("list_favorites", {});
-      if (predicate(value)) return value;
-      await sleep(500);
-    } while (Date.now() < deadline);
-    return value;
+    return waitForPhysicalObservation(
+      () => transport.call("list_favorites", {}), predicate,
+      { timeoutMs, intervalMs: 500, label: "QC favorites" }
+    );
   };
   const waitForPinnedModels = async (predicate, timeoutMs = 12000) => {
-    const deadline = Date.now() + timeoutMs;
-    let value;
-    do {
-      value = await transport.call("list_pinned_models", {});
-      if (predicate(value)) return value;
-      await sleep(500);
-    } while (Date.now() < deadline);
-    return value;
+    return waitForPhysicalObservation(
+      () => transport.call("list_pinned_models", {}), predicate,
+      { timeoutMs, intervalMs: 500, label: "QC pinned models" }
+    );
   };
   const waitForPresetFolders = async (predicate, timeoutMs = 20000) => {
-    const deadline = Date.now() + timeoutMs;
-    let value;
-    do {
-      value = await transport.call("list_preset_folders", { refresh: true });
-      if (predicate(value)) return value;
-      await sleep(1000);
-    } while (Date.now() < deadline);
-    return value;
+    return waitForPhysicalObservation(
+      () => transport.call("list_preset_folders", { refresh: true }), predicate,
+      { timeoutMs, intervalMs: 1000, label: "QC preset folders" }
+    );
   };
   const waitForPresets = async (setlistKey, predicate, timeoutMs = 20000) => {
-    const deadline = Date.now() + timeoutMs;
-    let value;
-    do {
-      value = await transport.call("list_presets", { refresh: true, setlist_key: setlistKey });
-      if (predicate(value)) return value;
-      await sleep(1000);
-    } while (Date.now() < deadline);
-    return value;
+    return waitForPhysicalObservation(
+      () => transport.call("list_presets", { refresh: true, setlist_key: setlistKey }), predicate,
+      { timeoutMs, intervalMs: 1000, label: "QC preset catalog" }
+    );
   };
   const waitForBlockDetails = async (row, column, predicate, timeoutMs = 5000) => {
-    const deadline = Date.now() + timeoutMs;
-    let value;
-    let consecutiveMatches = 0;
-    do {
-      value = await transport.call("get_block_details", {
+    return waitForPhysicalObservation(
+      () => transport.call("get_block_details", {
         row,
         column,
         expected_preset_name: currentSnapshot.presetName
-      });
-      consecutiveMatches = predicate(value) ? consecutiveMatches + 1 : 0;
-      if (consecutiveMatches >= 2) return value;
-      await sleep(100);
-    } while (Date.now() < deadline);
-    return value;
+      }), predicate,
+      { timeoutMs, intervalMs: 100, consecutiveMatches: 2, label: `QC block ${row}:${column} details` }
+    );
   };
   const waitForLaneControlDetails = async (row, control, predicate, timeoutMs = 5000) => {
-    const deadline = Date.now() + timeoutMs;
-    let value;
-    let consecutiveMatches = 0;
-    do {
-      value = await transport.call("get_lane_control_details", {
+    return waitForPhysicalObservation(
+      () => transport.call("get_lane_control_details", {
         row,
         control,
         expected_preset_name: currentSnapshot.presetName
-      });
-      consecutiveMatches = predicate(value) ? consecutiveMatches + 1 : 0;
-      if (consecutiveMatches >= 2) return value;
-      await sleep(100);
-    } while (Date.now() < deadline);
-    return value;
+      }), predicate,
+      { timeoutMs, intervalMs: 100, consecutiveMatches: 2, label: `QC lane ${row} ${control} details` }
+    );
   };
   const recall = async (preset, expected = currentSnapshot) => {
     const result = await call("recall_preset", {

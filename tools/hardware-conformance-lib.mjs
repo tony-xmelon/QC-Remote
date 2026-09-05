@@ -1,5 +1,24 @@
 import { createHash } from "node:crypto";
 
+export async function waitForPhysicalObservation(read, matches, {
+  timeoutMs = 5000,
+  intervalMs = 100,
+  consecutiveMatches = 1,
+  label = "physical device state"
+} = {}) {
+  const deadline = Date.now() + timeoutMs;
+  let matched = 0;
+  do {
+    const value = await read();
+    matched = matches(value) ? matched + 1 : 0;
+    if (matched >= consecutiveMatches) return value;
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) break;
+    await new Promise((resolveWait) => setTimeout(resolveWait, Math.min(intervalMs, remaining)));
+  } while (true);
+  throw new Error(`Timed out waiting for ${label}.`);
+}
+
 export const MUTATION_ACK = "I_ACCEPT_QC_HARDWARE_MUTATIONS";
 export const FULL_RUN_MINIMUM_TRANSPORT_TIMEOUT_MS = 210_000;
 
