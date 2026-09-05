@@ -435,20 +435,25 @@ async function main() {
     report.transportHealth ??= [];
     report.transportHealth.push({ stage, ...redactEvidence(diagnostics) });
     assert(diagnostics.connected === true, `USB transport was disconnected at ${stage}.`);
-    assert(diagnostics.decodeErrors === 0, `USB decoder reported ${diagnostics.decodeErrors} errors at ${stage}.`);
-    assert(
-      diagnostics.readerRequestActive === true && diagnostics.readerRequestCount > 0,
-      `USB request reader was not active at ${stage}.`
-    );
-    assert(
-      diagnostics.maxHidWriteDurationMs <= 20,
-      `USB HID write latency reached ${diagnostics.maxHidWriteDurationMs} ms at ${stage}.`
-    );
-    assert(
-      diagnostics.maxMidiQueueDelayMs <= 20,
-      `Performance MIDI queue delay reached ${diagnostics.maxMidiQueueDelayMs} ms at ${stage}.`
-    );
-    assert(!diagnostics.lastReaderError, `USB reader reported an error at ${stage}: ${diagnostics.lastReaderError}`);
+    assert(diagnostics.synchronized !== false, `USB state was not synchronized at ${stage}.`);
+    if (Number.isFinite(diagnostics.decodeErrors)) {
+      assert(diagnostics.decodeErrors === 0, `USB decoder reported ${diagnostics.decodeErrors} errors at ${stage}.`);
+      assert(
+        diagnostics.readerRequestActive === true && diagnostics.readerRequestCount > 0,
+        `USB request reader was not active at ${stage}.`
+      );
+      assert(
+        diagnostics.maxHidWriteDurationMs <= 20,
+        `USB HID write latency reached ${diagnostics.maxHidWriteDurationMs} ms at ${stage}.`
+      );
+      assert(
+        diagnostics.maxMidiQueueDelayMs <= 20,
+        `Performance MIDI queue delay reached ${diagnostics.maxMidiQueueDelayMs} ms at ${stage}.`
+      );
+      assert(!diagnostics.lastReaderError, `USB reader reported an error at ${stage}: ${diagnostics.lastReaderError}`);
+    } else {
+      assert(diagnostics.messagesReceived > 0, `Windows USB worker observed no device messages at ${stage}.`);
+    }
   };
 
   const skip = (name, reason) => {

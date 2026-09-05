@@ -103,7 +103,8 @@ fn handle(
                 "gatewayAvailable": true,
                 "gatewayApiVersion": generated_gateway::API_VERSION,
                 "capabilities": capabilities,
-                "message": "Shared Rust QC engine active"
+                "message": "Shared Rust QC engine active",
+                "usbDiagnostics": controller.status()
             }))
         }
         Some(generated_gateway::BrokerDispatch::Reconnect) => controller
@@ -1605,6 +1606,8 @@ mod tests {
             generated_gateway::API_VERSION
         );
         assert_eq!(response["result"]["gatewayAvailable"], true);
+        assert_eq!(response["result"]["usbDiagnostics"]["phase"], "disconnected");
+        assert_eq!(response["result"]["usbDiagnostics"]["connected"], false);
         for capability in generated_gateway::CAPABILITIES {
             assert!(response["result"]["capabilities"]
                 .as_array()
