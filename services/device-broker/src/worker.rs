@@ -5,7 +5,7 @@ use qc_device_runtime::{
 };
 use qc_protocol::commands::{self, DeviceCommand, DeviceOperation, OutboundMessage};
 use qc_protocol::domain::STATE_EVENT_MAXIMUM_LIMIT;
-use qc_protocol::responses::{decode_tempo_clock, TempoClock as TempoClockFrame};
+use qc_protocol::responses::{decode_tempo_clock, BackupAssembler, TempoClock as TempoClockFrame};
 use qc_protocol::session::SessionMachine;
 use qc_protocol::state::{
     decode_preset_folder, parse_model_repo, BlockDetails, ModelCatalog, ModelList,
@@ -782,6 +782,142 @@ struct PendingRequest {
     reply: mpsc::Sender<Result<IncomingMessage, String>>,
 }
 
+/// A LocalBackup document collected on the main device loop.
+///
+/// LocalBackup replies are an uncorrelated stream, so collection is a state
+/// machine advanced by the ordinary read path rather than a nested loop. A
+/// backup can legitimately take three minutes; running it inline used to stop
+/// live state, keepalive and every other command for that whole time, and
+/// forced pending requests to be failed before it started.
+struct BackupInProgress {
+    assembler: BackupAssembler,
+    deadline: Instant,
+    first_chunk_deadline: Instant,
+    progress_deadline: Instant,
+    /// Unconditional keepalive clock, deliberately independent of the session's
+    /// idle keepalive.
+    ///
+    /// The QC pushes tempo state roughly twice a second while it prepares the
+    /// document, and every inbound message defers the session's *idle* keepalive
+    /// by another interval — so that keepalive never comes due, the device waits
+    /// about ten seconds for one, then drops the transfer without sending a
+    /// single chunk. This clock is reset only by its own firing.
+    next_keepalive: Instant,
+    attempts: usize,
+    reply: mpsc::Sender<Result<String, String>>,
+}
+
+fn backup_window(from: Instant, timeout_ms: u64, deadline: Instant) -> Instant {
+    (from + Duration::from_millis(timeout_ms)).min(deadline)
+}
+
+impl BackupInProgress {
+    fn start(timeout: Duration, reply: mpsc::Sender<Result<String, String>>) -> Self {
+        let now = Instant::now();
+        let deadline = now + timeout;
+        Self {
+            assembler: BackupAssembler::default(),
+            deadline,
+            first_chunk_deadline: backup_window(
+                now,
+                qc_protocol::profile::BACKUP_FIRST_CHUNK_TIMEOUT_MS,
+                deadline,
+            ),
+            progress_deadline: deadline,
+            next_keepalive: now
+                + Duration::from_millis(qc_protocol::profile::KEEPALIVE_INTERVAL_MS),
+            attempts: 1,
+            reply,
+        }
+    }
+
+    /// Feed one LocalBackup chunk. `Some` is the terminal outcome.
+    fn absorb(&mut self, payload: &[u8]) -> Option<Result<String, String>> {
+        let was_started = self.assembler.started();
+        let previous_chunks = self.assembler.chunks();
+        let previous_ignored = self.assembler.ignored_prefix_chunks();
+        match self.assembler.push(payload) {
+            Ok(Some(document)) => Some(Ok(document)),
+            Err(error) => Some(Err(error.to_string())),
+            Ok(None) => {
+                let now = Instant::now();
+                if self.assembler.chunks() > previous_chunks {
+                    self.progress_deadline = backup_window(
+                        now,
+                        qc_protocol::profile::BACKUP_STREAM_STALL_TIMEOUT_MS,
+                        self.deadline,
+                    );
+                } else if !was_started
+                    && self.assembler.ignored_prefix_chunks() > previous_ignored
+                {
+                    // Traffic from an earlier uncorrelated transfer is still
+                    // draining. Do not inject a duplicate CREATE request into it.
+                    self.first_chunk_deadline = backup_window(
+                        now,
+                        qc_protocol::profile::BACKUP_FIRST_CHUNK_TIMEOUT_MS,
+                        self.deadline,
+                    );
+                }
+                None
+            }
+        }
+    }
+
+    /// Check the transfer's deadlines. The caller performs any re-request, so
+    /// this stays a pure decision that is testable without a device.
+    fn advance(&mut self, now: Instant) -> BackupStep {
+        if now >= self.deadline {
+            return BackupStep::Finished(Err(format!(
+                "QC backup timed out: overall deadline reached after {} request(s), {} complete document chunk(s), and {} ignored prefix chunk(s)",
+                self.attempts,
+                self.assembler.chunks(),
+                self.assembler.ignored_prefix_chunks()
+            )));
+        }
+        if self.assembler.started() {
+            // Once a document starts, a stall is terminal: two attempts are
+            // never spliced into one backup.
+            if now >= self.progress_deadline {
+                return BackupStep::Finished(Err(format!(
+                    "QC backup timed out: stream stalled after {} chunk(s); the partial document was discarded and was not combined with a retry",
+                    self.assembler.chunks()
+                )));
+            }
+        } else if now >= self.first_chunk_deadline {
+            if self.attempts >= qc_protocol::profile::BACKUP_MAXIMUM_ATTEMPTS {
+                return BackupStep::Finished(Err(format!(
+                    "QC backup timed out: no JSON document start arrived after {} request(s); ignored {} stale chunk(s) and {} stale terminator(s)",
+                    self.attempts,
+                    self.assembler.ignored_prefix_chunks(),
+                    self.assembler.ignored_prefix_terminators()
+                )));
+            }
+            self.attempts += 1;
+            self.first_chunk_deadline = backup_window(
+                now,
+                qc_protocol::profile::BACKUP_FIRST_CHUNK_TIMEOUT_MS,
+                self.deadline,
+            );
+            return BackupStep::Rerequest;
+        }
+        if now >= self.next_keepalive {
+            self.next_keepalive =
+                now + Duration::from_millis(qc_protocol::profile::KEEPALIVE_INTERVAL_MS);
+            return BackupStep::Keepalive;
+        }
+        BackupStep::Wait
+    }
+}
+
+enum BackupStep {
+    Wait,
+    /// The transfer needs its dedicated KeepAlive now, whether or not the device
+    /// has been sending state in the meantime.
+    Keepalive,
+    Rerequest,
+    Finished(Result<String, String>),
+}
+
 enum StateDecoderCommand {
     Reset(u64),
     Message(u64, IncomingMessage),
@@ -992,10 +1128,17 @@ fn run(
     let mut connection: Option<ConnectedQc> = None;
     let mut auto_connect = initial_auto_connect;
     let mut pending_requests: Vec<PendingRequest> = Vec::new();
+    let mut backup: Option<BackupInProgress> = None;
     let mut state_generation = 0_u64;
     let mut command_not_before = Instant::now();
     loop {
-        while let Ok(command) = commands.try_recv() {
+        // The post-handshake settle window holds commands without sleeping on
+        // this thread. Sleeping here used to stall the read path for the whole
+        // window, which is exactly when the QC pushes its initial state burst.
+        while Instant::now() >= command_not_before {
+            let Ok(command) = commands.try_recv() else {
+                break;
+            };
             match command {
                 Command::Reconnect { force, reply } => {
                     let phase = state.lock_recover().phase.clone();
@@ -1007,6 +1150,7 @@ fn run(
                         session.outbound(session_clock.elapsed().as_millis() as u64);
                     }
                     fail_pending(&mut pending_requests, "Device session restarted");
+                    fail_backup(&mut backup, "Device session restarted");
                     latest_messages.lock_recover().clear();
                     raw_events.log.lock_recover().clear();
                     preset_library.lock_recover().clear();
@@ -1020,6 +1164,7 @@ fn run(
                 Command::Disconnect { reply } => {
                     connection = None;
                     fail_pending(&mut pending_requests, "Device session closed");
+                    fail_backup(&mut backup, "Device session closed");
                     latest_messages.lock_recover().clear();
                     raw_events.log.lock_recover().clear();
                     preset_library.lock_recover().clear();
@@ -1038,7 +1183,6 @@ fn run(
                 }
                 Command::Send(message_type, payload, reply) => {
                     let result = if let Some(connected) = connection.as_mut() {
-                        thread::sleep(command_not_before.saturating_duration_since(Instant::now()));
                         connected.usb.send(message_type, payload);
                         update_usb_telemetry(&state, connected);
                         session.outbound(session_clock.elapsed().as_millis() as u64);
@@ -1050,7 +1194,6 @@ fn run(
                 }
                 Command::SendRealtime(message_type, payload) => {
                     if let Some(connected) = connection.as_mut() {
-                        thread::sleep(command_not_before.saturating_duration_since(Instant::now()));
                         connected.usb.send(message_type, payload);
                         update_usb_telemetry(&state, connected);
                         session.outbound(session_clock.elapsed().as_millis() as u64);
@@ -1063,7 +1206,6 @@ fn run(
                     reply,
                 } => {
                     let result = if let Some(connected) = connection.as_mut() {
-                        thread::sleep(command_not_before.saturating_duration_since(Instant::now()));
                         thread::sleep(delay);
                         for (index, message) in messages.iter().enumerate() {
                             connected.usb.send_command(message.clone());
@@ -1088,7 +1230,6 @@ fn run(
                     reply,
                 } => {
                     if let Some(connected) = connection.as_mut() {
-                        thread::sleep(command_not_before.saturating_duration_since(Instant::now()));
                         pending_requests.push(PendingRequest {
                             expected_type,
                             request_id,
@@ -1103,63 +1244,32 @@ fn run(
                     }
                 }
                 Command::CreateBackup { timeout, reply } => {
-                    fail_pending(&mut pending_requests, "Device session is creating a backup");
-                    let synchronized = connection
-                        .as_ref()
-                        .is_some_and(|connected| connected.synchronized);
-                    set_phase(
-                        &state,
-                        "syncing",
-                        "Creating device backup",
-                        connection.is_some(),
-                        synchronized,
-                    );
-                    let result = if let Some(connected) = connection.as_mut() {
-                        match connected.usb.create_backup(timeout) {
-                            Ok(transfer) => {
-                                for message in transfer.side_messages {
-                                    ingest_incoming(
-                                        &state,
-                                        connected,
-                                        &latest_messages,
-                                        &raw_events,
-                                        &preset_library,
-                                        &state_messages,
-                                        state_generation,
-                                        &mut pending_requests,
-                                        message,
-                                    );
-                                }
-                                Ok(transfer.document)
-                            }
-                            Err(error) => Err(error.to_string()),
-                        }
-                    } else {
-                        Err("Quad Cortex is not connected".to_string())
-                    };
-                    session.outbound(session_clock.elapsed().as_millis() as u64);
-                    if let Some(connected) = connection.as_ref() {
+                    if backup.is_some() {
+                        let _ = reply.send(Err("A device backup is already in progress".into()));
+                    } else if let Some(connected) = connection.as_mut() {
+                        // Pending requests are deliberately not failed: the read
+                        // path keeps serving them while the document streams.
+                        connected.usb.send_command(commands::create_local_backup());
                         update_usb_telemetry(&state, connected);
+                        // Clear any armed Version probe: the device is about to
+                        // go quiet, and a probe left armed both tears the session
+                        // down and blocks the KeepAlive the transfer needs.
+                        session.suspend_liveness_probe(session_clock.elapsed().as_millis() as u64);
+                        backup = Some(BackupInProgress::start(timeout, reply));
                         set_phase(
                             &state,
-                            if connected.synchronized {
-                                "ready"
-                            } else {
-                                "syncing"
-                            },
-                            if result.is_ok() {
-                                "Device backup complete"
-                            } else {
-                                "Device backup failed; USB session remains open"
-                            },
+                            "syncing",
+                            "Creating device backup",
                             true,
                             connected.synchronized,
                         );
+                    } else {
+                        let _ = reply.send(Err("Quad Cortex is not connected".into()));
                     }
-                    let _ = reply.send(result);
                 }
                 Command::Stop => {
                     fail_pending(&mut pending_requests, "Native broker stopped");
+                    fail_backup(&mut backup, "Native broker stopped");
                     let _ = state_messages.send(StateDecoderCommand::Stop);
                     return;
                 }
@@ -1200,13 +1310,17 @@ fn run(
                     {
                         let mut log = raw_events.log.lock_recover();
                         log.clear();
-                        let mut initial = connected
-                            .latest_messages
-                            .values()
-                            .cloned()
-                            .collect::<Vec<_>>();
-                        initial.sort_by_key(|message| message.sequence);
+                        // Replay the burst as it arrived. Replaying only the
+                        // newest message per type dropped every incremental
+                        // push, and a preset-folder listing is one message per
+                        // folder.
+                        let initial = connected.initial_messages.clone();
                         for message in &initial {
+                            if message.message_type == 4 {
+                                if let Ok(Some(listing)) = decode_preset_folder(&message.payload) {
+                                    preset_library.lock_recover().ingest(listing);
+                                }
+                            }
                             let _ = state_messages.send(StateDecoderCommand::Message(
                                 state_generation,
                                 message.clone(),
@@ -1246,17 +1360,28 @@ fn run(
                         session_clock.elapsed().as_millis() as u64,
                         connected.synchronized,
                     );
-                    ingest_incoming(
-                        &state,
-                        connected,
-                        &latest_messages,
-                        &raw_events,
-                        &preset_library,
-                        &state_messages,
-                        state_generation,
-                        &mut pending_requests,
-                        message,
-                    );
+                    if message.message_type == qc_protocol::profile::MESSAGE_TYPE_BACKUP
+                        && backup.is_some()
+                    {
+                        let outcome = backup
+                            .as_mut()
+                            .and_then(|active| active.absorb(&message.payload));
+                        if let Some(outcome) = outcome {
+                            finish_backup(&mut backup, &state, connected, outcome);
+                        }
+                    } else {
+                        ingest_incoming(
+                            &state,
+                            connected,
+                            &latest_messages,
+                            &raw_events,
+                            &preset_library,
+                            &state_messages,
+                            state_generation,
+                            &mut pending_requests,
+                            message,
+                        );
+                    }
                 }
                 Ok(None) => session.read_succeeded(),
                 Err(error) => {
@@ -1271,21 +1396,43 @@ fn run(
                         false,
                     );
                     fail_pending(&mut pending_requests, &format!("USB link lost: {error}"));
+                    fail_backup(&mut backup, &format!("USB link lost: {error}"));
                     session.disconnect(session_clock.elapsed().as_millis() as u64, true);
                     connection = None;
                     continue;
                 }
             }
+            match backup.as_mut().map(|active| active.advance(Instant::now())) {
+                Some(BackupStep::Keepalive) => {
+                    connected.usb.send_command(commands::keepalive());
+                    update_usb_telemetry(&state, connected);
+                    session.suspend_liveness_probe(session_clock.elapsed().as_millis() as u64);
+                }
+                Some(BackupStep::Rerequest) => {
+                    connected.usb.send_command(commands::create_local_backup());
+                    update_usb_telemetry(&state, connected);
+                    session.suspend_liveness_probe(session_clock.elapsed().as_millis() as u64);
+                }
+                Some(BackupStep::Finished(outcome)) => {
+                    finish_backup(&mut backup, &state, connected, outcome);
+                }
+                Some(BackupStep::Wait) | None => {}
+            }
             let now_ms = session_clock.elapsed().as_millis() as u64;
-            if session.liveness_probe_timed_out(now_ms) {
+            // A backup legitimately silences the device for many seconds, so the
+            // idle-probe teardown must stand down for its duration.
+            if backup.is_none() && session.liveness_probe_timed_out(now_ms) {
                 const DETAIL: &str = "USB link stopped answering the idle Version probe";
                 set_phase(&state, "searching", DETAIL, false, false);
                 fail_pending(&mut pending_requests, DETAIL);
+                fail_backup(&mut backup, DETAIL);
                 session.disconnect(now_ms, true);
                 connection = None;
                 continue;
             }
-            if session.keepalive_due(now_ms) {
+            // A running backup owns the keepalive on its own unconditional clock,
+            // so the idle probe stands down for the whole transfer.
+            if backup.is_none() && session.keepalive_due(now_ms) {
                 // Pushed QC state remains authoritative. Only after five fully
                 // idle seconds issue one side-effect-free correlated read so
                 // an open-but-silent HID handle cannot remain falsely Ready.
@@ -1302,21 +1449,48 @@ fn run(
     }
 }
 
+/// Deliver a backup's terminal outcome and restore the session phase.
+fn finish_backup(
+    backup: &mut Option<BackupInProgress>,
+    state: &Arc<Mutex<BrokerStatus>>,
+    connected: &ConnectedQc,
+    outcome: Result<String, String>,
+) {
+    let Some(active) = backup.take() else {
+        return;
+    };
+    let succeeded = outcome.is_ok();
+    let _ = active.reply.send(outcome);
+    set_phase(
+        state,
+        if connected.synchronized {
+            "ready"
+        } else {
+            "syncing"
+        },
+        if succeeded {
+            "Device backup complete"
+        } else {
+            "Device backup failed; USB session remains open"
+        },
+        true,
+        connected.synchronized,
+    );
+}
+
+/// Abandon an in-flight backup because the session it belonged to is gone.
+fn fail_backup(backup: &mut Option<BackupInProgress>, detail: &str) {
+    if let Some(active) = backup.take() {
+        let _ = active.reply.send(Err(detail.to_string()));
+    }
+}
+
 fn reconnect_is_satisfied(force: bool, connected: bool, phase: &str) -> bool {
     !force && (connected || matches!(phase, "connecting" | "handshaking" | "syncing" | "ready"))
 }
 
 fn deliver_pending(pending: &mut Vec<PendingRequest>, message: &IncomingMessage) {
-    let request_id = qc_protocol::wire::varint_field(
-        &message.payload,
-        if message.message_type == qc_protocol::profile::MESSAGE_TYPE_RESET_COMMS_BUFFERS {
-            1
-        } else {
-            2
-        },
-    )
-    .ok()
-    .flatten();
+    let request_id = qc_protocol::wire::request_id(message.message_type, &message.payload);
     if let Some(index) = pending.iter().position(|request| {
         request.expected_type == message.message_type
             && (request_id.is_none()
@@ -1474,6 +1648,146 @@ fn update_message(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use prost::Message as _;
+    use qc_protocol::proto::cortex_protobuf_v2 as pa;
+
+    fn backup_chunk(json: &str, last: bool) -> Vec<u8> {
+        pa::LocalBackupMessage {
+            backup_json: Some(pa::local_backup_message::BackupJson::BackupJson(json.into())),
+            is_last_chunk: last
+                .then_some(pa::local_backup_message::IsLastChunk::IsLastChunk(true)),
+            ..Default::default()
+        }
+        .encode_to_vec()
+    }
+
+    fn started_backup(timeout: Duration) -> (BackupInProgress, mpsc::Receiver<Result<String, String>>) {
+        let (reply, receiver) = mpsc::channel();
+        (BackupInProgress::start(timeout, reply), receiver)
+    }
+
+    #[test]
+    fn backup_streams_on_the_device_loop_without_a_nested_read_loop() {
+        let (mut backup, _receiver) = started_backup(Duration::from_secs(60));
+        assert!(backup.absorb(&backup_chunk("{\"type\":\"backup\",", false)).is_none());
+        // A partial document keeps the transfer alive rather than blocking.
+        assert!(matches!(backup.advance(Instant::now()), BackupStep::Wait));
+        let outcome = backup.absorb(&backup_chunk("\"creator\":\"quad\"}", true));
+        assert_eq!(
+            outcome.expect("terminal outcome").expect("document"),
+            "{\"type\":\"backup\",\"creator\":\"quad\"}"
+        );
+    }
+
+    #[test]
+    fn a_silent_device_is_re_requested_then_reported_without_splicing_attempts() {
+        let (mut backup, _receiver) = started_backup(Duration::from_secs(600));
+        let overdue = Instant::now() + Duration::from_millis(
+            qc_protocol::profile::BACKUP_FIRST_CHUNK_TIMEOUT_MS + 1,
+        );
+        // Nothing has started, so the request may safely be repeated.
+        assert!(matches!(backup.advance(overdue), BackupStep::Rerequest));
+        assert_eq!(backup.attempts, 2);
+
+        let later = overdue
+            + Duration::from_millis(qc_protocol::profile::BACKUP_FIRST_CHUNK_TIMEOUT_MS + 1);
+        match backup.advance(later) {
+            BackupStep::Finished(Err(detail)) => {
+                assert!(detail.contains("no JSON document start"), "{detail}");
+            }
+            _ => panic!("an exhausted backup must report a timeout"),
+        }
+    }
+
+    #[test]
+    fn a_stalled_document_is_terminal_and_is_never_retried() {
+        let (mut backup, _receiver) = started_backup(Duration::from_secs(600));
+        assert!(backup.absorb(&backup_chunk("{\"type\":\"backup\",", false)).is_none());
+        let stalled = Instant::now()
+            + Duration::from_millis(qc_protocol::profile::BACKUP_STREAM_STALL_TIMEOUT_MS + 1);
+        match backup.advance(stalled) {
+            BackupStep::Finished(Err(detail)) => {
+                assert!(detail.contains("stream stalled"), "{detail}");
+                assert!(detail.contains("not combined with a retry"), "{detail}");
+            }
+            _ => panic!("a started-then-stalled document must be terminal"),
+        }
+    }
+
+    #[test]
+    fn a_backup_keepalive_fires_on_time_even_while_the_device_pushes_state() {
+        // Regression, measured on hardware: the QC pushes tempo state about
+        // twice a second while it prepares the document. Every inbound message
+        // defers the session's *idle* keepalive, so it never came due, the
+        // device waited ~10s for a KeepAlive, then dropped the transfer without
+        // sending one chunk. This clock must be independent of inbound traffic.
+        let interval = qc_protocol::profile::KEEPALIVE_INTERVAL_MS;
+        let (mut backup, _receiver) = started_backup(Duration::from_secs(600));
+        let start = Instant::now();
+        assert!(matches!(
+            backup.advance(start + Duration::from_millis(interval - 10)),
+            BackupStep::Wait
+        ));
+        assert!(matches!(
+            backup.advance(start + Duration::from_millis(interval)),
+            BackupStep::Keepalive
+        ));
+        // It rearms rather than firing on every loop iteration...
+        assert!(matches!(
+            backup.advance(start + Duration::from_millis(interval + 10)),
+            BackupStep::Wait
+        ));
+        // ...and keeps firing for the life of the transfer.
+        assert!(matches!(
+            backup.advance(start + Duration::from_millis(interval * 2 + 10)),
+            BackupStep::Keepalive
+        ));
+        // The device requires the dedicated KeepAlive, not a Version READ.
+        assert_eq!(commands::keepalive().message_type, 32);
+    }
+
+    #[test]
+    fn a_streaming_backup_is_still_kept_alive() {
+        let interval = qc_protocol::profile::KEEPALIVE_INTERVAL_MS;
+        let (mut backup, _receiver) = started_backup(Duration::from_secs(600));
+        let start = Instant::now();
+        assert!(backup
+            .absorb(&backup_chunk("{\"type\":\"backup\",", false))
+            .is_none());
+        assert!(matches!(
+            backup.advance(start + Duration::from_millis(interval)),
+            BackupStep::Keepalive
+        ));
+    }
+
+    #[test]
+    fn a_backup_stands_the_idle_probe_down_instead_of_tearing_the_session_down() {
+        let mut session = SessionMachine::new(0);
+        session.transport_opened(0);
+        session.handshake_completed(1, true);
+        session.liveness_probe_sent(1);
+        assert!(session
+            .liveness_probe_timed_out(1 + qc_protocol::profile::LIVENESS_REPLY_TIMEOUT_MS));
+
+        // Starting a backup disarms the probe, so the device's silence while it
+        // prepares the document cannot end the session.
+        session.suspend_liveness_probe(2);
+        assert!(!session.liveness_probe_timed_out(u64::MAX));
+        // ...and the KeepAlive the transfer needs is able to come due again.
+        assert!(session.keepalive_due(2 + qc_protocol::profile::KEEPALIVE_INTERVAL_MS));
+    }
+
+    #[test]
+    fn an_abandoned_session_reports_to_the_backup_caller() {
+        let (backup, receiver) = started_backup(Duration::from_secs(600));
+        let mut active = Some(backup);
+        fail_backup(&mut active, "USB link lost: cable removed");
+        assert!(active.is_none());
+        assert_eq!(
+            receiver.recv().expect("caller notified"),
+            Err("USB link lost: cable removed".to_string())
+        );
+    }
 
     #[test]
     fn poisoned_cache_locks_recover_without_cascading_worker_failure() {

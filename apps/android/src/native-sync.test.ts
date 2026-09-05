@@ -330,7 +330,10 @@ test("Android's USB maintenance heartbeat produces a small device reply", () => 
 });
 
 test("Android retries a backup only before a physical document starts", () => {
-  const windowsUsb = readFileSync(new URL("../../../services/device-broker/src/usb.rs", import.meta.url), "utf8");
+  // Windows collects the document on its device loop in worker.rs; Android's
+  // equivalent lives in QcUsbPlugin. Both must retry only before a document
+  // starts, and never splice two attempts together.
+  const windowsBackup = readFileSync(new URL("../../../services/device-broker/src/worker.rs", import.meta.url), "utf8");
   assert.match(rustAndroidSource, /"started": started/);
   assert.match(rustAndroidSource, /"ignoredPrefixChunks": ignored_prefix_chunks/);
   assert.match(javaSource, /scheduleBackupWatchdog\(pending, QcUsbProfile\.BACKUP_FIRST_CHUNK_TIMEOUT_MS\)/);
@@ -341,8 +344,11 @@ test("Android retries a backup only before a physical document starts", () => {
   assert.match(javaSource, /No native backup document started after " \+ operation\.attempts[\s\S]*partial streams are never retried or combined/);
   assert.match(javaSource, /Sending native backup request " \+ pending\.operation\.attempts/);
   assert.match(usbProfileSource, /BACKUP_MAXIMUM_ATTEMPTS = 2/);
-  assert.match(windowsUsb, /!assembler\.started\(\)[\s\S]*BACKUP_MAXIMUM_ATTEMPTS/);
-  assert.match(windowsUsb, /partial document was discarded and was not combined with a retry/);
+  // A started document is terminal on Windows: its branch reports the stall
+  // and never reaches the re-request path below it.
+  assert.match(windowsBackup, /if self\.assembler\.started\(\)[\s\S]*not combined with a retry/);
+  assert.match(windowsBackup, /partial document was discarded and was not combined with a retry/);
+  assert.match(windowsBackup, /BACKUP_MAXIMUM_ATTEMPTS[\s\S]*BackupStep::Rerequest/);
   assert.match(javaSource, /pendingOperations\.timeout\(pending, QcUsbProfile\.BACKUP_TOTAL_TIMEOUT_MS/);
 });
 

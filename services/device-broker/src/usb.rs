@@ -6,7 +6,6 @@ use qc_protocol::framing;
 use qc_protocol::profile;
 use qc_protocol::proto;
 use qc_protocol::proto::cortex_protobuf_v2 as pa;
-use qc_protocol::responses::{BackupAssembler, ResponseDecodeError};
 use qc_protocol::session::{FrameAssembler, SessionMachine};
 use std::cell::UnsafeCell;
 use std::collections::HashMap;
@@ -29,10 +28,6 @@ pub enum UsbError {
     Frame(#[from] framing::FrameError),
     #[error("HID initialization failed: {0}")]
     Hid(String),
-    #[error("QC backup could not be decoded: {0}")]
-    BackupDecode(#[from] ResponseDecodeError),
-    #[error("QC backup timed out: {0}")]
-    BackupTimeout(String),
 }
 
 #[derive(Debug, Clone)]
@@ -48,11 +43,32 @@ pub struct ConnectedQc {
     pub synchronized: bool,
     pub message_counts: HashMap<u16, usize>,
     pub latest_messages: HashMap<u16, IncomingMessage>,
+    /// Every initialization message, in arrival order.
+    ///
+    /// `latest_messages` keeps only the newest of each type, so replaying it
+    /// silently discards incremental pushes — a preset-folder listing arrives
+    /// as one message per folder, and only the final folder would survive.
+    pub initial_messages: Vec<IncomingMessage>,
 }
 
-pub struct BackupTransfer {
-    pub document: String,
-    pub side_messages: Vec<IncomingMessage>,
+/// Bounds the retained initialization burst. The collection deadlines already
+/// bound it in time; this bounds it in memory if a device ever floods.
+const MAX_INITIAL_MESSAGES: usize = 1024;
+
+/// Record one initialization message into the ordered burst and the per-type
+/// caches. The ordered burst is what gets replayed into the state decoder.
+fn record_initial(
+    initial: &mut Vec<IncomingMessage>,
+    message_counts: &mut HashMap<u16, usize>,
+    latest_messages: &mut HashMap<u16, IncomingMessage>,
+    message: IncomingMessage,
+) {
+    let count = message_counts.entry(message.message_type).or_default();
+    *count = count.saturating_add(1);
+    if initial.len() < MAX_INITIAL_MESSAGES {
+        initial.push(message.clone());
+    }
+    latest_messages.insert(message.message_type, message);
 }
 
 #[derive(Debug, Clone, Default)]
@@ -301,14 +317,21 @@ impl QcUsb {
         let deadline = Instant::now() + Duration::from_millis(profile::INITIAL_SYNC_TIMEOUT_MS);
         let mut message_counts: HashMap<u16, usize> = HashMap::new();
         let mut latest_messages = HashMap::new();
-        let mut synchronized =
-            self.collect_until_preset(deadline, 100, &mut message_counts, &mut latest_messages)?;
+        let mut initial_messages = Vec::new();
+        let mut synchronized = self.collect_until_preset(
+            deadline,
+            100,
+            &mut initial_messages,
+            &mut message_counts,
+            &mut latest_messages,
+        )?;
         if !synchronized {
             self.send_command(commands::read_current_preset(request_id));
             let deadline = Instant::now() + Duration::from_millis(profile::PRESET_SYNC_TIMEOUT_MS);
             synchronized = self.collect_until_preset(
                 deadline,
                 200,
+                &mut initial_messages,
                 &mut message_counts,
                 &mut latest_messages,
             )?;
@@ -326,9 +349,12 @@ impl QcUsb {
                 .any(|message_type| !latest_messages.contains_key(message_type))
         {
             if let Some(message) = self.read_message(100)? {
-                let count = message_counts.entry(message.message_type).or_default();
-                *count = count.saturating_add(1);
-                latest_messages.insert(message.message_type, message);
+                record_initial(
+                    &mut initial_messages,
+                    &mut message_counts,
+                    &mut latest_messages,
+                    message,
+                );
             }
         }
         // Directory transfer is deliberately not started here. File READ can
@@ -344,6 +370,7 @@ impl QcUsb {
             synchronized,
             message_counts,
             latest_messages,
+            initial_messages,
         })
     }
 
@@ -351,15 +378,14 @@ impl QcUsb {
         &mut self,
         deadline: Instant,
         read_timeout_ms: i32,
+        initial_messages: &mut Vec<IncomingMessage>,
         message_counts: &mut HashMap<u16, usize>,
         latest_messages: &mut HashMap<u16, IncomingMessage>,
     ) -> Result<bool, UsbError> {
         while Instant::now() < deadline {
             if let Some(message) = self.read_message(read_timeout_ms)? {
                 let is_preset = message.message_type == 15;
-                let count = message_counts.entry(message.message_type).or_default();
-                *count = count.saturating_add(1);
-                latest_messages.insert(message.message_type, message);
+                record_initial(initial_messages, message_counts, latest_messages, message);
                 if is_preset {
                     return Ok(true);
                 }
@@ -457,108 +483,6 @@ impl QcUsb {
         }))
     }
 
-    /// Collect one complete, validated LocalBackup document on this session.
-    ///
-    /// LocalBackup replies are an uncorrelated stream on current firmware. A
-    /// previous client can leave its final chunks queued, so collection starts
-    /// only at a JSON object boundary and ignores leading stale terminators.
-    /// Before the first document chunk it is safe to retry a request that
-    /// produces no traffic. Once a document starts, a stall is terminal: two
-    /// attempts are never spliced into one backup.
-    pub fn create_backup(&mut self, timeout: Duration) -> Result<BackupTransfer, UsbError> {
-        let first_chunk_timeout = Duration::from_millis(profile::BACKUP_FIRST_CHUNK_TIMEOUT_MS);
-        let stream_stall_timeout = Duration::from_millis(profile::BACKUP_STREAM_STALL_TIMEOUT_MS);
-
-        let deadline = Instant::now() + timeout;
-        let mut first_chunk_deadline = (Instant::now() + first_chunk_timeout).min(deadline);
-        let mut progress_deadline = deadline;
-        let mut attempts = 1_usize;
-        let mut assembler = BackupAssembler::default();
-        let mut side_messages = Vec::new();
-        let mut next_keepalive =
-            Instant::now() + Duration::from_millis(profile::KEEPALIVE_INTERVAL_MS);
-
-        self.flight.event("backup-request-1");
-        self.send_command(commands::create_local_backup());
-
-        loop {
-            let now = Instant::now();
-            if now >= deadline {
-                return Err(UsbError::BackupTimeout(format!(
-                    "overall deadline reached after {attempts} request(s), {} complete document chunk(s), and {} ignored prefix chunk(s)",
-                    assembler.chunks(),
-                    assembler.ignored_prefix_chunks()
-                )));
-            }
-            if now >= next_keepalive {
-                self.send_command(commands::keepalive());
-                next_keepalive =
-                    Instant::now() + Duration::from_millis(profile::KEEPALIVE_INTERVAL_MS);
-            }
-            if assembler.started() && now >= progress_deadline {
-                return Err(UsbError::BackupTimeout(format!(
-                    "stream stalled after {} chunk(s); the partial document was discarded and was not combined with a retry",
-                    assembler.chunks()
-                )));
-            }
-            if !assembler.started() && now >= first_chunk_deadline {
-                if attempts >= profile::BACKUP_MAXIMUM_ATTEMPTS {
-                    return Err(UsbError::BackupTimeout(format!(
-                        "no JSON document start arrived after {attempts} request(s); ignored {} stale chunk(s) and {} stale terminator(s)",
-                        assembler.ignored_prefix_chunks(),
-                        assembler.ignored_prefix_terminators()
-                    )));
-                }
-                attempts += 1;
-                self.flight.event(format!("backup-request-{attempts}"));
-                self.send_command(commands::create_local_backup());
-                first_chunk_deadline = (Instant::now() + first_chunk_timeout).min(deadline);
-                continue;
-            }
-
-            let active_deadline = if assembler.started() {
-                progress_deadline
-            } else {
-                first_chunk_deadline
-            }
-            .min(deadline);
-            let wait_ms = active_deadline
-                .saturating_duration_since(Instant::now())
-                .min(Duration::from_millis(200))
-                .as_millis()
-                .max(1) as i32;
-            let Some(message) = self.read_message(wait_ms)? else {
-                continue;
-            };
-            if message.message_type != profile::MESSAGE_TYPE_BACKUP {
-                side_messages.push(message);
-                continue;
-            }
-
-            let was_started = assembler.started();
-            let previous_chunks = assembler.chunks();
-            let previous_ignored = assembler.ignored_prefix_chunks();
-            if let Some(document) = assembler.push(&message.payload)? {
-                self.flight.event(format!(
-                    "backup-complete-{attempts}-attempts-{}-ignored-prefix-chunks",
-                    assembler.ignored_prefix_chunks()
-                ));
-                return Ok(BackupTransfer {
-                    document,
-                    side_messages,
-                });
-            }
-            let now = Instant::now();
-            if assembler.chunks() > previous_chunks {
-                progress_deadline = (now + stream_stall_timeout).min(deadline);
-            } else if !was_started && assembler.ignored_prefix_chunks() > previous_ignored {
-                // Traffic from an earlier uncorrelated transfer is still being
-                // drained. Do not inject duplicate CREATE requests into it.
-                first_chunk_deadline = (now + first_chunk_timeout).min(deadline);
-            }
-        }
-    }
-
     pub fn disconnect(&mut self) {
         self.send_command(commands::connection(false));
     }
@@ -585,7 +509,49 @@ impl Drop for QcUsb {
 
 #[cfg(test)]
 mod tests {
-    use super::UsbTelemetry;
+    use super::{record_initial, IncomingMessage, UsbTelemetry, MAX_INITIAL_MESSAGES};
+    use std::collections::HashMap;
+
+    fn message(sequence: u64, message_type: u16, payload: &[u8]) -> IncomingMessage {
+        IncomingMessage {
+            sequence,
+            message_type,
+            payload: payload.to_vec(),
+            received_at_unix_ms: u128::from(sequence),
+        }
+    }
+
+    #[test]
+    fn initialization_retains_every_incremental_push_in_arrival_order() {
+        let (mut initial, mut counts, mut latest) = (Vec::new(), HashMap::new(), HashMap::new());
+        // A preset-folder listing arrives as one message per folder. Keeping
+        // only the newest of each type left the library with one folder.
+        for (sequence, folder) in [(1_u64, b"A"), (2, b"B"), (3, b"C")] {
+            record_initial(&mut initial, &mut counts, &mut latest, message(sequence, 4, folder));
+        }
+        record_initial(&mut initial, &mut counts, &mut latest, message(4, 15, b"preset"));
+
+        assert_eq!(counts.get(&4), Some(&3));
+        let folders: Vec<&[u8]> = initial
+            .iter()
+            .filter(|entry| entry.message_type == 4)
+            .map(|entry| entry.payload.as_slice())
+            .collect();
+        assert_eq!(folders, vec![b"A".as_slice(), b"B".as_slice(), b"C".as_slice()]);
+        assert_eq!(initial.iter().map(|entry| entry.sequence).collect::<Vec<_>>(), vec![1, 2, 3, 4]);
+        // The per-type cache still answers "newest of this type".
+        assert_eq!(latest.get(&4).map(|entry| entry.sequence), Some(3));
+    }
+
+    #[test]
+    fn initialization_burst_is_bounded() {
+        let (mut initial, mut counts, mut latest) = (Vec::new(), HashMap::new(), HashMap::new());
+        for sequence in 0..(MAX_INITIAL_MESSAGES as u64 + 50) {
+            record_initial(&mut initial, &mut counts, &mut latest, message(sequence, 4, b"f"));
+        }
+        assert_eq!(initial.len(), MAX_INITIAL_MESSAGES);
+        assert_eq!(counts.get(&4), Some(&(MAX_INITIAL_MESSAGES + 50)));
+    }
 
     #[test]
     fn usb_telemetry_tracks_expected_stalls_and_worst_write_latency() {

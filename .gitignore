@@ -42,6 +42,10 @@ Pods/
 .DS_Store
 Thumbs.db
 
+# Isolated agent worktrees. Each is a full checkout of this repository; without
+# this rule one worktree's working copy is offered as content of another.
+.claude/worktrees/
+
 # Local configuration, credentials, and diagnostics
 .env
 .env.*

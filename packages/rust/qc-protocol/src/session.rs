@@ -173,6 +173,17 @@ impl SessionMachine {
         self.next_keepalive_at_ms = now_ms.saturating_add(profile::KEEPALIVE_INTERVAL_MS);
     }
 
+    /// Stand down idle-liveness probing while a device-owned transfer runs.
+    ///
+    /// A backup suspends the QC's connection while it prepares the document, so
+    /// it answers no Version probe for many seconds. An armed probe would tear
+    /// the session down in the middle of the transfer, and a probe left armed
+    /// would also block the dedicated KeepAlive the device does expect.
+    pub fn suspend_liveness_probe(&mut self, now_ms: u64) {
+        self.liveness_probe_sent_at_ms = None;
+        self.next_keepalive_at_ms = now_ms.saturating_add(profile::KEEPALIVE_INTERVAL_MS);
+    }
+
     pub fn liveness_probe_timed_out(&self, now_ms: u64) -> bool {
         self.is_connected()
             && self.liveness_probe_sent_at_ms.is_some_and(|sent| {
