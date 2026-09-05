@@ -16,6 +16,7 @@ import {
   MINIMUM_RAPID_PAIRS,
   MUTATION_ACK,
   REPEATABLE_PHYSICAL_CONTROLS,
+  summarizePerformanceSamples,
   actionPlan,
   assertDisposableSlots,
   assertMutationAcknowledged,
@@ -301,4 +302,22 @@ test("physical performance evidence enforces repetitions, rapid pairs, and laten
   assert.ok(errors.some((error) => error.includes("fewer than 280 samples")));
   assert.ok(errors.some((error) => error.includes("median")));
   assert.ok(errors.some((error) => error.includes("p95")));
+});
+
+test("physical performance samples retain honest dispatch and event percentiles", () => {
+  const samples = Object.fromEntries(REPEATABLE_PHYSICAL_CONTROLS.map((control) => [control,
+    Array.from({ length: 20 }, (_, index) => ({
+      sendLatencyMs: index + 1,
+      eventLatencyMs: index + 2,
+      rapidPair: index < 10,
+      failed: false
+    }))
+  ]));
+  const evidence = summarizePerformanceSamples(samples);
+  assert.deepEqual(evidence.controls.footswitch_a, { repetitions: 20, rapidPairs: 5, failures: 0 });
+  assert.equal(evidence.sendLatencyMs.sampleCount, 280);
+  assert.equal(evidence.sendLatencyMs.max, 20);
+  assert.equal(evidence.eventLatencyMs.sampleCount, 280);
+  assert.equal(evidence.eventLatencyMs.median, 11);
+  assert.equal(evidence.eventLatencyMs.p95, 20);
 });

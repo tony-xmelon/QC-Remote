@@ -7,7 +7,7 @@
   "maxInflatedBytes": 16777216,
   "keepaliveIntervalMs": 5000,
   "reconnectIntervalMs": 750,
-  "performanceMidiGapMs": 80,
+  "performanceMidiGapMs": 8,
   "handshakeTimeoutMs": 30000,
   "handshakeAttemptTimeoutMs": 5000,
   "initialSyncTimeoutMs": 2000,

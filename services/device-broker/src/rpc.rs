@@ -45,7 +45,12 @@ pub fn serve_stdio(controller: DeviceController) -> Result<(), String> {
     let stdin = io::stdin();
     let mut input = stdin.lock();
     let output = Arc::new(Mutex::new(io::stdout()));
-    let performance_midi = Mutex::new(PerformanceMidi::default());
+    let mut midi = PerformanceMidi::default();
+    // Keep endpoint discovery and handle acquisition off the first physical
+    // control's latency-critical path. A disconnected startup remains valid;
+    // send() retries acquisition after the QC becomes available.
+    let _ = midi.warm_up();
+    let performance_midi = Mutex::new(midi);
     let event_output = Arc::clone(&output);
     let events = controller.subscribe_state_events();
     thread::Builder::new()
@@ -499,17 +504,22 @@ fn gateway_performance_midi(
     let PlannedWrite::MidiControlChange { controller, value } = plan.write else {
         return Err(format!("{method} did not produce a host MIDI write"));
     };
-    let endpoint = performance_midi
+    let receipt = performance_midi
         .lock()
         .map_err(|_| "Performance MIDI lock was poisoned".to_string())?
         .send(controller, value)?;
     let mut result = accepted_unverified(format!(
-        "{} immediately through {endpoint}; live USB state will reconcile the result.",
-        plan.detail
+        "{} immediately through {}; live USB state will reconcile the result.",
+        plan.detail, receipt.endpoint
     ));
     if let Some(object) = result.as_object_mut() {
         object.insert("immediate".into(), json!(true));
-        object.insert("transport".into(), json!(endpoint));
+        object.insert("transport".into(), json!(receipt.endpoint));
+        object.insert(
+            "dispatchLatencyMs".into(),
+            json!(receipt.dispatch_latency_ms),
+        );
+        object.insert("throttleDelayMs".into(), json!(receipt.throttle_delay_ms));
     }
     Ok(result)
 }

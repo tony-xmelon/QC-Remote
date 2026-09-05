@@ -52,6 +52,41 @@ export const MAXIMUM_SEND_LATENCY_MS = 20;
 export const MAXIMUM_EVENT_MEDIAN_MS = 50;
 export const MAXIMUM_EVENT_P95_MS = 100;
 
+export function summarizePerformanceSamples(samplesByControl) {
+  const eventLatencies = [];
+  const sendLatencies = [];
+  const controls = Object.fromEntries(REPEATABLE_PHYSICAL_CONTROLS.map((control) => {
+    const samples = samplesByControl?.[control] ?? [];
+    for (const sample of samples) {
+      if (Number.isFinite(sample.sendLatencyMs)) sendLatencies.push(sample.sendLatencyMs);
+      if (Number.isFinite(sample.eventLatencyMs)) eventLatencies.push(sample.eventLatencyMs);
+    }
+    return [control, {
+      repetitions: samples.length,
+      rapidPairs: samples.filter((sample) => sample.rapidPair === true).length / 2,
+      failures: samples.filter((sample) => sample.failed === true).length
+    }];
+  }));
+  const percentile = (values, fraction) => {
+    if (!values.length) return null;
+    const sorted = [...values].sort((left, right) => left - right);
+    return sorted[Math.ceil(fraction * sorted.length) - 1];
+  };
+  return {
+    controls,
+    sendLatencyMs: {
+      sampleCount: sendLatencies.length,
+      max: sendLatencies.length ? Math.max(...sendLatencies) : null
+    },
+    eventLatencyMs: {
+      sampleCount: eventLatencies.length,
+      median: percentile(eventLatencies, 0.5),
+      p95: percentile(eventLatencies, 0.95),
+      max: eventLatencies.length ? Math.max(...eventLatencies) : null
+    }
+  };
+}
+
 export const CASES = Object.freeze({
   reconnect_device: { phase: "system", hazard: "system" },
   reset_device_session: { phase: "system", hazard: "system" },

@@ -7,8 +7,26 @@ pub struct PerformanceMidi {
     endpoint: Option<String>,
 }
 
+pub struct PerformanceMidiReceipt {
+    pub endpoint: String,
+    pub dispatch_latency_ms: f64,
+    pub throttle_delay_ms: f64,
+}
+
 impl PerformanceMidi {
-    pub fn send(&mut self, controller: u8, value: u8) -> Result<String, String> {
+    pub fn warm_up(&mut self) -> Result<String, String> {
+        if self.handle.is_none() {
+            let (handle, endpoint) = open_qc_midi_output()?;
+            self.handle = Some(handle);
+            self.endpoint = Some(endpoint);
+        }
+        Ok(self
+            .endpoint
+            .clone()
+            .unwrap_or_else(|| "Quad Cortex MIDI".into()))
+    }
+
+    pub fn send(&mut self, controller: u8, value: u8) -> Result<PerformanceMidiReceipt, String> {
         self.send_raw(
             u32::from(qc_protocol::profile::MIDI_CONTROL_CHANGE_STATUS)
                 | ((controller as u32) << 8)
@@ -16,19 +34,18 @@ impl PerformanceMidi {
         )
     }
 
-    fn send_raw(&mut self, message: u32) -> Result<String, String> {
+    fn send_raw(&mut self, message: u32) -> Result<PerformanceMidiReceipt, String> {
+        let queued_at = Instant::now();
+        let mut throttle_delay = Duration::ZERO;
         if let Some(last_sent) = self.last_sent {
             let elapsed = last_sent.elapsed();
             let gap = Duration::from_millis(qc_protocol::profile::PERFORMANCE_MIDI_GAP_MS);
             if elapsed < gap {
-                std::thread::sleep(gap - elapsed);
+                throttle_delay = gap - elapsed;
+                std::thread::sleep(throttle_delay);
             }
         }
-        if self.handle.is_none() {
-            let (handle, endpoint) = open_qc_midi_output()?;
-            self.handle = Some(handle);
-            self.endpoint = Some(endpoint);
-        }
+        self.warm_up()?;
         if let Err(error) =
             send_qc_midi_short(self.handle.expect("MIDI handle was initialized"), message)
         {
@@ -37,10 +54,14 @@ impl PerformanceMidi {
             return Err(error);
         }
         self.last_sent = Some(Instant::now());
-        Ok(self
-            .endpoint
-            .clone()
-            .unwrap_or_else(|| "Quad Cortex MIDI".into()))
+        Ok(PerformanceMidiReceipt {
+            endpoint: self
+                .endpoint
+                .clone()
+                .unwrap_or_else(|| "Quad Cortex MIDI".into()),
+            dispatch_latency_ms: queued_at.elapsed().as_secs_f64() * 1000.0,
+            throttle_delay_ms: throttle_delay.as_secs_f64() * 1000.0,
+        })
     }
 }
 
