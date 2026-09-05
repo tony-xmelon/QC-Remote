@@ -7,8 +7,8 @@ Reference: physical Quad Cortex, CorOS 4.1.0, 800x480 framebuffer corpus
 
 | Client | Physical corpus rendered | Mean structural match | Mean color similarity |
 | --- | ---: | ---: | ---: |
-| Windows | 41/41 (100%) | **91.49%** | **97.39%** |
-| Android | 41/41 (100%) | **91.47%** | **97.39%** |
+| Windows | 41/41 (100%) | **91.55%** | **97.39%** |
+| Android | 41/41 (100%) | **91.54%** | **97.39%** |
 
 These are native-size measurements, not audit estimates. Both hosts render the
 same versioned `coros410` scratch-preset fixture through `@ndsp-qc/ui`; each
@@ -139,10 +139,10 @@ join is in [the canonical coverage matrix](qc-screen-coverage-matrix.md).
 | `device-browser-models-clean` | **89.10%** | **89.10%** |
 | `editor-simple-gate` | **92.56%** | **92.56%** |
 | `editor-chief-ds1` | **92.33%** | **92.33%** |
-| `editor-digital-flanger` | **87.66%** | **87.68%** |
+| `editor-digital-flanger` | **88.10%** | **88.11%** |
 | `editor-ukc30-topboost` | **91.06%** | **91.06%** |
 | `editor-ukc30-cab` | **93.18%** | **93.18%** |
-| `editor-parametric-8` | **88.50%** | **88.50%** |
+| `editor-parametric-8` | **90.94%** | **90.94%** |
 | `editor-ambience` | **90.88%** | **90.88%** |
 | `gig-view` | **94.41%** | **94.41%** |
 | `grid-restored` | **93.42%** | **93.42%** |
@@ -172,6 +172,16 @@ join is in [the canonical coverage matrix](qc-screen-coverage-matrix.md).
 
 ## Improvements in this pass
 
+- Replaced Digital Flanger's rotated constant encoder shadows with normalized
+  280-degree progress arcs while preserving the measured Rate and Delay pointer
+  angles. The frame rises from **87.66% / 87.68% to 88.10% / 88.11%** on
+  Windows / Android, with color improving from **97.52% to 97.54%**. Aligned
+  Parametric-8's selector, values, and bypass control to the physical baseline,
+  reconstructed the LO SHELF glyph, and restored the 0 dB Gain encoder's
+  half-range sweep. Parametric-8 rises from **88.59% to 90.94% structural** and
+  from **98.16% to 98.22% color** on both hosts. A complete rerun reaches
+  **91.55% Windows / 91.54% Android structural and 97.39% color** across all
+  **41/41** physical frames, with no missing renders.
 - Hid the Grid's routing connector badges beneath the physical device-browser
   overlay, matching all three captured browser states. Root rises from **87.48%
   / 87.50% to 87.92% / 87.94%**, Models from **91.05% to 91.49%**, and Models

@@ -188,14 +188,15 @@
 .coros-reference-parameter-editor .eq-values span { position: relative; padding: 6% 7%; border-right: 1px solid #3c403d; font-size: clamp(6px, 1.8cqw, 14px); }
 .coros-reference-parameter-editor .eq-values strong { display: block; font-weight: 400; }
 .coros-reference-parameter-editor .eq-values strong small { color: #929693; font-size: .8em; }
-.coros-reference-parameter-editor .eq-values .eq-type strong { position: absolute; left: 7%; right: 7%; bottom: 10%; height: 35%; display: flex; align-items: center; padding: 0 8%; border-radius: 6px; background: #070808; font-size: .86em; white-space: nowrap; }
+.coros-reference-parameter-editor .eq-values .eq-type strong { position: absolute; left: 7%; right: 7%; bottom: 13%; height: 35%; display: flex; align-items: center; padding: 0 8%; border-radius: 6px; background: #070808; font-size: .86em; white-space: nowrap; }
 .coros-reference-parameter-editor .eq-values .eq-type strong svg { width: 1.4cqw; margin-left: auto; fill: none; stroke: currentColor; stroke-width: 2; }
-.coros-reference-parameter-editor .eq-values .eq-dial-value > strong { position: absolute; left: 7%; bottom: 10%; }
-.coros-reference-parameter-editor .eq-control-dial { position: absolute; left: 53%; top: 33%; width: 42%; aspect-ratio: 1; border: .65cqw solid #121413; border-radius: 50%; background: radial-gradient(circle,#252826 0 68%,transparent 70%),conic-gradient(from 218deg,#1689ee 0 38deg,#252826 38deg); box-shadow: inset 0 0 0 2px #333735; }
+.coros-reference-parameter-editor .eq-values .eq-type strong .eq-filter-icon { width: 2.5cqw; margin: 0 1cqw 0 0; }
+.coros-reference-parameter-editor .eq-values .eq-dial-value > strong { position: absolute; left: 7%; bottom: 13%; }
+.coros-reference-parameter-editor .eq-control-dial { position: absolute; left: 53%; top: 33%; width: 42%; aspect-ratio: 1; border: .65cqw solid #121413; border-radius: 50%; background: radial-gradient(circle,#252826 0 68%,transparent 70%),conic-gradient(from 218deg,#1689ee 0 var(--eq-progress, 38deg),#252826 var(--eq-progress, 38deg)); box-shadow: inset 0 0 0 2px #333735; }
 .coros-reference-parameter-editor .eq-control-dial::after { content: ""; position: absolute; left: calc(50% - 1px); top: 4%; width: 2px; height: 42%; background: #eceeed; }
 .coros-reference-parameter-editor .eq-control-dial.is-frequency { transform: rotate(-98deg); }
 .coros-reference-parameter-editor .eq-control-dial.is-q { transform: rotate(-124deg); }
-.coros-reference-parameter-editor .eq-values .eq-bypass-value strong { position: absolute; left: 7%; bottom: 10%; width: 43%; height: 42%; display: grid; place-items: center; border-radius: 6px; background: #171b18; font-size: 2.8cqw; }
+.coros-reference-parameter-editor .eq-values .eq-bypass-value strong { position: absolute; left: 7%; bottom: 13%; width: 43%; height: 42%; display: grid; place-items: center; border-radius: 6px; background: #171b18; font-size: 2.8cqw; }
 
 /* The paged Flanger header has fixed CorOS slots; an even control matrix keeps
    both encoder rows aligned with the physical 800x480 framebuffer. */
@@ -213,6 +214,8 @@
 .editor-digital-flanger > header .editor-done { left: 90.75%; width: 8.25%; }
 .editor-digital-flanger .coros-parameter-controls label > small { position: absolute; left: 1.5cqw; bottom: 2cqw; }
 .editor-digital-flanger .coros-parameter-controls label:not(.is-toggle) .coros-dial { translate: 4.375cqw 0; }
+.editor-digital-flanger .coros-parameter-controls label:not(.is-toggle):not(.parameter-sync-note) .coros-dial { width: 45%; box-shadow: none; background: radial-gradient(circle,#2e452e 0 68%,transparent 70%),conic-gradient(from 220deg,#6d36d3 0 var(--dial-progress),#172e17 var(--dial-progress)); }
+.editor-digital-flanger .coros-parameter-controls label:not(.is-toggle):not(.parameter-sync-note) .coros-dial i { top: 4%; height: 46%; transform: rotate(var(--dial-angle)); transform-origin: 50% 100%; }
 .coros-parameter-editor.editor-digital-flanger.is-bypassed .coros-parameter-controls { filter: brightness(.35); background: #2e392e; }
 .coros-parameter-editor.editor-digital-flanger .coros-parameter-controls label { border-right-color: #2e2e2e; }
 .coros-parameter-editor.editor-digital-flanger .coros-parameter-controls.is-two-row label:nth-child(-n+5) { border-bottom-color: #2e2e2e; }
@@ -226,12 +229,12 @@
 .coros-reference-parameter-editor .editor-stomp svg { transform: translate(4px, -3px) scale(2.2, 1.3); }
 .coros-reference-parameter-editor .editor-scene > button:first-child svg { transform: translateX(4px); }
 .coros-reference-parameter-editor .editor-scene > button:last-child svg { transform: translateX(-4px); }
-.editor-digital-flanger .coros-parameter-controls label:nth-child(-n+5) .coros-dial { transform: translateY(8px) rotate(var(--dial-angle)); }
-.editor-digital-flanger .coros-parameter-controls label:nth-child(n+6) .coros-dial { transform: translateY(8px) rotate(var(--dial-angle)); }
-.editor-digital-flanger .parameter-rate .coros-dial { transform: translateY(8px) rotate(-110deg) !important; }
+.editor-digital-flanger .coros-parameter-controls label:nth-child(-n+5) .coros-dial { transform: translateY(8px); }
+.editor-digital-flanger .coros-parameter-controls label:nth-child(n+6) .coros-dial { transform: translateY(8px); }
+.editor-digital-flanger .parameter-rate .coros-dial i { transform: rotate(-110deg); }
 .editor-digital-flanger .parameter-sync-note .coros-dial { width: 38%; border-width: .375cqw; box-shadow: none; transform: translateY(8px) rotate(16deg) !important; }
 .editor-digital-flanger .parameter-sync-note .coros-dial::before { content: ""; position: absolute; inset: -1.5cqw; border: .75cqw dotted #111612; border-radius: 50%; }
-.editor-digital-flanger .parameter-delay .coros-dial { transform: translateY(8px) rotate(-69deg) !important; }
+.editor-digital-flanger .parameter-delay .coros-dial i { transform: rotate(-69deg); }
 .editor-digital-flanger .parameter-sync .coros-toggle,
 .editor-digital-flanger .parameter-polarity .coros-toggle { padding-left: .75cqw; gap: 2.125cqw; }
 .editor-digital-flanger .parameter-sync .coros-toggle { transform: translateY(.75cqw); }

@@ -9,8 +9,11 @@ import { parameterContextMenuItems } from "../packages/typescript/qc-ui/src/para
 test("physical parameter editor styles live in the always-loaded shared surface", () => {
   const sharedCss = readFileSync(new URL("../packages/typescript/qc-ui/src/reference-parameter-editor.css", import.meta.url), "utf8");
   const fixtureCss = readFileSync(new URL("../packages/typescript/qc-ui/src/remaining-fixtures-fixes.css", import.meta.url), "utf8");
+  const editorSource = readFileSync(new URL("../packages/typescript/qc-ui/src/parameter-editor.tsx", import.meta.url), "utf8");
 
   assert.match(sharedCss, /editor-digital-flanger\.is-bypassed/);
+  assert.match(sharedCss, /editor-digital-flanger[^}]*conic-gradient\([^}]*var\(--dial-progress\)/s, "Flanger encoder arcs retain the measured value-driven sweep");
+  assert.match(editorSource, /"--dial-progress": `\$\{value \* 280\}deg`/, "the shared editor exposes normalized encoder progress to both hosts");
   assert.match(sharedCss, /coros-cab-editor \.cab-values/);
   assert.match(sharedCss, /editor-ambience \.parameter-size/);
   assert.doesNotMatch(
@@ -251,7 +254,10 @@ test("Parametric EQ uses the dedicated graph and selected-band hardware layout",
   assert.match(editorSource, /Band \$\{band\.number\}\$\{bypassed \? ", bypassed" : ""\}/, "bypassed tabs remain rendered and accessible");
   assert.match(editorSource, /family === "eq" \? \[\]/, "EQ bands are selected on the graph, not through invented paging tabs");
   const css = readFileSync(new URL("../packages/typescript/qc-ui/src/live-surface.css", import.meta.url), "utf8");
+  const physicalCss = readFileSync(new URL("../packages/typescript/qc-ui/src/reference-parameter-editor.css", import.meta.url), "utf8");
   assert.match(css, /\.eq-selected-controls \.coros-parameter select \{ top: 34%; bottom: auto; height: 4\.2cqw;/, "the Type selector has a fixed unclipped row in the full-screen editor");
+  assert.match(editorSource, /className="eq-filter-icon"/, "the physical EQ selector uses the measured shelf-filter glyph");
+  assert.match(physicalCss, /eq-values \.eq-dial-value > strong \{[^}]*bottom: 13%;/, "physical EQ values retain their framebuffer baseline");
 });
 
 test("parameter contextual menus follow the CorOS device order and special cases", () => {

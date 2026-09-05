@@ -12,7 +12,7 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 
 | Corpus | Windows structural | Windows color | Android structural | Android color |
 | --- | ---: | ---: | ---: | ---: |
-| Physical device | 91.49% | 97.39% | 91.47% | 97.39% |
+| Physical device | 91.55% | 97.39% | 91.54% | 97.39% |
 | Official manual | 90.88% | 97.12% | 90.87% | 97.12% |
 
 Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` color similarity. A canonical state that references multiple frames reports their mean. Detail evidence is scoped and therefore never promoted into a full-frame score.
@@ -91,10 +91,10 @@ Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` col
 | DB-07 | Device browser | Plugin device list / license state | physical frame + official frame | Built | Built | 90.22% / 90.22% | 97.28% / 97.28% | 89.61% / 89.61% | 97.82% / 97.82% |
 | DB-08 | Device browser | Plugin refresh state | official detail | Built | Built | — / — | — / — | — / — | — / — |
 | DB-09 | Device browser | Locked plugin / license-not-found models | physical frame | Built | Built | 91.84% / 91.84% | 96.00% / 96.00% | — / — | — / — |
-| ED-01 | Editor | Standard rotary parameter editor | physical frame | Built | Built | 90.90% / 90.90% | 97.41% / 97.41% | — / — | — / — |
+| ED-01 | Editor | Standard rotary parameter editor | physical frame | Built | Built | 90.99% / 90.99% | 97.41% / 97.41% | — / — | — / — |
 | ED-02 | Editor | Multi-page parameter editor | official detail | Built | Built | — / — | — / — | — / — | — / — |
 | ED-03 | Editor | Cab editor | physical frame | Built | Built | 93.17% / 93.17% | 97.73% / 97.73% | — / — | — / — |
-| ED-04 | Editor | Parametric EQ editor | physical frame | Built | Built | 88.59% / 88.59% | 98.16% / 98.16% | — / — | — / — |
+| ED-04 | Editor | Parametric EQ editor | physical frame | Built | Built | 90.94% / 90.94% | 98.22% / 98.22% | — / — | — / — |
 | ED-05 | Editor | Neural Capture block editor | smoke only | Built | Built | — / — | — / — | — / — | — / — |
 | ED-06 | Editor | Looper X editor | official frame | Built | Built | — / — | — / — | 90.72% / 90.73% | 97.16% / 97.16% |
 | ED-07 | Editor | Virtual Device preset browser | physical frame + official frame | Built | Built | 90.33% / 90.33% | 97.49% / 97.49% | 88.49% / 88.49% | 96.61% / 96.61% |
@@ -181,7 +181,7 @@ These states are implemented and captured on both hosts, but only against determ
 
 ## Score source files
 
-- Physical Windows: `.artifacts/ui-parity-final/windows-comparison/summary.json`
-- Physical Android: `.artifacts/ui-parity-final/android-comparison/summary.json`
+- Physical Windows: `.artifacts/ui-parameter-parity-final/windows-comparison/summary.json`
+- Physical Android: `.artifacts/ui-parameter-parity-final/android-comparison/summary.json`
 - Official Windows: `.artifacts/ui-official-parity-final/windows-comparison/summary.json`
 - Official Android: `.artifacts/ui-official-parity-final/android-comparison/summary.json`
