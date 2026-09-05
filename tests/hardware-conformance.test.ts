@@ -203,10 +203,11 @@ test("release gate requires complete Windows and Android evidence for the curren
     ]
   };
   const windowsHealth = ["before-system-recovery", "final"].map((stage) => ({
-    stage, connected: true, synchronized: true, messagesReceived: 10
+    stage, connected: true, synchronized: true, messagesReceived: 10, messagesSent: 10,
+    maxHidWriteDurationMs: 5
   }));
   const androidHealth = ["before-system-recovery", "final"].map((stage) => ({
-    stage, connected: true, synchronized: true, messagesReceived: 10, decodeErrors: 0,
+    stage, connected: true, synchronized: true, messagesReceived: 10, messagesSent: 10, decodeErrors: 0,
     readerRequestActive: true, readerRequestCount: 32, maxHidWriteDurationMs: 5,
     maxMidiQueueDelayMs: 2
   }));
@@ -238,20 +239,21 @@ test("release gate requires complete Windows and Android evidence for the curren
 
 test("physical transport health rejects disconnected, unsynchronized, stale, and slow evidence", () => {
   const healthy = ["before-system-recovery", "final"].map((stage) => ({
-    stage, connected: true, synchronized: true, messagesReceived: 1, decodeErrors: 0,
+    stage, connected: true, synchronized: true, messagesReceived: 1, messagesSent: 1, decodeErrors: 0,
     readerRequestActive: true, readerRequestCount: 32, maxHidWriteDurationMs: 3,
     maxMidiQueueDelayMs: 1
   }));
   assert.deepEqual(validateTransportHealthEvidence("android", healthy), []);
   assert.deepEqual(validateTransportHealthEvidence("windows", healthy), []);
   const errors = validateTransportHealthEvidence("android", healthy.map((entry) => ({
-    ...entry, connected: false, synchronized: false, messagesReceived: 0, decodeErrors: 1,
+    ...entry, connected: false, synchronized: false, messagesReceived: 0, messagesSent: 0, decodeErrors: 1,
     readerRequestActive: false, maxHidWriteDurationMs: 25, maxMidiQueueDelayMs: 30,
     lastReaderError: "reader stopped"
   })));
   assert.ok(errors.some((error) => error.includes("not connected")));
   assert.ok(errors.some((error) => error.includes("not synchronized")));
   assert.ok(errors.some((error) => error.includes("no device messages")));
+  assert.ok(errors.some((error) => error.includes("no outbound messages")));
   assert.ok(errors.some((error) => error.includes("decoder was not clean")));
   assert.ok(errors.some((error) => error.includes("reader was not active")));
   assert.ok(errors.some((error) => error.includes("HID write latency")));

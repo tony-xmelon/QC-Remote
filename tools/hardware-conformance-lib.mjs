@@ -272,13 +272,16 @@ export function validateTransportHealthEvidence(target, transportHealth) {
     if (!(Number.isFinite(health.messagesReceived) && health.messagesReceived > 0)) {
       errors.push(`${target} USB observed no device messages at ${stage}`);
     }
+    if (!(Number.isFinite(health.messagesSent) && health.messagesSent > 0)) {
+      errors.push(`${target} USB observed no outbound messages at ${stage}`);
+    }
+    if (!(Number.isFinite(health.maxHidWriteDurationMs) && health.maxHidWriteDurationMs <= 20)) {
+      errors.push(`${target} USB HID write latency exceeded or lacked the 20 ms gate at ${stage}`);
+    }
     if (target === "android") {
       if (health.decodeErrors !== 0) errors.push(`${target} USB decoder was not clean at ${stage}`);
       if (health.readerRequestActive !== true || !(health.readerRequestCount > 0)) {
         errors.push(`${target} USB reader was not active at ${stage}`);
-      }
-      if (!(Number.isFinite(health.maxHidWriteDurationMs) && health.maxHidWriteDurationMs <= 20)) {
-        errors.push(`${target} USB HID write latency exceeded or lacked the 20 ms gate at ${stage}`);
       }
       if (!(Number.isFinite(health.maxMidiQueueDelayMs) && health.maxMidiQueueDelayMs <= 20)) {
         errors.push(`${target} performance MIDI queue latency exceeded or lacked the 20 ms gate at ${stage}`);

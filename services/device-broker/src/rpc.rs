@@ -1606,8 +1606,16 @@ mod tests {
             generated_gateway::API_VERSION
         );
         assert_eq!(response["result"]["gatewayAvailable"], true);
-        assert_eq!(response["result"]["usbDiagnostics"]["phase"], "disconnected");
+        assert_eq!(
+            response["result"]["usbDiagnostics"]["phase"],
+            "disconnected"
+        );
         assert_eq!(response["result"]["usbDiagnostics"]["connected"], false);
+        assert_eq!(response["result"]["usbDiagnostics"]["messagesSent"], 0);
+        assert_eq!(
+            response["result"]["usbDiagnostics"]["maxHidWriteDurationMs"],
+            0
+        );
         for capability in generated_gateway::CAPABILITIES {
             assert!(response["result"]["capabilities"]
                 .as_array()

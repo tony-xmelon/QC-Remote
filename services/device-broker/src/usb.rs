@@ -55,6 +55,26 @@ pub struct BackupTransfer {
     pub side_messages: Vec<IncomingMessage>,
 }
 
+#[derive(Debug, Clone, Copy, Default)]
+pub struct UsbTelemetry {
+    pub messages_sent: u64,
+    pub expected_write_stalls: u64,
+    pub last_hid_write_duration_ms: u64,
+    pub max_hid_write_duration_ms: u64,
+    pub last_hid_write_completed: bool,
+}
+
+impl UsbTelemetry {
+    fn record_write(&mut self, duration_ms: u64, completed: bool) {
+        self.last_hid_write_duration_ms = duration_ms;
+        self.max_hid_write_duration_ms = self.max_hid_write_duration_ms.max(duration_ms);
+        self.last_hid_write_completed = completed;
+        if !completed {
+            self.expected_write_stalls = self.expected_write_stalls.saturating_add(1);
+        }
+    }
+}
+
 enum HidReadEvent {
     Report(Vec<u8>),
     Error(String),
@@ -199,6 +219,7 @@ pub struct QcUsb {
     frame_report_count: usize,
     next_sequence: u64,
     flight: FlightRecorder,
+    telemetry: UsbTelemetry,
 }
 
 impl QcUsb {
@@ -217,6 +238,7 @@ impl QcUsb {
             frame_report_count: 0,
             next_sequence: 1,
             flight,
+            telemetry: UsbTelemetry::default(),
         })
     }
 
@@ -346,6 +368,10 @@ impl QcUsb {
             // only by reads.
             let started = Instant::now();
             let result = self.io.write(&report);
+            self.telemetry.record_write(
+                started.elapsed().as_millis().min(u64::MAX as u128) as u64,
+                result.is_ok(),
+            );
             if message_type == profile::MESSAGE_TYPE_BACKUP {
                 self.flight.event(format!(
                     "backup-write-{}-{}ms",
@@ -358,10 +384,15 @@ impl QcUsb {
                 ));
             }
         }
+        self.telemetry.messages_sent = self.telemetry.messages_sent.saturating_add(1);
     }
 
     pub fn send_command(&mut self, message: OutboundMessage) {
         self.send(message.message_type, message.payload);
+    }
+
+    pub fn telemetry(&self) -> UsbTelemetry {
+        self.telemetry
     }
 
     pub fn read_message(&mut self, timeout_ms: i32) -> Result<Option<IncomingMessage>, UsbError> {
@@ -540,5 +571,22 @@ pub fn scene_value(payload: &[u8]) -> Option<u32> {
 impl Drop for QcUsb {
     fn drop(&mut self) {
         self.disconnect();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::UsbTelemetry;
+
+    #[test]
+    fn usb_telemetry_tracks_expected_stalls_and_worst_write_latency() {
+        let mut telemetry = UsbTelemetry::default();
+        telemetry.record_write(3, true);
+        telemetry.record_write(7, false);
+        telemetry.record_write(2, true);
+        assert_eq!(telemetry.expected_write_stalls, 1);
+        assert_eq!(telemetry.last_hid_write_duration_ms, 2);
+        assert_eq!(telemetry.max_hid_write_duration_ms, 7);
+        assert!(telemetry.last_hid_write_completed);
     }
 }

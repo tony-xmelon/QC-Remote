@@ -29,6 +29,11 @@ pub struct BrokerStatus {
     pub connected_at_unix_ms: Option<u128>,
     pub handshake_ms: Option<u128>,
     pub messages_received: u64,
+    pub messages_sent: u64,
+    pub expected_write_stalls: u64,
+    pub last_hid_write_duration_ms: u64,
+    pub max_hid_write_duration_ms: u64,
+    pub last_hid_write_completed: bool,
     pub last_message_type: Option<u16>,
 }
 
@@ -54,6 +59,11 @@ impl Default for BrokerStatus {
             connected_at_unix_ms: None,
             handshake_ms: None,
             messages_received: 0,
+            messages_sent: 0,
+            expected_write_stalls: 0,
+            last_hid_write_duration_ms: 0,
+            max_hid_write_duration_ms: 0,
+            last_hid_write_completed: false,
             last_message_type: None,
         }
     }
@@ -851,6 +861,7 @@ fn run(
                     let result = if let Some(connected) = connection.as_mut() {
                         thread::sleep(command_not_before.saturating_duration_since(Instant::now()));
                         connected.usb.send(message_type, payload);
+                        update_usb_telemetry(&state, connected);
                         session.outbound(session_clock.elapsed().as_millis() as u64);
                         Ok(())
                     } else {
@@ -869,6 +880,7 @@ fn run(
                         thread::sleep(delay);
                         for (index, message) in messages.iter().enumerate() {
                             connected.usb.send_command(message.clone());
+                            update_usb_telemetry(&state, connected);
                             session.outbound(session_clock.elapsed().as_millis() as u64);
                             if index + 1 < messages.len() {
                                 thread::sleep(interval);
@@ -897,6 +909,7 @@ fn run(
                             reply,
                         });
                         connected.usb.send(message_type, payload);
+                        update_usb_telemetry(&state, connected);
                         session.outbound(session_clock.elapsed().as_millis() as u64);
                     } else {
                         let _ = reply.send(Err("Quad Cortex is not connected".into()));
@@ -939,6 +952,7 @@ fn run(
                     };
                     session.outbound(session_clock.elapsed().as_millis() as u64);
                     if let Some(connected) = connection.as_ref() {
+                        update_usb_telemetry(&state, connected);
                         set_phase(
                             &state,
                             if connected.synchronized {
@@ -1064,6 +1078,7 @@ fn run(
             }
             if session.keepalive_due(session_clock.elapsed().as_millis() as u64) {
                 connected.usb.send_command(commands::keepalive());
+                update_usb_telemetry(&state, connected);
                 session.outbound(session_clock.elapsed().as_millis() as u64);
             }
         } else {
@@ -1176,11 +1191,27 @@ fn install_connection_status(
     );
     status.handshake_ms = Some(handshake_ms);
     status.messages_received = connection.message_counts.values().sum::<usize>() as u64;
+    let telemetry = connection.usb.telemetry();
+    status.messages_sent = telemetry.messages_sent;
+    status.expected_write_stalls = telemetry.expected_write_stalls;
+    status.last_hid_write_duration_ms = telemetry.last_hid_write_duration_ms;
+    status.max_hid_write_duration_ms = telemetry.max_hid_write_duration_ms;
+    status.last_hid_write_completed = telemetry.last_hid_write_completed;
     status.last_message_type = connection
         .latest_messages
         .values()
         .max_by_key(|message| message.sequence)
         .map(|message| message.message_type);
+}
+
+fn update_usb_telemetry(state: &Arc<Mutex<BrokerStatus>>, connection: &ConnectedQc) {
+    let telemetry = connection.usb.telemetry();
+    let mut status = state.lock_recover();
+    status.messages_sent = telemetry.messages_sent;
+    status.expected_write_stalls = telemetry.expected_write_stalls;
+    status.last_hid_write_duration_ms = telemetry.last_hid_write_duration_ms;
+    status.max_hid_write_duration_ms = telemetry.max_hid_write_duration_ms;
+    status.last_hid_write_completed = telemetry.last_hid_write_completed;
 }
 
 fn update_message(
