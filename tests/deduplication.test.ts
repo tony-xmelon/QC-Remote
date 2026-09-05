@@ -326,7 +326,7 @@ test("both USB readers defer ModelRepo work away from realtime I/O", () => {
   const python = source("services/device-gateway/src/qc_device_gateway/native_transport.py");
   const android = source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java");
   assert.match(rust, /message_type != profile::MESSAGE_TYPE_MODEL_REPO && payload\.starts_with/);
-  assert.match(rust, /if is_preset \{[\s\S]*?synchronized = true;[\s\S]*?break;/, "Windows must release startup to the live reader as soon as the preset arrives");
+  assert.match(rust, /fn collect_until_preset[\s\S]*if is_preset \{[\s\S]*return Ok\(true\)/, "Windows must release startup to the live reader as soon as the preset arrives");
   assert.match(python, /payload\.startswith\(b"\\x1f\\x8b"\)[\s\S]*_gunzip_bounded/);
   assert.match(android, /type == QcUsbProfile\.MESSAGE_TYPE_MODEL_REPO[\s\S]*scheduleModelCatalogDecode/);
   assert.match(android, /metadataIo\.execute/);

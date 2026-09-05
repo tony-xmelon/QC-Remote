@@ -268,36 +268,19 @@ impl QcUsb {
         }
         self.flight.event("initialization-sent");
         let deadline = Instant::now() + Duration::from_millis(profile::INITIAL_SYNC_TIMEOUT_MS);
-        let mut synchronized = false;
         let mut message_counts: HashMap<u16, usize> = HashMap::new();
         let mut latest_messages = HashMap::new();
-        while Instant::now() < deadline {
-            if let Some(message) = self.read_message(100)? {
-                let is_preset = message.message_type == 15;
-                let count = message_counts.entry(message.message_type).or_default();
-                *count = count.saturating_add(1);
-                latest_messages.insert(message.message_type, message);
-                if is_preset {
-                    synchronized = true;
-                    break;
-                }
-            }
-        }
+        let mut synchronized =
+            self.collect_until_preset(deadline, 100, &mut message_counts, &mut latest_messages)?;
         if !synchronized {
             self.send_command(commands::read_current_preset(request_id));
             let deadline = Instant::now() + Duration::from_millis(profile::PRESET_SYNC_TIMEOUT_MS);
-            while Instant::now() < deadline {
-                if let Some(message) = self.read_message(200)? {
-                    let is_preset = message.message_type == 15;
-                    let count = message_counts.entry(message.message_type).or_default();
-                    *count = count.saturating_add(1);
-                    latest_messages.insert(message.message_type, message);
-                    if is_preset {
-                        synchronized = true;
-                        break;
-                    }
-                }
-            }
+            synchronized = self.collect_until_preset(
+                deadline,
+                200,
+                &mut message_counts,
+                &mut latest_messages,
+            )?;
         }
         let required_seed_types = [2_u16, 13, 14, 17, 34];
         for message_type in required_seed_types {
@@ -331,6 +314,27 @@ impl QcUsb {
             message_counts,
             latest_messages,
         })
+    }
+
+    fn collect_until_preset(
+        &mut self,
+        deadline: Instant,
+        read_timeout_ms: i32,
+        message_counts: &mut HashMap<u16, usize>,
+        latest_messages: &mut HashMap<u16, IncomingMessage>,
+    ) -> Result<bool, UsbError> {
+        while Instant::now() < deadline {
+            if let Some(message) = self.read_message(read_timeout_ms)? {
+                let is_preset = message.message_type == 15;
+                let count = message_counts.entry(message.message_type).or_default();
+                *count = count.saturating_add(1);
+                latest_messages.insert(message.message_type, message);
+                if is_preset {
+                    return Ok(true);
+                }
+            }
+        }
+        Ok(false)
     }
 
     pub fn send(&mut self, message_type: u16, payload: Vec<u8>) {
