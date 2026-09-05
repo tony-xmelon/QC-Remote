@@ -362,11 +362,21 @@ async function main() {
       }
       const deadline = Date.now() + 30000;
       let snapshot;
-      while (!snapshot && Date.now() < deadline) {
-        try { snapshot = await transport.call("get_current_preset", {}); }
-        catch { await sleep(250); }
+      let masterVolume;
+      while ((!snapshot || !masterVolume) && Date.now() < deadline) {
+        if (!snapshot) {
+          try { snapshot = await transport.call("get_current_preset", {}); }
+          catch { /* The preset handshake is still in progress. */ }
+        }
+        if (!masterVolume) {
+          try { masterVolume = await transport.call("get_master_volume", {}); }
+          catch { /* Master Volume is published independently from the preset. */ }
+        }
+        if (!snapshot || !masterVolume) await sleep(250);
       }
       if (!snapshot) throw new Error("The QC did not publish a synchronized preset within 30 seconds.");
+      if (!masterVolume) throw new Error("The QC did not publish authoritative Master Volume within 30 seconds.");
+      snapshot = { ...snapshot, masterVolume: masterVolume.value };
       status = await transport.status();
       const identity = await transport.call("get_device_identity", {});
       let folders = await transport.call("list_preset_folders", { refresh: true });
