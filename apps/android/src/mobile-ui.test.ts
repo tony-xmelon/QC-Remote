@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-test("the mobile control deck exposes all eleven QC footswitches on two rows", () => {
+test("the mobile control deck follows the physical three-row QC layout", () => {
   const appSource = readFileSync(new URL("./App.tsx", import.meta.url), "utf8");
   const performanceWorkflow = readFileSync(new URL("../../../packages/typescript/qc-ui/src/use-performance-workflow.ts", import.meta.url), "utf8");
   const styles = readFileSync(new URL("./styles.css", import.meta.url), "utf8");
@@ -10,17 +10,27 @@ test("the mobile control deck exposes all eleven QC footswitches on two rows", (
 
   assert.equal(domain.limits.scenes, 8);
   assert.match(appSource, /Array\.from\(\{ length: QC_SCENE_COUNT \}/, "A through H must come from the shared scene definition");
-  assert.match(appSource, /className="navigation-controls"/);
+  assert.match(appSource, /QcMasterVolumeKnob value=\{snapshot\.masterVolume\}/);
+  assert.match(appSource, /Open I\/O Settings/);
+  assert.match(appSource, /Open Gig View/);
+  assert.match(appSource, /QcHardwareSwitch role="bank:up" label=\{<QcUiIcon kind="up" \/>\}/);
+  assert.match(appSource, /QcHardwareSwitch role="bank:down" label=\{<QcUiIcon kind="down" \/>\}/);
   assert.doesNotMatch(appSource, />SCENE</);
   assert.match(appSource, /footswitchLeds\(snapshot\)/);
   assert.match(appSource, /useQcWorkflows\(\{/);
   assert.match(performanceWorkflow, /controller\.beginFootswitch/);
-  assert.match(appSource, /className=\{`tempo-control/);
+  assert.match(appSource, /QcHardwareSwitch role="tempo" label="TEMPO"/);
+  assert.match(appSource, /useContinuousControlWorkflow\(\{/);
+  assert.match(appSource, /adjustEditorParameter\(role, delta\)/);
+  assert.doesNotMatch(appSource, /> BLOCK<\/button>/);
+  assert.doesNotMatch(appSource, />EDIT BLOCK<\/button>/);
+  assert.doesNotMatch(appSource, />REDO<\/button>/);
   assert.match(styles, /grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
-  assert.match(styles, /grid-template-rows: repeat\(2, minmax\(48px, 1fr\)\)/);
-  assert.match(styles, /\.quick-controls \.navigation-controls \{ grid-column: 5; grid-row: 1;/);
-  assert.match(styles, /\.quick-controls \.tempo-control \{ grid-column: 5; grid-row: 2; \}/);
-  assert.match(styles, /var\(--switch-color\)/);
+  assert.match(styles, /grid-template-rows: repeat\(3, minmax\(54px, 1fr\)\)/);
+  assert.match(styles, /\.mobile-up-control \{ grid-column: 5; grid-row: 1; \}/);
+  assert.match(styles, /\.mobile-down-control \{ grid-column: 5; grid-row: 2; \}/);
+  assert.match(styles, /\.mobile-tempo-control \{ grid-column: 5; grid-row: 3; \}/);
+  assert.match(styles, /\.mobile-volume-control \{ grid-column: 1; grid-row: 1;/);
 });
 
 test("tapping a live Grid block opens the shared parameter editor and commits over USB", () => {

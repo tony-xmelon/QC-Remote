@@ -113,7 +113,7 @@ test("both native shells route Grid menus and footswitches through shared policy
     assert.match(app, /onContextAction=\{handleCorOsContextAction\}/);
     assert.match(app, /corOsUnavailableContextActionMessage\(action\)/);
   }
-  assert.match(android, /handleSurfaceAction\(\{ kind: "switch", role: `footswitch:\$\{label\}`, phase: "release" \}\)/);
+  assert.match(android, /QcHardwareSwitch role=\{`footswitch:\$\{label\}`}[\s\S]*onAction=\{handleSurfaceAction\}/);
   assert.doesNotMatch(android, /const pressFootswitch = async/);
 });
 

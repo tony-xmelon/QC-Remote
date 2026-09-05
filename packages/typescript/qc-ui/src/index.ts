@@ -1,4 +1,4 @@
-export { QuadCortexSurface } from "./quad-cortex-surface";
+export { QcHardwareSwitch, QcMasterVolumeKnob, QuadCortexSurface } from "./quad-cortex-surface";
 export { coros410FixtureSnapshot, corosFixtureConfiguration } from "./coros-screen-fixture-data";
 export type { CorOsFixtureConfiguration } from "./coros-screen-fixture-data";
 export type { CorOsContextAction, CorOsScreenView, HardwareAction, PresetDirectoryState } from "./quad-cortex-surface";

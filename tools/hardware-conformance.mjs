@@ -982,7 +982,8 @@ async function main() {
       if (capture?.key && capture?.name && Number.isInteger(capture?.modelId)) {
         await call("load_capture", {
           row: temp.row, column: temp.addColumn, key: capture.key, name: capture.name,
-          model_id: capture.modelId, expected_preset_name: currentSnapshot.presetName
+          model_id: capture.modelId, expected_model_id: null,
+          expected_preset_name: currentSnapshot.presetName
         });
         currentSnapshot = await waitForSnapshot((value) => value.blocks.some(
           (block) => block.row === temp.row && block.column === temp.addColumn && block.modelId === capture.modelId));
@@ -1000,7 +1001,8 @@ async function main() {
       if (ir?.key && ir?.name && Number.isInteger(ir?.modelId) && [0, 1].includes(ir?.slot)) {
         await call("load_ir", {
           row: temp.row, column: temp.addColumn, key: ir.key, name: ir.name,
-          slot: ir.slot, model_id: ir.modelId, expected_preset_name: currentSnapshot.presetName
+          slot: ir.slot, model_id: ir.modelId, expected_model_id: null,
+          expected_preset_name: currentSnapshot.presetName
         });
         currentSnapshot = await waitForSnapshot((value) => value.blocks.some(
           (block) => block.row === temp.row && block.column === temp.addColumn && block.modelId === ir.modelId));

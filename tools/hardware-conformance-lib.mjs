@@ -250,7 +250,6 @@ export function gatewayArguments(actionName, args) {
   const output = {};
   for (const [key, value] of Object.entries(args ?? {})) {
     if (key === "confirm_risky_operation" || key === "confirm_persistent_write") continue;
-    if ((actionName === "preview_parameter" || actionName === "preview_lane_control_parameter") && key === "expected_value") continue;
     const target = actionName === "rename_current_preset" && key === "new_name" ? "name" : snakeToCamel(key);
     output[target] = value;
   }

@@ -4,9 +4,9 @@ import { expect, test, type Page } from "@playwright/test";
 const androidUrl = `http://127.0.0.1:${process.env.QC_ANDROID_TEST_PORT ?? "4173"}`;
 const windowsUrl = `http://127.0.0.1:${process.env.QC_WINDOWS_TEST_PORT ?? "1420"}`;
 const surfaces = [
-  { name: "Android portrait", url: androidUrl, width: 393, height: 851, touchTargets: true, sceneControl: "Footswitch C" },
-  { name: "Android compact portrait", url: androidUrl, width: 360, height: 640, touchTargets: true, sceneControl: "Footswitch C" },
-  { name: "Android landscape", url: androidUrl, width: 800, height: 480, touchTargets: true, sceneControl: "Footswitch C" },
+  { name: "Android portrait", url: androidUrl, width: 393, height: 851, touchTargets: true, sceneControl: "C encoder footswitch; encoder 50 percent" },
+  { name: "Android compact portrait", url: androidUrl, width: 360, height: 640, touchTargets: true, sceneControl: "C encoder footswitch; encoder 50 percent" },
+  { name: "Android landscape", url: androidUrl, width: 800, height: 480, touchTargets: true, sceneControl: "C encoder footswitch; encoder 50 percent" },
   { name: "Windows minimum", url: windowsUrl, width: 920, height: 720, touchTargets: false, sceneControl: "C encoder footswitch; encoder 50 percent" },
   { name: "Windows standard", url: windowsUrl, width: 1280, height: 800, touchTargets: false, sceneControl: "C encoder footswitch; encoder 50 percent" }
 ] as const;
@@ -89,15 +89,13 @@ for (const surface of surfaces) {
   test(`${surface.name} reconciles tap tempo`, async ({ page }) => {
     await page.setViewportSize({ width: surface.width, height: surface.height });
     await page.goto(surface.url);
-    const tempo = surface.touchTargets
-      ? page.getByRole("button", { name: /^Tap tempo,/ })
-      : page.getByRole("button", { name: /^TEMPO encoder footswitch;/ });
+    const tempo = page.getByRole("button", { name: /^TEMPO encoder footswitch;/ });
     await expect(tempo).toBeVisible();
-    const before = surface.touchTargets ? await tempo.getAttribute("aria-label") : await tempo.getAttribute("style");
+    const before = await tempo.getAttribute("style");
     await tempo.click();
     await page.waitForTimeout(620);
     await tempo.click();
-    await expect.poll(async () => surface.touchTargets ? tempo.getAttribute("aria-label") : tempo.getAttribute("style"))
+    await expect.poll(async () => tempo.getAttribute("style"))
       .not.toBe(before);
   });
 
@@ -138,6 +136,40 @@ for (const host of [{ name: "Android", url: androidUrl }, { name: "Windows", url
     expect(runtimeErrors).toEqual([]);
   });
 }
+
+test("Android physical deck opens device views and its encoders drag vertically", async ({ page }) => {
+  await page.setViewportSize({ width: 393, height: 851 });
+  await page.goto(androidUrl);
+
+  await page.getByRole("button", { name: "Open I/O Settings" }).click();
+  await expect(page.getByRole("region", { name: /I\/O Settings/ })).toBeVisible();
+  await page.getByRole("button", { name: "Close I/O Settings" }).click();
+  await page.getByRole("button", { name: "Open Gig View" }).click();
+  await expect(page.getByRole("region", { name: "Gig View" })).toBeVisible();
+  await page.getByRole("button", { name: "Close Gig View" }).click();
+
+  const volume = page.getByRole("slider", { name: "Master volume knob" });
+  const volumeBefore = Number(await volume.getAttribute("aria-valuenow"));
+  const volumeBox = await volume.boundingBox();
+  expect(volumeBox).not.toBeNull();
+  await page.mouse.move(volumeBox!.x + volumeBox!.width / 2, volumeBox!.y + volumeBox!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(volumeBox!.x + volumeBox!.width / 2, volumeBox!.y + volumeBox!.height / 2 - 24);
+  await page.mouse.up();
+  await expect.poll(async () => Number(await volume.getAttribute("aria-valuenow"))).toBeGreaterThan(volumeBefore);
+
+  await page.locator(".coros-vector-block-hit").first().click();
+  const parameter = page.locator(".parameter-knob").first();
+  const parameterBefore = await parameter.getAttribute("aria-label");
+  const encoder = page.getByRole("button", { name: /^A encoder footswitch;/ });
+  const encoderBox = await encoder.boundingBox();
+  expect(encoderBox).not.toBeNull();
+  await page.mouse.move(encoderBox!.x + encoderBox!.width / 2, encoderBox!.y + encoderBox!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(encoderBox!.x + encoderBox!.width / 2, encoderBox!.y + encoderBox!.height / 2 - 24);
+  await page.mouse.up();
+  await expect.poll(async () => parameter.getAttribute("aria-label")).not.toBe(parameterBefore);
+});
 
 test("Windows hardware controls scale with and remain inside the device chassis", async ({ page }) => {
   const samples: Array<{

@@ -3,8 +3,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import { demoSnapshot, QC_SCENE_COUNT } from "@ndsp-qc/client";
 import { assistantToolActionPrompt, footswitchLeds, parseAssistantIntent, parseAssistantReply, recentModelConversation, runToolConversation, sceneLetter, textModelConversationPrompt, validateAssistantToolCalls, type AssistantAccessMode as ControlAccessMode, type AssistantToolCall, type PublicRelayState as RelayState } from "@ndsp-qc/core";
 import { formFactors, skins } from "@ndsp-qc/form-factors";
-import { QC_BRAND, QC_VISUAL_ASSETS } from "@ndsp-qc/theme";
-import { AddBlockPanel, applyPreparedOfflineAssistantAction, AssistantAccessSelect, AssistantAttachmentList, browserWorkflowPrompts, consumeQcNativeStateFrame, corosFixtureConfiguration, corOsUnavailableContextActionMessage, executeAndReconcileQcAction, GridManagementPanel, MicrophoneIcon, offlineAssistantEditConfirmation, qcParameterEditorBindings, QcUiIcon, QuadCortexSurface, readAssistantAccessMode, RoutingEditor, runOfflineAssistantIntent, SceneEditor, useAssistantAutoScroll, useAssistantConversation, useBlockEditorSession, usePublicRelayWorkflow, useQcConnectionWorkflow, useQcController, useQcLiveState, useQcSurfaceActions, useQcWorkflows, writeAssistantAccessMode, type CorOsContextAction } from "@ndsp-qc/ui";
+import { QC_BRAND, QC_COLORS, QC_VISUAL_ASSETS } from "@ndsp-qc/theme";
+import { AddBlockPanel, applyPreparedOfflineAssistantAction, AssistantAccessSelect, AssistantAttachmentList, browserWorkflowPrompts, consumeQcNativeStateFrame, corosFixtureConfiguration, corOsUnavailableContextActionMessage, executeAndReconcileQcAction, GridManagementPanel, MicrophoneIcon, offlineAssistantEditConfirmation, PARAMETER_ENCODER_ROLES, parameterEditorAccent, parameterEditorControlSlots, parameterEditorPageSize, parameterStep, qcParameterEditorBindings, QcHardwareSwitch, QcMasterVolumeKnob, QcUiIcon, QuadCortexSurface, readAssistantAccessMode, RoutingEditor, runOfflineAssistantIntent, SceneEditor, useAssistantAutoScroll, useAssistantConversation, useBlockEditorSession, useContinuousControlWorkflow, usePublicRelayWorkflow, useQcConnectionWorkflow, useQcController, useQcLiveState, useQcSurfaceActions, useQcWorkflows, writeAssistantAccessMode, type CorOsContextAction, type CorOsScreenView } from "@ndsp-qc/ui";
 import { androidGatewayTransport, createAndroidQcTransport, GeminiNative, publicRelay, QcUsbNative, subscribeRelayState, VoiceInputNative } from "./native-services";
 import { quotaSummary, recordGeminiUsage, type GeminiModelId, type GeminiQuotaLedger } from "./gemini-quota";
 
@@ -76,6 +76,7 @@ export function App() {
   const relayState: RelayState = relayWorkflow.status?.state ?? "stopped";
   const relayPaired = relayWorkflow.status?.paired ?? false;
   const [workflowPanel, setWorkflowPanel] = useState<"block" | "add" | "routing" | "scene" | null>(null);
+  const [mobileScreenView, setMobileScreenView] = useState<CorOsScreenView | null>(null);
   const connectInFlight = useRef(false);
   const presetSynchronized = useRef(false);
   const usbSessionReady = useRef(false);
@@ -108,6 +109,7 @@ export function App() {
     }
   });
   const {
+    reconcile: reconcileWorkflowSnapshot,
     history: deviceHistory,
     preset: presetWorkflow,
     routing: routingWorkflow,
@@ -116,6 +118,16 @@ export function App() {
     scene: sceneWorkflow,
     performance: performanceWorkflow
   } = workflows;
+  const continuousControls = useContinuousControlWorkflow({
+    controller: qcController,
+    gateway: androidGatewayTransport,
+    connected: usbConnected,
+    demo: corpusFixtureEnabled || !native,
+    reconcile: reconcileWorkflowSnapshot,
+    recordHistory: deviceHistory.record,
+    notice: appendAssistant,
+    fail: (error) => appendAssistant(error instanceof Error ? error.message : String(error))
+  });
   const selectedBlock = useMemo(() => snapshot.blocks.find((block) => block.id === selectedBlockId), [selectedBlockId, snapshot.blocks]);
   const parameterEditorBindings = qcParameterEditorBindings({
     snapshot,
@@ -248,8 +260,29 @@ export function App() {
     await attemptUsbConnection(true);
   };
 
-  const movePreset = performanceWorkflow.movePreset;
-  const tapTempo = performanceWorkflow.tapTempo;
+  const adjustEditorParameter = useCallback((role: string, delta: number) => {
+    if (!blockDetails) return false;
+    const slot = PARAMETER_ENCODER_ROLES.indexOf(role as (typeof PARAMETER_ENCODER_ROLES)[number]);
+    if (slot < 0) return false;
+    const parameter = parameterEditorControlSlots(
+      blockDetails.parameters.filter((candidate) => candidate.normalizedValue !== null),
+      blockDetails.category,
+      editor.page,
+      parameterEditorPageSize(blockDetails.category, blockDetails.parameters)
+    )[slot];
+    if (!parameter) {
+      appendAssistant(`${role} is not assigned on this parameter page.`);
+      return true;
+    }
+    if (!parameter.writable) {
+      appendAssistant(`${blockDetails.name} · ${parameter.name} is read-only.`);
+      return true;
+    }
+    const current = parameterWorkflow.targetValue(parameter);
+    const value = Math.max(0, Math.min(1, current + Math.sign(delta) * parameterStep(parameter)));
+    parameterWorkflow.commit(parameter, value);
+    return true;
+  }, [appendAssistant, blockDetails, editor.page, parameterWorkflow]);
   const handleSurfaceAction = useQcSurfaceActions({
     snapshot,
     selectedBlockId,
@@ -257,8 +290,41 @@ export function App() {
     grid: gridWorkflow,
     performance: performanceWorkflow,
     openBlock: (block) => { void openBlockEditor(block); },
-    closeBlock: closeBlockEditor
+    closeBlock: closeBlockEditor,
+    rotate: (role, delta) => {
+      if (adjustEditorParameter(role, delta)) return;
+      if (role === "tempo") continuousControls.adjustTempo(delta);
+      else if (role === "master-volume") continuousControls.adjustMasterVolume(delta);
+      else appendAssistant(`${role} has no parameter on the current screen.`);
+    },
+    editorUnhandled: (action) => appendAssistant(`${action.role} is mapped to the on-screen parameter above it; drag vertically to adjust it.`)
   });
+  const parameterLeds = parameterEditorBindings ? (() => {
+    const accent = parameterEditorAccent(parameterEditorBindings.details.name, parameterEditorBindings.accent);
+    const visible = parameterEditorControlSlots(
+      parameterEditorBindings.details.parameters.filter((parameter) => parameter.normalizedValue !== null),
+      parameterEditorBindings.details.category,
+      parameterEditorBindings.page,
+      parameterEditorPageSize(parameterEditorBindings.details.category, parameterEditorBindings.details.parameters)
+    );
+    return Array.from({ length: 10 }, (_, index) => ({
+      active: Boolean(visible[index]),
+      assigned: Boolean(visible[index]),
+      color: /\bcab\b/i.test(parameterEditorBindings.details.category) && ((parameterEditorBindings.page === 0 && index >= 5 && index <= 8) || (parameterEditorBindings.page === 1 && index === 2))
+        ? QC_COLORS.category.pitch
+        : accent
+    }));
+  })() : undefined;
+  const mobileLed = (slot: number, fallback: { active: boolean; assigned: boolean; color: string }) => parameterLeds?.[slot] ?? fallback;
+  const openGigView = () => {
+    setMobileScreenView("gig");
+    if (native && usbConnected) void performanceWorkflow.showDeviceView("gig");
+  };
+  const closeMobileScreen = () => {
+    const closingGigView = mobileScreenView === "gig";
+    setMobileScreenView(null);
+    if (closingGigView && native && usbConnected) void androidGatewayTransport.showGigView(false).catch(() => undefined);
+  };
   const handleCorOsContextAction = (action: CorOsContextAction) => {
     if (action === "edit-details") presetWorkflow.openSave();
     else if (action === "settings") appendAssistant("Model, access, relay, and voice settings are available in the assistant controls below the Grid.");
@@ -439,7 +505,7 @@ export function App() {
 
     <section className="mobile-screen" aria-label="Quad Cortex display">
       <QuadCortexSurface formFactor={formFactor} snapshot={snapshot} selectedBlockId={selectedBlockId} skin={skin}
-        screenView={fixtureScreenView ?? undefined}
+        screenView={fixtureScreenView ?? mobileScreenView ?? undefined} onCloseScreen={closeMobileScreen}
         onAction={handleSurfaceAction} onOpenPreset={() => void presetWorkflow.openDirectory()} onUndo={() => void deviceHistory.undo()} canUndo={Boolean(deviceHistory.undoEntry)} undoLabel={deviceHistory.undoEntry?.label}
         onSave={presetWorkflow.openSave} onOpenRouting={routingWorkflow.openPicker} onRefresh={() => void presetWorkflow.refresh()}
         savePreset={presetWorkflow.saveProps} presetDirectory={presetWorkflow.directoryProps} routingPicker={routingWorkflow.pickerProps}
@@ -447,32 +513,29 @@ export function App() {
     </section>
 
     <nav className="quick-controls" aria-label="Quick device controls">
-      {sceneFootswitches.map(({ index, label }) => <button
-        className={`footswitch-control${switchLeds[index].assigned ? " is-assigned" : ""}${switchLeds[index].active ? " is-active" : ""}`}
-        style={{ "--switch-color": switchLeds[index].color, gridColumn: index % 4 + 1, gridRow: index < 4 ? 1 : 2 } as CSSProperties}
-        onClick={() => handleSurfaceAction({ kind: "switch", role: `footswitch:${label}`, phase: "release" })}
-        aria-label={`Footswitch ${label}`}
-        aria-pressed={switchLeds[index].active}
-        key={label}
-      ><i className="control-led" aria-hidden="true" /><span>{label}</span></button>)}
-      <div className="navigation-controls" aria-label="Preset navigation">
-        <button className="preset-control control-up" onClick={() => void movePreset(-1)} aria-label="Previous preset"><span><QcUiIcon kind="up" /></span><small>UP</small></button>
-        <button className="preset-control control-down" onClick={() => void movePreset(1)} aria-label="Next preset"><span><QcUiIcon kind="down" /></span><small>DOWN</small></button>
-      </div>
-      <button className={`tempo-control${snapshot.tempoLedEnabled ? " is-active" : ""}`} style={{ "--tempo-bpm": snapshot.tempo } as CSSProperties} onClick={() => void tapTempo()} aria-label={`Tap tempo, ${snapshot.tempo} BPM`}><i className="control-led" aria-hidden="true" /><span>{snapshot.tempo}</span><small>TEMPO</small></button>
+      <div className="mobile-volume-control"><QcMasterVolumeKnob value={snapshot.masterVolume} onAction={handleSurfaceAction} /><small>VOLUME</small></div>
+      <button className={`device-view-control mobile-io-control${mobileScreenView === "io-overview" ? " is-active" : ""}`} onClick={() => setMobileScreenView("io-overview")} aria-label="Open I/O Settings"><span>I/O</span></button>
+      <button className={`device-view-control mobile-gig-control${mobileScreenView === "gig" ? " is-active" : ""}`} onClick={openGigView} aria-label="Open Gig View"><span>GIG</span></button>
+      <div className="mobile-up-control"><QcHardwareSwitch role="bank:up" label={<QcUiIcon kind="up" />} ariaLabel="Previous preset" active={Boolean(parameterEditorBindings)} assigned={Boolean(parameterEditorBindings)} accent={QC_COLORS.hardware.whiteLed} onAction={handleSurfaceAction} /></div>
+      {sceneFootswitches.map(({ index, label }) => {
+        const slot = index < 4 ? index : index + 1;
+        const led = mobileLed(slot, switchLeds[index]);
+        return <div className="mobile-encoder-control" style={{ gridColumn: index % 4 + 1, gridRow: index < 4 ? 2 : 3 } as CSSProperties} key={label}>
+          <QcHardwareSwitch role={`footswitch:${label}`} label={label} active={led.active} assigned={led.assigned} accent={led.color} onAction={handleSurfaceAction} />
+        </div>;
+      })}
+      {(() => { const led = mobileLed(4, { active: false, assigned: false, color: QC_COLORS.hardware.whiteLed }); return <div className="mobile-down-control"><QcHardwareSwitch role="bank:down" label={<QcUiIcon kind="down" />} ariaLabel="Next preset" active={led.active} assigned={led.assigned} accent={led.color} onAction={handleSurfaceAction} /></div>; })()}
+      <div className="mobile-tempo-control"><QcHardwareSwitch role="tempo" label="TEMPO" active={parameterLeds ? parameterLeds[9].active : snapshot.tempoLedEnabled} assigned={parameterLeds ? parameterLeds[9].assigned : snapshot.tempoLedEnabled} accent={parameterLeds ? parameterLeds[9].color : QC_COLORS.device.tempoLed} pulseBpm={!parameterLeds && snapshot.tempoLedEnabled ? snapshot.tempo : undefined} pulseEpochMs={!parameterLeds ? snapshot.tempoPulseEpochMs : undefined} onAction={handleSurfaceAction} /></div>
     </nav>
 
     <nav className="workflow-actions" aria-label="Preset editing workflows">
-      <button disabled={!usbConnected || devicePending} onClick={() => void gridWorkflow.openAdd()}><QcUiIcon kind="add" /> BLOCK</button>
-      <button disabled={!blockDetails || devicePending} onClick={() => setWorkflowPanel("block")}>EDIT BLOCK</button>
       <button disabled={!usbConnected || devicePending} onClick={routingWorkflow.open}>ROUTING</button>
       <button disabled={!usbConnected || devicePending} onClick={sceneWorkflow.open}>SCENES</button>
-      <button disabled={!deviceHistory.redoEntry || devicePending} onClick={() => void deviceHistory.redo()}>REDO</button>
     </nav>
 
     <section className="mobile-chat" aria-label="QC assistant">
       <div className="chat-heading"><span><i /> {busy ? "GEMINI THINKING" : "QC ASSISTANT"}</span><small>{selectedBlock ? `${selectedBlock.name} selected` : usbConnected ? "QC connected" : "USB not connected"}</small></div>
-      <div ref={assistantScroll.containerRef} className="message-list" aria-live="polite" onScroll={assistantScroll.onScroll} onWheel={assistantScroll.onUserScroll} onTouchMove={assistantScroll.onUserScroll} onPointerDown={assistantScroll.onUserScroll}>
+      <div ref={assistantScroll.containerRef} className="message-list" tabIndex={0} aria-live="polite" aria-label="Assistant conversation" onScroll={assistantScroll.onScroll} onWheel={assistantScroll.onUserScroll} onTouchMove={assistantScroll.onUserScroll} onPointerDown={assistantScroll.onUserScroll}>
         {messages.map((entry) => <div key={entry.id} className={`message ${entry.role}`}><span>{entry.role === "user" ? "YOU" : "QC"}</span><div><p>{entry.text}</p><AssistantAttachmentList attachments={entry.attachments} imageClassName="message-image" /></div></div>)}
         {busy && <div className="message assistant pending"><span>QC</span><p>•••</p></div>}
       </div>

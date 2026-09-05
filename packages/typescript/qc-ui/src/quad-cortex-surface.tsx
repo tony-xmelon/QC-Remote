@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type WheelEvent } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode, type WheelEvent } from "react";
 import { QC_GRID_COLUMNS, QC_GRID_ROWS, type GridBlock, type PresetEntry, type PresetList, type PresetSnapshot } from "@ndsp-qc/client";
 import { footswitchLeds, routePickerGroup, routePickerLabel, sceneLetter as sceneLabel, type QcSurfaceAction } from "@ndsp-qc/core";
 import type { FormFactorManifest, HardwareControl, SkinManifest } from "@ndsp-qc/form-factors";
@@ -104,8 +104,8 @@ function DeviceGlyph({ block, x, y, size = 64, selected = false }: { block: Grid
   </svg>{fill}{pluginLabel}</g>;
 }
 
-function HardwareSwitch({ role, label, active, assigned = false, accent, compact = false, pulseBpm, pulseEpochMs, onAction }: {
-  role: string; label: string; active?: boolean; assigned?: boolean; accent?: string; compact?: boolean; pulseBpm?: number; pulseEpochMs?: number; onAction: (action: HardwareAction) => void;
+export function QcHardwareSwitch({ role, label, ariaLabel, active, assigned = false, accent, compact = false, pulseBpm, pulseEpochMs, onAction }: {
+  role: string; label: ReactNode; ariaLabel?: string; active?: boolean; assigned?: boolean; accent?: string; compact?: boolean; pulseBpm?: number; pulseEpochMs?: number; onAction: (action: HardwareAction) => void;
 }) {
   const drag = useRef<{ pointerId: number; lastY: number; rotated: boolean } | null>(null);
   const hideValueTimer = useRef<number | undefined>(undefined);
@@ -149,11 +149,12 @@ function HardwareSwitch({ role, label, active, assigned = false, accent, compact
   const tempoPhaseMs = useMemo(() => tempoPeriodMs && pulseEpochMs !== undefined
     ? ((Date.now() - pulseEpochMs) % tempoPeriodMs + tempoPeriodMs) % tempoPeriodMs
     : undefined, [tempoPeriodMs, pulseEpochMs]);
+  const accessibleLabel = ariaLabel ?? (typeof label === "string" ? label : role);
   return <button
     className={`hardware-switch${active ? " is-active" : ""}${pressed ? " is-pressed" : ""}${assigned ? " is-assigned" : ""}${compact ? " is-compact" : ""}${pulseBpm ? " is-tempo-pulse" : ""}`}
     style={{ "--switch-accent": accent ?? "var(--accent)", "--tempo-period": tempoPeriodMs ? `${tempoPeriodMs}ms` : undefined, "--tempo-phase-delay": tempoPhaseMs !== undefined ? `${-tempoPhaseMs}ms` : undefined } as CSSProperties}
-    aria-label={`${label} encoder footswitch; encoder ${encoderValue} percent`} aria-pressed={Boolean(active || pressed)}
-    title={`${label}: tap to press; drag vertically, use the mouse wheel, or press arrow keys to rotate`}
+    aria-label={`${accessibleLabel} encoder footswitch; encoder ${encoderValue} percent`} aria-pressed={Boolean(active || pressed)}
+    title={`${accessibleLabel}: tap to press; drag vertically, use the mouse wheel, or press arrow keys to rotate`}
     onPointerDown={(event) => { event.currentTarget.setPointerCapture?.(event.pointerId); drag.current = { pointerId: event.pointerId, lastY: event.clientY, rotated: false }; setPressed(true); }}
     onPointerMove={(event) => {
       const gesture = drag.current;
@@ -172,7 +173,7 @@ function HardwareSwitch({ role, label, active, assigned = false, accent, compact
   </button>;
 }
 
-function MasterVolume({ value, onAction }: { value: number; onAction: (action: HardwareAction) => void }) {
+export function QcMasterVolumeKnob({ value, onAction }: { value: number; onAction: (action: HardwareAction) => void }) {
   const drag = useRef<{ pointerId: number; lastY: number } | null>(null);
   const hideValueTimer = useRef<number | undefined>(undefined);
   const [showValue, setShowValue] = useState(false);
@@ -183,9 +184,7 @@ function MasterVolume({ value, onAction }: { value: number; onAction: (action: H
     onAction({ kind: "rotate", role: "master-volume", delta });
   };
   const angle = -135 + value * 2.7;
-  return <div className="master-volume">
-    <button className="power-button" aria-label="Power and lock menu" onClick={() => onAction({ kind: "switch", role: "power", phase: "release" })}><QcHardwareIcon kind="power" className="power-icon" /></button>
-    <button className="volume-knob" role="slider" aria-orientation="vertical" style={{ "--volume-angle": `${angle}deg` } as CSSProperties} aria-label="Master volume knob" aria-valuenow={value} aria-valuemin={0} aria-valuemax={100} aria-valuetext={`${value} percent`} title={`Master Volume ${value}; drag vertically, use the mouse wheel, or press arrow keys`} onPointerDown={(event) => {
+  return <button className="volume-knob" role="slider" aria-orientation="vertical" style={{ "--volume-angle": `${angle}deg` } as CSSProperties} aria-label="Master volume knob" aria-valuenow={value} aria-valuemin={0} aria-valuemax={100} aria-valuetext={`${value} percent`} title={`Master Volume ${value}; drag vertically, use the mouse wheel, or press arrow keys`} onPointerDown={(event) => {
       event.currentTarget.setPointerCapture?.(event.pointerId);
       drag.current = { pointerId: event.pointerId, lastY: event.clientY };
     }} onPointerMove={(event) => {
@@ -205,7 +204,13 @@ function MasterVolume({ value, onAction }: { value: number; onAction: (action: H
     }} onWheel={(event) => {
       event.preventDefault();
       rotate(event.deltaY < 0 ? 1 : -1);
-    }}><span className="volume-pointer" /><span className={`rotation-readout${showValue ? " is-visible" : ""}`}>{value}</span></button>
+    }}><span className="volume-pointer" /><span className={`rotation-readout${showValue ? " is-visible" : ""}`}>{value}</span></button>;
+}
+
+function MasterVolume({ value, onAction }: { value: number; onAction: (action: HardwareAction) => void }) {
+  return <div className="master-volume">
+    <button className="power-button" aria-label="Power and lock menu" onClick={() => onAction({ kind: "switch", role: "power", phase: "release" })}><QcHardwareIcon kind="power" className="power-icon" /></button>
+    <QcMasterVolumeKnob value={value} onAction={onAction} />
     <strong>VOLUME</strong>
   </div>;
 }
@@ -526,11 +531,11 @@ export function QuadCortexSurface({ formFactor, snapshot, selectedBlockId, skin,
       ? <div className="qc-screen-fixture-root"><Suspense fallback={null}><CorOsScreenFixture view={screenView} snapshot={displaySnapshot} onClose={onCloseScreen} /></Suspense></div>
       : <div className="qc-screen-fixture-root is-live-grid"><CorOsGrid snapshot={displaySnapshot} selectedBlockId={selectedBlockId} onAction={onAction} onOpenPreset={onOpenPreset} onUndo={onUndo} canUndo={canUndo} undoLabel={undoLabel} onSave={onSave} onOpenRouting={onOpenRouting} onRefresh={onRefresh} presetDirectory={presetDirectory} routingPicker={routingPicker} savePreset={savePreset} onContextAction={onContextAction} />{parameterEditor && <CorOsParameterEditor {...parameterEditor} />}</div>}
     </div>
-    <div className="screen-nav-control"><span className="nav-arrow nav-arrow-up" /><HardwareSwitch role={bankUp.role} label="BANK UP" compact active={Boolean(parameterEditor)} assigned={Boolean(parameterEditor)} accent={navigationLedColor} onAction={onAction} /><span className="nav-arrow nav-arrow-down" /></div>
+    <div className="screen-nav-control"><span className="nav-arrow nav-arrow-up" /><QcHardwareSwitch role={bankUp.role} label="BANK UP" compact active={Boolean(parameterEditor)} assigned={Boolean(parameterEditor)} accent={navigationLedColor} onAction={onAction} /><span className="nav-arrow nav-arrow-down" /></div>
     <div className="footswitch-deck">
-      <div className="footswitch-row">{scenes.slice(0, 4).map((control, index) => { const led = parameterLed(index, leds[index]); return <HardwareSwitch key={control.id} role={control.role} label={control.label} active={led.active} assigned={led.assigned} accent={led.color} onAction={onAction} />; })}<HardwareSwitch role={bankDown.role} label="BANK DOWN" active={bankDownLed.active} assigned={bankDownLed.assigned} accent={bankDownLed.color} onAction={onAction} /></div>
+      <div className="footswitch-row">{scenes.slice(0, 4).map((control, index) => { const led = parameterLed(index, leds[index]); return <QcHardwareSwitch key={control.id} role={control.role} label={control.label} active={led.active} assigned={led.assigned} accent={led.color} onAction={onAction} />; })}<QcHardwareSwitch role={bankDown.role} label="BANK DOWN" active={bankDownLed.active} assigned={bankDownLed.assigned} accent={bankDownLed.color} onAction={onAction} /></div>
       <div className="mode-bracket" aria-hidden="true"><span><QcUiIcon kind="add" /></span><strong>MODE</strong><span><QcUiIcon kind="subtract" /></span></div>
-      <div className="footswitch-row">{scenes.slice(4).map((control, index) => { const led = parameterLed(index + 5, leds[index + 4]); return <HardwareSwitch key={control.id} role={control.role} label={control.label} active={led.active} assigned={led.assigned} accent={led.color} onAction={onAction} />; })}<HardwareSwitch role={tempo.role} label="TEMPO" active={parameterLeds ? parameterLeds[9].active : snapshot.tempoLedEnabled} assigned={parameterLeds ? parameterLeds[9].assigned : snapshot.tempoLedEnabled} pulseBpm={!parameterLeds && snapshot.tempoLedEnabled ? snapshot.tempo : undefined} pulseEpochMs={!parameterLeds ? snapshot.tempoPulseEpochMs : undefined} accent={parameterLeds ? parameterLeds[9].color : QC_COLORS.device.tempoLed} onAction={onAction} /></div>
+      <div className="footswitch-row">{scenes.slice(4).map((control, index) => { const led = parameterLed(index + 5, leds[index + 4]); return <QcHardwareSwitch key={control.id} role={control.role} label={control.label} active={led.active} assigned={led.assigned} accent={led.color} onAction={onAction} />; })}<QcHardwareSwitch role={tempo.role} label="TEMPO" active={parameterLeds ? parameterLeds[9].active : snapshot.tempoLedEnabled} assigned={parameterLeds ? parameterLeds[9].assigned : snapshot.tempoLedEnabled} pulseBpm={!parameterLeds && snapshot.tempoLedEnabled ? snapshot.tempo : undefined} pulseEpochMs={!parameterLeds ? snapshot.tempoPulseEpochMs : undefined} accent={parameterLeds ? parameterLeds[9].color : QC_COLORS.device.tempoLed} onAction={onAction} /></div>
       <span className="tuner-hint">TEMPO<br />HOLD: TUNER</span>
     </div>
   </section>;
