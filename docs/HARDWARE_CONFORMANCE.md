@@ -118,10 +118,13 @@ binary payloads are redacted or hashed.
 `--persistent`, `--system`, and `--screen-tap` require `--live`, because the
 suite uses live preset recall for safe scratch entry and failure restoration.
 `--tuner` enables the guarded tuner-setting group. These writes invisibly engage
-the tuner, so the harness restores its preferences and still requires a person
-to open and close the physical tuner once afterward. Backup is never implied by
+the tuner. When `--live` is also enabled, the harness immediately opens and
+closes the tuner remotely after restoring its preferences; a tuner-only run
+still reports the required manual open/close action. Backup is never implied by
 `--persistent`; it additionally requires `--backup`. `--all` enables all five
-mutation groups and backup together.
+mutation groups and backup together. Add `--stress` to collect the repeated
+performance evidence used by the release gate. Use `--stress-only --live` while
+iterating on the performance layer without rerunning unrelated one-pass cases.
 
 Finally, gate the release against both immutable reports:
 
@@ -181,9 +184,9 @@ node tools\verify-native-backup.mjs 5
 ```
 
 Focused transport regressions can exercise backup after both session restart
-paths, or after a synthesized touchscreen tap. The latter guards the required
-PRESS-then-RELEASE ordering; leaving the remote pointer pressed causes the QC to
-refuse a LocalBackup stream.
+paths, or after a synthesized touchscreen tap. The latter guards the
+hardware-confirmed RELEASE-then-PRESS wire ordering; leaving the remote pointer
+pressed causes the QC to refuse a LocalBackup stream.
 
 ```powershell
 node tools\verify-native-backup.mjs 1 --reset-session --disconnect-reconnect
@@ -203,10 +206,13 @@ hide stale or queued commands.
   the QC, not merely a successful send from the app.
 - UI feedback is immediate and the later device event agrees with it. A stale
   event may never move a control back during a drag or rapid double press.
-- For direct performance controls, click-to-send must be at most 20 ms and the
-  observed QC state event must be median 50 ms or less and p95 100 ms or less.
-  Preset recall, save, backup, and initial connection are measured separately
-  because the QC itself performs longer work.
+- For direct performance controls, click-to-accepted-queue must be at most 20 ms
+  and the aggregate observed QC state-event median must be 50 ms or less.
+  Footswitch, Scene, and Tempo event p95 must be at most 100 ms; Mode and Master
+  Volume p95 must be at most 200 ms, matching their physically measured CorOS
+  echo class. UP/DOWN preset navigation has a separate 2 s p95 gate. Save,
+  backup, and initial connection are measured separately because the QC itself
+  performs longer work.
 - Repeatable controls are exercised at least 20 times, including five rapid
   pairs: A-H, UP, DOWN, Mode, Scene, Tempo, and Master Volume.
 - The app screen and `capture_screen` device image agree after every stateful

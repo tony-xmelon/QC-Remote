@@ -46,6 +46,15 @@ test("physical HTTP reads retry transient relay disconnects without retrying ord
   assert.equal(attempts, 3);
 
   attempts = 0;
+  const recoveredDeviceRead = await retryTransientRead(async () => {
+    attempts += 1;
+    if (attempts === 1) throw new Error("The Quad Cortex did not return a valid device.captureScreen reply within 10 seconds");
+    return "screen";
+  }, { attempts: 2, intervalMs: 0 });
+  assert.equal(recoveredDeviceRead, "screen");
+  assert.equal(attempts, 2);
+
+  attempts = 0;
   await assert.rejects(
     retryTransientRead(async () => {
       attempts += 1;
@@ -216,13 +225,24 @@ test("release gate requires complete Windows and Android evidence for the curren
   }));
   const performanceEvidence = {
     controls: Object.fromEntries(REPEATABLE_PHYSICAL_CONTROLS.map((control) => [control, {
-      repetitions: MINIMUM_CONTROL_REPETITIONS, rapidPairs: MINIMUM_RAPID_PAIRS, failures: 0
+      repetitions: MINIMUM_CONTROL_REPETITIONS,
+      rapidPairs: MINIMUM_RAPID_PAIRS,
+      failures: 0,
+      eventLatencyMs: { p95: control === "mode" || control === "master_volume" ? 200 : 100 }
     }])),
-    sendLatencyMs: { max: MAXIMUM_SEND_LATENCY_MS },
+    sendLatencyMs: {
+      sampleCount: 12 * MINIMUM_CONTROL_REPETITIONS,
+      max: MAXIMUM_SEND_LATENCY_MS
+    },
     eventLatencyMs: {
-      sampleCount: REPEATABLE_PHYSICAL_CONTROLS.length * MINIMUM_CONTROL_REPETITIONS,
+      sampleCount: 12 * MINIMUM_CONTROL_REPETITIONS,
       median: MAXIMUM_EVENT_MEDIAN_MS,
       p95: MAXIMUM_EVENT_P95_MS
+    },
+    navigationLatencyMs: {
+      sampleCount: 2 * MINIMUM_CONTROL_REPETITIONS,
+      median: 1_000,
+      p95: 2_000
     }
   };
   const base = { contractSha256: contractDigest(contract), results, restoration: [{ name: "starting-preset", status: "passed" }], summary: { complete: true } };
@@ -282,26 +302,35 @@ test("physical transport health rejects disconnected, unsynchronized, stale, and
 
 test("physical performance evidence enforces repetitions, rapid pairs, and latency percentiles", () => {
   const controls = Object.fromEntries(REPEATABLE_PHYSICAL_CONTROLS.map((control) => [control, {
-    repetitions: 20, rapidPairs: 5, failures: 0
+    repetitions: 20,
+    rapidPairs: 5,
+    failures: 0,
+    eventLatencyMs: { p95: control === "mode" || control === "master_volume" ? 200 : 100 }
   }]));
   const healthy = {
     controls,
-    sendLatencyMs: { max: 20 },
-    eventLatencyMs: { sampleCount: 280, median: 50, p95: 100 }
+    sendLatencyMs: { sampleCount: 240, max: 20 },
+    eventLatencyMs: { sampleCount: 240, median: 50, p95: 100 },
+    navigationLatencyMs: { sampleCount: 40, median: 1_000, p95: 2_000 }
   };
   assert.deepEqual(validatePerformanceEvidence("android", healthy), []);
   const broken = structuredClone(healthy);
   broken.controls.footswitch_a = { repetitions: 19, rapidPairs: 4, failures: 1 };
   broken.sendLatencyMs.max = 21;
-  broken.eventLatencyMs = { sampleCount: 279, median: 51, p95: 101 };
+  broken.sendLatencyMs.sampleCount = 239;
+  broken.eventLatencyMs = { sampleCount: 239, median: 51, p95: 101 };
+  broken.navigationLatencyMs = { sampleCount: 39, median: 1_000, p95: 2_001 };
   const errors = validatePerformanceEvidence("android", broken);
   assert.ok(errors.some((error) => error.includes("footswitch_a was not exercised")));
   assert.ok(errors.some((error) => error.includes("rapid pairs")));
   assert.ok(errors.some((error) => error.includes("contains failures")));
   assert.ok(errors.some((error) => error.includes("send latency")));
-  assert.ok(errors.some((error) => error.includes("fewer than 280 samples")));
+  assert.ok(errors.some((error) => error.includes("send-latency evidence has fewer than 240 samples")));
+  assert.ok(errors.some((error) => error.includes("event-latency evidence has fewer than 240 samples")));
   assert.ok(errors.some((error) => error.includes("median")));
   assert.ok(errors.some((error) => error.includes("p95")));
+  assert.ok(errors.some((error) => error.includes("preset-navigation evidence has fewer than 40 samples")));
+  assert.ok(errors.some((error) => error.includes("preset-navigation p95")));
 });
 
 test("physical performance samples retain honest dispatch and event percentiles", () => {
@@ -314,10 +343,19 @@ test("physical performance samples retain honest dispatch and event percentiles"
     }))
   ]));
   const evidence = summarizePerformanceSamples(samples);
-  assert.deepEqual(evidence.controls.footswitch_a, { repetitions: 20, rapidPairs: 5, failures: 0 });
-  assert.equal(evidence.sendLatencyMs.sampleCount, 280);
+  assert.deepEqual(evidence.controls.footswitch_a, {
+    repetitions: 20,
+    rapidPairs: 5,
+    failures: 0,
+    sendLatencyMs: { sampleCount: 20, max: 20 },
+    eventLatencyMs: { sampleCount: 20, median: 11, p95: 20, max: 21 }
+  });
+  assert.equal(evidence.sendLatencyMs.sampleCount, 240);
   assert.equal(evidence.sendLatencyMs.max, 20);
-  assert.equal(evidence.eventLatencyMs.sampleCount, 280);
+  assert.equal(evidence.eventLatencyMs.sampleCount, 240);
   assert.equal(evidence.eventLatencyMs.median, 11);
   assert.equal(evidence.eventLatencyMs.p95, 20);
+  assert.equal(evidence.navigationLatencyMs.sampleCount, 40);
+  assert.equal(evidence.navigationLatencyMs.median, 11);
+  assert.equal(evidence.navigationLatencyMs.p95, 20);
 });

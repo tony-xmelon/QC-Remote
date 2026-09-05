@@ -480,6 +480,30 @@ fn execute_planned_write(
     }
 }
 
+fn execute_realtime_planned_write(
+    controller: &DeviceController,
+    write: &PlannedWrite,
+) -> Result<(), String> {
+    match write {
+        PlannedWrite::HidCommand(command) => {
+            controller.send_realtime_command(command.clone().encode())
+        }
+        PlannedWrite::HidOperation(operation) => {
+            for message in operation
+                .clone()
+                .try_encode()
+                .map_err(|error| error.to_string())?
+            {
+                controller.send_realtime_command(message)?;
+            }
+            Ok(())
+        }
+        PlannedWrite::MidiControlChange { .. } => {
+            Err("Host MIDI must be executed by the native application transport".into())
+        }
+    }
+}
+
 fn accepted_unverified(detail: impl Into<String>) -> Value {
     json!({
         "accepted": true,
@@ -872,12 +896,13 @@ fn gateway_operation(
     method: &str,
 ) -> Result<Value, String> {
     let plan = plan_gateway_write(controller, method, params)?;
+    if runtime_request::gateway_write_is_realtime(method) {
+        execute_realtime_planned_write(controller, &plan.write)?;
+        return Ok(accepted_unverified(plan.detail));
+    }
     let events = controller.subscribe_state_events();
     let after_sequence = controller.latest_state_sequence();
     execute_gateway_write(controller, &plan)?;
-    if runtime_request::gateway_write_is_realtime(method) {
-        return Ok(accepted_unverified(plan.detail));
-    }
     if !plan.verification.requires_authoritative_readback() {
         let Some(read_method) = runtime_request::gateway_write_readback_method(method) else {
             return Ok(accepted_unverified(plan.detail));

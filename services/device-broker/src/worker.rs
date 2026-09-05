@@ -76,6 +76,7 @@ enum Command {
     },
     Disconnect,
     Send(u16, Vec<u8>, mpsc::Sender<Result<(), String>>),
+    SendRealtime(u16, Vec<u8>),
     SendSequence {
         messages: Vec<OutboundMessage>,
         delay: Duration,
@@ -448,6 +449,18 @@ impl DeviceController {
 
     pub fn send_command(&self, message: OutboundMessage) -> Result<(), String> {
         self.send(message.message_type, message.payload)
+    }
+
+    /// Queue a realtime report on the permanent USB worker. The QC accepts the
+    /// report before its Windows HID status stage completes, so UI/MCP latency
+    /// must not include that expected stall.
+    pub fn send_realtime_command(&self, message: OutboundMessage) -> Result<(), String> {
+        if !self.state.lock_recover().connected {
+            return Err("Quad Cortex is not connected".into());
+        }
+        self.commands
+            .send(Command::SendRealtime(message.message_type, message.payload))
+            .map_err(|error| error.to_string())
     }
 
     pub fn send_sequence(
@@ -873,6 +886,14 @@ fn run(
                         Err("Quad Cortex is not connected".into())
                     };
                     let _ = reply.send(result);
+                }
+                Command::SendRealtime(message_type, payload) => {
+                    if let Some(connected) = connection.as_mut() {
+                        thread::sleep(command_not_before.saturating_duration_since(Instant::now()));
+                        connected.usb.send(message_type, payload);
+                        update_usb_telemetry(&state, connected);
+                        session.outbound(session_clock.elapsed().as_millis() as u64);
+                    }
                 }
                 Command::SendSequence {
                     messages,
@@ -1301,6 +1322,15 @@ mod tests {
         assert_eq!(status.phase, "searching");
         assert!(!status.connected);
         assert!(!status.synchronized);
+    }
+
+    #[test]
+    fn realtime_queue_rejects_a_disconnected_session_before_acceptance() {
+        let controller = DeviceController::start_disconnected();
+        let error = controller
+            .send_realtime_command(commands::select_scene(1))
+            .expect_err("disconnected realtime send must fail");
+        assert!(error.contains("not connected"));
     }
 
     #[test]

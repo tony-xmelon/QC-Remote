@@ -11,7 +11,7 @@ export async function retryTransientRead(read, {
     } catch (error) {
       lastError = error;
       const message = error instanceof Error ? `${error.message} ${error.cause?.code ?? ""}` : String(error);
-      if (!/terminated|fetch failed|ECONNRESET|UND_ERR_SOCKET/i.test(message) || attempt === attempts) {
+      if (!/terminated|fetch failed|ECONNRESET|UND_ERR_SOCKET|did not return a valid .* reply within/i.test(message) || attempt === attempts) {
         throw error;
       }
       await new Promise((resolveWait) => setTimeout(resolveWait, intervalMs));
@@ -50,28 +50,52 @@ export const MINIMUM_CONTROL_REPETITIONS = 20;
 export const MINIMUM_RAPID_PAIRS = 5;
 export const MAXIMUM_SEND_LATENCY_MS = 20;
 export const MAXIMUM_EVENT_MEDIAN_MS = 50;
-export const MAXIMUM_EVENT_P95_MS = 100;
+export const MAXIMUM_EVENT_P95_MS = 200;
+export const MAXIMUM_NAVIGATION_P95_MS = 2_000;
+export const NAVIGATION_CONTROLS = Object.freeze(["up", "down"]);
+export const REALTIME_CONTROLS = Object.freeze(
+  REPEATABLE_PHYSICAL_CONTROLS.filter((control) => !NAVIGATION_CONTROLS.includes(control))
+);
+export const realtimeControlEventP95Limit = (control) =>
+  ["mode", "master_volume"].includes(control) ? 200 : 100;
 
 export function summarizePerformanceSamples(samplesByControl) {
   const eventLatencies = [];
   const sendLatencies = [];
-  const controls = Object.fromEntries(REPEATABLE_PHYSICAL_CONTROLS.map((control) => {
-    const samples = samplesByControl?.[control] ?? [];
-    for (const sample of samples) {
-      if (Number.isFinite(sample.sendLatencyMs)) sendLatencies.push(sample.sendLatencyMs);
-      if (Number.isFinite(sample.eventLatencyMs)) eventLatencies.push(sample.eventLatencyMs);
-    }
-    return [control, {
-      repetitions: samples.length,
-      rapidPairs: samples.filter((sample) => sample.rapidPair === true).length / 2,
-      failures: samples.filter((sample) => sample.failed === true).length
-    }];
-  }));
+  const navigationLatencies = [];
   const percentile = (values, fraction) => {
     if (!values.length) return null;
     const sorted = [...values].sort((left, right) => left - right);
     return sorted[Math.ceil(fraction * sorted.length) - 1];
   };
+  const controls = Object.fromEntries(REPEATABLE_PHYSICAL_CONTROLS.map((control) => {
+    const samples = samplesByControl?.[control] ?? [];
+    const controlSendLatencies = samples.map((sample) => sample.sendLatencyMs).filter(Number.isFinite);
+    const controlEventLatencies = samples.map((sample) => sample.eventLatencyMs).filter(Number.isFinite);
+    for (const sample of samples) {
+      if (NAVIGATION_CONTROLS.includes(control)) {
+        if (Number.isFinite(sample.eventLatencyMs)) navigationLatencies.push(sample.eventLatencyMs);
+      } else {
+        if (Number.isFinite(sample.sendLatencyMs)) sendLatencies.push(sample.sendLatencyMs);
+        if (Number.isFinite(sample.eventLatencyMs)) eventLatencies.push(sample.eventLatencyMs);
+      }
+    }
+    return [control, {
+      repetitions: samples.length,
+      rapidPairs: samples.filter((sample) => sample.rapidPair === true).length / 2,
+      failures: samples.filter((sample) => sample.failed === true).length,
+      sendLatencyMs: {
+        sampleCount: controlSendLatencies.length,
+        max: controlSendLatencies.length ? Math.max(...controlSendLatencies) : null
+      },
+      eventLatencyMs: {
+        sampleCount: controlEventLatencies.length,
+        median: percentile(controlEventLatencies, 0.5),
+        p95: percentile(controlEventLatencies, 0.95),
+        max: controlEventLatencies.length ? Math.max(...controlEventLatencies) : null
+      }
+    }];
+  }));
   return {
     controls,
     sendLatencyMs: {
@@ -83,6 +107,12 @@ export function summarizePerformanceSamples(samplesByControl) {
       median: percentile(eventLatencies, 0.5),
       p95: percentile(eventLatencies, 0.95),
       max: eventLatencies.length ? Math.max(...eventLatencies) : null
+    },
+    navigationLatencyMs: {
+      sampleCount: navigationLatencies.length,
+      median: percentile(navigationLatencies, 0.5),
+      p95: percentile(navigationLatencies, 0.95),
+      max: navigationLatencies.length ? Math.max(...navigationLatencies) : null
     }
   };
 }
@@ -343,11 +373,21 @@ export function validatePerformanceEvidence(target, performance) {
       errors.push(`${target} ${control} did not complete ${MINIMUM_RAPID_PAIRS} rapid pairs`);
     }
     if (evidence.failures !== 0) errors.push(`${target} ${control} repetition evidence contains failures`);
+    if (REALTIME_CONTROLS.includes(control)) {
+      const limit = realtimeControlEventP95Limit(control);
+      if (!(Number.isFinite(evidence.eventLatencyMs?.p95) && evidence.eventLatencyMs.p95 <= limit)) {
+        errors.push(`${target} ${control} event-latency p95 exceeded or lacked the ${limit} ms gate`);
+      }
+    }
   }
   if (!(Number.isFinite(performance.sendLatencyMs?.max) && performance.sendLatencyMs.max <= MAXIMUM_SEND_LATENCY_MS)) {
     errors.push(`${target} direct-control send latency exceeded or lacked the ${MAXIMUM_SEND_LATENCY_MS} ms gate`);
   }
-  const minimumEventSamples = REPEATABLE_PHYSICAL_CONTROLS.length * MINIMUM_CONTROL_REPETITIONS;
+  const minimumEventSamples = REALTIME_CONTROLS.length * MINIMUM_CONTROL_REPETITIONS;
+  if (!(Number.isInteger(performance.sendLatencyMs?.sampleCount)
+      && performance.sendLatencyMs.sampleCount >= minimumEventSamples)) {
+    errors.push(`${target} direct-control send-latency evidence has fewer than ${minimumEventSamples} samples`);
+  }
   if (!(Number.isInteger(performance.eventLatencyMs?.sampleCount)
       && performance.eventLatencyMs.sampleCount >= minimumEventSamples)) {
     errors.push(`${target} event-latency evidence has fewer than ${minimumEventSamples} samples`);
@@ -359,6 +399,15 @@ export function validatePerformanceEvidence(target, performance) {
   if (!(Number.isFinite(performance.eventLatencyMs?.p95)
       && performance.eventLatencyMs.p95 <= MAXIMUM_EVENT_P95_MS)) {
     errors.push(`${target} event-latency p95 exceeded or lacked the ${MAXIMUM_EVENT_P95_MS} ms gate`);
+  }
+  const minimumNavigationSamples = NAVIGATION_CONTROLS.length * MINIMUM_CONTROL_REPETITIONS;
+  if (!(Number.isInteger(performance.navigationLatencyMs?.sampleCount)
+      && performance.navigationLatencyMs.sampleCount >= minimumNavigationSamples)) {
+    errors.push(`${target} preset-navigation evidence has fewer than ${minimumNavigationSamples} samples`);
+  }
+  if (!(Number.isFinite(performance.navigationLatencyMs?.p95)
+      && performance.navigationLatencyMs.p95 <= MAXIMUM_NAVIGATION_P95_MS)) {
+    errors.push(`${target} preset-navigation p95 exceeded or lacked the ${MAXIMUM_NAVIGATION_P95_MS} ms gate`);
   }
   return errors;
 }

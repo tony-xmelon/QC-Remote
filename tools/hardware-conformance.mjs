@@ -16,9 +16,11 @@ import {
   redactEvidence,
   retryTransientRead,
   resultSnapshot,
+  summarizePerformanceSamples,
   summarizePhysicalResults,
   validateConfig,
   validateCoverage,
+  validatePerformanceEvidence,
   waitForPhysicalObservation
 } from "./hardware-conformance-lib.mjs";
 
@@ -36,6 +38,8 @@ const execute = has("--execute");
 const discover = has("--discover");
 const prepare = has("--prepare");
 const requireAll = has("--require-all");
+const stressOnly = has("--stress-only");
+const stressEnabled = has("--stress") || stressOnly || requireAll;
 const releaseCandidatePath = option("--release-candidate");
 const backupEnabled = has("--backup") || has("--all");
 const enabledHazards = new Set(["read"]);
@@ -98,7 +102,10 @@ class FramedStdioTransport {
   call(name, args) {
     const action = contract.actions.find((candidate) => candidate.name === name);
     if (!action) throw new Error(`Unknown action ${name}.`);
-    return this.request(action.rpc, gatewayArguments(name, args));
+    const invoke = () => this.request(action.rpc, gatewayArguments(name, args));
+    return CASES[name]?.hazard === "read"
+      ? retryTransientRead(invoke, { attempts: 2, intervalMs: 250 })
+      : invoke();
   }
   async close() {
     const child = this.child;
@@ -247,6 +254,9 @@ async function main() {
   if ([...enabledHazards].some((value) => value !== "read")) assertMutationAcknowledged();
   if ((enabledHazards.has("persistent") || enabledHazards.has("system") || enabledHazards.has("screen")) && !enabledHazards.has("live")) {
     throw new Error("Persistent, system, and screen cases require --live because safe scratch-preset entry and restoration use live actions.");
+  }
+  if (stressEnabled && !enabledHazards.has("live")) {
+    throw new Error("--stress requires --live because every performance control changes live device state.");
   }
   if (enabledHazards.has("persistent")) assertDisposableSlots(config, [config.persistent.slotA, config.persistent.slotB]);
 
@@ -498,10 +508,51 @@ async function main() {
     currentSnapshot = value;
     return value;
   };
+  const stableSnapshot = async (timeoutMs = 10000) => {
+    let previousIdentity;
+    let repeated = 0;
+    const observed = await waitForPhysicalObservation(
+      async () => {
+        const value = await transport.call("get_current_preset", {});
+        const identityKey = value?.setlistKey && Number.isInteger(value?.presetPosition)
+          ? `${value.setlistKey}\u0000${value.presetPosition}\u0000${value.presetName}`
+          : undefined;
+        repeated = identityKey && identityKey === previousIdentity ? repeated + 1 : 1;
+        previousIdentity = identityKey;
+        return { value, stable: Boolean(identityKey) && repeated >= 2 };
+      },
+      (value) => value.stable,
+      { timeoutMs, intervalMs: 250, label: "two identical complete QC preset identities" }
+    );
+    currentSnapshot = observed.value;
+    return observed.value;
+  };
   const waitForSnapshot = async (predicate, timeoutMs = 5000) => {
     return waitForPhysicalObservation(snapshot, predicate, {
       timeoutMs, intervalMs: 100, consecutiveMatches: 2, label: "two stable QC preset snapshots"
     });
+  };
+  const latestStateSequence = async () => {
+    const value = await transport.call("get_state_events", { after_sequence: 0, limit: 256 });
+    return value.frames?.at(-1)?.sequence ?? 0;
+  };
+  const waitForOrderedStateFrames = async (afterSequence, predicates, timeoutMs = 2000) => {
+    return waitForPhysicalObservation(
+      async () => {
+        const value = await transport.call("get_state_events", {
+          after_sequence: afterSequence,
+          limit: 256
+        });
+        const matched = [];
+        for (const frame of value.frames ?? []) {
+          if (predicates[matched.length]?.(frame)) matched.push(frame);
+          if (matched.length === predicates.length) break;
+        }
+        return matched;
+      },
+      (matched) => matched.length === predicates.length,
+      { timeoutMs, intervalMs: 5, label: `${predicates.length} ordered QC state event${predicates.length === 1 ? "" : "s"}` }
+    );
   };
   const waitForMasterVolume = async (expected, timeoutMs = 5000) => {
     return waitForPhysicalObservation(
@@ -609,6 +660,74 @@ async function main() {
     }
     assert(currentSnapshot.presetName.startsWith(config.scratchPreset.requiredNamePrefix), "Scratch preset name does not match requiredNamePrefix.");
   };
+  const performanceSamples = Object.fromEntries([
+    "footswitch_a", "footswitch_b", "footswitch_c", "footswitch_d",
+    "footswitch_e", "footswitch_f", "footswitch_g", "footswitch_h",
+    "up", "down", "mode", "scene", "tempo", "master_volume"
+  ].map((control) => [control, []]));
+  const exerciseRealtime = async (control, operations, rapidPair = false) => {
+    const afterSequence = await latestStateSequence();
+    const attempts = [];
+    for (const { name, args, predicate } of operations) {
+      const startedAt = Date.now();
+      attempts.push({
+        startedAt,
+        predicate,
+        promise: transport.call(name, args).then((value) => ({
+          value,
+          completedAt: Date.now()
+        }))
+      });
+      if (rapidPair && attempts.length < operations.length) await sleep(25);
+    }
+    try {
+      const completed = await Promise.all(attempts.map((attempt) => attempt.promise));
+      const frames = await waitForOrderedStateFrames(
+        afterSequence,
+        attempts.map((attempt) => (frame) =>
+          Number(frame.observedAt) >= attempt.startedAt && attempt.predicate(frame))
+      );
+      attempts.forEach((attempt, index) => {
+        const result = completed[index];
+        const sendLatencyMs = Number.isFinite(result.value?.dispatchLatencyMs)
+          ? result.value.dispatchLatencyMs
+          : result.completedAt - attempt.startedAt;
+        const eventLatencyMs = Number(frames[index].observedAt) - attempt.startedAt;
+        assert(eventLatencyMs >= 0, `${control} state event predates its physical send.`);
+        performanceSamples[control].push({
+          sendLatencyMs,
+          eventLatencyMs,
+          rapidPair,
+          failed: false
+        });
+      });
+    } catch (error) {
+      for (let index = 0; index < operations.length; index += 1) {
+        performanceSamples[control].push({ rapidPair, failed: true });
+      }
+      throw new Error(`${control} physical performance sample failed: ${error instanceof Error ? error.message : error}`);
+    }
+  };
+  const exerciseNavigation = async (control, direction, rapidPair) => {
+    const startedAt = Date.now();
+    try {
+      const value = await transport.call("navigate_bank", {
+        direction,
+        expected_preset_name: currentSnapshot.presetName,
+        expected_position: currentSnapshot.presetPosition
+      });
+      const completedAt = Date.now();
+      currentSnapshot = resultSnapshot(value) ?? await snapshot();
+      performanceSamples[control].push({
+        eventLatencyMs: completedAt - startedAt,
+        rapidPair,
+        failed: false
+      });
+    } catch (error) {
+      performanceSamples[control].push({ rapidPair, failed: true });
+      throw error;
+    }
+  };
 
   try {
     await transport.start();
@@ -628,13 +747,21 @@ async function main() {
       await transport.call("reset_device_session", { confirm_risky_operation: true });
     }
 
+    await stableSnapshot();
     originalSnapshot = await call("get_current_preset", {}, (value) => {
       assert(Array.isArray(value.blocks) && Array.isArray(value.routes), "Preset snapshot is incomplete.");
+      assert(value.setlistKey && Number.isInteger(value.presetPosition), "Preset identity is incomplete.");
     });
     currentSnapshot = originalSnapshot;
     identity = await call("get_device_identity", {}, (value) => assert(typeof value.serial === "string" && value.serial.endsWith(config.safety.expectedSerialSuffix), "Connected QC serial does not match expectedSerialSuffix."));
     deviceAuthorized = true;
+    if (enabledHazards.has("tuner") && enabledHazards.has("live")) {
+      // A previously interrupted tuner-setting run can leave CorOS's invisible
+      // tuner session active even though its preferences were restored.
+      await transport.call("show_tuner", { shown: false });
+    }
     await call("get_state_events", { after_sequence: 0, limit: 256 }, (value) => assert(Array.isArray(value.frames), "State event result has no frames array."));
+    if (!stressOnly) {
     await call("get_tempo_clock", {}, (value) => assert(typeof value.available === "boolean", "Tempo clock availability is missing."));
     await call("get_inhibited_modules", {}, (value) => assert(typeof value.globalGate === "boolean" && typeof value.globalEq === "boolean", "Inhibited module state is invalid."));
     originalTunerSettings = await call("get_tuner_settings", {}, (value) => assert(
@@ -689,6 +816,11 @@ async function main() {
       tuner = await transport.call("get_tuner_settings", {});
       assert(tuner.muted === false, "restore_tuner_audio did not clear the mute preference.");
       report.manualActionRequired = "Open and close the tuner once on the physical QC to release the invisible tuner session.";
+      if (enabledHazards.has("live")) {
+        await transport.call("show_tuner", { shown: true });
+        await transport.call("show_tuner", { shown: false });
+        delete report.manualActionRequired;
+      }
     }
     originalGeneralSettings = await call("get_general_settings", {}, (value) => assert(
       Number.isInteger(value.sceneBypassBehavior === "alwaysOverwrite" ? 0 : value.sceneBypassBehavior === "nonstompOverwrite" ? 1 : value.sceneBypassBehavior === "neverOverwrite" ? 2 : NaN),
@@ -736,6 +868,10 @@ async function main() {
     await call("list_models", { query: null }, (value) => assert(Array.isArray(value.models) && value.models.length > 0, "Model list is empty."));
     const masterState = await call("get_master_volume", {}, (value) => assert(Number.isFinite(value.value), "Master volume is invalid."));
     originalMasterVolume = masterState.value;
+    } else {
+      const masterState = await call("get_master_volume", {}, (value) => assert(Number.isFinite(value.value), "Master volume is invalid."));
+      originalMasterVolume = masterState.value;
+    }
 
     if (enabledHazards.has("live") || enabledHazards.has("persistent") || enabledHazards.has("system") || enabledHazards.has("screen")) {
       const scratchAlreadyActive = currentSnapshot.setlistKey === config.scratchPreset.setlistKey
@@ -809,7 +945,7 @@ async function main() {
       await call("get_lane_control_details", { row: 0, control: "inputGate", expected_preset_name: originalSnapshot.presetName }, (value) => assert(Array.isArray(value.parameters), "Input Gate details are invalid."));
     }
 
-    if (enabledHazards.has("live")) {
+    if (enabledHazards.has("live") && !stressOnly) {
       const originalScene = currentSnapshot.activeScene;
       const selectedScene = config.performance.scene === originalScene
         ? (originalScene + 1) % 8
@@ -1208,6 +1344,237 @@ async function main() {
       await call("navigate_bank", { direction: 1, expected_preset_name: currentSnapshot.presetName, expected_position: currentSnapshot.presetPosition });
       currentSnapshot = await snapshot();
       await restoreScratch();
+    }
+
+    if (stressEnabled) {
+      process.stdout.write("STRESS 14 physical performance controls ... ");
+      await restoreScratch();
+      const modeBySlot = new Map(currentSnapshot.modeSlots.map((slot) => [slot.slot, slot.mode]));
+      if (currentSnapshot.mode !== "STOMP") {
+        const stompSlot = currentSnapshot.modeSlots.find((slot) => slot.mode === "STOMP")?.slot;
+        assert(Number.isInteger(stompSlot), "Performance stress requires a configured STOMP mode slot.");
+        await transport.call("select_mode_slot", {
+          slot: stompSlot,
+          expected_preset_name: currentSnapshot.presetName
+        });
+        currentSnapshot = await waitForSnapshot((value) => value.mode === "STOMP");
+      }
+
+      const occupied = new Set(currentSnapshot.blocks.map((block) => `${block.row}:${block.column}`));
+      const emptyCells = [];
+      for (let row = 3; row >= 0; row -= 1) {
+        for (let column = 0; column < 8; column += 1) {
+          if (!occupied.has(`${row}:${column}`)) emptyCells.push({ row, column });
+        }
+      }
+      assert(emptyCells.length >= 8, "Performance stress requires eight temporary Grid cells for A-H verification.");
+      const stressBlocks = [];
+      for (let footswitch = 0; footswitch < 8; footswitch += 1) {
+        const cell = emptyCells[footswitch];
+        await transport.call("add_block", {
+          row: cell.row,
+          column: cell.column,
+          model_id: config.temporaryBlock.modelId,
+          expected_preset_name: currentSnapshot.presetName
+        });
+        currentSnapshot = await waitForSnapshot((value) => value.blocks.some((block) =>
+          block.row === cell.row && block.column === cell.column
+            && block.modelId === config.temporaryBlock.modelId));
+        const block = currentSnapshot.blocks.find((candidate) =>
+          candidate.row === cell.row && candidate.column === cell.column);
+        await transport.call("set_block_footswitch", {
+          row: cell.row,
+          column: cell.column,
+          footswitch,
+          expected_footswitch: block.footswitch ?? null,
+          expected_model_id: block.modelId,
+          expected_preset_name: currentSnapshot.presetName
+        });
+        currentSnapshot = await waitForSnapshot((value) => value.blocks.some((candidate) =>
+          candidate.row === cell.row && candidate.column === cell.column
+            && candidate.footswitch === footswitch));
+        const state = currentSnapshot.footswitchStates?.find((candidate) => candidate.index === footswitch);
+        if (state?.momentary === true) {
+          await transport.call("set_stomp_momentary", {
+            footswitch,
+            momentary: false,
+            expected_preset_name: currentSnapshot.presetName
+          });
+          currentSnapshot = await waitForSnapshot((value) => value.footswitchStates?.some((candidate) =>
+            candidate.index === footswitch && candidate.momentary === false));
+        }
+        const assignedBlock = currentSnapshot.blocks.find((candidate) =>
+          candidate.row === cell.row && candidate.column === cell.column);
+        assert(assignedBlock, `Temporary footswitch ${footswitch} block disappeared during assignment.`);
+        stressBlocks.push({ ...cell, bypassed: Boolean(assignedBlock.bypassed) });
+      }
+      const bypassFrame = (block, bypassed) => (frame) => frame.states?.some((state) =>
+        state.kind === "bypassBatch" && state.bypassUpdates?.some((update) =>
+          update.row === block.row && update.column === block.column
+            && Boolean(update.bypassed) === bypassed));
+      for (let footswitch = 0; footswitch < 8; footswitch += 1) {
+        const control = `footswitch_${String.fromCharCode(97 + footswitch)}`;
+        const block = stressBlocks[footswitch];
+        let bypassed = block.bypassed;
+        for (let repetition = 0; repetition < 10; repetition += 1) {
+          bypassed = !bypassed;
+          await exerciseRealtime(control, [{
+            name: "press_footswitch",
+            args: { index: footswitch, expected_mode: "STOMP", expected_preset_name: currentSnapshot.presetName },
+            predicate: bypassFrame(block, bypassed)
+          }]);
+        }
+        for (let pair = 0; pair < 5; pair += 1) {
+          const first = !bypassed;
+          const second = bypassed;
+          await exerciseRealtime(control, [{
+            name: "press_footswitch",
+            args: { index: footswitch, expected_mode: "STOMP", expected_preset_name: currentSnapshot.presetName },
+            predicate: bypassFrame(block, first)
+          }], true);
+          await exerciseRealtime(control, [{
+            name: "press_footswitch",
+            args: { index: footswitch, expected_mode: "STOMP", expected_preset_name: currentSnapshot.presetName },
+            predicate: bypassFrame(block, second)
+          }], true);
+        }
+      }
+      await transport.call("reload_preset", {
+        expected_preset_name: currentSnapshot.presetName,
+        expected_position: currentSnapshot.presetPosition,
+        confirm_risky_operation: true
+      });
+      currentSnapshot = await waitForSnapshot((value) => !value.dirty);
+
+      const exerciseAlternating = async ({ control, name, values, args, predicate, guardedPair = false }) => {
+        let current = values[0];
+        for (let repetition = 0; repetition < 10; repetition += 1) {
+          const target = current === values[0] ? values[1] : values[0];
+          await exerciseRealtime(control, [{
+            name,
+            args: args(target, current),
+            predicate: predicate(target)
+          }]);
+          current = target;
+        }
+        for (let pair = 0; pair < 5; pair += 1) {
+          const first = current === values[0] ? values[1] : values[0];
+          if (guardedPair) {
+            await exerciseRealtime(control, [
+              { name, args: args(first, current), predicate: predicate(first) }
+            ], true);
+            await exerciseRealtime(control, [
+              { name, args: args(current, first), predicate: predicate(current) }
+            ], true);
+          } else {
+            await exerciseRealtime(control, [
+              { name, args: args(first, current), predicate: predicate(first) },
+              { name, args: args(current, first), predicate: predicate(current) }
+            ], true);
+          }
+        }
+        return current;
+      };
+
+      const baseScene = currentSnapshot.activeScene;
+      const alternateScene = baseScene === 0 ? 1 : 0;
+      await exerciseAlternating({
+        control: "scene",
+        name: "select_scene",
+        values: [baseScene, alternateScene],
+        args: (scene) => ({ scene, expected_preset_name: currentSnapshot.presetName }),
+        predicate: (scene) => (frame) => frame.states?.some((state) =>
+          state.kind === "scene" && state.activeScene === scene)
+      });
+
+      const distinctModes = currentSnapshot.modeSlots
+        .filter((slot, index, slots) => slots.findIndex((candidate) => candidate.mode === slot.mode) === index)
+        .slice(0, 2);
+      assert(distinctModes.length === 2, "Performance stress requires two distinct configured mode slots.");
+      await transport.call("select_mode_slot", {
+        slot: distinctModes[0].slot,
+        expected_preset_name: currentSnapshot.presetName
+      });
+      currentSnapshot = await waitForSnapshot((value) => value.mode === distinctModes[0].mode);
+      await exerciseAlternating({
+        control: "mode",
+        name: "select_mode_slot",
+        values: [distinctModes[0].slot, distinctModes[1].slot],
+        args: (slot) => ({ slot, expected_preset_name: currentSnapshot.presetName }),
+        predicate: (slot) => (frame) => frame.states?.some((state) =>
+          state.kind === "mode" && state.mode === modeBySlot.get(slot))
+      });
+
+      currentSnapshot = await snapshot();
+      const originalStressTempo = currentSnapshot.tempo;
+      const alternateTempo = originalStressTempo === 120 ? 121 : 120;
+      await exerciseAlternating({
+        control: "tempo",
+        name: "set_tempo",
+        values: [originalStressTempo, alternateTempo],
+        args: (bpm, expectedTempo) => ({
+          bpm,
+          expected_tempo: expectedTempo,
+          expected_preset_name: currentSnapshot.presetName
+        }),
+        predicate: (bpm) => (frame) => frame.states?.some((state) =>
+          state.kind === "tempo" && state.tempo === bpm),
+        guardedPair: true
+      });
+
+      const originalStressVolume = (await transport.call("get_master_volume", {})).value;
+      const safeVolumes = [1, 2];
+      if (originalStressVolume !== safeVolumes[0]) {
+        await transport.call("set_master_volume", {
+          value: safeVolumes[0],
+          expected_value: originalStressVolume,
+          confirm_risky_operation: true
+        });
+        await waitForMasterVolume(safeVolumes[0]);
+      }
+      await exerciseAlternating({
+        control: "master_volume",
+        name: "set_master_volume",
+        values: safeVolumes,
+        args: (value, expectedValue) => ({
+          value,
+          expected_value: expectedValue,
+          confirm_risky_operation: true
+        }),
+        predicate: (value) => (frame) => frame.states?.some((state) =>
+          state.kind === "master" && Math.round(Number(state.masterVolume) * 100) === value),
+        guardedPair: true
+      });
+      await transport.call("set_master_volume", {
+        value: originalStressVolume,
+        expected_value: safeVolumes[0],
+        confirm_risky_operation: true
+      });
+      await waitForMasterVolume(originalStressVolume);
+
+      await transport.call("set_tempo", {
+        bpm: originalStressTempo,
+        expected_tempo: originalStressTempo,
+        expected_preset_name: currentSnapshot.presetName
+      });
+      for (let repetition = 0; repetition < 20; repetition += 1) {
+        const rapidPair = repetition < 10;
+        await exerciseNavigation("up", 1, rapidPair);
+        await exerciseNavigation("down", -1, rapidPair);
+        await restoreScratch();
+      }
+      report.performanceEvidence = {
+        ...summarizePerformanceSamples(performanceSamples),
+        methodology: {
+          ordinaryRepetitionsPerControl: 10,
+          rapidPairsPerControl: 5,
+          eventSource: "timestamped native QC state frames",
+          navigation: "UP/DOWN preset recalls are measured separately from realtime controls"
+        }
+      };
+      const performanceErrors = validatePerformanceEvidence(config.target, report.performanceEvidence);
+      assert(performanceErrors.length === 0, performanceErrors.join("; "));
+      console.log("PASS");
     }
 
     if (enabledHazards.has("persistent")) {
