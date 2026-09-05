@@ -8,7 +8,7 @@ Reference: physical Quad Cortex, CorOS 4.1.0, 800x480 framebuffer corpus
 | Client | Physical corpus rendered | Mean structural match | Mean color similarity |
 | --- | ---: | ---: | ---: |
 | Windows | 41/41 (100%) | **91.45%** | **97.39%** |
-| Android | 41/41 (100%) | **91.43%** | **97.39%** |
+| Android | 41/41 (100%) | **91.44%** | **97.39%** |
 
 These are native-size measurements, not audit estimates. Both hosts render the
 same versioned `coros410` scratch-preset fixture through `@ndsp-qc/ui`; each
@@ -68,8 +68,8 @@ comparison.
 
 | Client | Official frames rendered | Mean structural match | Mean color similarity |
 | --- | ---: | ---: | ---: |
-| Windows | 36/36 (100%) | **90.78%** | **97.11%** |
-| Android | 36/36 (100%) | **90.77%** | **97.11%** |
+| Windows | 36/36 (100%) | **90.87%** | **97.12%** |
+| Android | 36/36 (100%) | **90.87%** | **97.12%** |
 
 This broader corpus is deliberately reported separately from the 41-frame
 physical-device regression pack. It adds authoritative coverage for I/O,
@@ -103,7 +103,7 @@ join is in [the canonical coverage matrix](qc-screen-coverage-matrix.md).
 | `official-device-presets` | **88.56%** | **88.55%** |
 | `official-device-preset-actions` | **89.08%** | **89.08%** |
 | `official-expression-bypass` | **91.73%** | **91.79%** |
-| `official-looper` | **87.37%** | **87.37%** |
+| `official-looper` | **90.72%** | **90.73%** |
 | `official-directory-presets` | **91.97%** | **91.97%** |
 | `official-directory-favorites` | **91.22%** | **91.22%** |
 | `official-directory-captures` | **89.13%** | **89.13%** |
@@ -139,7 +139,7 @@ join is in [the canonical coverage matrix](qc-screen-coverage-matrix.md).
 | `device-browser-models-clean` | **88.64%** | **88.64%** |
 | `editor-simple-gate` | **92.56%** | **92.56%** |
 | `editor-chief-ds1` | **92.33%** | **92.33%** |
-| `editor-digital-flanger` | **87.27%** | **87.27%** |
+| `editor-digital-flanger` | **87.66%** | **87.68%** |
 | `editor-ukc30-topboost` | **91.06%** | **91.06%** |
 | `editor-ukc30-cab` | **93.18%** | **93.18%** |
 | `editor-parametric-8` | **88.50%** | **88.50%** |
@@ -172,6 +172,15 @@ join is in [the canonical coverage matrix](qc-screen-coverage-matrix.md).
 
 ## Improvements in this pass
 
+- Rebuilt Looper X's instruction spacing and action glyph geometry from the
+  official 800x480 reference, including the One Shot loop, numeric half-speed
+  mark, playback/reverse triangles, and Undo arrow. Looper rises from **87.36%
+  to 90.72% Windows / 90.73% Android structural match**, while color improves
+  from **96.95% to 97.16%**. Digital Flanger's measured two-page header also
+  rises from **87.41% / 87.43% to 87.66% / 87.68%**. The complete official
+  benchmark reaches **90.87% structural / 97.12% color** on both hosts; the
+  physical benchmark remains **91.45% Windows / 91.44% Android structural** and
+  **97.39% color**.
 - Reconstructed the physical device browser's selected empty slot, corrected
   the dimmed Grid opacity, restored the eight-pixel category scrollbar gutter,
   and aligned the centered `New` badge. A browser-specific header variant now

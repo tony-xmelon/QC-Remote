@@ -664,7 +664,7 @@ function CorOsDeviceBrowserFixture({ view }: { view: "device-search" | "device-f
 }
 
 function CorOsLooperEditor() {
-  const actions = [["DUPLICATE", "×1", "A"], ["ONE SHOT", "↻", "B"], ["HALF SPEED", "½", "C"], ["PUNCH IN", "▰", "D"], ["RECORD", "●", "E"], ["PLAY", "▶", "F"], ["REVERSE", "◀◀", "G"], ["UNDO", "↶", "H"]];
+  const actions = [["DUPLICATE", "×1", "A"], ["ONE SHOT", "↻", "B"], ["HALF SPEED", "1/2", "C"], ["PUNCH IN", "▰", "D"], ["RECORD", "●", "E"], ["PLAY", "▶", "F"], ["REVERSE", "◀◀", "G"], ["UNDO", "↶", "H"]];
   return <section className="qc-screen coros-looper" aria-label="Looper X editor"><header><button>⋮</button><span><small>LOOPER</small><strong>Looper X</strong></span><i /><button>◴　Params</button><button>◀　<b>A</b>　▶</button><button>✓</button></header><div className="looper-timeline"><span>USE <b>●</b> TO START RECORDING</span><span>USE <b className="looper-close-caret">⌃</b> TO CLOSE THE LOOPER VIEW</span><em>AVAILABLE 4:38</em></div><div className="looper-actions">{actions.map(([label, glyph, key]) => <button key={label}><small>{label}</small><strong>{glyph}</strong><b>{key}</b></button>)}</div></section>;
 }
 

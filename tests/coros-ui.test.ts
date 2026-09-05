@@ -814,3 +814,13 @@ test("physical device browser preserves its measured Grid chrome and selected sl
   assert.match(fixtureStyles, /\.coros-device-empty-slot \{[^}]*z-index: 31;[^}]*left: 322px;[^}]*top: 206px;/);
   assert.match(fixtureStyles, /\.coros-device-dismiss \{[^}]*background: #dfe3de49;/);
 });
+
+test("measured Flanger pagination and Looper action geometry stay shared", () => {
+  const fixtureSource = readFileSync(new URL("../packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", import.meta.url), "utf8");
+  const editorStyles = readFileSync(new URL("../packages/typescript/qc-ui/src/reference-parameter-editor.css", import.meta.url), "utf8");
+  const looperStyles = readFileSync(new URL("../packages/typescript/qc-ui/src/official-looper-eq.css", import.meta.url), "utf8");
+  assert.match(editorStyles, /\.editor-digital-flanger > header \.editor-pages \{ left: 61%; width: 19\.5%;[^}]*padding-left: \.125%;/);
+  assert.match(fixtureSource, /\["HALF SPEED", "1\/2", "C"\]/);
+  assert.match(looperStyles, /\.looper-timeline \{ gap: 2\.5cqw;/);
+  assert.match(looperStyles, /button:nth-child\(8\) strong \{[^}]*width: 5\.75cqw;[^}]*transform: translateY\(2px\);/);
+});

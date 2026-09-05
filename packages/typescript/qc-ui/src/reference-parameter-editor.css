@@ -207,7 +207,7 @@
 .editor-digital-flanger > header .editor-done { position: absolute; top: 1cqw; height: 5.5cqw; transform: none; }
 .editor-digital-flanger > header .editor-stomp { left: 34.25%; width: 8.25%; }
 .editor-digital-flanger > header .editor-scene { left: 43.5%; width: 16.5%; }
-.editor-digital-flanger > header .editor-pages { left: 61%; width: 19%; box-sizing: border-box; padding-left: 1%; }
+.editor-digital-flanger > header .editor-pages { left: 61%; width: 19.5%; box-sizing: border-box; padding-left: .125%; }
 .editor-digital-flanger > header .editor-pages > button { position: static; width: 100%; height: 100%; }
 .editor-digital-flanger > header .editor-bypass { left: 81.5%; width: 8.25%; }
 .editor-digital-flanger > header .editor-done { left: 90.75%; width: 8.25%; }
