@@ -15,7 +15,7 @@
 .plugin-folders-official > header .plugin-folder-category svg g { fill: currentColor; transform-box: fill-box; transform-origin: center; transform: scale(1.5); }
 .plugin-folders-official > header .plugin-folder-category small { font-size: 1.75cqw; }
 .plugin-folders-official > header button:nth-last-child(3), .plugin-folders-official > header button:nth-last-child(2) { transform: translateX(-1.25cqw); }
-.plugin-folders-official > main { height: 51.5cqw; display: grid; grid-template-columns: 32cqw 65cqw; gap: 1cqw; padding: 0 1cqw 1cqw; }
+.plugin-folders-official > main { position: absolute; inset: 7.5cqw 0 0; display: grid; grid-template-columns: 32cqw 65cqw; gap: 1cqw; padding: 0 1cqw 1cqw; }
 .plugin-folders-official nav, .plugin-folders-official main > section { overflow: hidden; border-radius: 1cqw; background: #282c28; }
 .plugin-folders-official nav { position: relative; }
 .plugin-folders-official nav::before { content: ""; position: absolute; left: 2cqw; top: 7.5cqw; width: 2cqw; height: 19cqw; border-left: 1px solid #4a504b; border-bottom: 1px solid #4a504b; border-radius: 0 0 0 1cqw; pointer-events: none; }

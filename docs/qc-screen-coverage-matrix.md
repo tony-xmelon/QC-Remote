@@ -13,7 +13,7 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 | Corpus | Windows structural | Windows color | Android structural | Android color |
 | --- | ---: | ---: | ---: | ---: |
 | Physical device | 91.55% | 97.39% | 91.54% | 97.39% |
-| Official manual | 90.88% | 97.12% | 90.87% | 97.12% |
+| Official manual | 91.11% | 97.12% | 91.11% | 97.12% |
 
 Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` color similarity. A canonical state that references multiple frames reports their mean. Detail evidence is scoped and therefore never promoted into a full-frame score.
 
@@ -87,7 +87,7 @@ Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` col
 | DB-03 | Device browser | First-use device-preset tooltip | physical frame | Built | Built | 89.10% / 89.10% | 97.69% / 97.69% | — / — | — / — |
 | DB-04 | Device browser | Search results | smoke only | Built | Built | — / — | — / — | — / — | — / — |
 | DB-05 | Device browser | Favorites / Recent models | smoke only | Built | Built | — / — | — / — | — / — | — / — |
-| DB-06 | Device browser | Plugin device folders | official frame | Built | Built | — / — | — / — | 87.92% / 87.91% | 99.05% / 99.05% |
+| DB-06 | Device browser | Plugin device folders | official frame | Built | Built | — / — | — / — | 96.44% / 96.44% | 99.21% / 99.21% |
 | DB-07 | Device browser | Plugin device list / license state | physical frame + official frame | Built | Built | 90.22% / 90.22% | 97.28% / 97.28% | 89.61% / 89.61% | 97.82% / 97.82% |
 | DB-08 | Device browser | Plugin refresh state | official detail | Built | Built | — / — | — / — | — / — | — / — |
 | DB-09 | Device browser | Locked plugin / license-not-found models | physical frame | Built | Built | 91.84% / 91.84% | 96.00% / 96.00% | — / — | — / — |

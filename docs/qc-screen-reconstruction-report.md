@@ -68,8 +68,8 @@ comparison.
 
 | Client | Official frames rendered | Mean structural match | Mean color similarity |
 | --- | ---: | ---: | ---: |
-| Windows | 36/36 (100%) | **90.88%** | **97.12%** |
-| Android | 36/36 (100%) | **90.87%** | **97.12%** |
+| Windows | 36/36 (100%) | **91.11%** | **97.12%** |
+| Android | 36/36 (100%) | **91.11%** | **97.12%** |
 
 This broader corpus is deliberately reported separately from the 41-frame
 physical-device regression pack. It adds authoritative coverage for I/O,
@@ -117,7 +117,7 @@ join is in [the canonical coverage matrix](qc-screen-coverage-matrix.md).
 | `official-capture-ab-test` | **88.57%** | **88.57%** |
 | `official-capture-metadata` | **92.95%** | **92.95%** |
 | `official-plugin-devices` | **89.66%** | **89.66%** |
-| `official-plugin-folders` | **87.91%** | **87.91%** |
+| `official-plugin-folders` | **96.44%** | **96.44%** |
 | `official-midi-settings` | **96.08%** | **96.08%** |
 | `official-midi-out` | **89.46%** | **89.43%** |
 | `official-settings-account` | **93.09%** | **93.09%** |
@@ -172,6 +172,12 @@ join is in [the canonical coverage matrix](qc-screen-coverage-matrix.md).
 
 ## Improvements in this pass
 
+- Corrected the official Plugin Folders browser so both content panels fill the
+  physical framebuffer instead of stopping at mid-screen. The frame rises from
+  **87.92% / 87.91% to 96.44% / 96.44% structural** and from **99.05% to
+  99.21% color** on Windows / Android. A complete 36-frame official-manual
+  rerun raises that corpus from **90.88% / 90.87% to 91.11% / 91.11%**
+  structural with no missing renders.
 - Replaced Digital Flanger's rotated constant encoder shadows with normalized
   280-degree progress arcs while preserving the measured Rate and Delay pointer
   angles. The frame rises from **87.66% / 87.68% to 88.10% / 88.11%** on
