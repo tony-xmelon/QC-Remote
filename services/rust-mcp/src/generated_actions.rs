@@ -5,7 +5,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         rpc: "device.reconnect",
         classification: Classification::RiskyWrite,
         description: "Reconnect the native Quad Cortex transport after explicit confirmation.",
-        properties: &[p!("confirm_risky_operation", BOOL)],
+        properties: &[p!("confirm_risky_operation", Kind::Boolean)],
         distinct_arguments: &[],
         gateway_arguments: &[],
         gateway_true_arguments: &[],
@@ -15,7 +15,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         rpc: "device.resetSession",
         classification: Classification::RiskyWrite,
         description: "Reset and re-synchronize the native Quad Cortex communication session after explicit confirmation.",
-        properties: &[p!("confirm_risky_operation", BOOL)],
+        properties: &[p!("confirm_risky_operation", Kind::Boolean)],
         distinct_arguments: &[],
         gateway_arguments: &[],
         gateway_true_arguments: &[],
@@ -25,7 +25,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         rpc: "device.disconnect",
         classification: Classification::RiskyWrite,
         description: "Close the native Quad Cortex transport after explicit confirmation.",
-        properties: &[p!("confirm_risky_operation", BOOL)],
+        properties: &[p!("confirm_risky_operation", Kind::Boolean)],
         distinct_arguments: &[],
         gateway_arguments: &[],
         gateway_true_arguments: &[],
@@ -45,7 +45,10 @@ pub static ACTIONS: &[ActionSpec] = &[
         rpc: "device.stateEvents",
         classification: Classification::Read,
         description: "Read native state frames after a sequence cursor.",
-        properties: &[p!("after_sequence", UINT), p!("limit", UINT)],
+        properties: &[
+            p!("after_sequence", Kind::Integer { min: 0, max: None }),
+            p!("limit", Kind::Integer { min: 0, max: None }),
+        ],
         distinct_arguments: &[],
         gateway_arguments: &[("after_sequence", "afterSequence"), ("limit", "limit")],
         gateway_true_arguments: &[],
@@ -66,9 +69,21 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::Read,
         description: "Read live parameters for one occupied Grid block, splitter, or mixer.",
         properties: &[
-            p!("row", GRID_ROW),
-            p!("column", PARAMETER_COLUMN),
-            p!("expected_preset_name", TEXT),
+            p!(
+                "row",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(3)
+                }
+            ),
+            p!(
+                "column",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(9)
+                }
+            ),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -84,9 +99,15 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::Read,
         description: "Read the Input Gate or Lane Output parameters attached to a signal row.",
         properties: &[
-            p!("row", GRID_ROW),
+            p!(
+                "row",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(3)
+                }
+            ),
             p!("control", Kind::StringEnum(&["inputGate", "laneOutput"])),
-            p!("expected_preset_name", TEXT),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -111,7 +132,10 @@ pub static ACTIONS: &[ActionSpec] = &[
         rpc: "device.listPresets",
         classification: Classification::Read,
         description: "List presets in a setlist, optionally refreshing the device index.",
-        properties: &[p!("refresh", BOOL), p!("setlist_key", Kind::NullableString)],
+        properties: &[
+            p!("refresh", Kind::Boolean),
+            p!("setlist_key", Kind::NullableString),
+        ],
         distinct_arguments: &[],
         gateway_arguments: &[("refresh", "refresh"), ("setlist_key", "setlistKey")],
         gateway_true_arguments: &[],
@@ -121,7 +145,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         rpc: "device.listPresetFolders",
         classification: Classification::Read,
         description: "List preset folders and setlists, optionally refreshing the device index.",
-        properties: &[p!("refresh", BOOL)],
+        properties: &[p!("refresh", Kind::Boolean)],
         distinct_arguments: &[],
         gateway_arguments: &[("refresh", "refresh")],
         gateway_true_arguments: &[],
@@ -189,8 +213,8 @@ pub static ACTIONS: &[ActionSpec] = &[
                     max: Some(9)
                 }
             ),
-            p!("confirm_tuner_activation", BOOL),
-            p!("confirm_risky_operation", BOOL),
+            p!("confirm_tuner_activation", Kind::Boolean),
+            p!("confirm_risky_operation", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -205,9 +229,9 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::RiskyWrite,
         description: "Change mute-while-tuning. This invisibly engages the tuner; enabling mute immediately silences all outputs.",
         properties: &[
-            p!("muted", BOOL),
-            p!("confirm_tuner_activation", BOOL),
-            p!("confirm_risky_operation", BOOL),
+            p!("muted", Kind::Boolean),
+            p!("confirm_tuner_activation", Kind::Boolean),
+            p!("confirm_risky_operation", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -222,8 +246,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::RiskyWrite,
         description: "Restore audio after a host tuner write by clearing the persistent mute-while-tuning preference.",
         properties: &[
-            p!("confirm_preference_reset", BOOL),
-            p!("confirm_risky_operation", BOOL),
+            p!("confirm_preference_reset", Kind::Boolean),
+            p!("confirm_risky_operation", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[("confirm_preference_reset", "confirmPreferenceReset")],
@@ -242,8 +266,8 @@ pub static ACTIONS: &[ActionSpec] = &[
                     max: Some(f64::MAX)
                 }
             ),
-            p!("confirm_tuner_activation", BOOL),
-            p!("confirm_risky_operation", BOOL),
+            p!("confirm_tuner_activation", Kind::Boolean),
+            p!("confirm_risky_operation", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -258,9 +282,9 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::Read,
         description: "Read the PNG thumbnail stored for a preset.",
         properties: &[
-            p!("folder_name", TEXT),
-            p!("position", UINT),
-            p!("is_factory", BOOL),
+            p!("folder_name", Kind::String),
+            p!("position", Kind::Integer { min: 0, max: None }),
+            p!("is_factory", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -286,13 +310,43 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Preview a block, splitter, or mixer parameter value without waiting for device verification.",
         properties: &[
-            p!("row", GRID_ROW),
-            p!("column", PARAMETER_COLUMN),
-            p!("parameter_index", UINT),
-            p!("value", NORMALIZED),
-            p!("expected_value", NORMALIZED),
-            p!("expected_scene", SCENE),
-            p!("expected_preset_name", TEXT),
+            p!(
+                "row",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(3)
+                }
+            ),
+            p!(
+                "column",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(9)
+                }
+            ),
+            p!("parameter_index", Kind::Integer { min: 0, max: None }),
+            p!(
+                "value",
+                Kind::Number {
+                    min: 0.0,
+                    max: Some(1.0)
+                }
+            ),
+            p!(
+                "expected_value",
+                Kind::Number {
+                    min: 0.0,
+                    max: Some(1.0)
+                }
+            ),
+            p!(
+                "expected_scene",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(7)
+                }
+            ),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -312,12 +366,30 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Preview an Input Gate or Lane Output parameter without waiting for device verification.",
         properties: &[
-            p!("row", GRID_ROW),
+            p!(
+                "row",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(3)
+                }
+            ),
             p!("control", Kind::StringEnum(&["inputGate", "laneOutput"])),
-            p!("parameter_index", UINT),
-            p!("value", NORMALIZED),
-            p!("expected_value", NORMALIZED),
-            p!("expected_preset_name", TEXT),
+            p!("parameter_index", Kind::Integer { min: 0, max: None }),
+            p!(
+                "value",
+                Kind::Number {
+                    min: 0.0,
+                    max: Some(1.0)
+                }
+            ),
+            p!(
+                "expected_value",
+                Kind::Number {
+                    min: 0.0,
+                    max: Some(1.0)
+                }
+            ),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -337,7 +409,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Create a complete local device backup after explicit confirmation.",
         properties: &[
             p!("name", Kind::VisibleString { max_chars: 64 }),
-            p!("confirm_persistent_write", BOOL),
+            p!("confirm_persistent_write", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[("name", "name")],
@@ -350,7 +422,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Change the Quad Cortex custom name after explicit confirmation.",
         properties: &[
             p!("name", Kind::VisibleString { max_chars: 64 }),
-            p!("confirm_persistent_write", BOOL),
+            p!("confirm_persistent_write", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[("name", "name")],
@@ -361,7 +433,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         rpc: "device.undo",
         classification: Classification::RiskyWrite,
         description: "Undo the most recent device edit after explicit confirmation.",
-        properties: &[p!("confirm_risky_operation", BOOL)],
+        properties: &[p!("confirm_risky_operation", Kind::Boolean)],
         distinct_arguments: &[],
         gateway_arguments: &[],
         gateway_true_arguments: &[],
@@ -371,7 +443,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         rpc: "device.redo",
         classification: Classification::RiskyWrite,
         description: "Redo the most recently undone device edit after explicit confirmation.",
-        properties: &[p!("confirm_risky_operation", BOOL)],
+        properties: &[p!("confirm_risky_operation", Kind::Boolean)],
         distinct_arguments: &[],
         gateway_arguments: &[],
         gateway_true_arguments: &[],
@@ -396,7 +468,7 @@ pub static ACTIONS: &[ActionSpec] = &[
                     max: Some(479)
                 }
             ),
-            p!("confirm_risky_operation", BOOL),
+            p!("confirm_risky_operation", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[("x", "x"), ("y", "y")],
@@ -407,7 +479,16 @@ pub static ACTIONS: &[ActionSpec] = &[
         rpc: "device.selectScene",
         classification: Classification::LiveWrite,
         description: "Immediately select a performance scene, numbered 0 through 7.",
-        properties: &[p!("scene", SCENE), p!("expected_preset_name", TEXT)],
+        properties: &[
+            p!(
+                "scene",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(7)
+                }
+            ),
+            p!("expected_preset_name", Kind::String),
+        ],
         distinct_arguments: &[],
         gateway_arguments: &[
             ("scene", "scene"),
@@ -421,10 +502,22 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Copy or swap two scenes in the current preset and verify the resulting scene state.",
         properties: &[
-            p!("from_scene", SCENE),
-            p!("to_scene", SCENE),
-            p!("swap", BOOL),
-            p!("expected_preset_name", TEXT),
+            p!(
+                "from_scene",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(7)
+                }
+            ),
+            p!(
+                "to_scene",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(7)
+                }
+            ),
+            p!("swap", Kind::Boolean),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[("from_scene", "to_scene")],
         gateway_arguments: &[
@@ -441,9 +534,15 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Set or clear the label of one scene in the current preset.",
         properties: &[
-            p!("scene", SCENE),
+            p!(
+                "scene",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(7)
+                }
+            ),
             p!("label", Kind::NullableVisibleString { max_chars: 32 }),
-            p!("expected_preset_name", TEXT),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -459,15 +558,21 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Set the display color of one scene in the current preset.",
         properties: &[
-            p!("scene", SCENE),
+            p!(
+                "scene",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(7)
+                }
+            ),
             p!(
                 "color",
                 Kind::Integer {
                     min: 0,
-                    max: Some(u32::MAX as i64)
+                    max: Some(4294967295)
                 }
             ),
-            p!("expected_preset_name", TEXT),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -490,8 +595,8 @@ pub static ACTIONS: &[ActionSpec] = &[
                     max: Some(10)
                 }
             ),
-            p!("expected_mode", TEXT),
-            p!("expected_preset_name", TEXT),
+            p!("expected_mode", Kind::String),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -506,7 +611,10 @@ pub static ACTIONS: &[ActionSpec] = &[
         rpc: "device.tapTempo",
         classification: Classification::LiveWrite,
         description: "Tap the dedicated Quad Cortex tempo control through its official MIDI command.",
-        properties: &[p!("expected_mode", TEXT), p!("expected_preset_name", TEXT)],
+        properties: &[
+            p!("expected_mode", Kind::String),
+            p!("expected_preset_name", Kind::String),
+        ],
         distinct_arguments: &[],
         gateway_arguments: &[
             ("expected_mode", "expectedMode"),
@@ -521,8 +629,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Immediately navigate one performance bank down (-1) or up (1).",
         properties: &[
             p!("direction", Kind::IntegerEnum(&[-1, 1])),
-            p!("expected_preset_name", TEXT),
-            p!("expected_position", UINT),
+            p!("expected_preset_name", Kind::String),
+            p!("expected_position", Kind::Integer { min: 0, max: None }),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -537,7 +645,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         rpc: "device.showTuner",
         classification: Classification::LiveWrite,
         description: "Show or hide the tuner.",
-        properties: &[p!("shown", BOOL)],
+        properties: &[p!("shown", Kind::Boolean)],
         distinct_arguments: &[],
         gateway_arguments: &[("shown", "shown")],
         gateway_true_arguments: &[],
@@ -547,7 +655,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         rpc: "device.showGigView",
         classification: Classification::LiveWrite,
         description: "Show or hide Gig View.",
-        properties: &[p!("shown", BOOL)],
+        properties: &[p!("shown", Kind::Boolean)],
         distinct_arguments: &[],
         gateway_arguments: &[("shown", "shown")],
         gateway_true_arguments: &[],
@@ -565,7 +673,7 @@ pub static ACTIONS: &[ActionSpec] = &[
                     max: Some(2)
                 }
             ),
-            p!("expected_preset_name", TEXT),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -580,9 +688,21 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::RiskyWrite,
         description: "Set master output volume after explicit user confirmation and stale-value validation.",
         properties: &[
-            p!("value", PERCENT),
-            p!("expected_value", PERCENT),
-            p!("confirm_risky_operation", BOOL),
+            p!(
+                "value",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(100)
+                }
+            ),
+            p!(
+                "expected_value",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(100)
+                }
+            ),
+            p!("confirm_risky_operation", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[("value", "value"), ("expected_value", "expectedValue")],
@@ -594,10 +714,10 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Immediately recall a preset by setlist key and position.",
         properties: &[
-            p!("setlist_key", TEXT),
-            p!("position", UINT),
-            p!("expected_preset_name", TEXT),
-            p!("expected_position", UINT),
+            p!("setlist_key", Kind::String),
+            p!("position", Kind::Integer { min: 0, max: None }),
+            p!("expected_preset_name", Kind::String),
+            p!("expected_position", Kind::Integer { min: 0, max: None }),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -614,9 +734,9 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::RiskyWrite,
         description: "Discard unsaved edits and reload the active preset after explicit host confirmation.",
         properties: &[
-            p!("expected_preset_name", TEXT),
-            p!("expected_position", UINT),
-            p!("confirm_risky_operation", BOOL),
+            p!("expected_preset_name", Kind::String),
+            p!("expected_position", Kind::Integer { min: 0, max: None }),
+            p!("confirm_risky_operation", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -631,9 +751,21 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Immediately set performance tempo from 40 through 240 BPM.",
         properties: &[
-            p!("bpm", TEMPO),
-            p!("expected_tempo", TEMPO),
-            p!("expected_preset_name", TEXT),
+            p!(
+                "bpm",
+                Kind::Integer {
+                    min: 40,
+                    max: Some(240)
+                }
+            ),
+            p!(
+                "expected_tempo",
+                Kind::Integer {
+                    min: 40,
+                    max: Some(240)
+                }
+            ),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -649,12 +781,30 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Immediately enable or bypass one Grid block and verify device readback.",
         properties: &[
-            p!("row", GRID_ROW),
-            p!("column", GRID_COLUMN),
-            p!("desired_bypassed", BOOL),
-            p!("expected_bypassed", BOOL),
-            p!("expected_scene", SCENE),
-            p!("expected_preset_name", TEXT),
+            p!(
+                "row",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(3)
+                }
+            ),
+            p!(
+                "column",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(7)
+                }
+            ),
+            p!("desired_bypassed", Kind::Boolean),
+            p!("expected_bypassed", Kind::Boolean),
+            p!(
+                "expected_scene",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(7)
+                }
+            ),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -673,13 +823,43 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Immediately set a writable block, splitter, or mixer parameter and verify it.",
         properties: &[
-            p!("row", GRID_ROW),
-            p!("column", PARAMETER_COLUMN),
-            p!("parameter_index", UINT),
-            p!("value", NORMALIZED),
-            p!("expected_value", NORMALIZED),
-            p!("expected_scene", SCENE),
-            p!("expected_preset_name", TEXT),
+            p!(
+                "row",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(3)
+                }
+            ),
+            p!(
+                "column",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(9)
+                }
+            ),
+            p!("parameter_index", Kind::Integer { min: 0, max: None }),
+            p!(
+                "value",
+                Kind::Number {
+                    min: 0.0,
+                    max: Some(1.0)
+                }
+            ),
+            p!(
+                "expected_value",
+                Kind::Number {
+                    min: 0.0,
+                    max: Some(1.0)
+                }
+            ),
+            p!(
+                "expected_scene",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(7)
+                }
+            ),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -699,11 +879,23 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Enable or disable per-scene storage for a block, splitter, or mixer parameter and verify device readback.",
         properties: &[
-            p!("row", GRID_ROW),
-            p!("column", PARAMETER_COLUMN),
-            p!("parameter_index", UINT),
-            p!("enabled", BOOL),
-            p!("expected_preset_name", TEXT),
+            p!(
+                "row",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(3)
+                }
+            ),
+            p!(
+                "column",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(9)
+                }
+            ),
+            p!("parameter_index", Kind::Integer { min: 0, max: None }),
+            p!("enabled", Kind::Boolean),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -721,9 +913,21 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Assign EXP 1 or EXP 2 to a block, splitter, or mixer parameter, or clear it with pedal 0, preserving the requested heel and toe range.",
         properties: &[
-            p!("row", GRID_ROW),
-            p!("column", PARAMETER_COLUMN),
-            p!("parameter_index", UINT),
+            p!(
+                "row",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(3)
+                }
+            ),
+            p!(
+                "column",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(9)
+                }
+            ),
+            p!("parameter_index", Kind::Integer { min: 0, max: None }),
             p!(
                 "pedal",
                 Kind::Integer {
@@ -731,9 +935,21 @@ pub static ACTIONS: &[ActionSpec] = &[
                     max: Some(2)
                 }
             ),
-            p!("minimum", NORMALIZED),
-            p!("maximum", NORMALIZED),
-            p!("expected_preset_name", TEXT),
+            p!(
+                "minimum",
+                Kind::Number {
+                    min: 0.0,
+                    max: Some(1.0)
+                }
+            ),
+            p!(
+                "maximum",
+                Kind::Number {
+                    min: 0.0,
+                    max: Some(1.0)
+                }
+            ),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -753,12 +969,30 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Set an Input Gate or Lane Output parameter with stale-value and preset guards.",
         properties: &[
-            p!("row", GRID_ROW),
+            p!(
+                "row",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(3)
+                }
+            ),
             p!("control", Kind::StringEnum(&["inputGate", "laneOutput"])),
-            p!("parameter_index", UINT),
-            p!("value", NORMALIZED),
-            p!("expected_value", NORMALIZED),
-            p!("expected_preset_name", TEXT),
+            p!("parameter_index", Kind::Integer { min: 0, max: None }),
+            p!(
+                "value",
+                Kind::Number {
+                    min: 0.0,
+                    max: Some(1.0)
+                }
+            ),
+            p!(
+                "expected_value",
+                Kind::Number {
+                    min: 0.0,
+                    max: Some(1.0)
+                }
+            ),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -777,11 +1011,17 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Enable or disable per-scene storage for an Input Gate or Lane Output parameter and verify readback.",
         properties: &[
-            p!("row", GRID_ROW),
+            p!(
+                "row",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(3)
+                }
+            ),
             p!("control", Kind::StringEnum(&["inputGate", "laneOutput"])),
-            p!("parameter_index", UINT),
-            p!("enabled", BOOL),
-            p!("expected_preset_name", TEXT),
+            p!("parameter_index", Kind::Integer { min: 0, max: None }),
+            p!("enabled", Kind::Boolean),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -799,14 +1039,44 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Assign EXP 1 or EXP 2 to a block bypass with the QC switch mode, inversion, delay and latch-emulation settings.",
         properties: &[
-            p!("row", GRID_ROW),
-            p!("column", GRID_COLUMN),
-            p!("pedal", PEDAL),
-            p!("mode", EXPRESSION_SWITCH_MODE),
-            p!("invert", BOOL),
-            p!("delay_ms", BYPASS_DELAY),
-            p!("latch_emulation", BOOL),
-            p!("expected_preset_name", TEXT),
+            p!(
+                "row",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(3)
+                }
+            ),
+            p!(
+                "column",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(7)
+                }
+            ),
+            p!(
+                "pedal",
+                Kind::Integer {
+                    min: 1,
+                    max: Some(2)
+                }
+            ),
+            p!(
+                "mode",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(2)
+                }
+            ),
+            p!("invert", Kind::Boolean),
+            p!(
+                "delay_ms",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(5000)
+                }
+            ),
+            p!("latch_emulation", Kind::Boolean),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -827,11 +1097,29 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Move an existing Grid block to an empty column in the same row with model and preset guards.",
         properties: &[
-            p!("row", GRID_ROW),
-            p!("from_column", GRID_COLUMN),
-            p!("to_column", GRID_COLUMN),
-            p!("expected_model_id", UINT),
-            p!("expected_preset_name", TEXT),
+            p!(
+                "row",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(3)
+                }
+            ),
+            p!(
+                "from_column",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(7)
+                }
+            ),
+            p!(
+                "to_column",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(7)
+                }
+            ),
+            p!("expected_model_id", Kind::Integer { min: 0, max: None }),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -849,10 +1137,22 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Add an installed model to an empty Grid cell and verify the resulting block.",
         properties: &[
-            p!("row", GRID_ROW),
-            p!("column", GRID_COLUMN),
+            p!(
+                "row",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(3)
+                }
+            ),
+            p!(
+                "column",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(7)
+                }
+            ),
             p!("model_id", Kind::Integer { min: 1, max: None }),
-            p!("expected_preset_name", TEXT),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -869,10 +1169,22 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Remove a Grid block after validating its model and active preset.",
         properties: &[
-            p!("row", GRID_ROW),
-            p!("column", GRID_COLUMN),
-            p!("expected_model_id", UINT),
-            p!("expected_preset_name", TEXT),
+            p!(
+                "row",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(3)
+                }
+            ),
+            p!(
+                "column",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(7)
+                }
+            ),
+            p!("expected_model_id", Kind::Integer { min: 0, max: None }),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -889,8 +1201,20 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Assign or clear a Grid block footswitch with preset, model and assignment guards.",
         properties: &[
-            p!("row", GRID_ROW),
-            p!("column", GRID_COLUMN),
+            p!(
+                "row",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(3)
+                }
+            ),
+            p!(
+                "column",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(7)
+                }
+            ),
             p!(
                 "footswitch",
                 Kind::NullableInteger {
@@ -905,8 +1229,8 @@ pub static ACTIONS: &[ActionSpec] = &[
                     max: Some(7)
                 }
             ),
-            p!("expected_model_id", UINT),
-            p!("expected_preset_name", TEXT),
+            p!("expected_model_id", Kind::Integer { min: 0, max: None }),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -925,9 +1249,9 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Set a single-block STOMP footswitch to momentary or latching behavior and verify device readback.",
         properties: &[
-            p!("footswitch", UINT),
-            p!("momentary", BOOL),
-            p!("expected_preset_name", TEXT),
+            p!("footswitch", Kind::Integer { min: 0, max: None }),
+            p!("momentary", Kind::Boolean),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -943,9 +1267,9 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Set the visible label of a STOMP footswitch using the device's correct single- or multi-assignment storage.",
         properties: &[
-            p!("footswitch", UINT),
+            p!("footswitch", Kind::Integer { min: 0, max: None }),
             p!("label", Kind::VisibleString { max_chars: 32 }),
-            p!("expected_preset_name", TEXT),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -969,7 +1293,7 @@ pub static ACTIONS: &[ActionSpec] = &[
                 }
             ),
             p!("messages", Kind::MidiMessages),
-            p!("expected_preset_name", TEXT),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -986,7 +1310,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Replace the MIDI Out messages sent when the current preset loads.",
         properties: &[
             p!("messages", Kind::MidiMessages),
-            p!("expected_preset_name", TEXT),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -1001,10 +1325,16 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Change a signal-row input after validating the current route and preset.",
         properties: &[
-            p!("row", GRID_ROW),
-            p!("input_id", UINT),
-            p!("expected_input_id", UINT),
-            p!("expected_preset_name", TEXT),
+            p!(
+                "row",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(3)
+                }
+            ),
+            p!("input_id", Kind::Integer { min: 0, max: None }),
+            p!("expected_input_id", Kind::Integer { min: 0, max: None }),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -1021,10 +1351,16 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Change a signal-row output after validating the current route and preset.",
         properties: &[
-            p!("row", GRID_ROW),
-            p!("output_id", UINT),
-            p!("expected_output_id", UINT),
-            p!("expected_preset_name", TEXT),
+            p!(
+                "row",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(3)
+                }
+            ),
+            p!("output_id", Kind::Integer { min: 0, max: None }),
+            p!("expected_output_id", Kind::Integer { min: 0, max: None }),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -1041,7 +1377,13 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Set or clear a signal-row split and rejoin with complete stale-route guards.",
         properties: &[
-            p!("row", GRID_ROW),
+            p!(
+                "row",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(3)
+                }
+            ),
             p!(
                 "split_column",
                 Kind::NullableInteger {
@@ -1070,7 +1412,7 @@ pub static ACTIONS: &[ActionSpec] = &[
                     max: Some(7)
                 }
             ),
-            p!("expected_preset_name", TEXT),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -1089,10 +1431,16 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Mute or unmute a splitter/mixer path globally across scenes with exact device readback.",
         properties: &[
-            p!("row", GRID_ROW),
-            p!("muted", BOOL),
-            p!("expected_muted", BOOL),
-            p!("expected_preset_name", TEXT),
+            p!(
+                "row",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(3)
+                }
+            ),
+            p!("muted", Kind::Boolean),
+            p!("expected_muted", Kind::Boolean),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -1109,13 +1457,13 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::PersistentWrite,
         description: "Save the current preset to a reviewed device slot with explicit overwrite confirmation.",
         properties: &[
-            p!("setlist_key", TEXT),
-            p!("position", UINT),
-            p!("name", TEXT),
-            p!("expected_preset_name", TEXT),
-            p!("expected_position", UINT),
-            p!("confirm_overwrite", BOOL),
-            p!("confirm_persistent_write", BOOL),
+            p!("setlist_key", Kind::String),
+            p!("position", Kind::Integer { min: 0, max: None }),
+            p!("name", Kind::String),
+            p!("expected_preset_name", Kind::String),
+            p!("expected_position", Kind::Integer { min: 0, max: None }),
+            p!("confirm_overwrite", Kind::Boolean),
+            p!("confirm_persistent_write", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -1134,10 +1482,10 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::PersistentWrite,
         description: "Rename the active stored preset after explicit confirmation.",
         properties: &[
-            p!("new_name", TEXT),
-            p!("expected_preset_name", TEXT),
-            p!("expected_position", UINT),
-            p!("confirm_persistent_write", BOOL),
+            p!("new_name", Kind::String),
+            p!("expected_preset_name", Kind::String),
+            p!("expected_position", Kind::Integer { min: 0, max: None }),
+            p!("confirm_persistent_write", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -1153,15 +1501,15 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::PersistentWrite,
         description: "Copy a device preset to a reviewed destination with explicit overwrite confirmation.",
         properties: &[
-            p!("source_setlist_key", TEXT),
-            p!("source_position", UINT),
-            p!("source_name", TEXT),
-            p!("destination_setlist_key", TEXT),
-            p!("destination_position", UINT),
-            p!("expected_preset_name", TEXT),
-            p!("expected_position", UINT),
-            p!("confirm_overwrite", BOOL),
-            p!("confirm_persistent_write", BOOL),
+            p!("source_setlist_key", Kind::String),
+            p!("source_position", Kind::Integer { min: 0, max: None }),
+            p!("source_name", Kind::String),
+            p!("destination_setlist_key", Kind::String),
+            p!("destination_position", Kind::Integer { min: 0, max: None }),
+            p!("expected_preset_name", Kind::String),
+            p!("expected_position", Kind::Integer { min: 0, max: None }),
+            p!("confirm_overwrite", Kind::Boolean),
+            p!("confirm_persistent_write", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -1237,7 +1585,7 @@ pub static ACTIONS: &[ActionSpec] = &[
                     max: Some(1.0)
                 }
             ),
-            p!("confirm_persistent_write", BOOL),
+            p!("confirm_persistent_write", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -1277,7 +1625,7 @@ pub static ACTIONS: &[ActionSpec] = &[
                 }
             ),
             p!("mute", Kind::NullableBoolean),
-            p!("confirm_persistent_write", BOOL),
+            p!("confirm_persistent_write", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -1315,7 +1663,7 @@ pub static ACTIONS: &[ActionSpec] = &[
                     max: Some(1.0)
                 }
             ),
-            p!("confirm_persistent_write", BOOL),
+            p!("confirm_persistent_write", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -1330,7 +1678,10 @@ pub static ACTIONS: &[ActionSpec] = &[
         rpc: "device.setMidiThru",
         classification: Classification::PersistentWrite,
         description: "Enable or disable the QC MIDI Thru setting after explicit confirmation.",
-        properties: &[p!("enabled", BOOL), p!("confirm_persistent_write", BOOL)],
+        properties: &[
+            p!("enabled", Kind::Boolean),
+            p!("confirm_persistent_write", Kind::Boolean),
+        ],
         distinct_arguments: &[],
         gateway_arguments: &[("enabled", "enabled")],
         gateway_true_arguments: &[],
@@ -1343,7 +1694,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         properties: &[
             p!("xlr12_linked", Kind::NullableBoolean),
             p!("out34_linked", Kind::NullableBoolean),
-            p!("confirm_persistent_write", BOOL),
+            p!("confirm_persistent_write", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -1367,7 +1718,10 @@ pub static ACTIONS: &[ActionSpec] = &[
         rpc: "device.setGlobalEqBypassed",
         classification: Classification::PersistentWrite,
         description: "Enable or bypass the global EQ after explicit confirmation.",
-        properties: &[p!("bypassed", BOOL), p!("confirm_persistent_write", BOOL)],
+        properties: &[
+            p!("bypassed", Kind::Boolean),
+            p!("confirm_persistent_write", Kind::Boolean),
+        ],
         distinct_arguments: &[],
         gateway_arguments: &[("bypassed", "bypassed")],
         gateway_true_arguments: &[],
@@ -1414,7 +1768,7 @@ pub static ACTIONS: &[ActionSpec] = &[
                 }
             ),
             p!("enabled", Kind::NullableBoolean),
-            p!("confirm_persistent_write", BOOL),
+            p!("confirm_persistent_write", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -1442,7 +1796,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             ),
             p!("out12", Kind::NullableBoolean),
             p!("out34", Kind::NullableBoolean),
-            p!("confirm_persistent_write", BOOL),
+            p!("confirm_persistent_write", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[("level", "level"), ("out12", "out12"), ("out34", "out34")],
@@ -1474,7 +1828,7 @@ pub static ACTIONS: &[ActionSpec] = &[
                     unique: true
                 }
             ),
-            p!("confirm_persistent_write", BOOL),
+            p!("confirm_persistent_write", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[("slots", "slots")],
@@ -1559,7 +1913,7 @@ pub static ACTIONS: &[ActionSpec] = &[
                     values: &["OFF", "MUTE", "DOWN", "ON"]
                 }
             ),
-            p!("confirm_persistent_write", BOOL),
+            p!("confirm_persistent_write", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -1582,7 +1936,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Select whether the Quad Cortex uses the loaded preset tempo or its device-global tempo block.",
         properties: &[
             p!("mode", Kind::StringEnum(&["PRESET", "GLOBAL"])),
-            p!("confirm_persistent_write", BOOL),
+            p!("confirm_persistent_write", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[("mode", "mode")],
@@ -1662,12 +2016,12 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::PersistentWrite,
         description: "Add or remove one exact device library entry from Favorites after explicit confirmation.",
         properties: &[
-            p!("name", TEXT),
-            p!("folder_key", TEXT),
-            p!("folder_name", TEXT),
-            p!("is_factory", BOOL),
-            p!("favorite", BOOL),
-            p!("confirm_persistent_write", BOOL),
+            p!("name", Kind::String),
+            p!("folder_key", Kind::String),
+            p!("folder_name", Kind::String),
+            p!("is_factory", Kind::Boolean),
+            p!("favorite", Kind::Boolean),
+            p!("confirm_persistent_write", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -1696,8 +2050,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Pin or unpin one model ID after explicit confirmation.",
         properties: &[
             p!("model_id", Kind::Integer { min: 1, max: None }),
-            p!("pinned", BOOL),
-            p!("confirm_persistent_write", BOOL),
+            p!("pinned", Kind::Boolean),
+            p!("confirm_persistent_write", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[("model_id", "modelId"), ("pinned", "pinned")],
@@ -1719,16 +2073,28 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Place or retarget a Neural Capture block using a device library key and name, guarded by the current Grid cell and preset.",
         properties: &[
-            p!("row", GRID_ROW),
-            p!("column", GRID_COLUMN),
-            p!("key", TEXT),
-            p!("name", TEXT),
+            p!(
+                "row",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(3)
+                }
+            ),
+            p!(
+                "column",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(7)
+                }
+            ),
+            p!("key", Kind::String),
+            p!("name", Kind::String),
             p!("model_id", Kind::NullableInteger { min: 1, max: None }),
             p!(
                 "expected_model_id",
                 Kind::NullableInteger { min: 0, max: None }
             ),
-            p!("expected_preset_name", TEXT),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -1758,10 +2124,22 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::LiveWrite,
         description: "Place or retarget an IR Loader and set one of its two IR slots by key and name, guarded by the current Grid cell and preset.",
         properties: &[
-            p!("row", GRID_ROW),
-            p!("column", GRID_COLUMN),
-            p!("key", TEXT),
-            p!("name", TEXT),
+            p!(
+                "row",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(3)
+                }
+            ),
+            p!(
+                "column",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(7)
+                }
+            ),
+            p!("key", Kind::String),
+            p!("name", Kind::String),
             p!(
                 "slot",
                 Kind::Integer {
@@ -1774,7 +2152,7 @@ pub static ACTIONS: &[ActionSpec] = &[
                 "expected_model_id",
                 Kind::NullableInteger { min: 0, max: None }
             ),
-            p!("expected_preset_name", TEXT),
+            p!("expected_preset_name", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -1796,7 +2174,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Create a user setlist after explicit confirmation.",
         properties: &[
             p!("name", Kind::VisibleString { max_chars: 64 }),
-            p!("confirm_persistent_write", BOOL),
+            p!("confirm_persistent_write", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[("name", "name")],
@@ -1809,7 +2187,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Delete a named user setlist and its contents after explicit confirmation.",
         properties: &[
             p!("name", Kind::VisibleString { max_chars: 64 }),
-            p!("confirm_persistent_write", BOOL),
+            p!("confirm_persistent_write", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[("name", "name")],
@@ -1821,7 +2199,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::PersistentWrite,
         description: "Create a user setlist and copy its source presets through the shared recall-and-save workflow after explicit confirmation.",
         properties: &[
-            p!("source_setlist_key", TEXT),
+            p!("source_setlist_key", Kind::String),
             p!("destination_name", Kind::VisibleString { max_chars: 64 }),
             p!(
                 "limit",
@@ -1830,7 +2208,7 @@ pub static ACTIONS: &[ActionSpec] = &[
                     max: Some(256)
                 }
             ),
-            p!("expected_preset_name", TEXT),
+            p!("expected_preset_name", Kind::String),
             p!(
                 "expected_position",
                 Kind::Integer {
@@ -1838,7 +2216,7 @@ pub static ACTIONS: &[ActionSpec] = &[
                     max: Some(255)
                 }
             ),
-            p!("confirm_persistent_write", BOOL),
+            p!("confirm_persistent_write", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -1856,9 +2234,9 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::PersistentWrite,
         description: "Delete a named preset from a writable user setlist after explicit confirmation.",
         properties: &[
-            p!("setlist_key", TEXT),
-            p!("name", TEXT),
-            p!("confirm_persistent_write", BOOL),
+            p!("setlist_key", Kind::String),
+            p!("name", Kind::String),
+            p!("confirm_persistent_write", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[("setlist_key", "setlistKey"), ("name", "name")],
@@ -1870,8 +2248,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::PersistentWrite,
         description: "Move a named preset to another slot in its user setlist after explicit confirmation.",
         properties: &[
-            p!("setlist_key", TEXT),
-            p!("name", TEXT),
+            p!("setlist_key", Kind::String),
+            p!("name", Kind::String),
             p!(
                 "position",
                 Kind::Integer {
@@ -1879,7 +2257,7 @@ pub static ACTIONS: &[ActionSpec] = &[
                     max: Some(255)
                 }
             ),
-            p!("confirm_persistent_write", BOOL),
+            p!("confirm_persistent_write", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -1905,8 +2283,14 @@ pub static ACTIONS: &[ActionSpec] = &[
                     "midiChannel"
                 ])
             ),
-            p!("value", PERCENT),
-            p!("confirm_persistent_write", BOOL),
+            p!(
+                "value",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(100)
+                }
+            ),
+            p!("confirm_persistent_write", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[("setting", "setting"), ("value", "value")],
@@ -1932,8 +2316,8 @@ pub static ACTIONS: &[ActionSpec] = &[
                     "gigViewStompAccess"
                 ])
             ),
-            p!("enabled", BOOL),
-            p!("confirm_persistent_write", BOOL),
+            p!("enabled", Kind::Boolean),
+            p!("confirm_persistent_write", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[("setting", "setting"), ("enabled", "enabled")],
@@ -1949,7 +2333,7 @@ pub static ACTIONS: &[ActionSpec] = &[
                 "behavior",
                 Kind::StringEnum(&["alwaysOverwrite", "nonstompOverwrite", "neverOverwrite"])
             ),
-            p!("confirm_persistent_write", BOOL),
+            p!("confirm_persistent_write", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[("behavior", "behavior")],
@@ -1961,11 +2345,11 @@ pub static ACTIONS: &[ActionSpec] = &[
         classification: Classification::PersistentWrite,
         description: "Replace all four Master Volume output assignments atomically after explicit confirmation.",
         properties: &[
-            p!("out12", BOOL),
-            p!("out34", BOOL),
-            p!("send12", BOOL),
-            p!("headphones", BOOL),
-            p!("confirm_persistent_write", BOOL),
+            p!("out12", Kind::Boolean),
+            p!("out34", Kind::Boolean),
+            p!("send12", Kind::Boolean),
+            p!("headphones", Kind::Boolean),
+            p!("confirm_persistent_write", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -1984,7 +2368,7 @@ pub static ACTIONS: &[ActionSpec] = &[
         properties: &[
             p!("cab", Kind::BooleanRows),
             p!("ir", Kind::BooleanRows),
-            p!("confirm_persistent_write", BOOL),
+            p!("confirm_persistent_write", Kind::Boolean),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[("cab", "cab"), ("ir", "ir")],

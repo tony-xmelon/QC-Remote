@@ -333,9 +333,12 @@ fn validate(spec: &ActionSpec, args: &Map<String, Value>) -> Result<(), String> 
                     && s.chars().count() <= max_chars
                     && !s.chars().any(char::is_control)
             }),
-            Kind::NullableVisibleString { max_chars } => value.is_null() || value.as_str().is_some_and(|s| {
-                s.chars().count() <= max_chars && !s.chars().any(char::is_control)
-            }),
+            Kind::NullableVisibleString { max_chars } => {
+                value.is_null()
+                    || value.as_str().is_some_and(|s| {
+                        s.chars().count() <= max_chars && !s.chars().any(char::is_control)
+                    })
+            }
             Kind::NullableString => value.is_null() || value.is_string(),
             Kind::NullableInteger { min, max } => {
                 value.is_null()
@@ -455,7 +458,11 @@ fn apply_confirmation_gate(spec: &ActionSpec, args: &mut Map<String, Value>) -> 
 fn gateway_params(spec: &ActionSpec, args: Map<String, Value>) -> Map<String, Value> {
     spec.gateway_arguments
         .iter()
-        .filter_map(|(source, target)| args.get(*source).cloned().map(|value| ((*target).into(), value)))
+        .filter_map(|(source, target)| {
+            args.get(*source)
+                .cloned()
+                .map(|value| ((*target).into(), value))
+        })
         .chain(
             spec.gateway_true_arguments
                 .iter()

@@ -92,50 +92,6 @@ macro_rules! p {
     };
 }
 
-const TEXT: Kind = Kind::String;
-const BOOL: Kind = Kind::Boolean;
-const UINT: Kind = Kind::Integer { min: 0, max: None };
-const GRID_ROW: Kind = Kind::Integer {
-    min: 0,
-    max: Some(3),
-};
-const GRID_COLUMN: Kind = Kind::Integer {
-    min: 0,
-    max: Some(7),
-};
-const PARAMETER_COLUMN: Kind = Kind::Integer {
-    min: 0,
-    max: Some(9),
-};
-const SCENE: Kind = Kind::Integer {
-    min: 0,
-    max: Some(7),
-};
-const TEMPO: Kind = Kind::Integer {
-    min: 40,
-    max: Some(240),
-};
-const PERCENT: Kind = Kind::Integer {
-    min: 0,
-    max: Some(100),
-};
-const NORMALIZED: Kind = Kind::Number {
-    min: 0.0,
-    max: Some(1.0),
-};
-const PEDAL: Kind = Kind::Integer {
-    min: 1,
-    max: Some(2),
-};
-const EXPRESSION_SWITCH_MODE: Kind = Kind::Integer {
-    min: 0,
-    max: Some(2),
-};
-const BYPASS_DELAY: Kind = Kind::Integer {
-    min: 0,
-    max: Some(5000),
-};
-
 include!("generated_actions.rs");
 
 impl ActionSpec {

@@ -311,6 +311,10 @@ test("one shared action registry drives model tools and MCP safety classes", () 
   assert.match(mcp, /def _invoke_generated_action/);
   assert.doesNotMatch(mcp, /def set_parameter\(/);
   assert.equal((generatedPythonTools.match(/^    def /gm) ?? []).length, actions.length);
+  const actionGenerator = source("scripts/generate-qc-actions.mjs");
+  assert.match(actionGenerator, /pythonType\(action\.inputSchema\.properties\[name\]\)/);
+  assert.match(actionGenerator, /rustKind\(action\.inputSchema\.properties\[name\]\)/);
+  assert.doesNotMatch(actionGenerator, /const rustKind = \(action, name, kind\)/);
   assert.match(rustRuntime, /include!\("generated_actions\.rs"\)/);
   assert.doesNotMatch(rustRuntime, /name:\s*"reconnect_device"/);
   const rustServer = source("services/rust-mcp/src/server.rs");
