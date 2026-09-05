@@ -248,6 +248,14 @@ test("Android exposes the latest rejected gateway frame correlation in diagnosti
   assert.match(javaSource, /lastGatewayReadMismatch = "type " \+ messageType/);
 });
 
+test("Android exposes physical USB health and worst-case write latency through remote status", () => {
+  assert.match(javaSource, /\.put\("usbDiagnostics", usbDiagnostics\(\)\)/);
+  assert.match(javaSource, /maxHidWriteDurationMs = Math\.max\(maxHidWriteDurationMs, lastHidWriteDurationMs\)/);
+  assert.match(javaSource, /result\.put\("maxHidWriteDurationMs", maxHidWriteDurationMs\)/);
+  assert.match(javaSource, /result\.put\("maxMidiQueueDelayMs", maxMidiQueueDelayMs\)/);
+  assert.match(javaSource, /result\.put\("readerRequestActive", inputRequests != null && inputRequests\.length > 0\)/);
+});
+
 test("Android rebuilds a stale USB session and retries correlated reads once", () => {
   assert.match(javaSource, /"READBACK_TIMEOUT"\.equals\(\(\(RelayException\) cause\)\.code\)/);
   assert.match(javaSource, /gatewayReadRecoveries\+\+/);

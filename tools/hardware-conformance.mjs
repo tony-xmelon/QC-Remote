@@ -169,7 +169,9 @@ class McpHttpTransport {
   }
 
   async status() {
-    const result = await this.post("resources/read", { uri: "qc://status" });
+    const result = await retryTransientRead(
+      () => this.post("resources/read", { uri: "qc://status" })
+    );
     const text = result?.contents?.[0]?.text;
     return typeof text === "string" ? JSON.parse(text) : result;
   }
@@ -420,6 +422,29 @@ async function main() {
   let deviceAuthorized = false;
   let firstScreenTapSent = false;
   const performed = new Set();
+
+  const recordTransportHealth = async (stage) => {
+    const status = await transport.status();
+    const diagnostics = status?.usbDiagnostics;
+    if (!diagnostics || typeof diagnostics !== "object") return;
+    report.transportHealth ??= [];
+    report.transportHealth.push({ stage, ...redactEvidence(diagnostics) });
+    assert(diagnostics.connected === true, `USB transport was disconnected at ${stage}.`);
+    assert(diagnostics.decodeErrors === 0, `USB decoder reported ${diagnostics.decodeErrors} errors at ${stage}.`);
+    assert(
+      diagnostics.readerRequestActive === true && diagnostics.readerRequestCount > 0,
+      `USB request reader was not active at ${stage}.`
+    );
+    assert(
+      diagnostics.maxHidWriteDurationMs <= 20,
+      `USB HID write latency reached ${diagnostics.maxHidWriteDurationMs} ms at ${stage}.`
+    );
+    assert(
+      diagnostics.maxMidiQueueDelayMs <= 20,
+      `Performance MIDI queue delay reached ${diagnostics.maxMidiQueueDelayMs} ms at ${stage}.`
+    );
+    assert(!diagnostics.lastReaderError, `USB reader reported an error at ${stage}: ${diagnostics.lastReaderError}`);
+  };
 
   const skip = (name, reason) => {
     if (report.results.some((result) => result.name === name)) return;
@@ -1383,6 +1408,8 @@ async function main() {
       assert(!destinationPresets.presets.some((preset) => preset.name === copySource.name), "Moved preset was not deleted during restoration.");
     }
 
+    await recordTransportHealth("before-system-recovery");
+
     if (enabledHazards.has("system")) {
       await restoreScratch();
       await call("set_device_name", { name: config.system.temporaryDeviceName, confirm_persistent_write: true });
@@ -1575,6 +1602,10 @@ async function main() {
       });
       report.restoration = restoration;
       if (restoration.some((item) => item.status === "failed")) report.failure ??= "One or more restoration checks failed.";
+    }
+    if (transportStarted) {
+      try { await recordTransportHealth("final"); }
+      catch (error) { report.failure ??= error instanceof Error ? error.message : String(error); }
     }
     report.finishedAt = timestamp();
     for (const action of contract.actions) {

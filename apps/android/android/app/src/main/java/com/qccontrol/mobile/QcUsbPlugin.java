@@ -100,6 +100,7 @@ public class QcUsbPlugin extends Plugin {
     private volatile long maxMidiQueueDelayMs;
     private volatile long lastStateAt;
     private volatile long lastHidWriteDurationMs;
+    private volatile long maxHidWriteDurationMs;
     private volatile int lastHidWriteResult;
     private volatile boolean lastHidWriteIncludedReportId;
     private volatile String lastGatewayReadMismatch;
@@ -487,7 +488,8 @@ public class QcUsbPlugin extends Plugin {
                     .put("capabilities", GeneratedGatewayMethods.CAPABILITIES)
                     .put("message", "Shared Rust QC engine active")
                     .put("connected", isReady()).put("synchronized", presetSynchronized && currentSetlist != null)
-                    .put("transport", "android-usb-relay"));
+                    .put("transport", "android-usb-relay")
+                    .put("usbDiagnostics", usbDiagnostics()));
             }
             if ("RECONNECT".equals(dispatch)) return relayReconnect(
                 "device.resetSession".equals(method) ? "Communication session reset" : "Quad Cortex handshake complete");
@@ -943,6 +945,10 @@ public class QcUsbPlugin extends Plugin {
 
     @PluginMethod
     public void diagnostics(PluginCall call) {
+        call.resolve(usbDiagnostics());
+    }
+
+    private JSObject usbDiagnostics() {
         JSObject result = new JSObject();
         result.put("connected", connection != null);
         result.put("device", device == null || device.getProductName() == null ? getContext().getString(R.string.device_name) : device.getProductName());
@@ -972,6 +978,7 @@ public class QcUsbPlugin extends Plugin {
         result.put("maxMidiQueueDelayMs", maxMidiQueueDelayMs);
         result.put("lastStateAt", lastStateAt);
         result.put("lastHidWriteDurationMs", lastHidWriteDurationMs);
+        result.put("maxHidWriteDurationMs", maxHidWriteDurationMs);
         result.put("lastHidWriteResult", lastHidWriteResult);
         result.put("lastHidWriteIncludedReportId", lastHidWriteIncludedReportId);
         result.put("gatewayReadRecoveries", gatewayReadRecoveries);
@@ -984,7 +991,7 @@ public class QcUsbPlugin extends Plugin {
         result.put("readerExitedAt", readerExitedAt);
         if (lastReaderError != null) result.put("lastReaderError", lastReaderError);
         if (lastError != null) result.put("lastError", lastError);
-        call.resolve(result);
+        return result;
     }
 
     @PluginMethod
@@ -1121,6 +1128,8 @@ public class QcUsbPlugin extends Plugin {
         lastMidiCommandAt = 0;
         lastMidiQueueDelayMs = 0;
         maxMidiQueueDelayMs = 0;
+        lastHidWriteDurationMs = 0;
+        maxHidWriteDurationMs = 0;
         lastStateAt = 0;
         readerWaiting = false;
         readerExitedAt = 0;
@@ -1208,6 +1217,7 @@ public class QcUsbPlugin extends Plugin {
             long writeStartedAt = System.currentTimeMillis();
             int written = connection.controlTransfer(0x21, 0x09, (2 << 8) | QcNativeStateDecoder.OUT_REPORT_ID, hidInterface.getId(), report, report.length, HID_WRITE_TIMEOUT_MS);
             lastHidWriteDurationMs = System.currentTimeMillis() - writeStartedAt;
+            maxHidWriteDurationMs = Math.max(maxHidWriteDurationMs, lastHidWriteDurationMs);
             lastHidWriteResult = written;
             lastHidWriteIncludedReportId = withReportId;
             // The QC accepts the complete 128-byte data stage, then deliberately
