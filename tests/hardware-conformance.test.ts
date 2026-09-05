@@ -121,6 +121,19 @@ test("mutations require an exact out-of-band acknowledgement", () => {
   assert.doesNotThrow(() => assertMutationAcknowledged({ QC_HARDWARE_TEST_ACK: MUTATION_ACK }));
 });
 
+test("persistent coverage cannot invoke backup without separate backup consent", () => {
+  const runner = fileURLToPath(new URL("../tools/hardware-conformance.mjs", import.meta.url));
+  const persistent = spawnSync(process.execPath, [runner, "--config", fileURLToPath(new URL("../tools/hardware-conformance.example.json", import.meta.url)), "--live", "--persistent"], { encoding: "utf8" });
+  assert.equal(persistent.status, 0, persistent.stderr);
+  const persistentPlan = JSON.parse(persistent.stdout);
+  assert.equal(persistentPlan.plan.find((item: { name: string }) => item.name === "create_device_backup")?.enabled, false);
+
+  const explicit = spawnSync(process.execPath, [runner, "--config", fileURLToPath(new URL("../tools/hardware-conformance.example.json", import.meta.url)), "--live", "--persistent", "--backup"], { encoding: "utf8" });
+  assert.equal(explicit.status, 0, explicit.stderr);
+  const explicitPlan = JSON.parse(explicit.stdout);
+  assert.equal(explicitPlan.plan.find((item: { name: string }) => item.name === "create_device_backup")?.enabled, true);
+});
+
 test("physical observation waits fail closed instead of returning stale state", async () => {
   await assert.rejects(
     waitForPhysicalObservation(

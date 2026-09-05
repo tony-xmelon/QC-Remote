@@ -35,6 +35,7 @@ const discover = has("--discover");
 const prepare = has("--prepare");
 const requireAll = has("--require-all");
 const releaseCandidatePath = option("--release-candidate");
+const backupEnabled = has("--backup") || has("--all");
 const enabledHazards = new Set(["read"]);
 if (has("--live")) enabledHazards.add("live");
 if (has("--persistent")) enabledHazards.add("persistent");
@@ -226,9 +227,12 @@ async function main() {
   validateCoverage(contract);
   const config = JSON.parse(await readFile(configPath, "utf8"));
   const missingFixtures = validateConfig(config, { requireAll });
-  const plan = actionPlan(contract, enabledHazards);
+  const plan = actionPlan(contract, enabledHazards).map((item) => item.name === "create_device_backup"
+    ? { ...item, enabled: item.enabled && backupEnabled }
+    : item);
   if (requireAll) {
     assert(enabledHazards.size === 6, "--require-all must be combined with --all.");
+    assert(backupEnabled, "--require-all requires explicit backup coverage through --all.");
     assert(missingFixtures.length === 0, "Full execution requires every fixture.");
     assert(releaseCandidatePath, "Full release evidence requires --release-candidate with a staged app artifact.");
   }
@@ -1432,8 +1436,10 @@ async function main() {
 
     // Backup is intentionally last: it is the longest operation and a bulk
     // transport failure must not hide evidence for the other actions.
-    if (enabledHazards.has("persistent")) {
+    if (enabledHazards.has("persistent") && backupEnabled) {
       await call("create_device_backup", { name: uniqueName(config.persistent.namePrefix, "backup"), confirm_persistent_write: true });
+    } else if (enabledHazards.has("persistent")) {
+      skip("create_device_backup", "Backup requires the separate --backup flag and was not invoked.");
     }
 
     if (currentSnapshot && originalSnapshot && (currentSnapshot.setlistKey !== originalSnapshot.setlistKey || currentSnapshot.presetPosition !== originalSnapshot.presetPosition)) {

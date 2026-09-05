@@ -119,8 +119,9 @@ binary payloads are redacted or hashed.
 suite uses live preset recall for safe scratch entry and failure restoration.
 `--tuner` enables the guarded tuner-setting group. These writes invisibly engage
 the tuner, so the harness restores its preferences and still requires a person
-to open and close the physical tuner once afterward. `--all` enables all five
-mutation groups together.
+to open and close the physical tuner once afterward. Backup is never implied by
+`--persistent`; it additionally requires `--backup`. `--all` enables all five
+mutation groups and backup together.
 
 Finally, gate the release against both immutable reports:
 
