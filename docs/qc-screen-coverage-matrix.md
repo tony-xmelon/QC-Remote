@@ -12,7 +12,7 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 
 | Corpus | Windows structural | Windows color | Android structural | Android color |
 | --- | ---: | ---: | ---: | ---: |
-| Physical device | 90.38% | 97.22% | 90.38% | 97.22% |
+| Physical device | 90.75% | 97.25% | 90.76% | 97.25% |
 | Official manual | 90.79% | 97.11% | 90.79% | 97.11% |
 
 Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` color similarity. A canonical state that references multiple frames reports their mean. Detail evidence is scoped and therefore never promoted into a full-frame score.
@@ -75,7 +75,7 @@ Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` col
 | IO-05 | I/O | USB I/O detail | official frame | Built | Built | — / — | — / — | 88.08% / 88.08% | 96.48% / 96.48% |
 | IO-06 | I/O | Headphones detail | smoke only | Built | Built | — / — | — / — | — / — | — / — |
 | IO-07 | I/O | Global EQ | official frame | Built | Built | — / — | — / — | 90.51% / 90.51% | 96.42% / 96.42% |
-| IO-08 | I/O | Global input gate and bypass | physical frame | Built | Built | 74.23% / 74.25% | 95.92% / 95.92% | — / — | — / — |
+| IO-08 | I/O | Global input gate and bypass | physical frame | Built | Built | 89.48% / 89.48% | 97.22% / 97.22% | — / — | — / — |
 | GR-01 | Routing | Input route selector | physical frame | Built | Built | 88.26% / 88.31% | 96.51% / 96.51% | — / — | — / — |
 | GR-02 | Routing | Output route selector | physical frame | Built | Built | 88.91% / 88.95% | 96.45% / 96.45% | — / — | — / — |
 | GR-03 | Routing | Splitter/Mixer placement handles | physical frame | Built | Built | 89.24% / 89.24% | 97.47% / 97.47% | — / — | — / — |
@@ -181,7 +181,7 @@ These states are implemented and captured on both hosts, but only against determ
 
 ## Score source files
 
-- Physical Windows: `.artifacts/ui-shared-editor-fix/windows-comparison/summary.json`
-- Physical Android: `.artifacts/ui-shared-editor-fix/android-comparison/summary.json`
+- Physical Windows: `.artifacts/ui-input-gate-final/windows-comparison/summary.json`
+- Physical Android: `.artifacts/ui-input-gate-final/android-comparison/summary.json`
 - Official Windows: `.artifacts/ui-official-shared-editor-fix/windows-comparison/summary.json`
 - Official Android: `.artifacts/ui-official-shared-editor-fix/android-comparison/summary.json`

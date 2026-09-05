@@ -3,7 +3,7 @@ import type { GridBlock, PresetSnapshot } from "@ndsp-qc/client";
 import { QC_VISUAL_ASSETS, REFERENCE_BLOCK_ICONS } from "@ndsp-qc/theme";
 import { officialBlockVisual } from "./block-visuals";
 import { openSplitPath } from "./coros-ui";
-import { QcUiIcon } from "./theme-icons";
+import { QcEditorIcon, QcUiIcon } from "./theme-icons";
 import "./fixture-live-surface.css";
 import "./remaining-fixtures.css";
 import "./remaining-fixtures-fixes.css";
@@ -170,11 +170,11 @@ function CorOsRemainingFixture({ view }: { view: RemainingFixtureView }) {
   if (view === "fixture-copy-scene" || view === "fixture-swap-scene") return <section className="qc-screen coros-fixture-dialog is-scene-command"><div className="scene-command-grid"><header><strong><span>32</span>D</strong><span>Unsaved</span><b>A</b></header><span className="scene-command-mode"><svg viewBox="0 0 24 24" aria-hidden="true"><ModeGlyph mode="STOMP" /></svg><b>STOMP</b></span><main>{Array.from({ length: 8 }, (_, index) => <i key={index} />)}</main></div><aside><h1>{view === "fixture-copy-scene" ? "Copy Scene A" : "Swap Scene A"}</h1><p>Press Scene destination footswitch.</p><footer><button>CANCEL</button></footer></aside></section>;
   if (view === "fixture-input-gate") return <section className="qc-screen coros-input-gate" aria-label="Input Gate Control">
     <div className="input-gate-grid">
-      <header><strong><span>2</span>H</strong><h1>QC-MCP-TEST-mtniwbfb-R</h1><nav><i>↶</i><b>A</b><i>▣</i><i>⋮</i></nav><em>♞　STOMP</em></header>
-      <main><span className="input-gate-route">In<br />1</span><i className="input-gate-cable" /><span className="input-gate-device">⌁</span><span className="input-gate-output">Multi<br />Out</span>{[0, 1, 2].map(row => <span className="input-gate-plus" style={{ top: `${50 + row * 32}%` }} key={row}>＋</span>)}</main>
+      <header><strong><span>2</span>H</strong><h1>QC-MCP-TEST-mtniwbfb-R</h1><nav><i className="input-gate-undo"><GridToolbarIcon kind="undo" /></i><b>A</b><i><GridToolbarIcon kind="save" /></i><i><QcUiIcon kind="more" /></i></nav><em><svg viewBox="0 0 24 24" aria-hidden="true"><ModeGlyph mode="STOMP" /></svg><span>STOMP</span></em></header>
+      <main><span className="input-gate-route">In<br />1</span><i className="input-gate-cable" /><span className="input-gate-device"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M7 27c5-15 8-15 13 0s8 15 13 0 8-15 10 0" /></svg></span><span className="input-gate-output">Multi<br />Out</span>{[0, 1, 2].map(row => <span className="input-gate-plus" style={{ top: `${50 + row * 32}%` }} key={row}><QcUiIcon kind="add" /></span>)}</main>
     </div>
     <section className="input-gate-panel">
-      <header><button>⋮</button><span><small>INPUT GATE CONTROL</small><strong>Path 1</strong></span><nav><i>◀</i><b>A</b><i>▶</i></nav><em /><button className="input-gate-power">⏻</button><button>✓</button></header>
+      <header><button><QcUiIcon kind="more" /></button><span><small>INPUT GATE CONTROL</small><strong>Path 1</strong></span><nav><i><QcEditorIcon kind="scene-previous" /></i><b>A</b><i><QcEditorIcon kind="scene-next" /></i></nav><em /><button className="input-gate-power"><QcEditorIcon kind="bypass" /></button><button><QcUiIcon kind="check" /></button></header>
       <main><section><span>NOISE REDUCTION</span><i className="input-gate-knob reduction"><b /></i><strong>30.0 <small>%</small></strong></section><section><span>GAIN REDUCTION</span><strong>0.0 <small>dB</small></strong><i className="input-gate-meter"><b /></i></section><section><span>INPUT GAIN</span><i className="input-gate-knob gain"><b /></i><strong>0.0 <small>dB</small></strong></section></main>
     </section>
   </section>;

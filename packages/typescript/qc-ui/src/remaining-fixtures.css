@@ -211,35 +211,52 @@
     box-sizing: border-box;
   }
   .input-gate-grid > header > strong {
-    font-size: 8cqw;
+    font-size: 8.875cqw;
     line-height: 0.82;
     font-weight: 700;
-    letter-spacing: -0.45cqw;
+    letter-spacing: 0.175cqw;
     color: #e61723;
+    transform: translateY(5px);
   }
   .input-gate-grid > header > strong span {
     color: #c8cac9;
   }
   .input-gate-grid h1 {
-    margin: 0.25cqw 0 0 2.2cqw;
-    color: #c8cac9;
-    font-size: 5cqw;
+    margin: 1.625cqw 0 0 2.2cqw;
+    color: #d5d8d5;
+    font-size: 4.45cqw;
     line-height: 1;
     font-weight: 700;
   }
   .input-gate-grid header nav {
     position: absolute;
-    right: 1.8cqw;
+    right: 3cqw;
     top: 1.6cqw;
     display: flex;
     align-items: center;
-    gap: 2.6cqw;
+    gap: 3.1cqw;
     color: #afb2b0;
     font-style: normal;
   }
   .input-gate-grid header nav i {
-    font-size: 2.6cqw;
+    width: 3cqw;
+    height: 3cqw;
+    display: grid;
+    place-items: center;
     font-style: normal;
+  }
+  .input-gate-grid header nav i svg {
+    width: 100%;
+    height: 100%;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .input-gate-grid header nav i:last-child svg circle {
+    fill: currentColor;
+    stroke: none;
   }
   .input-gate-grid header nav b {
     width: 3cqw;
@@ -253,12 +270,20 @@
   }
   .input-gate-grid header em {
     position: absolute;
-    right: 1.5cqw;
+    right: 4.9cqw;
     top: 7.7cqw;
     color: #bfc1bf;
     font-size: 2.4cqw;
     font-style: normal;
     font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 1cqw;
+  }
+  .input-gate-grid header em svg {
+    width: 3.5cqw;
+    height: 3.5cqw;
+    fill: currentColor;
   }
   .input-gate-grid > main {
     position: absolute;
@@ -270,24 +295,24 @@
     position: absolute;
     display: grid;
     place-items: center;
-    background: #171819;
+    background: #101010;
     color: #d7d9d8;
     text-align: center;
   }
   .input-gate-route {
     left: 1%;
-    top: 9%;
+    top: 6%;
     width: 5.5%;
-    height: 32%;
+    height: 34.5%;
     border-radius: 1.8cqw;
     font-size: 1.8cqw;
     line-height: 1.35;
   }
   .input-gate-output {
     right: 1%;
-    top: 9%;
+    top: 6%;
     width: 5.5%;
-    height: 32%;
+    height: 34.5%;
     border-radius: 1.8cqw;
     font-size: 1.65cqw;
     line-height: 1.25;
@@ -296,22 +321,30 @@
     position: absolute;
     left: 6.6%;
     right: 6.5%;
-    top: 24%;
+    top: 23.5%;
     height: 2px;
-    background: #afb0b0;
+    background: #9fa19f;
   }
   .input-gate-device {
     position: absolute;
-    left: 8.7%;
-    top: 10%;
+    left: 8.6%;
+    top: 8.5%;
     width: 8%;
     aspect-ratio: 1;
     display: grid;
     place-items: center;
-    border: 0.35cqw solid #40f373;
+    border: 0.35cqw solid #289c48;
     border-radius: 1.6cqw;
     background: #050505;
-    font-size: 4.2cqw;
+  }
+  .input-gate-device svg {
+    width: 65%;
+    height: 65%;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
   .input-gate-plus {
     right: 1%;
@@ -319,12 +352,18 @@
     height: 35%;
     border-radius: 1.8cqw;
     color: #bbb;
-    font-size: 3.8cqw;
   }
-.input-gate-panel {
+  .input-gate-plus svg {
+    width: 3.8cqw;
+    height: 3.8cqw;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+  }
+  .input-gate-panel {
   position: absolute;
   inset: 63.125% 1% 1.67%;
-  background: #2e302f;
+  background: #292c29;
 }
 .input-gate-panel > header {
   height: 35.5%;
@@ -332,7 +371,7 @@
     grid-template-columns: 5.5% 1fr 16.5% 1px 8.2% 8.2%;
     align-items: center;
     gap: 1.1%;
-    background: #101211;
+    background: #101010;
   }
   .input-gate-panel button {
     height: 80%;
@@ -342,18 +381,33 @@
     color: #fff;
     font-size: 2.7cqw;
   }
+  .input-gate-panel button svg {
+    width: 2.75cqw;
+    height: 2.75cqw;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .input-gate-panel > header > button:first-child svg circle {
+    fill: currentColor;
+    stroke: none;
+  }
   .input-gate-panel > header > span {
     display: flex;
     flex-direction: column;
-    transform: translateY(-0.25cqw);
+    padding-left: 1px;
   }
   .input-gate-panel > header small {
     color: #a8aaa9;
-    font-size: 1.7cqw;
+    font-size: 1.825cqw;
+    transform: translate(-1px, 1px);
   }
   .input-gate-panel > header strong {
-    font-size: 2.25cqw;
+    font-size: 2.5cqw;
     font-weight: 400;
+    transform: translateY(6px);
   }
   .input-gate-panel > header nav {
     height: 80%;
@@ -363,10 +417,17 @@
     border-radius: 0.75cqw;
     background: #292c2b;
     font-style: normal;
+    transform: translateX(-0.625cqw);
   }
   .input-gate-panel > header nav i {
     color: #eee;
     font-style: normal;
+  }
+  .input-gate-panel > header nav i svg {
+    width: 2.75cqw;
+    height: 2.75cqw;
+    fill: currentColor;
+    stroke: none;
   }
   .input-gate-panel > header nav b {
     width: 3cqw;
@@ -385,6 +446,7 @@
   .input-gate-panel .input-gate-power {
     background: #3df467;
     color: #071208;
+    transform: translateX(-0.375cqw);
   }
 .input-gate-panel > main {
   height: 64.5%;
@@ -399,18 +461,22 @@
   }
   .input-gate-panel > main span {
     display: block;
-    font-size: 1.75cqw;
+    font-size: 1.8cqw;
   }
   .input-gate-panel > main > section:nth-child(-n + 2) {
     color: #747b76;
   }
   .input-gate-panel > main strong {
     position: absolute;
-    left: 1.2cqw;
-    bottom: 1.2cqw;
+    left: 1.625cqw;
+    bottom: 1.95cqw;
     color: inherit;
-    font-size: 1.85cqw;
+    font-size: 2cqw;
     font-weight: 400;
+  }
+  .input-gate-panel > main > section:nth-child(2) > strong {
+    top: 5.375cqw;
+    bottom: auto;
   }
   .input-gate-panel > main small {
     color: #9da09e;
@@ -418,10 +484,10 @@
   }
   .input-gate-knob {
     position: absolute;
-    right: 2.2cqw;
-    top: 5.8cqw;
-    width: 6.2cqw;
-    height: 6.2cqw;
+    right: 1.7cqw;
+    top: 5.3cqw;
+    width: 7.2cqw;
+    height: 7.2cqw;
     border: 0.65cqw solid #101211;
     border-radius: 50%;
     background: #252827;
@@ -448,7 +514,7 @@
   }
   .input-gate-knob.gain {
     right: auto;
-    left: 11cqw;
+    left: 10.625cqw;
     box-shadow: 0 0 0 0.4cqw #fff;
   }
   .input-gate-knob.gain:before {

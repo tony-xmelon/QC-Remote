@@ -7,8 +7,8 @@ Reference: physical Quad Cortex, CorOS 4.1.0, 800x480 framebuffer corpus
 
 | Client | Physical corpus rendered | Mean structural match | Mean color similarity |
 | --- | ---: | ---: | ---: |
-| Windows | 40/40 (100%) | **91.59%** | **97.32%** |
-| Android | 40/40 (100%) | **91.58%** | **97.32%** |
+| Windows | 41/41 (100%) | **90.75%** | **97.25%** |
+| Android | 41/41 (100%) | **90.76%** | **97.25%** |
 
 These are native-size measurements, not audit estimates. Both hosts render the
 same versioned `coros410` scratch-preset fixture through `@ndsp-qc/ui`; each
@@ -68,10 +68,10 @@ comparison.
 
 | Client | Official frames rendered | Mean structural match | Mean color similarity |
 | --- | ---: | ---: | ---: |
-| Windows | 36/36 (100%) | **90.78%** | **97.11%** |
-| Android | 36/36 (100%) | **90.77%** | **97.11%** |
+| Windows | 36/36 (100%) | **90.79%** | **97.11%** |
+| Android | 36/36 (100%) | **90.79%** | **97.11%** |
 
-This broader corpus is deliberately reported separately from the 40-frame
+This broader corpus is deliberately reported separately from the 41-frame
 physical-device regression pack. It adds authoritative coverage for I/O,
 Directory, Capture, Settings, Looper, expression assignment, plugin, and Hybrid
 Gig View states, while its lower score identifies which nominally Built screens
@@ -85,92 +85,100 @@ join is in [the canonical coverage matrix](qc-screen-coverage-matrix.md).
 
 ### Official-reference screen scores
 
-| Screen | Windows structural match | Android structural match |
+| Official state | Windows structural match | Android structural match |
 | --- | ---: | ---: |
-| Tuner | 88.59% | 88.39% |
-| Tempo & Metronome | 90.80% | 90.80% |
-| Modes Configuration | 91.84% | 91.71% |
-| Gig View — PRESET | 95.61% | 95.54% |
-| Gig View — SCENE | 93.50% | 93.42% |
-| Gig View — STOMP | 88.85% | 88.79% |
-| Gig View — HYBRID | 90.68% | 90.60% |
-| Analog I/O Settings | 87.73% | 87.73% |
-| USB I/O Settings | 88.10% | 88.09% |
-| Global EQ | 90.55% | 90.52% |
-| Brit 2203 Grid | 92.25% | 92.26% |
-| Empty slot | 94.03% | 94.03% |
-| Amp device browser | 87.13% | 87.13% |
-| Virtual Device presets | 88.56% | 88.62% |
-| Virtual Device preset actions | 89.08% | 89.09% |
-| Expression bypass | 91.73% | 91.66% |
-| Looper X | 87.37% | 87.30% |
-| Directory — Presets | 91.97% | 91.86% |
-| Directory — Favorites | 91.21% | 91.20% |
-| Directory — Captures | 89.12% | 89.13% |
-| Directory — IRs | 89.70% | 89.72% |
-| Directory — Plugin presets | 96.42% | 96.42% |
-| Directory — Search results | 88.38% | 88.30% |
-| Directory — Nested folders | 90.10% | 90.02% |
-| Directory — Cloud upload | 91.02% | 90.89% |
-| Capture — Settings | 92.87% | 92.79% |
-| Capture — Training | 90.61% | 90.50% |
-| Capture — A/B test | 88.50% | 88.50% |
-| Capture — Metadata | 92.95% | 92.80% |
-| Plugin devices | 89.61% | 89.61% |
-| Plugin folders | 88.15% | 87.95% |
-| MIDI Settings | 96.08% | 95.99% |
-| Preset MIDI Out | 88.72% | 88.62% |
-| Settings — Account | 93.09% | 92.95% |
-| Settings — System | 90.03% | 89.94% |
-| Settings — Device | 92.86% | 92.86% |
+| `official-tuner` | **88.59%** | **88.59%** |
+| `official-tempo` | **90.89%** | **90.89%** |
+| `official-modes-configuration` | **91.84%** | **91.84%** |
+| `official-gig-view-preset` | **95.61%** | **95.61%** |
+| `official-gig-view-scene` | **93.50%** | **93.50%** |
+| `official-gig-view-stomp` | **88.85%** | **88.85%** |
+| `official-gig-view-hybrid` | **90.68%** | **90.68%** |
+| `official-io-settings-analog` | **87.71%** | **87.70%** |
+| `official-io-settings-usb` | **88.08%** | **88.08%** |
+| `official-global-eq` | **90.51%** | **90.51%** |
+| `official-grid-brit-2203` | **92.12%** | **92.11%** |
+| `official-empty-slot` | **94.02%** | **94.02%** |
+| `official-device-browser-amp` | **87.14%** | **87.14%** |
+| `official-device-presets` | **88.56%** | **88.55%** |
+| `official-device-preset-actions` | **89.08%** | **89.08%** |
+| `official-expression-bypass` | **91.73%** | **91.79%** |
+| `official-looper` | **87.37%** | **87.37%** |
+| `official-directory-presets` | **91.97%** | **91.97%** |
+| `official-directory-favorites` | **91.22%** | **91.22%** |
+| `official-directory-captures` | **89.13%** | **89.13%** |
+| `official-directory-irs` | **89.71%** | **89.77%** |
+| `official-directory-plugin-presets` | **96.39%** | **96.38%** |
+| `official-directory-search-results` | **88.38%** | **88.38%** |
+| `official-directory-nested` | **90.10%** | **90.10%** |
+| `official-directory-upload` | **91.02%** | **91.01%** |
+| `official-capture-settings` | **92.87%** | **92.87%** |
+| `official-capture-process` | **90.61%** | **90.65%** |
+| `official-capture-ab-test` | **88.57%** | **88.57%** |
+| `official-capture-metadata` | **92.95%** | **92.95%** |
+| `official-plugin-devices` | **89.66%** | **89.66%** |
+| `official-plugin-folders` | **87.91%** | **87.91%** |
+| `official-midi-settings` | **96.08%** | **96.08%** |
+| `official-midi-out` | **89.46%** | **89.43%** |
+| `official-settings-account` | **93.09%** | **93.09%** |
+| `official-settings-system` | **90.03%** | **90.02%** |
+| `official-settings-device` | **92.85%** | **92.85%** |
 
 ## Measured physical corpus
 
 | Physical state | Windows structural match | Android structural match |
 | --- | ---: | ---: |
 | `grid-base` | **93.42%** | **93.42%** |
-| `grid-scene-selector` | **94.81%** | **94.81%** |
-| `grid-context-menu` | 91.00% | 91.03% |
-| `copy-scene-destination` | **91.79%** | **91.51%** |
-| `swap-scene-destination` | **91.70%** | **91.43%** |
-| `preset-directory` | 92.46% | 92.47% |
-| `input-route-selector` | **90.18%** | **90.21%** |
-| `output-route-selector` | **91.22%** | **91.24%** |
-| `splitter-editor` | **89.28%** | **89.31%** |
-| `mixer-editor` | **90.48%** | **90.52%** |
-| `device-browser-root` | **89.66%** | **89.67%** |
-| `device-browser-models` | **90.41%** | **90.40%** |
-| `device-browser-models-clean` | **90.77%** | **90.77%** |
-| `device-browser-plugin-list` | **88.61%** | **88.61%** |
-| `device-browser-plugin-models` | **91.84%** | **91.84%** |
-| `device-browser-plugin-locked` | **91.84%** | **91.84%** |
-| `device-presets-exotic-z-boost` | 90.33% | 90.33% |
-| `device-preset-actions` | 96.10% | 96.10% |
-| `device-presets-user` | 89.71% | 89.70% |
-| `editor-simple-gate` | **91.57%** | **91.56%** |
-| `editor-chief-ds1` | **91.35%** | **91.35%** |
-| `editor-digital-flanger` | **88.43%** | **88.44%** |
-| `editor-ukc30-topboost` | **90.25%** | **90.24%** |
-| `editor-ukc30-cab` | **92.99%** | **92.99%** |
-| `editor-parametric-8` | **89.45%** | **89.45%** |
-| `editor-ambience` | **89.70%** | **89.68%** |
-| `gig-view` (STOMP) | **94.41%** | **94.41%** |
+| `grid-scene-selector` | **94.82%** | **94.82%** |
+| `grid-context-menu` | **89.56%** | **89.56%** |
+| `preset-directory` | **92.23%** | **92.25%** |
+| `input-route-selector` | **88.26%** | **88.31%** |
+| `output-route-selector` | **88.91%** | **88.95%** |
+| `device-browser-root` | **86.04%** | **86.05%** |
+| `device-browser-models` | **89.75%** | **89.75%** |
+| `device-browser-models-clean` | **87.11%** | **87.11%** |
+| `editor-simple-gate` | **90.64%** | **90.64%** |
+| `editor-chief-ds1` | **90.93%** | **90.93%** |
+| `editor-digital-flanger` | **83.08%** | **83.08%** |
+| `editor-ukc30-topboost` | **89.03%** | **89.03%** |
+| `editor-ukc30-cab` | **85.19%** | **85.19%** |
+| `editor-parametric-8` | **88.41%** | **88.41%** |
+| `editor-ambience` | **88.88%** | **88.88%** |
+| `gig-view` | **94.41%** | **94.41%** |
 | `grid-restored` | **93.42%** | **93.42%** |
 | `grid-scene-b` | **93.43%** | **93.43%** |
 | `grid-scene-a-restored` | **93.42%** | **93.42%** |
-| `tempo-metronome` | **90.46%** | **90.46%** |
-| `tuner` | **90.68%** | **90.68%** |
-| `tuner-live-enabled` | **90.85%** | **90.86%** |
+| `tuner` | **90.77%** | **90.77%** |
+| `gig-view-preset` | **93.96%** | **93.96%** |
+| `gig-view-scene` | **90.91%** | **90.91%** |
+| `modes-configuration` | **96.39%** | **96.39%** |
+| `save-as-editor` | **89.49%** | **89.49%** |
+| `edit-details-editor` | **92.66%** | **92.66%** |
+| `copy-scene-destination` | **91.46%** | **91.46%** |
+| `swap-scene-destination` | **91.37%** | **91.37%** |
+| `preset-midi-out` | **89.34%** | **89.31%** |
+| `device-browser-plugin-list` | **88.75%** | **88.75%** |
+| `device-browser-plugin-models` | **92.05%** | **92.06%** |
+| `device-presets-exotic-z-boost` | **90.42%** | **90.42%** |
+| `device-browser-plugin-locked` | **92.04%** | **92.04%** |
+| `device-preset-actions` | **96.06%** | **96.06%** |
+| `device-presets-user` | **89.82%** | **89.81%** |
+| `tempo-metronome` | **89.88%** | **89.88%** |
+| `tuner-live-enabled` | **90.92%** | **90.92%** |
 | `gig-view-live-tuner` | **94.50%** | **94.50%** |
-| `preset-midi-out` | **89.33%** | **89.33%** |
-| `gig-view-preset` | 93.94% | 93.94% |
-| `gig-view-scene` | **91.15%** | **91.15%** |
-| `modes-configuration` | 96.35% | 96.35% |
-| `save-as-editor` | **89.50%** | **89.50%** |
-| `edit-details-editor` | 92.63% | 92.63% |
+| `splitter-editor` | **89.24%** | **89.24%** |
+| `mixer-editor` | **90.45%** | **90.45%** |
+| `input-gate-control` | **89.48%** | **89.48%** |
 
 ## Improvements in this pass
 
+- Reconstructed Input Gate Control's dimmed Grid and lower editor from its
+  physical framebuffer with shared vector glyphs, measured CorOS title metrics,
+  exact route geometry, and aligned control/value baselines. The state rises
+  from **74.23% to 89.48% structural** and from **95.92% to 97.22% color** on
+  both hosts. The complete 41-frame physical benchmark consequently rises from
+  **90.38% to 90.75% Windows / 90.76% Android structural**, with **97.25% color
+  similarity** and no regressions in the other 40 frames.
 - Moved measured parameter-editor geometry out of a reference-only stylesheet
   and into the shared editor that both applications actually render. Digital
   Flanger rises from **71.40% to 83.08%**, UK C30 TopBoost from **79.55% to
