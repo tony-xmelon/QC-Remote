@@ -53,6 +53,7 @@ diagnostics/
 artifacts/
 .artifacts/
 tmp/
+tools/hardware-conformance.session.json
 
 # Generated contract clients
 generated/

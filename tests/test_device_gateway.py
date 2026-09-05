@@ -18,8 +18,31 @@ sys.path.insert(0, str(ROOT / "services" / "device-gateway" / "src"))
 from qc_device_gateway.framing import FramingError, read_frame, write_frame
 from qc_device_gateway.generated_gateway_dispatch import GATEWAY_API_VERSION
 from qc_device_gateway.service import GatewayService
-from qc_device_gateway.device import PyQuadCortexDevice, _block_color, _catalog_audit, _conditional_parameter_hidden, _device_type_name, _editor_parameter_state, _factory_model_metadata, _format_parameter_number, _parameter_enabled, _png_response, _protocol_symbol, _stomp_color
+from qc_device_gateway.device import PyQuadCortexDevice, _block_color, _catalog_audit, _conditional_parameter_hidden, _device_type_name, _editor_parameter_state, _factory_model_metadata, _format_parameter_number, _parameter_enabled, _png_response, _protocol_symbol, _stomp_color, send_qc_midi_cc
 from qc_device_gateway.native_transport import NativeBrokerError, NativeBrokerTransport, _broker_result, _gunzip_bounded
+from qc_device_gateway.remote_control import _legacy_message_class, swipe_screen
+
+
+class RemoteControlCompatibilityTests(unittest.TestCase):
+    def test_atomic_drag_uses_verified_coros_endpoints(self):
+        sent = []
+        qc = SimpleNamespace(_t=SimpleNamespace(send=sent.append))
+        message_class = _legacy_message_class()
+        with patch("qc_device_gateway.remote_control.install_remote_control_compat", return_value=message_class), patch("qc_device_gateway.remote_control.time.sleep") as sleep:
+            swipe_screen(qc, 720, 390, 720, 120, duration=0.5)
+        self.assertEqual(len(sent), 1)
+        self.assertEqual(sent[0].action, 1)
+        self.assertEqual(sent[0].mouse.type, 4)
+        self.assertEqual((sent[0].mouse.x, sent[0].mouse.y), (720, 390))
+        self.assertEqual((sent[0].mouse.to_x, sent[0].mouse.to_y), (720, 120))
+        sleep.assert_called_once_with(0.35)
+
+    def test_atomic_drag_rejects_offscreen_coordinates(self):
+        with self.assertRaisesRegex(ValueError, "800 x 480"):
+            swipe_screen(SimpleNamespace(), 800, 390, 720, 120)
+
+    def test_capture_cli_midi_helper_is_public(self):
+        self.assertTrue(callable(send_qc_midi_cc))
 
 
 class PositionState:
@@ -687,7 +710,7 @@ class FakeDevice:
         return {"folders": [{"key": "fake", "name": "Fake", "isFactory": False}]}
     def navigate_bank(self, direction, expected_preset_name, expected_position):
         return {"detail": f"bank {direction}:{expected_position}", "snapshot": self.snapshot()}
-    def recall_preset(self, setlist_key, position, expected_preset_name, expected_position):
+    def recall_preset(self, setlist_key, position, expected_preset_name, expected_position, expected_setlist_key):
         return {"detail": f"recall {setlist_key}:{position}", "snapshot": self.snapshot()}
     def reload_preset(self, expected_preset_name, expected_position):
         return {"detail": f"reload {expected_position}", "snapshot": self.snapshot()}
@@ -1122,7 +1145,8 @@ class ServiceTests(unittest.TestCase):
         })
         recall = self.request("device.recallPreset", {
             "setlistKey": "fake", "position": 17,
-            "expectedPresetName": "Test", "expectedPosition": 9
+            "expectedPresetName": "Test", "expectedPosition": 9,
+            "expectedSetlistKey": "fake"
         })
         reload = self.request("device.reloadPreset", {
             "expectedPresetName": "Test", "expectedPosition": 9

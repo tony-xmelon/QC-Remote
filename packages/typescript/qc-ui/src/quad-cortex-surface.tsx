@@ -65,6 +65,7 @@ interface QuadCortexSurfaceProps {
   onOpenRouting: (row: number, side: "input" | "output") => void;
   onRefresh: () => void;
   presetDirectory?: PresetDirectoryState;
+  gigPresetList?: PresetList;
   routingPicker?: CorOsRoutingPickerState;
   savePreset?: CorOsSavePresetState;
   parameterEditor?: CorOsParameterEditorProps;
@@ -488,7 +489,7 @@ function CorOsGrid({ snapshot, selectedBlockId, onAction, onOpenPreset, onUndo, 
 
 function controlByRole(controls: HardwareControl[], role: string) { return controls.find((control) => control.role === role); }
 
-export function QuadCortexSurface({ formFactor, snapshot, selectedBlockId, skin, onAction, onOpenPreset, onUndo, canUndo, undoLabel, onSave, onOpenRouting, onRefresh, presetDirectory, routingPicker, savePreset, parameterEditor, onContextAction, screenView = "grid", onCloseScreen }: QuadCortexSurfaceProps) {
+export function QuadCortexSurface({ formFactor, snapshot, selectedBlockId, skin, onAction, onOpenPreset, onUndo, canUndo, undoLabel, onSave, onOpenRouting, onRefresh, presetDirectory, gigPresetList, routingPicker, savePreset, parameterEditor, onContextAction, screenView = "grid", onCloseScreen }: QuadCortexSurfaceProps) {
   const scenes = formFactor.controls.filter((control) => control.group === "scene");
   const bankUp = controlByRole(formFactor.controls, "bank:up")!;
   const bankDown = controlByRole(formFactor.controls, "bank:down")!;
@@ -528,7 +529,7 @@ export function QuadCortexSurface({ formFactor, snapshot, selectedBlockId, skin,
     <MasterVolume value={snapshot.masterVolume} onAction={onAction} />
     <div className="device-plate"><QcHardwareIcon kind="brand-pulse" className="pulse-mark" /><span>{QC_BRAND.deviceWordmark}</span><small>{QC_BRAND.surfaceCaption}</small></div>
     <div className="qc-screen-bezel">{fixtureOnly
-      ? <div className="qc-screen-fixture-root"><Suspense fallback={null}><CorOsScreenFixture view={screenView} snapshot={displaySnapshot} onClose={onCloseScreen} /></Suspense></div>
+      ? <div className="qc-screen-fixture-root"><Suspense fallback={null}><CorOsScreenFixture view={screenView} snapshot={displaySnapshot} gigPresetList={gigPresetList} onClose={onCloseScreen} /></Suspense></div>
       : <div className="qc-screen-fixture-root is-live-grid"><CorOsGrid snapshot={displaySnapshot} selectedBlockId={selectedBlockId} onAction={onAction} onOpenPreset={onOpenPreset} onUndo={onUndo} canUndo={canUndo} undoLabel={undoLabel} onSave={onSave} onOpenRouting={onOpenRouting} onRefresh={onRefresh} presetDirectory={presetDirectory} routingPicker={routingPicker} savePreset={savePreset} onContextAction={onContextAction} />{parameterEditor && <CorOsParameterEditor {...parameterEditor} />}</div>}
     </div>
     <div className="screen-nav-control"><span className="nav-arrow nav-arrow-up" /><QcHardwareSwitch role={bankUp.role} label="BANK UP" compact active={Boolean(parameterEditor)} assigned={Boolean(parameterEditor)} accent={navigationLedColor} onAction={onAction} /><span className="nav-arrow nav-arrow-down" /></div>

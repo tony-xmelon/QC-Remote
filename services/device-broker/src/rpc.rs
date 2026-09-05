@@ -8,7 +8,7 @@ use qc_device_runtime::{
         PlannedWrite, PresetMutationPlan,
     },
 };
-use qc_protocol::responses::decode_tempo_clock;
+use qc_protocol::responses::{decode_preset_tempo_settings, decode_tempo_clock};
 use qc_protocol::{domain, profile};
 use qc_windows_midi::PerformanceMidi;
 use serde::{Deserialize, Serialize};
@@ -16,7 +16,7 @@ use serde_json::{json, Value};
 use std::io::{self, Read, Write};
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -118,10 +118,9 @@ fn handle(
         Some(generated_gateway::BrokerDispatch::ResetSession) => controller
             .reset_session()
             .map(|_| ready_connection_state(controller, "Communication session reset")),
-        Some(generated_gateway::BrokerDispatch::Disconnect) => {
-            controller.disconnect();
-            Ok(connection_state(controller, "Quad Cortex session closed"))
-        }
+        Some(generated_gateway::BrokerDispatch::Disconnect) => controller
+            .disconnect()
+            .map(|_| connection_state(controller, "Quad Cortex session closed")),
         // The native broker implements the generated gateway contract without
         // exposing raw HID/protobuf details to either client.
         Some(generated_gateway::BrokerDispatch::StateEvents) => {
@@ -327,7 +326,7 @@ fn request_command(
     )
 }
 
-fn execute_gateway_read(
+fn execute_single_gateway_read(
     controller: &DeviceController,
     method: &str,
     params: &Value,
@@ -378,6 +377,41 @@ fn execute_gateway_read(
             }
         }
     }
+}
+
+fn execute_gateway_read(
+    controller: &DeviceController,
+    method: &str,
+    params: &Value,
+) -> Result<Value, String> {
+    if method != "device.globalTempoSettings" {
+        return execute_single_gateway_read(controller, method, params);
+    }
+
+    // CorOS stores the metronome controls in the loaded preset's TempoControl,
+    // while PRESET/GLOBAL mode is parameter 1 of the device GlobalTempo block.
+    // Compose both authoritative reads so callers never compare a preset write
+    // with the unrelated device-global metronome values.
+    let global = execute_single_gateway_read(controller, method, params)?;
+    let mode = global
+        .get("mode")
+        .cloned()
+        .ok_or_else(|| "The global tempo reply did not include PRESET/GLOBAL mode".to_string())?;
+    let request_id = next_request_id();
+    let reply = request_command(
+        controller,
+        qc_protocol::commands::read_current_preset(request_id),
+        15,
+        Some(request_id),
+        Duration::from_secs(15),
+    )?;
+    let mut preset = serde_json::to_value(
+        decode_preset_tempo_settings(&reply.payload, request_id)
+            .map_err(|error| error.to_string())?,
+    )
+    .map_err(|error| error.to_string())?;
+    preset["mode"] = mode;
+    Ok(preset)
 }
 
 fn gateway_identity(controller: &DeviceController) -> Result<Value, String> {
@@ -638,6 +672,7 @@ fn gateway_lane_control_details(
 ) -> Result<Value, String> {
     assert_expected_preset(controller, params)?;
     let (row, control) = lane_control_target(params)?;
+    refresh_current_preset_state(controller)?;
     controller
         .lane_control_details(row, control)?
         .map(|details| serde_json::to_value(details).map_err(|error| error.to_string()))
@@ -647,6 +682,31 @@ fn gateway_lane_control_details(
                 row + 1
             ))
         })
+}
+
+fn refresh_current_preset_state(controller: &DeviceController) -> Result<(), String> {
+    let events = controller.subscribe_state_events();
+    let after_sequence = controller.latest_state_sequence();
+    let request_id = next_request_id();
+    request_command(
+        controller,
+        qc_protocol::commands::read_current_preset(request_id),
+        profile::MESSAGE_TYPE_PRESET,
+        Some(request_id),
+        Duration::from_secs(15),
+    )?;
+    let deadline = Instant::now() + Duration::from_secs(2);
+    loop {
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        let frame = events.recv_timeout(remaining).map_err(|_| {
+            "The correlated preset reply arrived, but decoded lane state did not update".to_string()
+        })?;
+        if frame.sequence > after_sequence
+            && frame.states.iter().any(|state| state.kind == "preset")
+        {
+            return Ok(());
+        }
+    }
 }
 
 fn gateway_lane_control_parameter(
@@ -890,6 +950,31 @@ fn gateway_set_master_volume(
     gateway_operation(controller, params, "device.setMasterVolume")
 }
 
+fn execute_correlated_readback(
+    controller: &DeviceController,
+    method: &str,
+    params: &Value,
+    read_method: &str,
+) -> Result<Value, String> {
+    // CorOS acknowledges several global writes before their next READ reflects
+    // the new value. Poll the authoritative read briefly instead of treating
+    // that normal apply delay as a failed write. This stays off the realtime
+    // path and never resends the mutation.
+    let deadline = Instant::now() + Duration::from_secs(2);
+    loop {
+        let response = execute_gateway_read(controller, read_method, &json!({}))?;
+        if runtime_request::gateway_write_readback_matches(method, params, &response) {
+            return Ok(response);
+        }
+        if Instant::now() >= deadline {
+            return Err(format!(
+                "correlated {read_method} readback did not match within 2 seconds"
+            ));
+        }
+        thread::sleep(Duration::from_millis(50));
+    }
+}
+
 fn gateway_operation(
     controller: &DeviceController,
     params: &Value,
@@ -898,22 +983,19 @@ fn gateway_operation(
     let plan = plan_gateway_write(controller, method, params)?;
     if runtime_request::gateway_write_is_realtime(method) {
         execute_realtime_planned_write(controller, &plan.write)?;
+        controller.record_library_mutation(method, params);
         return Ok(accepted_unverified(plan.detail));
     }
     let events = controller.subscribe_state_events();
     let after_sequence = controller.latest_state_sequence();
     execute_gateway_write(controller, &plan)?;
+    controller.record_library_mutation(method, params);
     if !plan.verification.requires_authoritative_readback() {
         let Some(read_method) = runtime_request::gateway_write_readback_method(method) else {
             return Ok(accepted_unverified(plan.detail));
         };
-        let response = execute_gateway_read(controller, read_method, &json!({}))?;
-        if !runtime_request::gateway_write_readback_matches(method, params, &response) {
-            return Err(format!(
-                "{} was sent, but correlated {read_method} readback did not match",
-                plan.detail
-            ));
-        }
+        let response = execute_correlated_readback(controller, method, params, read_method)
+            .map_err(|error| format!("{} was sent, but {error}", plan.detail))?;
         return Ok(json!({
             "accepted": true,
             "verified": true,
@@ -1198,10 +1280,11 @@ fn gateway_list_preset_slots(controller: &DeviceController) -> Result<Value, Str
 
 fn execute_preset_mutation(
     controller: &DeviceController,
-    plan: PresetMutationPlan,
+    mut plan: PresetMutationPlan,
+    report_actual_preset_name: bool,
 ) -> Result<Value, String> {
     let mut observed = None;
-    for stage in plan.stages {
+    for stage in std::mem::take(&mut plan.stages) {
         let events = controller.subscribe_state_events();
         let before_sequence = controller.latest_state_sequence();
         execute_planned_write(controller, &stage.write)?;
@@ -1228,9 +1311,51 @@ fn execute_preset_mutation(
             thread::sleep(Duration::from_millis(stage.settle_ms));
         }
     }
+
+    // Saving is eventually consistent and CorOS de-duplicates colliding names
+    // (for example Foo may be stored as Foo_1). A live preset snapshot can
+    // still carry the requested display name, so only a fresh File listing is
+    // authoritative for the catalog name and slot.
+    if !plan.saved_presets.is_empty() {
+        let expected = plan.saved_presets.clone();
+        let listing = controller.wait_for_fresh_preset_listing(&plan.setlist_key, |listing| {
+            expected.iter().all(|preset| {
+                listing.files.iter().any(|file| {
+                    file.position == preset.position
+                        && !file.name.is_empty()
+                        && stored_preset_name_matches(&preset.name, &file.name)
+                })
+            })
+        })?;
+        for preset in &mut plan.saved_presets {
+            let file = listing
+                .files
+                .iter()
+                .find(|file| {
+                    file.position == preset.position
+                        && !file.name.is_empty()
+                        && stored_preset_name_matches(&preset.name, &file.name)
+                })
+                .ok_or_else(|| {
+                    format!(
+                        "The fresh QC catalog did not contain the saved preset at slot {}",
+                        preset.position
+                    )
+                })?;
+            preset.name.clone_from(&file.name);
+            preset.instrument = file.instrument;
+        }
+        if report_actual_preset_name {
+            if let Some(saved) = plan.saved_presets.first() {
+                plan.saved_name.clone_from(&saved.name);
+            }
+        }
+    }
+
     let after = observed
         .or_else(|| controller.gateway_snapshot())
         .ok_or_else(|| "The preset operation produced no synchronized snapshot".to_string())?;
+    controller.ensure_preset_setlist(&plan.setlist_key);
     for preset in &plan.saved_presets {
         controller.record_saved_preset(
             &preset.setlist_key,
@@ -1246,10 +1371,56 @@ fn execute_preset_mutation(
     }))
 }
 
+fn stored_preset_name_matches(requested: &str, stored: &str) -> bool {
+    if requested == stored {
+        return true;
+    }
+    let Some((base, suffix)) = stored.rsplit_once('_') else {
+        return false;
+    };
+    !base.is_empty()
+        && !suffix.is_empty()
+        && suffix.chars().all(|character| character.is_ascii_digit())
+        && requested.starts_with(base)
+}
+
+fn ensure_preset_listing_loaded(
+    controller: &DeviceController,
+    setlist_key: &str,
+) -> Result<(), String> {
+    if controller.preset_list(setlist_key).is_some() {
+        return Ok(());
+    }
+    controller
+        .wait_for_fresh_preset_listing(setlist_key, |_| true)
+        .map(|_| ())
+}
+
+fn ensure_preset_entry_loaded(
+    controller: &DeviceController,
+    setlist_key: &str,
+    position: u32,
+) -> Result<(), String> {
+    if controller.preset_entry(setlist_key, position).is_some() {
+        return Ok(());
+    }
+    controller
+        .wait_for_fresh_preset_listing(setlist_key, |listing| {
+            listing
+                .files
+                .iter()
+                .any(|file| file.position == position && !file.name.is_empty())
+        })
+        .map(|_| ())
+}
+
 fn gateway_save_preset_as(controller: &DeviceController, params: &Value) -> Result<Value, String> {
+    let setlist_key = required_text(params, "setlistKey")?;
+    ensure_preset_listing_loaded(controller, &setlist_key)?;
     execute_preset_mutation(
         controller,
         controller.plan_preset_mutation("device.savePresetAs", params)?,
+        true,
     )
 }
 
@@ -1257,9 +1428,15 @@ fn gateway_rename_current_preset(
     controller: &DeviceController,
     params: &Value,
 ) -> Result<Value, String> {
+    let setlist_key = controller
+        .gateway_snapshot()
+        .map(|snapshot| snapshot.setlist_key)
+        .ok_or_else(|| "No Quad Cortex preset has been synchronized yet".to_string())?;
+    ensure_preset_listing_loaded(controller, &setlist_key)?;
     execute_preset_mutation(
         controller,
         controller.plan_preset_mutation("device.renameCurrentPreset", params)?,
+        true,
     )
 }
 
@@ -1270,9 +1447,13 @@ fn gateway_create_backup(controller: &DeviceController, params: &Value) -> Resul
 }
 
 fn gateway_copy_preset(controller: &DeviceController, params: &Value) -> Result<Value, String> {
+    let source_setlist_key = required_text(params, "sourceSetlistKey")?;
+    let source_position = runtime_request::bounded_u32(params, "sourcePosition", 255)?;
+    ensure_preset_entry_loaded(controller, &source_setlist_key, source_position)?;
     execute_preset_mutation(
         controller,
         controller.plan_preset_mutation("device.copyPreset", params)?,
+        true,
     )
 }
 
@@ -1280,9 +1461,12 @@ fn gateway_duplicate_setlist(
     controller: &DeviceController,
     params: &Value,
 ) -> Result<Value, String> {
+    let source_setlist_key = required_text(params, "sourceSetlistKey")?;
+    ensure_preset_listing_loaded(controller, &source_setlist_key)?;
     execute_preset_mutation(
         controller,
         controller.plan_preset_mutation("device.duplicateSetlist", params)?,
+        false,
     )
 }
 
@@ -1508,6 +1692,19 @@ mod tests {
     use super::*;
 
     #[test]
+    fn coros_preset_name_deduplication_is_accepted_without_accepting_unrelated_names() {
+        assert!(stored_preset_name_matches("Crying Wah", "Crying Wah"));
+        assert!(stored_preset_name_matches("Crying Wah", "Crying Wah_1"));
+        assert!(stored_preset_name_matches(
+            "Cali Basswalk [Ret1]",
+            "Cali Basswalk [Ret_1"
+        ));
+        assert!(!stored_preset_name_matches("Crying Wah", "Crying Wah copy"));
+        assert!(!stored_preset_name_matches("Crying Wah", "Other_1"));
+        assert!(!stored_preset_name_matches("Crying Wah", "Crying Wah_x"));
+    }
+
+    #[test]
     fn optional_event_and_raw_request_numbers_are_strictly_typed_and_bounded() {
         assert_eq!(optional_u64(&json!({}), "afterSequence"), Ok(None));
         assert_eq!(
@@ -1647,6 +1844,14 @@ mod tests {
         );
         assert_eq!(response["result"]["usbDiagnostics"]["connected"], false);
         assert_eq!(response["result"]["usbDiagnostics"]["messagesSent"], 0);
+        assert_eq!(
+            response["result"]["usbDiagnostics"]["messagesSentByType"],
+            json!({})
+        );
+        assert_eq!(
+            response["result"]["usbDiagnostics"]["messagesReceivedByType"],
+            json!({})
+        );
         assert_eq!(
             response["result"]["usbDiagnostics"]["maxHidWriteDurationMs"],
             0

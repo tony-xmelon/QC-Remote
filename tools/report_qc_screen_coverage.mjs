@@ -165,7 +165,6 @@ const lines = [
     "Official Windows": paths.officialWindows,
     "Official Android": paths.officialAndroid,
   }).map(([label, path]) => `- ${label}: ${path ? `\`${path}\`` : "not supplied"}`),
-  "",
 ];
 
 const outputPath = resolve(ROOT, paths.output);

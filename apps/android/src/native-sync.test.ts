@@ -18,11 +18,14 @@ const rustAndroidSource = readFileSync(new URL("../../../packages/rust/qc-androi
 const rustRuntimeRequestSource = readFileSync(new URL("../../../packages/rust/qc-device-runtime/src/request.rs", import.meta.url), "utf8");
 const rustResponseSource = readFileSync(new URL("../../../packages/rust/qc-protocol/src/responses.rs", import.meta.url), "utf8");
 const sharedTransportSource = readFileSync(new URL("../../../packages/typescript/qc-core/src/gateway-transport.ts", import.meta.url), "utf8");
+const continuousControlSource = readFileSync(new URL("../../../packages/typescript/qc-ui/src/use-continuous-control-workflow.ts", import.meta.url), "utf8");
+const corOsScreensSource = readFileSync(new URL("../../../packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", import.meta.url), "utf8");
 const generatedGatewaySource = readFileSync(new URL("../android/app/src/main/java/com/qccontrol/mobile/GeneratedGatewayMethods.java", import.meta.url), "utf8");
 const remoteActionsSource = readFileSync(new URL("../android/app/src/main/java/com/qccontrol/mobile/GeneratedRemoteActions.java", import.meta.url), "utf8");
 const relayProtocolSource = readFileSync(new URL("../android/app/src/main/java/com/qccontrol/mobile/RelayProtocol.java", import.meta.url), "utf8");
 const actionContract = JSON.parse(readFileSync(new URL("../../../contracts/qc-actions.v1.json", import.meta.url), "utf8"));
 const gatewayContract = JSON.parse(readFileSync(new URL("../../../contracts/gateway-methods.v1.json", import.meta.url), "utf8"));
+const androidManifestSource = readFileSync(new URL("../android/app/src/main/AndroidManifest.xml", import.meta.url), "utf8");
 
 test("tempo synchronizes in both directions over the native USB bridge", () => {
   assert.match(sharedTransportSource, /gateway\.setTempo\(bpm, state\.tempo, state\.presetName\)/);
@@ -236,6 +239,29 @@ test("Android persists backups and requires a fresh synchronized USB session bef
   assert.match(javaSource, /relayReconnect\("USB session refreshed for high-volume read"\)/);
 });
 
+test("Android 16 can start the connected-device relay foreground service", () => {
+  assert.match(androidManifestSource, /android\.permission\.FOREGROUND_SERVICE_CONNECTED_DEVICE/);
+  assert.match(androidManifestSource, /android\.permission\.CHANGE_NETWORK_STATE/);
+  assert.match(androidManifestSource, /android:foregroundServiceType="connectedDevice"/);
+});
+
+test("Master Volume uses authoritative QC state between coalesced Android writes", () => {
+  assert.match(continuousControlSource, /gateway\.setMasterVolume\(target, controller\.snapshotRef\.current\.masterVolume\)/);
+  assert.doesNotMatch(continuousControlSource, /reconcile\(\{ \.\.\.controller\.snapshotRef\.current, masterVolume: value \}\);\s*notice\(`Master Volume:/);
+  assert.match(rustStateSource, /decode_master_volume/);
+  assert.match(javaSource, /"master"\.equals\(kind\)[\s\S]*currentMasterVolume/);
+});
+
+test("Android I/O and Gig View mirror the physical QC screen and live assignments", () => {
+  assert.match(servicesSource, /swipeScreen\(options:/);
+  assert.match(javaSource, /public void swipeScreen\(PluginCall call\)/);
+  assert.match(rustCommandsSource, /pub fn screen_drag[\s\S]*remote_control_mouse::Type::Drag/);
+  assert.match(appSource, /QcUsbNative\.swipeScreen\(qcRemoteScreen\.openIo\)/);
+  assert.match(appSource, /androidGatewayTransport\.showGigView\(true\)/);
+  assert.match(corOsScreensSource, /snapshot\.footswitchModes\?\.\[index < 4 \? 0 : 1\]/);
+  assert.match(corOsScreensSource, /listedPresets\.find\(\(candidate\) => candidate\.position === position\)/);
+});
+
 test("Android refreshes stale high-volume USB reads before requesting their streams", () => {
   assert.match(javaSource, /device\.captureScreen[\s\S]*device\.presetScreenshot[\s\S]*relayReconnect\("USB session refreshed for high-volume read"\)/);
   assert.match(javaSource, /restoreUsbSessionAfterHighVolumeRead/);
@@ -295,15 +321,15 @@ test("Android automatically recovers USB attachment and unexpected reader exit",
 });
 
 test("Android's USB maintenance heartbeat produces a small device reply", () => {
-  assert.match(javaSource, /sessionShouldKeepalive[\s\S]*writeMessage\(stateDecoder\.readCommand\(10\)\)/);
+  assert.match(javaSource, /sessionShouldKeepalive[\s\S]*writeMessage\([\s\S]*stateDecoder\.readCommand\(QcUsbProfile\.MESSAGE_TYPE_VERSION\)\)/);
   assert.match(javaSource, /pendingOperations\.isEmpty\(\)[\s\S]*sessionShouldKeepalive/);
-  assert.match(javaSource, /currentBackupActive[\s\S]*stateDecoder\.keepaliveCommand\(\)[\s\S]*stateDecoder\.readCommand\(10\)/);
+  assert.match(javaSource, /currentBackupActive[\s\S]*stateDecoder\.keepaliveCommand\(\)[\s\S]*stateDecoder\.readCommand\(QcUsbProfile\.MESSAGE_TYPE_VERSION\)/);
   assert.match(javaSource, /MAINTENANCE_POLL_MS = 1000/);
   assert.match(javaSource, /MAINTENANCE_POLL_MS, MAINTENANCE_POLL_MS, TimeUnit\.MILLISECONDS/);
-  assert.match(javaSource, /handshakeComplete = true;[\s\S]*keepalive\.schedule\([\s\S]*readCommand\(10\)[\s\S]*MAINTENANCE_POLL_MS/);
+  assert.match(javaSource, /handshakeComplete = true;[\s\S]*keepalive\.schedule\([\s\S]*readCommand\(QcUsbProfile\.MESSAGE_TYPE_VERSION\)[\s\S]*MAINTENANCE_POLL_MS/);
 });
 
-test("Android never replays a physical backup command", () => {
+test("Android retries a backup only before a physical document starts", () => {
   const windowsUsb = readFileSync(new URL("../../../services/device-broker/src/usb.rs", import.meta.url), "utf8");
   assert.match(rustAndroidSource, /"started": started/);
   assert.match(rustAndroidSource, /"ignoredPrefixChunks": ignored_prefix_chunks/);
@@ -311,10 +337,10 @@ test("Android never replays a physical backup command", () => {
   assert.match(usbProfileSource, /BACKUP_FIRST_CHUNK_TIMEOUT_MS = 60000L/);
   assert.match(usbProfileSource, /BACKUP_STREAM_STALL_TIMEOUT_MS = 15000L/);
   assert.match(javaSource, /operation\.started[\s\S]*partial document was discarded/);
-  assert.match(javaSource, /No native backup document started after one request[\s\S]*never repeats a backup request/);
-  assert.doesNotMatch(javaSource, /operation\.attempts \+= 1/);
-  assert.doesNotMatch(javaSource, /Sending native backup request " \+ operation\.attempts/);
-  assert.match(usbProfileSource, /BACKUP_MAXIMUM_ATTEMPTS = 1/);
+  assert.match(javaSource, /operation\.started[\s\S]*operation\.attempts < QcUsbProfile\.BACKUP_MAXIMUM_ATTEMPTS[\s\S]*operation\.attempts \+= 1[\s\S]*issueBackupRequest\(pending\)/);
+  assert.match(javaSource, /No native backup document started after " \+ operation\.attempts[\s\S]*partial streams are never retried or combined/);
+  assert.match(javaSource, /Sending native backup request " \+ pending\.operation\.attempts/);
+  assert.match(usbProfileSource, /BACKUP_MAXIMUM_ATTEMPTS = 2/);
   assert.match(windowsUsb, /!assembler\.started\(\)[\s\S]*BACKUP_MAXIMUM_ATTEMPTS/);
   assert.match(windowsUsb, /partial document was discarded and was not combined with a retry/);
   assert.match(javaSource, /pendingOperations\.timeout\(pending, QcUsbProfile\.BACKUP_TOTAL_TIMEOUT_MS/);

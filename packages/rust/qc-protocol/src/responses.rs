@@ -843,7 +843,7 @@ pub fn decode_tempo_settings(parameters: &[Param]) -> TempoSettings {
         led_enabled: values[2].map(|value| value >= 0.5),
         volume_db: values[3].map(|value| -60.0 + 69.0 * value),
         running: values[4].map(|value| value >= 0.5),
-        pan: values[5],
+        pan: values[5].map(|value| -1.0 + 2.0 * value),
         time_signature: values[6].and_then(|value| discrete(value, SIGNATURES)),
         subdivision: values[7].and_then(|value| discrete(value, SUBDIVISIONS)),
         sound: values[8].and_then(|value| discrete(value, SOUNDS)),
@@ -885,6 +885,32 @@ pub fn decode_global_tempo_settings(payload: &[u8]) -> Result<TempoSettings, Res
     let mut settings = decode_tempo_settings(&message.params);
     settings.mode = Some(decode_tempo_mode(payload)?.mode);
     Ok(settings)
+}
+
+/// Decode the loaded preset's TempoControl block from a correlated preset read.
+/// PRESET/GLOBAL mode is device-wide and therefore composed separately from a
+/// GlobalTempo reply by the native host.
+pub fn decode_preset_tempo_settings(
+    payload: &[u8],
+    expected_request_id: u64,
+) -> Result<TempoSettings, ResponseDecodeError> {
+    let message: pa::RecallPresetMessage = decode_reply(payload)?;
+    let request_id = match message.request_id {
+        Some(pa::recall_preset_message::RequestId::RequestId(value)) => value,
+        None => return Err(ResponseDecodeError::Incomplete("request id")),
+    };
+    if request_id != expected_request_id {
+        return Err(ResponseDecodeError::Mismatch("current preset request id"));
+    }
+    let preset = match message.preset {
+        Some(pa::recall_preset_message::Preset::Preset(value)) => value,
+        None => return Err(ResponseDecodeError::Incomplete("current preset")),
+    };
+    let tempo = preset
+        .tempo_program_data
+        .first()
+        .ok_or(ResponseDecodeError::Incomplete("preset TempoControl"))?;
+    Ok(decode_tempo_settings(&tempo.params))
 }
 
 pub fn decode_inhibited_modules(payload: &[u8]) -> Result<InhibitedModules, ResponseDecodeError> {
@@ -1244,6 +1270,7 @@ mod tests {
         let settings = decode_global_tempo_settings(&payload).unwrap();
         assert_eq!(settings.mode.as_deref(), Some("GLOBAL"));
         assert_eq!(settings.bpm, Some(120));
+        assert_eq!(settings.pan, Some(0.0));
         assert_eq!(settings.time_signature.as_deref(), Some("4/4"));
         assert_eq!(settings.subdivision.as_deref(), Some("1/8"));
         assert_eq!(settings.sound.as_deref(), Some("COWBELL"));
@@ -1259,6 +1286,30 @@ mod tests {
         assert!(matches!(
             decode_tempo_mode(&clock),
             Err(ResponseDecodeError::Incomplete(_))
+        ));
+
+        let preset_payload = pa::RecallPresetMessage {
+            action: pa::message_action::Enum::Update as i32,
+            request_id: Some(pa::recall_preset_message::RequestId::RequestId(42)),
+            preset: Some(pa::recall_preset_message::Preset::Preset(
+                crate::proto::BinaryPreset {
+                    tempo_program_data: vec![crate::proto::Model {
+                        params: vec![parameter(0, 0.355), parameter(1, 0.0), parameter(2, 0.0)],
+                        ..Default::default()
+                    }],
+                    ..Default::default()
+                },
+            )),
+            ..Default::default()
+        }
+        .encode_to_vec();
+        let preset_settings = decode_preset_tempo_settings(&preset_payload, 42).unwrap();
+        assert_eq!(preset_settings.bpm, Some(111));
+        assert_eq!(preset_settings.led_enabled, Some(false));
+        assert_eq!(preset_settings.mode, None);
+        assert!(matches!(
+            decode_preset_tempo_settings(&preset_payload, 41),
+            Err(ResponseDecodeError::Mismatch("current preset request id"))
         ));
     }
 

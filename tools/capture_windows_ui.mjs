@@ -13,7 +13,7 @@ const shouldCapture = (id) => !requestedIds.size || requestedIds.has(id);
 let captureCount = 0;
 await mkdir(outputDirectory, { recursive: true });
 
-const browser = await chromium.launch({ headless: true, executablePath: process.env.QC_BROWSER_EXECUTABLE });
+const browser = await chromium.launch({ headless: true, executablePath: process.env.QC_BROWSER_EXECUTABLE, args: ["--disable-lcd-text"] });
 const page = await browser.newPage({ viewport: { width: 802, height: 482 }, deviceScaleFactor: 1 });
 page.setDefaultTimeout(10000);
 const captureCss = `
@@ -42,6 +42,12 @@ async function capture(id) {
   if (!box || Math.round(box.width) !== 800 || Math.round(box.height) !== 480) throw new Error(`${id}: expected 800x480, got ${box?.width}x${box?.height}`);
   const viewport = page.viewportSize();
   if (viewport) await page.mouse.move(viewport.width - 1, viewport.height - 1);
+  // Browser focus/selection chrome is not part of the physical touchscreen UI.
+  // Clear it after the scripted interaction so corpus captures stay deterministic.
+  await page.evaluate(() => {
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    window.getSelection()?.removeAllRanges();
+  });
   await screen.screenshot({ path: `${outputDirectory}/${id}.png`, animations: "disabled", timeout: 15000 });
   captureCount += 1;
   console.log(`Captured Windows ${id}`);
@@ -54,9 +60,10 @@ async function gridState(id, action) {
   await capture(id);
 }
 
-for (const id of ["grid-base", "grid-restored", "grid-scene-a-restored"]) await gridState(id);
+for (const id of ["grid-base", "grid-restored", "grid-scene-a-restored", "capture-type"]) await gridState(id);
 await gridState("grid-scene-selector", async () => page.getByLabel("Select scene").click());
 await gridState("grid-context-menu", async () => page.getByLabel("Open Grid menu").click());
+await gridState("grid-context-menu-bottom", async () => { await page.getByLabel("Open Grid menu").click(); await page.locator(".coros-screen-menu").evaluate((element) => { element.scrollTop = element.scrollHeight; }); });
 await gridState("grid-scene-b", async () => { await page.getByLabel("Select scene").click(); await page.getByRole("menuitem").nth(1).click(); });
 for (const [id, screen] of [["copy-scene-destination", "fixture-copy-scene"], ["swap-scene-destination", "fixture-swap-scene"]]) {
   if (!shouldCapture(id)) continue;
@@ -83,7 +90,7 @@ for (const [id, mode] of [["gig-view", "STOMP"], ["gig-view-preset", "PRESET"], 
   await load({ screen: "gig", mode });
   await capture(id);
 }
-for (const [id, screen] of [["device-browser-plugin-list", "plugin-list"], ["device-browser-plugin-models", "plugin-models"], ["device-browser-plugin-locked", "plugin-locked"], ["device-presets-exotic-z-boost", "device-presets"], ["device-presets-user", "device-presets-user"], ["device-preset-actions", "device-preset-actions"], ["splitter-editor", "splitter-editor"], ["mixer-editor", "mixer-editor"], ["input-gate-control", "fixture-input-gate"], ["tempo-metronome", "tempo"], ["tuner", "tuner"], ["tuner-live-enabled", "tuner-live-enabled"], ["gig-view-live-tuner", "gig-live-tuner"], ["preset-midi-out", "midi-out"], ["modes-configuration", "modes"], ["save-as-editor", "save-as"], ["edit-details-editor", "edit-details"]]) {
+for (const [id, screen] of [["device-browser-plugin-list", "plugin-list"], ["device-browser-plugin-models", "plugin-models"], ["device-browser-plugin-locked", "plugin-locked"], ["plugin-browser-ready", "plugin-list"], ["overlay-busy", "plugin-refresh"], ["device-browser-base", "corpus-device-browser-root"], ["device-browser-top", "corpus-device-browser-root"], ["device-browser-neural-capture", "device-favorites"], ["device-favorites", "device-favorites"], ["device-recents", "device-recents"], ["device-search-entry", "device-search-entry"], ["device-search", "device-search-suggestions"], ["device-search-results", "device-search-results"], ["overlay-error", "device-search-results"], ["io-overview", "io-overview"], ["io-output", "io-output"], ["io-send-return", "io-send-return"], ["io-headphones", "io-headphones"], ["fixture-editor-capture", "fixture-editor-capture"], ["device-presets-exotic-z-boost", "device-presets"], ["device-presets-user", "device-presets-user"], ["device-preset-actions", "device-preset-actions"], ["block-context", "block-context"], ["device-preset-save", "device-preset-save"], ["onscreen-keyboard", "overlay-keyboard"], ["directory-item-context", "directory-item-context"], ["delete-confirmation", "fixture-delete"], ["generic-confirmation", "overlay-confirmation"], ["splitter-editor", "splitter-editor"], ["mixer-editor", "mixer-editor"], ["input-gate-control", "fixture-input-gate"], ["tempo-metronome", "tempo"], ["tuner", "tuner"], ["tuner-live-enabled", "tuner-live-enabled"], ["gig-view-live-tuner", "gig-live-tuner"], ["preset-midi-out", "midi-out"], ["modes-configuration", "modes"], ["save-as-editor", "save-as"], ["edit-details-editor", "edit-details"], ["settings-support", "settings-support"], ["settings-info", "settings-info"], ["settings-diagnostics", "settings-diagnostics"], ["settings-wifi", "settings-wifi"], ["settings-storage", "settings-storage"]]) {
   if (!shouldCapture(id)) continue;
   await load({ screen, ...(screen === "tempo" ? { tempo: "56" } : {}) });
   await capture(id);

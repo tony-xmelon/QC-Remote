@@ -97,18 +97,25 @@ try {
   }
 
   if (enabled("--reset-session")) {
-    const reset = await exchange("device.resetSession", { confirmRiskyOperation: true });
+    const reset = await exchange("device.resetSession");
     if (reset.phase !== "ready") throw new Error(`Session reset ended in ${JSON.stringify(reset.phase)}.`);
   }
   if (enabled("--disconnect-reconnect")) {
-    await exchange("device.disconnect", { confirmRiskyOperation: true });
-    const reconnect = await exchange("device.reconnect", { confirmRiskyOperation: true });
+    await exchange("device.disconnect");
+    const reconnect = await exchange("device.reconnect");
     if (reconnect.phase !== "ready") throw new Error(`Reconnect ended in ${JSON.stringify(reconnect.phase)}.`);
   }
   if (enabled("--screen-tap-roundtrip")) {
-    for (let index = 0; index < 2; index += 1) {
-      await exchange("device.tapScreen", { x: 400, y: 240, confirmRiskyOperation: true });
-    }
+    await exchange("device.tapScreen", { x: 20, y: 20 });
+    await exchange("device.tapScreen", { x: 742, y: 30 });
+    await exchange("device.tapScreen", { x: 742, y: 30 });
+  }
+  if (enabled("--restore-grid") || enabled("--screen-tap-roundtrip")) {
+    const active = await exchange("device.snapshot");
+    await exchange("device.reloadPreset", {
+      expectedPresetName: active.presetName,
+      expectedPosition: active.presetPosition
+    });
   }
 
   const results = [];
@@ -119,8 +126,10 @@ try {
     if (backup.type !== "backup" || backup.creator !== "quad") {
       throw new Error(`Run ${index + 1} returned an unsupported backup wrapper.`);
     }
-    const after = await exchange("device.status");
-    if (after.phase !== "ready") throw new Error(`Run ${index + 1} left the broker in ${JSON.stringify(after.phase)}.`);
+    const after = await exchange("system.status");
+    if (after.usbDiagnostics?.phase !== "ready") {
+      throw new Error(`Run ${index + 1} left the broker in ${JSON.stringify(after.usbDiagnostics?.phase)}.`);
+    }
     results.push({
       run: index + 1,
       seconds: Math.round((performance.now() - started) / 1000 * 1000) / 1000,

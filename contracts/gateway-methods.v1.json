@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "apiVersion": 17,
+  "apiVersion": 18,
   "capabilities": ["modelRepoParameterMetadata", "nativeBroker", "nativeStateEvents", "nativeDeviceIdentity", "nativeRemoteScreen", "nativeSceneManagement", "nativeParameterAssignments", "nativeStompMetadata", "nativePresetMidiOut", "nativeExpressionBypass", "nativeTunerSettings", "nativeTunerWrites", "nativeLaneControls", "nativeGeneralSettings", "nativeIoSettings", "nativeGlobalEq", "nativeModeCycle", "nativeLooper", "nativeLibraryManagement", "nativeSplitMute", "nativeTempoMetronome"],
   "pythonCapabilities": ["modelRepoParameterMetadata", "nativeStateEvents", "nativeDeviceIdentity", "nativeRemoteScreen", "nativeSceneManagement", "nativeParameterAssignments", "nativeStompMetadata", "nativePresetMidiOut", "nativeExpressionBypass", "nativeTunerSettings", "nativeTunerWrites", "nativeLaneControls", "nativeGeneralSettings", "nativeIoSettings", "nativeGlobalEq", "nativeModeCycle", "nativeLooper", "nativeLibraryManagement", "nativeSplitMute", "nativeTempoMetronome"],
   "androidDispatch": {
@@ -148,7 +148,7 @@
     { "rpc": "device.listPresets", "target": "list_presets", "client": "listPresets", "tauri": "list_presets", "args": [{ "name": "refresh", "default": false }, "setlistKey"] },
     { "rpc": "device.listPresetFolders", "target": "list_preset_folders", "client": "listPresetFolders", "tauri": "list_preset_folders", "args": [{ "name": "refresh", "default": false }] },
     { "rpc": "device.navigateBank", "target": "navigate_bank", "client": "navigateBank", "tauri": "navigate_bank", "args": ["direction", { "name": "expectedPresetName", "default": "" }, "expectedPosition"] },
-    { "rpc": "device.recallPreset", "target": "recall_preset", "client": "recallPreset", "tauri": "recall_preset", "args": ["setlistKey", "position", { "name": "expectedPresetName", "default": "" }, "expectedPosition"] },
+    { "rpc": "device.recallPreset", "target": "recall_preset", "client": "recallPreset", "tauri": "recall_preset", "args": ["setlistKey", "position", { "name": "expectedPresetName", "default": "" }, "expectedPosition", "expectedSetlistKey"] },
     { "rpc": "device.reloadPreset", "target": "reload_preset", "client": "reloadPreset", "tauri": "reload_preset", "args": [{ "name": "expectedPresetName", "default": "" }, "expectedPosition"] },
     { "rpc": "device.blockDetails", "target": "block_details", "client": "blockDetails", "tauri": "block_details", "args": ["row", "column", { "name": "expectedPresetName", "default": "" }] },
     { "rpc": "device.laneControlDetails", "target": "lane_control_details", "client": "laneControlDetails", "tauri": "lane_control_details", "args": ["row", "control", { "name": "expectedPresetName", "default": "" }] },

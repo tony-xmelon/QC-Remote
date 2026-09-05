@@ -31,6 +31,7 @@ type VolumeQueue = {
   running: boolean;
   expected?: number;
   target?: number;
+  desired?: number;
 };
 
 type LatestValueQueue = {
@@ -138,9 +139,13 @@ export function useContinuousControlWorkflow(options: ContinuousControlWorkflowO
   const drainVolume = useCallback(async () => {
     const queue = volume.current;
     await drainLatestValue(queue, {
-      write: (target, expected) => gateway.setMasterVolume(target, expected),
+      // Master Volume completes on transport acceptance and is then reconciled
+      // by the QC's pushed type-17 echo. Always guard against the latest
+      // authoritative snapshot; an optimistic UI value must never become the
+      // expected device value for the next encoder step.
+      write: (target) => gateway.setMasterVolume(target, controller.snapshotRef.current.masterVolume),
       accept: (result, target, current) => {
-        current.expected = result.snapshot?.masterVolume ?? target;
+        current.expected = result.snapshot?.masterVolume ?? controller.snapshotRef.current.masterVolume;
         if (result.snapshot) reconcile(result.snapshot);
         notice(result.detail ?? `Master Volume set to ${target}.`);
       },
@@ -153,17 +158,21 @@ export function useContinuousControlWorkflow(options: ContinuousControlWorkflowO
   }, [fail, gateway, notice, reconcile]);
 
   const adjustMasterVolume = useCallback((delta: number) => {
-    const value = Math.max(0, Math.min(100, Math.round((volume.current.target ?? controller.snapshotRef.current.masterVolume) + delta)));
+    const queue = volume.current;
+    const observed = controller.snapshotRef.current.masterVolume;
+    if (!queue.running && queue.target === undefined && queue.expected === undefined && queue.desired !== observed) {
+      queue.desired = observed;
+    }
+    const value = Math.max(0, Math.min(100, Math.round((queue.desired ?? observed) + delta)));
+    queue.desired = value;
     if (demo) {
       reconcile({ ...controller.snapshotRef.current, masterVolume: value });
       notice(`Demo: Master Volume ${value}.`);
       return;
     }
     if (!connected) { notice("Connect the Quad Cortex before changing Master Volume."); return; }
-    const queue = volume.current;
     if (queue.expected === undefined) queue.expected = controller.snapshotRef.current.masterVolume;
     queue.target = value;
-    reconcile({ ...controller.snapshotRef.current, masterVolume: value });
     notice(`Master Volume: ${value}…`);
     if (queue.timer !== undefined) window.clearTimeout(queue.timer);
     if (!queue.running) queue.timer = window.setTimeout(() => void drainVolume(), 40);

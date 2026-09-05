@@ -106,6 +106,21 @@ export interface RuntimeStatus {
   gatewayApiVersion?: number;
   capabilities?: string[];
   message: string;
+  usbDiagnostics?: {
+    phase: string;
+    detail: string;
+    connected: boolean;
+    synchronized: boolean;
+    activePresetName?: string;
+    activeScene?: number;
+    connectedAtUnixMs?: number;
+    handshakeMs?: number;
+    messagesReceived?: number;
+    messagesSent?: number;
+    messagesReceivedByType?: Record<string, number>;
+    messagesSentByType?: Record<string, number>;
+    lastMessageType?: number;
+  };
 }
 
 export interface ModelEntry {
@@ -341,7 +356,7 @@ export interface GatewayTransport {
   listPresets(refresh?: boolean, setlistKey?: string): Promise<PresetList>;
   listPresetFolders(refresh?: boolean): Promise<PresetFolderList>;
   navigateBank(direction: -1 | 1, expectedPresetName: string, expectedPosition: number): Promise<DeviceActionResult>;
-  recallPreset(setlistKey: string, position: number, expectedPresetName: string, expectedPosition: number): Promise<DeviceActionResult>;
+  recallPreset(setlistKey: string, position: number, expectedPresetName: string, expectedPosition: number, expectedSetlistKey: string): Promise<DeviceActionResult>;
   reloadPreset(expectedPresetName: string, expectedPosition: number): Promise<DeviceActionResult>;
   blockDetails(row: number, column: number, expectedPresetName: string): Promise<BlockDetails>;
   laneControlDetails(row: number, control: LaneControl, expectedPresetName: string): Promise<BlockDetails>;

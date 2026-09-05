@@ -8,6 +8,7 @@ final class QcUsbProfile {
     static final int MAX_FRAME_BYTES = 1048576;
     static final int MAX_INFLATED_BYTES = 16777216;
     static final long KEEPALIVE_INTERVAL_MS = 5000L;
+    static final long LIVENESS_REPLY_TIMEOUT_MS = 3000L;
     static final long RECONNECT_INTERVAL_MS = 750L;
     static final long PERFORMANCE_MIDI_GAP_MS = 8L;
     static final long HANDSHAKE_TIMEOUT_MS = 30000L;
@@ -19,7 +20,7 @@ final class QcUsbProfile {
     static final long BACKUP_TOTAL_TIMEOUT_MS = 180000L;
     static final long BACKUP_FIRST_CHUNK_TIMEOUT_MS = 60000L;
     static final long BACKUP_STREAM_STALL_TIMEOUT_MS = 15000L;
-    static final int BACKUP_MAXIMUM_ATTEMPTS = 1;
+    static final int BACKUP_MAXIMUM_ATTEMPTS = 2;
     static final int BACKUP_MAXIMUM_DOCUMENT_BYTES = 33554432;
     static final int MIDI_CONTROL_CHANGE_STATUS = 176;
     static final int MIDI_USB_EVENT_PACKET_HEADER = 11;
@@ -31,10 +32,12 @@ final class QcUsbProfile {
     static final int MIDI_PRESSED_VALUE = 127;
     static final int MIDI_FEATURE_OFF_VALUE = 0;
     static final int MIDI_FEATURE_ON_VALUE = 127;
+    static final int MESSAGE_TYPE_VERSION = 10;
+    static final int MESSAGE_TYPE_PRESET = 15;
     static final int MESSAGE_TYPE_GLOBAL_TEMPO = 33;
     static final int MESSAGE_TYPE_BACKUP = 40;
     static final int MESSAGE_TYPE_MODEL_REPO = 51;
-    static final int MESSAGE_TYPE_DEVICE_VERSION = 52;
+    static final int MESSAGE_TYPE_RESET_COMMS_BUFFERS = 52;
     static final int[] LIVE_SUBSCRIPTIONS = {3, 9, 24, 38, 20, 42, 35, 58, 50, 54, 19, 15, 57, 60, 17, 33, 34, 21, 2, 13, 14};
 
     private QcUsbProfile() {}

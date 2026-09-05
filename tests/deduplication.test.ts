@@ -186,10 +186,15 @@ test("one generated profile owns USB and performance MIDI policy across native h
     assert.match(java, new RegExp(`= ${value};`));
     assert.match(rust, new RegExp(`= ${value};`));
   }
+  assert.equal(contract.messageTypes.version, 10, "Version is the side-effect-free liveness response");
+  assert.equal(contract.messageTypes.resetCommsBuffers, 52, "ResetCommsBuffers owns the handshake echo");
+  assert.equal(contract.messageTypes.deviceVersion, undefined, "wire type 52 must not be mislabeled as Version");
   assert.equal(contract.liveSubscriptions.includes(4), false, "directory traffic must not starve realtime startup");
   assert.match(source("packages/rust/qc-protocol/src/commands.rs"), /profile::LIVE_SUBSCRIPTIONS/);
-  assert.match(source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java"), /QcUsbProfile\.MESSAGE_TYPE_(?:GLOBAL_TEMPO|BACKUP|MODEL_REPO|DEVICE_VERSION)/);
-  assert.match(source("services/device-broker/src/usb.rs"), /profile::MESSAGE_TYPE_(?:BACKUP|MODEL_REPO|DEVICE_VERSION)/);
+  assert.match(source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java"), /QcUsbProfile\.MESSAGE_TYPE_(?:VERSION|GLOBAL_TEMPO|BACKUP|MODEL_REPO|RESET_COMMS_BUFFERS)/);
+  assert.match(source("services/device-broker/src/usb.rs"), /profile::MESSAGE_TYPE_(?:BACKUP|MODEL_REPO|RESET_COMMS_BUFFERS)/);
+  assert.match(source("services/device-broker/src/worker.rs"), /liveness_probe_timed_out[\s\S]*MESSAGE_TYPE_VERSION/);
+  assert.match(source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java"), /readCommand\(QcUsbProfile\.MESSAGE_TYPE_VERSION\)/);
   assert.match(source("packages/rust/qc-windows-midi/src/lib.rs"), /profile::MIDI_CONTROL_CHANGE_STATUS/);
   assert.match(source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java"), /QcUsbProfile\.MIDI_(?:USB_EVENT_PACKET_HEADER|CONTROL_CHANGE_STATUS)/);
   assert.doesNotMatch(source("packages/rust/qc-windows-midi/src/lib.rs"), /0xB0/i);
@@ -383,7 +388,7 @@ test("Android owns one pending-operation lifecycle and has no confirmation polli
   assert.match(broker, /subscribe_state_events\(\)/);
   assert.match(broker, /recv_timeout/);
   const rpc = source("services/device-broker/src/rpc.rs");
-  const readFlow = rpc.slice(rpc.indexOf("fn execute_gateway_read"), rpc.indexOf("fn gateway_identity"));
+  const readFlow = rpc.slice(rpc.indexOf("fn execute_single_gateway_read"), rpc.indexOf("fn gateway_identity"));
   assert.match(readFlow, /subscribe_raw_events\(\)/);
   assert.match(readFlow, /recv_timeout\(remaining\)/);
   assert.doesNotMatch(readFlow, /events_since|thread::sleep/);
@@ -640,7 +645,7 @@ test("one generated profile owns native backup limits across both hosts", () => 
   assert.match(android, /QcUsbProfile\.BACKUP_TOTAL_TIMEOUT_MS/);
   assert.match(android, /QcUsbProfile\.BACKUP_FIRST_CHUNK_TIMEOUT_MS/);
   assert.match(android, /QcUsbProfile\.BACKUP_STREAM_STALL_TIMEOUT_MS/);
-  assert.doesNotMatch(android, /QcUsbProfile\.BACKUP_MAXIMUM_ATTEMPTS/);
+  assert.match(android, /QcUsbProfile\.BACKUP_MAXIMUM_ATTEMPTS/);
   assert.match(android, /QcUsbProfile\.BACKUP_MAXIMUM_DOCUMENT_BYTES/);
   assert.match(windowsUsb, /profile::BACKUP_FIRST_CHUNK_TIMEOUT_MS/);
   assert.match(windowsUsb, /profile::BACKUP_STREAM_STALL_TIMEOUT_MS/);

@@ -796,6 +796,7 @@ impl StateDecoder {
             .map(|item| normalized_category(&item.category))
             .unwrap_or_default();
         let show_offscreen = category_key.contains("cabsim") || category_key.contains("irloader");
+        let lane_control = matches!(column, 10 | 11);
         let splitter_visible = if routing_node == Some("splitter") {
             current_values
                 .get(&0)
@@ -815,9 +816,17 @@ impl StateDecoder {
         for (positional, parameter) in model.params.iter().enumerate() {
             let index = param_index(parameter, positional as u32);
             let spec = info.and_then(|item| item.parameters.get(&index));
+            // Input Gate and Lane Output are hidden catalog models because they
+            // are row controls rather than addable Grid devices. Their own
+            // parameter screen is nevertheless public and editable. Conversely,
+            // CorOS currently carries one undocumented fifth value in both
+            // control records; never present that unknown value as a writable
+            // "Parameter 5" merely because it exists in the preset protobuf.
+            if lane_control && info.is_some() && spec.is_none() {
+                continue;
+            }
             if spec.is_some_and(|item| {
-                item.hidden
-                    || (!item.screen_visible && !show_offscreen)
+                (!lane_control && (item.hidden || (!item.screen_visible && !show_offscreen)))
                     || conditional_parameter_hidden(model_id, index, &current_values)
             }) {
                 continue;
@@ -902,7 +911,8 @@ impl StateDecoder {
                 steps: spec.and_then(|item| item.steps),
                 scene_mode,
                 options,
-                writable: !parameter.param_values.is_empty(),
+                writable: !parameter.param_values.is_empty()
+                    && !spec.is_some_and(|item| item.r#type.eq_ignore_ascii_case("grMeter")),
                 enabled: spec
                     .map(|item| parameter_enabled(item, &current_values, info))
                     .unwrap_or(true),
@@ -2447,5 +2457,82 @@ mod tests {
         assert_eq!(rate.expression, Some(2));
         assert_eq!(rate.expression_minimum, Some(0.1));
         assert_eq!(rate.expression_maximum, Some(0.9));
+    }
+
+    #[test]
+    fn hidden_lane_catalog_models_expose_documented_controls_but_not_unknown_wire_values() {
+        let xml = br#"<Models><Category name="InputGateControl" hidden="true">
+          <Model id="28000" name="Input Gate Control">
+            <Parameter name="NOISE REDUCTION" type="float" min="0" max="100" units="%" steps="1001" />
+            <Parameter name="BYPASS" type="switch" min="0" max="1" steps="2" />
+            <Parameter name="GAIN REDUCTION" type="grMeter" min="-40" max="0" units="dB" steps="180" />
+            <Parameter name="INPUT GAIN" type="float" min="-24" max="24" units="dB" steps="481" />
+          </Model>
+        </Category></Models>"#;
+        let catalog = parse_model_repo(
+            &pa::ModelRepoMessage {
+                action: pa::message_action::Enum::Update as i32,
+                request_id: None,
+                model_repo_payload: Some(
+                    pa::model_repo_message::ModelRepoPayload::ModelRepoPayload(xml.to_vec()),
+                ),
+            }
+            .encode_to_vec(),
+        )
+        .unwrap();
+        let positional = |value| Param {
+            param_values: vec![ParamValue {
+                value: Some(param_value::Value::FloatValue(value)),
+            }],
+            ..Default::default()
+        };
+        let preset = BinaryPreset {
+            chains: vec![Chain {
+                row: Some(chain::Row::Row(0)),
+                input_control: vec![Model {
+                    hash: Some(model::Hash::Hash(28_000)),
+                    // Full preset records address these parameters by position.
+                    // CorOS also carries an undocumented fifth value.
+                    params: vec![
+                        positional(0.3),
+                        positional(1.0),
+                        positional(0.0),
+                        positional(0.5),
+                        positional(0.0),
+                    ],
+                    ..Default::default()
+                }],
+                ..Default::default()
+            }],
+            ..Default::default()
+        };
+        let mut decoder = StateDecoder::new();
+        decoder.install_catalog(catalog);
+        decoder
+            .decode(
+                15,
+                &pa::RecallPresetMessage {
+                    preset: Some(pa::recall_preset_message::Preset::Preset(preset)),
+                    ..Default::default()
+                }
+                .encode_to_vec(),
+            )
+            .unwrap();
+
+        let details = decoder.lane_control_details(0, "inputGate").unwrap();
+        assert_eq!(details.name, "Input Gate Control");
+        assert_eq!(
+            details
+                .parameters
+                .iter()
+                .map(|parameter| parameter.index)
+                .collect::<Vec<_>>(),
+            [0, 1, 2, 3]
+        );
+        assert_eq!(details.parameters[0].name, "NOISE REDUCTION");
+        assert_eq!(details.parameters[0].display_value, "30.0");
+        assert!(details.parameters[0].writable);
+        assert!(!details.parameters[2].writable, "GAIN REDUCTION is a meter");
+        assert_eq!(details.parameters[3].display_value, "0.0");
     }
 }

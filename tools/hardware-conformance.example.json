@@ -76,7 +76,8 @@
   "screenTap": {
     "x": 20,
     "y": 20,
-    "restoreX": 20,
-    "restoreY": 20
+    "restoreX": 742,
+    "restoreY": 30,
+    "restoreTaps": 2
   }
 }

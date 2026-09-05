@@ -53,6 +53,7 @@ const gatewayKind = (item, name) => {
   }
   if (kind === "boolean") return "boolean";
   if (kind === "number") return "number";
+  if (kind === "mode-cycle") return "array";
   if (kind.endsWith("array")) return "array";
   if (["string", "lane-control", "general-integer-setting", "general-toggle-setting", "scene-bypass-behavior", "tempo-mode", "looper-command"].includes(kind)) return "string";
   return "integer";

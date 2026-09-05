@@ -1,7 +1,7 @@
 @scope (.qc-screen-fixture-root) {
 .qc-screen.coros-io-settings { background: #101010; }
 .coros-io-settings > header .io-global-eq { background: #181c18; }
-.coros-io-settings > header { padding-left: 1.25cqw; font-size: 2.25cqw; }
+.coros-io-settings > header { padding-left: 1.25cqw; background: #101010; font-size: 2.25cqw; }
 .coros-io-settings.is-input > header > span { transform: scaleX(1.14); transform-origin: left center; }
 .coros-io-settings > header .io-global-eq { font-size: 1.75cqw; }
 .coros-io-settings.is-input > header .io-global-eq { width: 13.625cqw; height: 5.5cqw; border-radius: 1cqw; }
@@ -31,6 +31,7 @@
 .io-ports button:nth-child(6) > small { top: 14.375cqw; bottom: auto; }
 .io-ports button:nth-child(7) > small { left: 0; right: 0; top: 18.75cqw; bottom: auto; white-space: normal; }
 .io-ports button.is-square > i { width: 4.5cqw; height: 4.5cqw; margin-left: -2.25cqw; }
+.coros-io-settings:not(.is-usb) .io-ports button:nth-child(1) > i { color: #f8fcf8; }
 .io-ports button.is-input > i { top: 6.5cqw; width: 8.25cqw; height: 8.25cqw; margin-left: -4.125cqw; }
 .io-ports button.is-input > span { top: 2.5cqw; color: #eee; font-size: 1.5cqw; }
 .io-ports button.is-combo > i:first-of-type { top: 3.25cqw; width: 7.25cqw; height: 7.25cqw; margin-left: -3.625cqw; }

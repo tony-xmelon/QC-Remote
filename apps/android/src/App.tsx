@@ -26,6 +26,10 @@ const androidGeminiModels: ReadonlyArray<{ id: AndroidGeminiModel; label: string
 const androidModelStorageKey = "qc-control.android-gemini-model";
 const androidQuotaStorageKey = "qc-control.android-gemini-quota-v1";
 const legacyControlAccessModeKey = "qc-control.device-access-mode-v1";
+const qcRemoteScreen = {
+  openIo: { x: 400, y: 8, toX: 400, toY: 220 },
+  done: { x: 744, y: 30 }
+} as const;
 const storedControlAccessMode = (): ControlAccessMode => readAssistantAccessMode(window.localStorage, [legacyControlAccessModeKey]);
 function loadQuotaLedger(): GeminiQuotaLedger {
   try {
@@ -296,14 +300,42 @@ export function App() {
     }));
   })() : undefined;
   const mobileLed = (slot: number, fallback: { active: boolean; assigned: boolean; color: string }) => parameterLeds?.[slot] ?? fallback;
-  const openGigView = () => {
-    setMobileScreenView("gig");
-    if (native && usbConnected) void performanceWorkflow.showDeviceView("gig");
+  const ioViewOpen = Boolean(mobileScreenView?.startsWith("io-"));
+  const gigViewOpen = Boolean(mobileScreenView?.startsWith("gig"));
+  const closeMobileScreen = async () => {
+    try {
+      if (native && usbConnected) {
+        if (gigViewOpen) await androidGatewayTransport.showGigView(false);
+        else if (ioViewOpen) await QcUsbNative.tapScreenDirect(qcRemoteScreen.done);
+      }
+      setMobileScreenView(null);
+    } catch (error) {
+      appendAssistant(error instanceof Error ? error.message : "The Quad Cortex screen did not close.");
+    }
   };
-  const closeMobileScreen = () => {
-    const closingGigView = mobileScreenView === "gig";
-    setMobileScreenView(null);
-    if (closingGigView && native && usbConnected) void androidGatewayTransport.showGigView(false).catch(() => undefined);
+  const toggleIoView = async () => {
+    if (ioViewOpen) { await closeMobileScreen(); return; }
+    try {
+      if (native && usbConnected) await QcUsbNative.swipeScreen(qcRemoteScreen.openIo);
+      setMobileScreenView("io-overview");
+    } catch (error) {
+      appendAssistant(error instanceof Error ? error.message : "The Quad Cortex did not open I/O Settings.");
+    }
+  };
+  const toggleGigView = async () => {
+    if (gigViewOpen) {
+      await closeMobileScreen();
+      return;
+    }
+    try {
+      if (native && usbConnected) await androidGatewayTransport.showGigView(true);
+      setMobileScreenView("gig");
+      if (!presetWorkflow.presetList || presetWorkflow.presetList.setlistKey !== snapshot.setlistKey) {
+        void presetWorkflow.loadDirectory(false, snapshot.setlistKey, true);
+      }
+    } catch (error) {
+      appendAssistant(error instanceof Error ? error.message : "The Quad Cortex did not open Gig View.");
+    }
   };
   const handleCorOsContextAction = (action: CorOsContextAction) => {
     if (action === "edit-details") presetWorkflow.openSave();
@@ -489,13 +521,13 @@ export function App() {
         onAction={handleSurfaceAction} onOpenPreset={() => void presetWorkflow.openDirectory()} onUndo={() => void deviceHistory.undo()} canUndo={Boolean(deviceHistory.undoEntry)} undoLabel={deviceHistory.undoEntry?.label}
         onSave={presetWorkflow.openSave} onOpenRouting={routingWorkflow.openPicker} onRefresh={() => void presetWorkflow.refresh()}
         savePreset={presetWorkflow.saveProps} presetDirectory={presetWorkflow.directoryProps} routingPicker={routingWorkflow.pickerProps}
-        parameterEditor={parameterEditorBindings} onContextAction={handleCorOsContextAction} />
+        parameterEditor={parameterEditorBindings} gigPresetList={presetWorkflow.presetList} onContextAction={handleCorOsContextAction} />
     </section>
 
     <nav className="quick-controls" aria-label="Quick device controls">
       <div className="mobile-volume-control"><QcMasterVolumeKnob value={snapshot.masterVolume} onAction={handleSurfaceAction} /><small>VOLUME</small></div>
-      <button className={`device-view-control mobile-io-control${mobileScreenView === "io-overview" ? " is-active" : ""}`} onClick={() => setMobileScreenView("io-overview")} aria-label="Open I/O Settings"><span>I/O</span></button>
-      <button className={`device-view-control mobile-gig-control${mobileScreenView === "gig" ? " is-active" : ""}`} onClick={openGigView} aria-label="Open Gig View"><span>GIG</span></button>
+      <button className={`device-view-control mobile-io-control${ioViewOpen ? " is-active" : ""}`} onClick={toggleIoView} aria-pressed={ioViewOpen} aria-label={`${ioViewOpen ? "Close" : "Open"} I/O Settings`}><span>I/O</span></button>
+      <button className={`device-view-control mobile-gig-control${gigViewOpen ? " is-active" : ""}`} onClick={toggleGigView} aria-pressed={gigViewOpen} aria-label={`${gigViewOpen ? "Close" : "Open"} Gig View`}><span>GIG</span></button>
       <div className="mobile-up-control"><QcHardwareSwitch role="bank:up" label={<QcUiIcon kind="up" />} ariaLabel="Previous preset" active={Boolean(parameterEditorBindings)} assigned={Boolean(parameterEditorBindings)} accent={QC_COLORS.hardware.whiteLed} onAction={handleSurfaceAction} /></div>
       {sceneFootswitches.map(({ index, label }) => {
         const slot = index < 4 ? index : index + 1;
@@ -506,11 +538,6 @@ export function App() {
       })}
       {(() => { const led = mobileLed(4, { active: false, assigned: false, color: QC_COLORS.hardware.whiteLed }); return <div className="mobile-down-control"><QcHardwareSwitch role="bank:down" label={<QcUiIcon kind="down" />} ariaLabel="Next preset" active={led.active} assigned={led.assigned} accent={led.color} onAction={handleSurfaceAction} /></div>; })()}
       <div className="mobile-tempo-control"><QcHardwareSwitch role="tempo" label="TEMPO" active={parameterLeds ? parameterLeds[9].active : snapshot.tempoLedEnabled} assigned={parameterLeds ? parameterLeds[9].assigned : snapshot.tempoLedEnabled} accent={parameterLeds ? parameterLeds[9].color : QC_COLORS.device.tempoLed} pulseBpm={!parameterLeds && snapshot.tempoLedEnabled ? snapshot.tempo : undefined} pulseEpochMs={!parameterLeds ? snapshot.tempoPulseEpochMs : undefined} onAction={handleSurfaceAction} /></div>
-    </nav>
-
-    <nav className="workflow-actions" aria-label="Preset editing workflows">
-      <button disabled={!usbConnected || devicePending} onClick={routingWorkflow.open}>ROUTING</button>
-      <button disabled={!usbConnected || devicePending} onClick={sceneWorkflow.open}>SCENES</button>
     </nav>
 
     <section className="mobile-chat" aria-label="QC assistant">

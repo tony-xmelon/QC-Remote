@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKe
 import type { ConnectionState, RuntimeStatus } from "@ndsp-qc/client";
 import { chatCredentialStatus, type ChatQuota, type ChatSettings, type ChatUsage } from "./model-chat";
 import { QcUiIcon } from "@ndsp-qc/ui";
+import { qcDeviceStatusDetail } from "./qc-readiness";
 
 export type ConnectionEvent = { at: string; event: string; result: "pending" | "success" | "warning" | "failure" | "info"; detail: string };
 export type MenuCommand =
@@ -32,10 +33,11 @@ export const quotaResetLabel = (resetTime?: string) => {
 export const divider = (): MenuItem => ({ separator: true });
 
 
-export function MenuBar({ menus, onSelect, connection, syncProgress, busy, runtime, deviceName, presetLabel, events, chatOpen, chatStatus, chatSettings, chatQuota, chatUsage, assistantPending, modelWarming, remoteChatAllowed, onConnect, onDisconnect, onReset, onRefresh, onClearEvents, onExportDiagnostics, onOpenDeviceInfo, onOpenChatSettings, onTestChat, onRefreshChatQuota, onCancelChat, onOpenChange }: {
+export function MenuBar({ menus, onSelect, connection, deviceReady, syncProgress, busy, runtime, deviceName, presetLabel, events, chatOpen, chatStatus, chatSettings, chatQuota, chatUsage, assistantPending, modelWarming, remoteChatAllowed, onConnect, onDisconnect, onReset, onRefresh, onClearEvents, onExportDiagnostics, onOpenDeviceInfo, onOpenChatSettings, onTestChat, onRefreshChatQuota, onCancelChat, onOpenChange }: {
   menus: AppMenu[];
   onSelect: (item: MenuCommand) => void;
   connection: ConnectionState;
+  deviceReady: boolean;
   syncProgress: number | null;
   busy: boolean;
   runtime?: RuntimeStatus;
@@ -132,6 +134,9 @@ export function MenuBar({ menus, onSelect, connection, syncProgress, busy, runti
   };
 
   const chatActivity = assistantPending ? "MODEL THINKING" : modelWarming ? "MODEL WARMING" : chatStatus === "online" ? "MODEL READY" : chatStatus === "checking" ? "CHECKING MODEL" : chatStatus === "error" ? "MODEL ERROR" : "MODEL OFFLINE";
+  const displayedDevicePhase = syncProgress !== null ? "syncing" : deviceReady ? "ready" : connection.phase === "ready" ? "syncing" : connection.phase;
+  const synchronizedPreset = deviceReady ? presetLabel : connection.lastSync ? `${presetLabel} (last known)` : "Not synchronized";
+  const deviceStatusDetail = qcDeviceStatusDetail(connection, deviceReady, syncProgress);
   const toggleStatusPanel = (panel: "device" | "chat") => {
     const next = statusPanelOpen === panel ? null : panel;
     closeMenu(false);
@@ -183,21 +188,22 @@ export function MenuBar({ menus, onSelect, connection, syncProgress, busy, runti
       </div>)}
     </div>
     <div className="menubar-actions" ref={deviceStatusRoot}>
-      <ConnectionBadge connection={connection} syncProgress={syncProgress} expanded={statusPanelOpen === "device"} onClick={() => toggleStatusPanel("device")} />
+      <ConnectionBadge connection={connection} deviceReady={deviceReady} syncProgress={syncProgress} expanded={statusPanelOpen === "device"} onClick={() => toggleStatusPanel("device")} />
       {statusPanelOpen === "device" && <section className="connection-panel" role="dialog" aria-modal="false" aria-label="Connection details">
-        <header><div><span className={`connection-panel-light panel-phase-${syncProgress !== null ? "syncing" : connection.phase}`} /><strong>{connection.demo ? "Demo connection" : deviceName}</strong></div><span>{connection.phase.replaceAll("-", " ")}</span></header>
-        <p>{connection.detail}</p>
+        <header><div><span className={`connection-panel-light panel-phase-${displayedDevicePhase}`} /><strong>{deviceReady ? deviceName : "Quad Cortex"}</strong></div><span>{displayedDevicePhase.replaceAll("-", " ")}</span></header>
+        <p>{deviceStatusDetail}</p>
         <dl>
           <div><dt>Desktop runtime</dt><dd>{runtime?.platform ?? "Starting…"}</dd></div>
           <div><dt>Device gateway</dt><dd>{runtime?.gatewayAvailable ? "Available" : "Unavailable"}{runtime?.message ? ` · ${runtime.message}` : ""}</dd></div>
-          <div><dt>Current preset</dt><dd>{connection.demo ? "Demo data" : presetLabel}</dd></div>
+          <div><dt>Quad Cortex</dt><dd>{deviceStatusDetail}</dd></div>
+          <div><dt>Current preset</dt><dd>{synchronizedPreset}</dd></div>
           <div><dt>Last synchronized</dt><dd>{connection.lastSync ? new Date(connection.lastSync).toLocaleString() : "Not yet synchronized"}</dd></div>
         </dl>
         <div className="connection-panel-actions">
-          <button className="primary" disabled={busy} onClick={onConnect}>{connection.phase === "ready" && !connection.demo ? "Reconnect" : "Connect"}</button>
-          <button disabled={busy || connection.demo || connection.phase !== "ready"} onClick={onRefresh}>Refresh state</button>
+          <button className="primary" disabled={busy} onClick={onConnect}>{deviceReady ? "Reconnect" : "Connect"}</button>
+          <button disabled={busy || !deviceReady} onClick={onRefresh}>Refresh state</button>
           <button disabled={busy} onClick={onReset}>Reset session</button>
-          <button disabled={busy || connection.demo || connection.phase !== "ready"} onClick={onDisconnect}>Disconnect</button>
+          <button disabled={busy || !deviceReady} onClick={onDisconnect}>Disconnect</button>
         </div>
         <div className="connection-panel-log-heading"><strong>Connection steps</strong><span>{events.length} events</span></div>
         <div className="connection-panel-log">
@@ -232,10 +238,13 @@ export function MenuBar({ menus, onSelect, connection, syncProgress, busy, runti
   </nav>;
 }
 
-function ConnectionBadge({ connection, syncProgress, expanded, onClick }: { connection: ConnectionState; syncProgress: number | null; expanded: boolean; onClick: () => void }) {
+function ConnectionBadge({ connection, deviceReady, syncProgress, expanded, onClick }: { connection: ConnectionState; deviceReady: boolean; syncProgress: number | null; expanded: boolean; onClick: () => void }) {
   const syncing = syncProgress !== null;
-  const label = syncing ? `SYNCING ${syncProgress}%` : connection.demo ? "DEMO" : connection.phase === "ready" ? "QC READY" : connection.phase.replace("-", " ").toUpperCase();
-  return <button type="button" className={`connection-badge phase-${syncing ? "syncing" : connection.phase}`} aria-expanded={expanded} aria-haspopup="dialog" aria-label={syncing ? `Synchronizing device, ${syncProgress}% complete; open connection details` : `${label}; open connection details`} title={connection.detail} onClick={onClick}>
+  const awaitingVerification = !connection.demo && connection.phase === "ready" && !deviceReady;
+  const phase = syncing || awaitingVerification ? "syncing" : deviceReady ? "ready" : connection.phase;
+  const label = syncing ? `SYNCING ${syncProgress}%` : deviceReady ? "QC READY" : awaitingVerification ? "CHECKING QC" : connection.phase === "needs-attention" || connection.phase === "degraded" ? "QC OFFLINE" : connection.phase === "disconnected" ? "DISCONNECTED" : connection.phase.replace("-", " ").toUpperCase();
+  const detail = qcDeviceStatusDetail(connection, deviceReady, syncProgress);
+  return <button type="button" className={`connection-badge phase-${phase}`} aria-expanded={expanded} aria-haspopup="dialog" aria-label={syncing ? `Synchronizing device, ${syncProgress}% complete; open connection details` : `${label}; open connection details`} title={detail} onClick={onClick}>
     <span className="status-light" />
     <span>{label}</span>
     <span className="connection-chevron" aria-hidden="true" />

@@ -17,5 +17,12 @@
 .tuner-official > footer { background: #282c28; }
 .tuner-official .tuner-frequency > i { left: 9.125cqw; top: .55cqw; width: 7.75cqw; height: 7.75cqw; background: radial-gradient(circle at center, #282c28 0 63%, transparent 65%), conic-gradient(from 220deg, #40f860 0 42%, #101010 42%); }
 .tuner-official .tuner-frequency > i::after { content: ""; position: absolute; left: 50%; top: .4cqw; width: .25cqw; height: 3cqw; transform: translateX(-50%); background: #f8fcf8; }
+.tuner-official > footer > section:nth-child(2) button,
+.tuner-official > footer > section:nth-child(3) button { transform: translateY(.25cqw); }
+.tuner-official > footer > section:last-child { position: relative; }
+.tuner-official > footer > section:last-child label { padding-left: 5.5cqw; transform: translateY(1.25cqw); }
+.tuner-official > footer > section:last-child label i { display: none; }
+.tuner-official > footer > section:last-child::before { content: ""; position: absolute; left: 2cqw; top: 5.625cqw; width: 3cqw; height: 6cqw; border-radius: 1.5cqw; background: #101110; }
+.tuner-official > footer > section:last-child::after { content: ""; position: absolute; left: 2.125cqw; top: 5.75cqw; width: 2.5cqw; height: 2.5cqw; border: .375cqw solid #40f860; border-radius: 50%; }
 
 }

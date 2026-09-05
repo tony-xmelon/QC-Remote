@@ -1,5 +1,5 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
-import type { GridBlock, PresetSnapshot } from "@ndsp-qc/client";
+import type { GridBlock, PresetList, PresetSnapshot } from "@ndsp-qc/client";
 import { QC_VISUAL_ASSETS, REFERENCE_BLOCK_ICONS } from "@ndsp-qc/theme";
 import { officialBlockVisual } from "./block-visuals";
 import { openSplitPath } from "./coros-ui";
@@ -78,17 +78,21 @@ function ModeGlyph({ mode }: { mode: PresetSnapshot["mode"] }) {
 
 function DirectoryIcon({ kind, number }: { kind: "grid" | "download" | "cloud" | "cloud-upload" | "folder" | "new-folder" | "sort" | "filter" | "arrange" | "search" | "done" | "trash"; number?: number }) {
   if (kind === "grid") return <svg viewBox="0 0 24 24" aria-hidden="true">{[3, 10, 17].flatMap((x) => [3, 10, 17].map((y) => <rect key={`${x}-${y}`} x={x} y={y} width="5" height="5" rx=".6" />))}</svg>;
-  if (kind === "download") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 17v4h16v-4" /></svg>;
+  if (kind === "download") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 17v4h16v-4" fill="none" /></svg>;
   if (kind === "cloud") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 19h11a4 4 0 0 0 .7-7.94A6.5 6.5 0 0 0 5.7 9.4 4.8 4.8 0 0 0 6.5 19Z" /></svg>;
   if (kind === "cloud-upload") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 20h11a4 4 0 0 0 .7-7.94A6.5 6.5 0 0 0 5.7 10.4 4.8 4.8 0 0 0 6.5 20Z" /><path className="cloud-upload-arrow" d="M12 16V7m0 0-3 3m3-3 3 3" fill="none" /></svg>;
   if (kind === "folder") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M0 0h10l2 3h12v21H0Z" />{number !== undefined && <text className="folder-number" x="12" y="16.5" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="7" fontWeight="700" fill="#202421">{number}</text>}</svg>;
   if (kind === "new-folder") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h7l2 2h9v11H3ZM7 2v8M3 6h8" /></svg>;
-  if (kind === "sort") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h8m-8 6h6m-6 6h10M16 5l2 2 3-4m-5 10 2 2 3-4m-5 8 2 2 3-4" /></svg>;
+  if (kind === "sort") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h8m-8 6h6m-6 6h10M16 5l2 2 3-4m-5 10 2 2 3-4m-5 8 2 2 3-4" fill="none" /></svg>;
   if (kind === "filter") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18l-7 8v6l-4 2v-8Z" fill="none" /></svg>;
-  if (kind === "arrange") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h9M4 12h7M4 18h11M18 4v16m-3-3 3 3 3-3" /></svg>;
-  if (kind === "search") return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg>;
+  if (kind === "arrange") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h9M4 12h7M4 18h11M18 4v16m-3-3 3 3 3-3" fill="none" /></svg>;
+  if (kind === "search") return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" fill="none" /><path d="m15 15 6 6" fill="none" /></svg>;
   if (kind === "trash") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12v14H6ZM4 7h16M9 4h6M9 11v6m6-6v6" /></svg>;
-  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 13 5 5L20 6" /></svg>;
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 13 5 5L20 6" fill="none" /></svg>;
+}
+
+function PhysicalDirectoryStatusIcon() {
+  return <svg className="physical-directory-status" viewBox="0 0 24 24" aria-hidden="true"><path className="status-error" d="m2 3 6 6m0-6L2 9" /><path className="status-bars" d="M3 20v-3m4 3v-6m4 6v-9m4 9V8m4 12V5" /></svg>;
 }
 
 function CaptureLibraryIcon() {
@@ -135,19 +139,20 @@ function CorOsOfficialDirectory({ view }: { view: OfficialDirectoryView }) {
   return <section className={`qc-screen directory-official${view === "directory-plugins" ? " is-plugins" : ""}${favorite ? " directory-favorites-official" : ""}${captures ? " directory-captures-official" : ""}${irs ? " directory-irs-official" : ""}`}><header><button className="directory-official-category">{view === "directory-plugins" ? <><DeviceCategoryGlyph label="Plugins" fallback="" /><span>{category}</span></> : captures ? <><CaptureHeaderIcon /><span>{category}</span></> : favorite ? <><FavoriteIcon kind="heart" /><span>{category}</span></> : <>≋　{category}</>}<b>▼</b></button>{favorite ? <><button className="favorite-tab"><FavoriteIcon kind="heart" /></button><button className="favorite-tab"><FavoriteIcon kind="clock" /></button><button className="favorite-sort"><DirectoryIcon kind="sort" /></button><button><DirectoryIcon kind="arrange" /></button><button><DirectoryIcon kind="search" /></button><button><DirectoryIcon kind="done" /></button></> : view === "directory-plugins" ? <><button className="plugin-refresh"><GridToolbarIcon kind="refresh" /></button><span /><button><DirectoryIcon kind="search" /></button><button><DirectoryIcon kind="done" /></button></> : captures ? <><button className="directory-primary-action"><DirectoryIcon kind="cloud-upload" /></button><span /><button><DirectoryIcon kind="sort" /></button><button><DirectoryIcon kind="filter" /></button><button><DirectoryIcon kind="arrange" /></button><button><DirectoryIcon kind="search" /></button><button><DirectoryIcon kind="done" /></button></> : <><button className="directory-primary-action"><GridToolbarIcon kind="refresh" /></button><span /><button><DirectoryIcon kind="sort" /></button><button><DirectoryIcon kind="arrange" /></button><button><DirectoryIcon kind="search" /></button><button><DirectoryIcon kind="done" /></button></>}</header><main><nav>{nav.map(([glyph, label, className]) => <button key={label} className={className?.split(" ").map(name => `is-${name}`).join(" ")}><b>{glyph === "□" ? <DirectoryIcon kind="folder" /> : captures && label === "Captures Library" ? <CaptureLibraryIcon /> : glyph}</b><span>{label}</span></button>)}</nav><section className="directory-official-list">{view === "directory-plugins" ? <svg className="plugin-directory-logo" viewBox="0 0 120 140" aria-hidden="true"><path d="M0 70H18L42 2 75 138 94 70H120" /></svg> : rows.map((name, index) => <button key={name}><span>{name}{!favorite && <small>{captures ? "NeuralDSP" : irs ? "✓ On device" : ""}</small>}</span>{favorite ? <i><b><FavoriteIcon kind="binoculars" /></b><b><FavoriteIcon kind="broken-heart" /></b></i> : irs ? <i><b><span>✓</span></b><b><DirectoryIcon kind="trash" /></b></i> : <b>{captures ? "4　⋮" : "⋮"}</b>}</button>)}{favorite && <aside className="directory-favorite-index">{["#", "•", "A", "•", "I", "•", "R", "•", "Z"].map((label, index) => <span key={`${label}-${index}`}>{label}</span>)}</aside>}{captures && <aside className="directory-capture-index">{["#", "•", "A", "•", "I", "•", "R", "•", "Z"].map((label, index) => <span key={`${label}-${index}`}>{label}</span>)}</aside>}</section></main></section>;
 }
 
-function CorOsDirectoryFixture({ view }: { view: DirectoryFixtureView }) {
+function CorOsDirectoryFixture({ view, physicalContext = false }: { view: DirectoryFixtureView; physicalContext?: boolean }) {
+  const itemContext = view === "directory-item-context" || physicalContext;
   const category = view === "directory-captures" ? "Neural Captures" : view === "directory-irs" ? "Impulse Responses" : view === "directory-plugins" ? "Plugin Presets" : "Presets";
   const icons: Record<string, string> = { Presets: "▦", "Neural Captures": "◉", "Impulse Responses": "≋", "Plugin Presets": "♜" };
   const categoryItems = [["Presets", "▦"], ["Neural Captures", "◉"], ["Impulse Responses", "≋"], ["Plugin Presets", "♜"]];
-  const names = category === "Neural Captures" ? ["ALI Bass DI", "Brit Crunch 57", "Cali Recto Lead", "Chief OD Push", "Clean Twin 121", "German High Gain", "Vintage Fuzz"] : category === "Impulse Responses" ? ["1x12 Blue Alnico", "2x12 UK C30 65", "4x10 Bass Modern", "4x12 Green 25", "Room Ribbon 160", "Studio 121 Dark", "User IR 01"] : category === "Plugin Presets" ? ["Cory Wong - Clean", "Gojira - Rhythm", "Nolly - Lead", "Plini - Crystal", "Parallax - Modern", "SLO-100 - Crunch", "Nameless - Grind"] : ["pyquadcortex scratch", "Clean Platform", "Edge of Breakup", "Ambient Lead", "Modern Rhythm", "Bass Parallel", "Acoustic Live"];
+  const names = itemContext ? ["ALI2023", "MiniVoicer", "No One Knows", "ALI Purification", "All Reach Out", "QC MCP TEST", "ALI The List"] : category === "Neural Captures" ? ["ALI Bass DI", "Brit Crunch 57", "Cali Recto Lead", "Chief OD Push", "Clean Twin 121", "German High Gain", "Vintage Fuzz"] : category === "Impulse Responses" ? ["1x12 Blue Alnico", "2x12 UK C30 65", "4x10 Bass Modern", "4x12 Green 25", "Room Ribbon 160", "Studio 121 Dark", "User IR 01"] : category === "Plugin Presets" ? ["Cory Wong - Clean", "Gojira - Rhythm", "Nolly - Lead", "Plini - Crystal", "Parallax - Modern", "SLO-100 - Crunch", "Nameless - Grind"] : ["pyquadcortex scratch", "Clean Platform", "Edge of Breakup", "Ambient Lead", "Modern Rhythm", "Bass Parallel", "Acoustic Live"];
   const search = view === "directory-search" || view === "directory-search-results";
   const results = view === "directory-search-results" ? names.filter((name) => /clean|crunch|scratch/i.test(name)) : names;
-  return <section className="qc-screen coros-directory-fixture" aria-label={view.replaceAll("-", " ")}>
-    <header><button className="directory-fixture-category"><span>{icons[category]}</span><strong>{category}</strong><b>⌄</b></button><button className={view === "directory-cloud-upload" ? "is-cloud" : ""}>☁</button><i /><button>☷</button><button>↕</button><button>⌕</button><em /><button>✓</button></header>
+  return <section className={`qc-screen coros-directory-fixture${itemContext ? " is-physical-context" : ""}`} aria-label={view.replaceAll("-", " ")}>
+    <header><button className="directory-fixture-category">{itemContext ? <DirectoryIcon kind="grid" /> : <span>{icons[category]}</span>}<strong>{category}</strong><b>⌄</b></button><button className={view === "directory-cloud-upload" ? "is-cloud" : ""}>{itemContext ? <PhysicalDirectoryStatusIcon /> : "☁"}</button><i /><button>{itemContext ? <DirectoryIcon kind="sort" /> : "☷"}</button><button>{itemContext ? <DirectoryIcon kind="arrange" /> : "↕"}</button><button>{itemContext ? <DirectoryIcon kind="search" /> : "⌕"}</button><em /><button>{itemContext ? <DirectoryIcon kind="done" /> : "✓"}</button></header>
     <main>
-      <nav className="directory-fixture-folders"><button>⇩ <span>Downloads</span></button><button>☁ <span>Cloud {category}</span></button><button>▰ <span>Factory {category}</span></button><button className="is-active">▰ <span>My {category}</span><b>⋮</b></button>{view === "directory-nested" ? <><button className="is-child">└ ▰ <span>ALI Live</span></button><button className="is-child is-active">　└ ▰ <span>Festival</span></button></> : <button className="is-child">└ ▰ <span>ALI Live</span></button>}<button className="is-new">▰＋ <span>New {category === "Presets" ? "Setlist" : "Folder"}</span></button></nav>
-      <nav className="directory-fixture-banks">{[29, 30, 31, 32, 33, 34, 35].map((bank) => <button key={bank} className={bank === 32 ? "is-active" : ""}>{bank}</button>)}</nav>
-      <section className="directory-fixture-items">{search && <div className="directory-search-field"><span>⌕</span><strong>{view === "directory-search-results" ? "Clean" : "Search Directory"}</strong><button>×</button></div>}{(search ? results : names).map((name, index) => <button key={name} className={index === 0 ? "is-current" : ""}><strong>{category === "Presets" ? `32${String.fromCharCode(65 + index)}` : icons[category]}</strong><span>{name}<small>{category === "Neural Captures" ? "GUITAR · AMP" : category === "Impulse Responses" ? "48 kHz · 1024 samples" : category === "Plugin Presets" ? "NEURAL DSP X" : "USER"}</small></span>{view === "directory-arrange" ? <i>☰</i> : <b>⋮</b>}</button>)}</section>
+      <nav className="directory-fixture-folders">{itemContext ? <><button><b><DirectoryIcon kind="download" /></b><span>Downloads</span></button><button><b><DirectoryIcon kind="cloud" /></b><span>Cloud Presets</span></button><button><b><DirectoryIcon kind="folder" number={0} /></b><span>Factory Presets</span></button><button className="is-active"><b><DirectoryIcon kind="folder" number={1} /></b><span>My Presets</span><b>⋮</b></button><button className="is-child"><b><DirectoryIcon kind="folder" number={2} /></b><span>ALI Live</span><b>⋮</b></button><button className="is-child"><b><DirectoryIcon kind="folder" number={3} /></b><span>ALI Rec</span><b>⋮</b></button><button className="is-child"><b><DirectoryIcon kind="folder" number={4} /></b><span>ALI AcousticLive</span><b>⋮</b></button></> : <><button>⇩ <span>Downloads</span></button><button>☁ <span>Cloud {category}</span></button><button>▰ <span>Factory {category}</span></button><button className="is-active">▰ <span>My {category}</span><b>⋮</b></button>{view === "directory-nested" ? <><button className="is-child">└ ▰ <span>ALI Live</span></button><button className="is-child is-active">　└ ▰ <span>Festival</span></button></> : <button className="is-child">└ ▰ <span>ALI Live</span></button>}<button className="is-new">▰＋ <span>New {category === "Presets" ? "Setlist" : "Folder"}</span></button></>}</nav>
+      <nav className="directory-fixture-banks">{(itemContext ? Array.from({ length: 14 }, (_, index) => index + 1) : [29, 30, 31, 32, 33, 34, 35]).map((bank) => <button key={bank} className={bank === (itemContext ? 2 : 32) ? "is-active" : ""}>{bank}</button>)}</nav>
+      <section className="directory-fixture-items">{search && <div className="directory-search-field"><span>⌕</span><strong>{view === "directory-search-results" ? "Clean" : "Search Directory"}</strong><button>×</button></div>}{(search ? results : names).map((name, index) => itemContext ? <button key={name} className={index === 6 ? "is-current" : ""}><span className="physical-preset-name">{`2${String.fromCharCode(65 + index)} ${name}`}</span><b>⋮</b></button> : <button key={name} className={index === 0 ? "is-current" : ""}><strong>{category === "Presets" ? `32${String.fromCharCode(65 + index)}` : icons[category]}</strong><span>{name}<small>{category === "Neural Captures" ? "GUITAR · AMP" : category === "Impulse Responses" ? "48 kHz · 1024 samples" : category === "Plugin Presets" ? "NEURAL DSP X" : "USER"}</small></span>{view === "directory-arrange" ? <i>☰</i> : <b>⋮</b>}</button>)}</section>
     </main>
     {view === "directory-categories" && <aside className="directory-category-menu">{categoryItems.map(([label, glyph]) => <button key={label}><span>{glyph}</span>{label}<b>›</b></button>)}</aside>}
     {view === "directory-favorites" && <aside className="directory-favorites-panel"><header><button className="is-active">FAVORITES</button><button>RECENT</button></header>{names.slice(0, 5).map((name) => <button key={name}><span>★</span>{name}<b>⋮</b></button>)}</aside>}
@@ -156,7 +161,7 @@ function CorOsDirectoryFixture({ view }: { view: DirectoryFixtureView }) {
     {view === "directory-arrange" && <div className="directory-mode-bar"><strong>ARRANGE</strong><span>Drag items to reorder them</span><button>CANCEL</button><button>DONE</button></div>}
     {view === "directory-copy" && <aside className="directory-copy-dialog"><header>Copy 3 items to…</header>{["My Presets", "ALI Live", "Festival", "Studio"].map((label, index) => <button key={label} className={index === 2 ? "is-active" : ""}>▰　{label}<b>›</b></button>)}<footer><button>CANCEL</button><button>COPY HERE</button></footer></aside>}
     {view === "directory-new-folder" && <aside className="directory-name-dialog"><header>New Setlist</header><label>NAME<input readOnly value="New Setlist" /></label><footer><button>CANCEL</button><button>CREATE</button></footer></aside>}
-    {view === "directory-item-context" && <aside className="directory-item-menu"><header><small>32A</small><strong>pyquadcortex scratch</strong></header>{["Favorite", "Edit details", "Copy", "Move", "Upload to Cortex Cloud", "Delete"].map((label, index) => <button key={label} className={index === 5 ? "is-danger" : ""}>{["★", "✎", "□", "↔", "☁", "⌫"][index]}　{label}</button>)}</aside>}
+    {view === "directory-item-context" && <><i className="directory-context-scrim" /><aside className="directory-item-menu">{["Edit", "Copy", "Cut", "Delete"].map(label => <button key={label}>{label}</button>)}</aside></>}
     {view === "directory-cloud-upload" && <div className="directory-mode-bar is-cloud"><strong>UPLOAD TO CORTEX CLOUD</strong><span>Select Presets, Neural Captures, or IRs</span><button>CANCEL</button><button>UPLOAD (2)</button></div>}
   </section>;
 }
@@ -165,32 +170,61 @@ type RemainingFixtureView = "fixture-boot" | "fixture-shutdown" | "fixture-copy-
 
 function CorOsRemainingFixture({ view }: { view: RemainingFixtureView }) {
   if (view === "fixture-boot") return <section className="qc-screen coros-boot"><b>◫</b><h1>QUAD CORTEX</h1><i><span /></i><small>STARTING COROS</small></section>;
-  const dialog = view === "fixture-shutdown" ? ["POWER OFF?", "Any unsaved changes will be lost.", "POWER OFF"] : view === "fixture-delete" ? ["DELETE PRESET?", "This preset will be permanently removed.", "DELETE"] : view === "fixture-warning-clip" ? ["INPUT CLIPPING", "Reduce Input 1 gain to prevent unwanted distortion.", "OPEN I/O SETTINGS"] : view === "fixture-warning-dsp" ? ["DSP LIMIT REACHED", "There is not enough processing power to add this device.", "OK"] : undefined;
+  if (view === "fixture-delete") return <CorOsDeleteConfirmation />;
+  const dialog = view === "fixture-shutdown" ? ["POWER OFF?", "Any unsaved changes will be lost.", "POWER OFF"] : view === "fixture-warning-clip" ? ["INPUT CLIPPING", "Reduce Input 1 gain to prevent unwanted distortion.", "OPEN I/O SETTINGS"] : view === "fixture-warning-dsp" ? ["DSP LIMIT REACHED", "There is not enough processing power to add this device.", "OK"] : undefined;
   if (dialog) return <section className="qc-screen coros-fixture-dialog"><div className="fixture-grid-ghost">{Array.from({length:7},(_,i)=><i key={i}/>)}</div><aside className={view.includes("warning") ? "is-warning" : ""}><b>{view.includes("warning") ? "!" : "?"}</b><h1>{dialog[0]}</h1><p>{dialog[1]}</p><footer><button>CANCEL</button><button>{dialog[2]}</button></footer></aside></section>;
   if (view === "fixture-copy-scene" || view === "fixture-swap-scene") return <section className="qc-screen coros-fixture-dialog is-scene-command"><div className="scene-command-grid"><header><strong><span>32</span>D</strong><span>Unsaved</span><b>A</b></header><span className="scene-command-mode"><svg viewBox="0 0 24 24" aria-hidden="true"><ModeGlyph mode="STOMP" /></svg><b>STOMP</b></span><main>{Array.from({ length: 8 }, (_, index) => <i key={index} />)}</main></div><aside><h1>{view === "fixture-copy-scene" ? "Copy Scene A" : "Swap Scene A"}</h1><p>Press Scene destination footswitch.</p><footer><button>CANCEL</button></footer></aside></section>;
+  if (view === "fixture-editor-capture") return <section className="qc-screen capture-editor-physical" aria-label="Neural Capture editor">
+    <header><strong><span>1</span>D</strong><h1>Fender Deluxe Reverb</h1><nav><i><GridToolbarIcon kind="undo" /></i><b>A</b><i><GridToolbarIcon kind="save" /></i><i><QcUiIcon kind="more" /></i></nav><em><svg viewBox="0 0 24 24" aria-hidden="true"><ModeGlyph mode="PRESET" /></svg><span>PRESET</span></em></header>
+    <div className="capture-editor-grid"><span>In<br />1</span><i className="capture-cable" /><i className="capture-block is-gate">⌁</i><i className="capture-block is-capture">▤</i><i className="capture-block">▤</i><span>Row<br />3</span></div>
+    <section className="capture-editor-panel"><header><button><QcUiIcon kind="more" /></button><span><small>NEURAL CAPTURE</small><strong>Keeley Mod BD-2 3</strong></span><nav><i>◀</i><b>A</b><i>▶</i></nav><button>◯</button><button>✓</button></header><main>{[["GAIN","-3.8 dB",-28],["BASS","1.0 dB",18],["MID","0.0 dB",0],["TREBLE","1.6 dB",28],["VOLUME","-3.8 dB",-28]].map(([label,value,angle])=><section key={label as string}><span>{label}</span><i><b style={{transform:`rotate(${angle}deg)`}} /></i><strong>{value}</strong></section>)}</main></section>
+  </section>;
   if (view === "fixture-input-gate") return <section className="qc-screen coros-input-gate" aria-label="Input Gate Control">
     <div className="input-gate-grid">
       <header><strong><span>2</span>H</strong><h1>QC-MCP-TEST-mtniwbfb-R</h1><nav><i className="input-gate-undo"><GridToolbarIcon kind="undo" /></i><b>A</b><i><GridToolbarIcon kind="save" /></i><i><QcUiIcon kind="more" /></i></nav><em><svg viewBox="0 0 24 24" aria-hidden="true"><ModeGlyph mode="STOMP" /></svg><span>STOMP</span></em></header>
-      <main><span className="input-gate-route">In<br />1</span><i className="input-gate-cable" /><span className="input-gate-device"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M7 27c5-15 8-15 13 0s8 15 13 0 8-15 10 0" /></svg></span><span className="input-gate-output">Multi<br />Out</span>{[0, 1, 2].map(row => <span className="input-gate-plus" style={{ top: `${50 + row * 32}%` }} key={row}><QcUiIcon kind="add" /></span>)}</main>
+      <main><span className="input-gate-route">In<br />1</span><i className="input-gate-cable" /><span className="input-gate-device"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M7 27c4-10 7-10 11 0s7 10 11 0 7-10 12 0" /></svg></span><span className="input-gate-output">Multi<br />Out</span>{[0, 1, 2].map(row => <span className="input-gate-plus" style={{ top: `${50 + row * 32}%` }} key={row}><QcUiIcon kind="add" /></span>)}</main>
     </div>
     <section className="input-gate-panel">
       <header><button><QcUiIcon kind="more" /></button><span><small>INPUT GATE CONTROL</small><strong>Path 1</strong></span><nav><i><QcEditorIcon kind="scene-previous" /></i><b>A</b><i><QcEditorIcon kind="scene-next" /></i></nav><em /><button className="input-gate-power"><QcEditorIcon kind="bypass" /></button><button><QcUiIcon kind="check" /></button></header>
       <main><section><span>NOISE REDUCTION</span><i className="input-gate-knob reduction"><b /></i><strong>30.0 <small>%</small></strong></section><section><span>GAIN REDUCTION</span><strong>0.0 <small>dB</small></strong><i className="input-gate-meter"><b /></i></section><section><span>INPUT GAIN</span><i className="input-gate-knob gain"><b /></i><strong>0.0 <small>dB</small></strong></section></main>
     </section>
   </section>;
-  const editor = view === "fixture-editor-cab" ? ["2x12 UK C30 65 (M)","CABINET",["MIC 1 · 57","MIC 2 · 121","POSITION","DISTANCE","LEVEL","PAN"]] : view === "fixture-editor-eq" ? ["Parametric-8","EQUALIZER",["LOW CUT","BAND 1","BAND 2","BAND 3","HIGH CUT","LEVEL"]] : view === "fixture-editor-capture" ? ["ALI Bass DI","NEURAL CAPTURE",["GAIN","BASS","MIDDLE","TREBLE","LEVEL","MIX"]] : ["Ambience","REVERB · PAGE 2/2",["MOD RATE","MOD DEPTH","DUCKING","TRAILS","WIDTH","MIX"]];
+  const editor = view === "fixture-editor-cab" ? ["2x12 UK C30 65 (M)","CABINET",["MIC 1 · 57","MIC 2 · 121","POSITION","DISTANCE","LEVEL","PAN"]] : view === "fixture-editor-eq" ? ["Parametric-8","EQUALIZER",["LOW CUT","BAND 1","BAND 2","BAND 3","HIGH CUT","LEVEL"]] : ["Ambience","REVERB · PAGE 2/2",["MOD RATE","MOD DEPTH","DUCKING","TRAILS","WIDTH","MIX"]];
   return <section className={`qc-screen coros-detail-editor ${view}`}><header><button>⋮</button><span><small>{editor[1] as string}</small><strong>{editor[0] as string}</strong></span><i>●</i><button>✓</button></header>{view === "fixture-editor-cab" && <div className="cab-stage"><span>57</span><b>▰</b><span>121</span></div>}{view === "fixture-editor-eq" && <svg viewBox="0 0 800 150" preserveAspectRatio="none"><path d="M0 120 C100 120 110 35 205 55 S335 115 410 70 S565 20 640 75 S735 105 800 60" /></svg>}<main>{(editor[2] as string[]).map((label,index)=><section key={label}><span>{label}</span><i><b style={{transform:`rotate(${index*23-35}deg)`}} /></i><strong>{index%2 ? "0.0 dB" : index===0 ? "80 Hz" : "5.0"}</strong></section>)}</main><footer><button>1</button><button className="is-active">2</button><span /><button>BYPASS</button></footer></section>;
 }
 
 type SystemFixtureView = "recovery-entry" | "recovery-options" | "overlay-keyboard" | "overlay-confirmation" | "overlay-error" | "overlay-busy";
 
+const KEYBOARD_ROWS = [
+  ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
+  ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
+  ["⇧", "Z", "X", "C", "V", "B", "N", "M", "⌫"],
+  ["123", ",", "Space", ".", "Done"],
+] as const;
+
+function CorOsKeyboardScreen() {
+  const shifted = ["", "", "", "", "", "", "'", "(", ")"];
+  return <section className="qc-screen coros-physical-keyboard" aria-label="On-screen keyboard">
+    <header><button>×</button><button className="keyboard-default-mark">○</button><span>Save as default User Preset</span><b>⌗</b><button className="keyboard-save-mark">▣</button></header>
+    <h1>Name your Virtual Device Preset</h1>
+    <div className="physical-keyboard-rows">{KEYBOARD_ROWS.map((row, rowIndex) => <div key={rowIndex}>{row.map((key, keyIndex) => <button key={key} className={key === "Space" ? "is-space" : key === "⇧" ? "is-shift" : key === "⌫" ? "is-backspace" : key === "Done" ? "is-done" : key === "123" ? "is-numeric" : ""}>{rowIndex < 2 && <small>{rowIndex === 0 ? (keyIndex + 1) % 10 : shifted[keyIndex]}</small>}{key}</button>)}</div>)}</div>
+  </section>;
+}
+
+function CorOsDeleteConfirmation() {
+  return <section className="qc-screen coros-physical-confirmation" aria-label="Delete preset confirmation">
+    <CorOsDirectoryFixture view="directory-presets" physicalContext />
+    <i className="confirmation-scrim" />
+    <aside><h1>ALI The List</h1><p>Are you sure you want to delete this item?</p><footer><button>CANCEL</button><button>DELETE</button></footer></aside>
+  </section>;
+}
+
 function CorOsSystemFixture({ view }: { view: SystemFixtureView }) {
-  const keys = [["Q","W","E","R","T","Y","U","I","O","P"],["A","S","D","F","G","H","J","K","L"],["⇧","Z","X","C","V","B","N","M","⌫"],["123","SPACE",".","DONE"]];
   if (view === "recovery-entry") return <section className="qc-screen coros-recovery"><div className="recovery-logo">◫</div><h1>Recovery Mode</h1><p>Keep footswitches A and H pressed while powering on Quad Cortex.</p><div className="recovery-switches"><b>A</b><span>HOLD</span><b>H</b></div><small>Release the switches when the recovery menu appears.</small></section>;
   if (view === "recovery-options") return <section className="qc-screen coros-recovery"><div className="recovery-logo">◫</div><h1>Recovery Mode</h1><p>Select an option to continue.</p><div className="recovery-options">{[["RESTART QUAD CORTEX","Boot CorOS normally"],["REINSTALL COROS","Install the latest available system image"],["FACTORY RESET","Erase user data and restore defaults"],["SHUT DOWN","Power off safely"]].map(([title,detail], index) => <button key={title} className={index === 0 ? "is-active" : index === 2 ? "is-danger" : ""}><strong>{title}</strong><small>{detail}</small><b>›</b></button>)}</div></section>;
   return <section className="qc-screen coros-system-overlay"><div className="overlay-underlay"><header><span>32H pyquadcortex scratch</span><b>A</b></header><main>{[1,2,3,4,5].map(item => <i key={item} />)}</main></div>
-    {view === "overlay-keyboard" && <div className="system-keyboard"><header><button>×</button><strong>Edit name</strong><button>✓</button></header><div className="system-keyboard-value">UK C30 Crunch</div><section>{keys.map((row,index) => <div key={index}>{row.map(key => <button key={key} className={key === "SPACE" ? "is-space" : ""}>{key}</button>)}</div>)}</section></div>}
-    {view === "overlay-confirmation" && <aside className="system-dialog"><b className="dialog-icon">?</b><h1>Delete preset?</h1><p>“pyquadcortex scratch” will be permanently removed from this device.</p><footer><button>CANCEL</button><button className="is-danger">DELETE</button></footer></aside>}
+    {view === "overlay-keyboard" && <CorOsKeyboardScreen />}
+    {view === "overlay-confirmation" && <CorOsDeleteConfirmation />}
     {view === "overlay-error" && <aside className="system-dialog"><b className="dialog-icon is-error">!</b><h1>Action unavailable</h1><p>Quad Cortex could not complete the request. Check the connection and try again.</p><footer><button>OK</button></footer></aside>}
     {view === "overlay-busy" && <aside className="system-dialog is-busy"><b className="dialog-spinner" /><h1>Saving preset</h1><p>Please wait. Do not disconnect or power off Quad Cortex.</p></aside>}
   </section>;
@@ -214,7 +248,7 @@ function CaptureKindGlyph({ index }: { index: number }) {
 function CorOsOfficialCapture({ view }: { view: "capture-calibration" | "capture-progress" | "capture-result" | "capture-save" }) {
   if (view === "capture-progress") return <section className="qc-screen capture-official capture-official-progress"><header><span>Neural Capture</span><button>×</button></header><main><nav>{[["✓", "Calibration"], ["✓", "Recording Signals"], ["✓", "Sanity Check"], ["➜", "Training"]].map(([icon, label]) => <div key={label}><b>{icon}</b>{label}</div>)}</nav><section><h1>Neural Capture in progress</h1><p>The core of Neural Capture. Training a neural network to<br />emulate the sound of your favorite device.</p><strong>30%</strong><i className="capture-official-progress-bar"><b /></i><em>◔</em></section></main></section>;
   if (view === "capture-save") return <section className="qc-screen capture-official capture-official-save"><header><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg></button><button className="capture-folder"><DirectoryIcon kind="folder" /><span>My Captures</span></button><button>Name</button><button className="capture-note"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7Z" /><path d="M14 3v5h5M10 12h5m-5 3h5m-5 3h5" /></svg></button><button className="capture-save-now"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h12l3 3v15H4V3Z" /><path d="M8 3v6h8V3M8 21v-7h8v7" /></svg></button></header><main><small>TYPE OF CAPTURE</small><h1>Amp</h1><div className="capture-kinds">{Array.from({ length: 6 }, (_, index) => <button key={index} className={index === 1 ? "is-active" : ""}><CaptureKindGlyph index={index} />{index > 0 && <i />}</button>)}</div><small>PREFERRED INSTRUMENT</small><div className="capture-instruments">{["Guitar", "Bass", "Synth", "Vocal", "Other"].map((label, index) => <button key={label} className={index === 0 ? "is-active" : ""}>{label}</button>)}</div></main></section>;
-  if (view === "capture-result") return <section className="qc-screen capture-official capture-official-result"><header><span>Neural Capture</span><button>×</button></header><p>Your Neural Capture is ready. Switch between the reference and Quad Cortex using<br />the buttons below.</p><div className="capture-result-actions"><button>BACK TO CALIBRATION</button><button>SAVE</button><CaptureTargetIcon /></div><main><section><button>CORTEX</button><label><span>♧ LEVEL</span><b className="capture-level-dial" /><small>0.0 dB</small></label></section><section><button>REFERENCE</button></section></main></section>;
+  if (view === "capture-result") return <section className="qc-screen capture-official capture-official-result"><header><span>Neural Capture</span><button>×</button></header><p>Your Neural Capture is ready. Switch between the reference and Quad Cortex using<br />the buttons below.</p><div className="capture-result-actions"><button>BACK TO CALIBRATION</button><button>SAVE</button><CaptureTargetIcon /></div><main><section><button>CORTEX</button><label><span className="capture-level-label"><IoHeadphonesGlyph />LEVEL</span><b className="capture-level-dial" /><small>0.0 dB</small></label></section><section><button>REFERENCE</button></section></main></section>;
   return <section className="qc-screen capture-official capture-official-settings"><header><span>Neural Capture</span><button>×</button></header><ul><li>Please verify your Quad Cortex is properly connected to the target device.</li><li>Reduce levels if any of the meters detect clipping.</li><li>The IN 2 GROUND LIFT can mitigate noise caused by ground loops between Quad<br />Cortex and the target device.</li></ul><div className="capture-setting-actions"><button>CONNECTION DIAGRAM</button><button>START CAPTURE</button><CaptureTargetIcon /><nav><button className="is-active">1</button><button>2</button></nav></div><main><section><span>IN 1 LEVEL</span><em className="capture-info">i</em><small>INST</small><b>0.0 dB</b><i className="capture-level-dial" /></section><section><span>IN 2 LEVEL</span><em className="capture-info">i</em><small>DEVICE</small><b>0.0 dB</b><i className="capture-level-dial" /></section><section className="capture-input-type"><span>IN 1 TYPE</span><label><i /><small>Mic</small><b>Instrument</b></label></section><section className="capture-input-type"><span>IN 2 TYPE</span><label><i /><small>Mic</small><b>Instrument</b></label></section><section><span>IN 1 LEVEL</span><b>-40.0 <small>dB</small></b><i className="capture-meter" /></section><section><span>IN 2 LEVEL</span><b>-40.0 <small>dB</small></b><i className="capture-meter" /></section><section><span>♧ LEVEL</span><i className="capture-level-dial" /><b>0.0 <small>dB</small></b></section></main></section>;
 }
 
@@ -279,24 +313,57 @@ function CorOsOfficialSettings({ view }: { view: "settings-account" | "settings-
   </section>;
 }
 
+type CapturedSettingsView = "settings-support" | "settings-wifi" | "settings-storage" | "settings-info" | "settings-diagnostics";
+
+const SUPPORT_QR = [
+  "11111111011111001101011111111", "10000001011001011100010000001", "10111101001100011111010111101", "10111101000101111111010111101", "10111101000001111101010111101", "10111101011001111100010111101", "10000001011110110001010000001", "11111111011010101101011111111", "00000000011100001110000000000", "11110011011101100110111110011", "11110111011101110111111111011", "01110100000000110111011011011", "00000001111110100111011011101", "00011000100011101101101111000", "00011011011110100111011000001", "01011100001110010111111000011", "11011101101101010111010011101", "11111111111111011111111111101", "00110010011011001101101111000", "11110101100011001101111110010", "00000000011101110001000110001", "11111111000011000001010110001", "10000001011101101111000110001", "10111101000011000111111110010", "10111101000111110111111110110", "10111101001111110110100110110", "10111101011011000111001111011", "10000001011010100001001110000", "11111111011001100001100011001"
+];
+
+function SupportQr() {
+  return <b className="support-qr" aria-hidden="true">{SUPPORT_QR.flatMap((row, y) => [...row].map((cell, x) => <i key={`${x}-${y}`} className={cell === "1" ? "is-dark" : ""} />))}</b>;
+}
+
+function CapturedSettingsIcon({ kind }: { kind: string }) {
+  if (kind === "support") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 5h19v14h-19zM3 5l9 8 9-8" /></svg>;
+  if (kind === "system") return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v3m0 14v3M2 12h3m14 0h3M4.9 4.9 7 7m10 10 2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1" /></svg>;
+  if (kind === "about") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 16 4-10 4 13 4-8 3 5h3" /></svg>;
+  if (kind === "info") return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor" stroke="none" /><path d="M12 10v7m0-11v1" stroke="#282c28" strokeWidth="2" /></svg>;
+  if (kind === "report") return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7" /><path d="M12 2v4m0 12v4M2 12h4m12 0h4M5 5l3 3m8 8 3 3M19 5l-3 3M8 16l-3 3" /></svg>;
+  if (kind === "diagnostics") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3h4v18h-4zM3 10h18v4H3z" fill="currentColor" stroke="none" /></svg>;
+  if (kind === "licenses") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 2h9l5 5v15H5zM8 12h8M8 16h8M8 8h3" /></svg>;
+  if (kind === "wifi") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8a14 14 0 0 1 18 0M6 12a9 9 0 0 1 12 0m-9 4a4 4 0 0 1 6 0" /><circle cx="12" cy="20" r="1" fill="currentColor" /></svg>;
+  if (kind === "updates") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 7V2l-3 3a8 8 0 1 0 4 13M6 17v5l3-3" /></svg>;
+  if (kind === "brightness") return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 1v3m0 16v3M1 12h3m16 0h3M4 4l2 2m12 12 2 2M20 4l-2 2M6 18l-2 2" /></svg>;
+  if (kind === "power") return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="3" fill="currentColor" stroke="none" /><path d="m13 4-6 10h5l-1 6 6-10h-5z" stroke="#282c28" /></svg>;
+  if (kind === "volume") return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" /><path d="M12 12 18 6" /></svg>;
+  if (kind === "storage") return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor" stroke="none" /><path d="M12 2v10h10" stroke="#282c28" /></svg>;
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18v15H3zM7 2v8m5-8v8m5-8v8M7 16v2m5-2v2m5-2v2" /></svg>;
+}
+
+function CorOsCapturedSettings({ view }: { view: CapturedSettingsView }) {
+  const support = view === "settings-support" || view === "settings-info" || view === "settings-diagnostics";
+  const rows = support
+    ? [["about", "About and Contact"], ["info", "Device Information"], ["report", "Send Report"], ["diagnostics", "Diagnostics"], ["licenses", "3rd Party Licenses"]]
+    : [["wifi", "Connection"], ["updates", "Updates"], ["brightness", "Brightness"], ["power", "Power Functions"], ["volume", "Master Volume Knob"], ["storage", "Device Storage"], ["factory", "Factory Reset"]];
+  const active = view === "settings-support" ? 0 : view === "settings-info" ? 1 : view === "settings-diagnostics" ? 3 : view === "settings-wifi" ? 0 : 5;
+  return <section className={`qc-screen coros-settings-official coros-settings-captured ${view}`} aria-label={view.replaceAll("-", " ")}>
+    <header><button className="settings-section"><b><CapturedSettingsIcon kind={support ? "support" : "system"} /></b>{support ? "Support" : "System"}<i /></button>{view === "settings-info" && <button className="settings-edit" aria-label="Edit device name"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5v15h15v-8M11 14 20 5l-3-3-9 9-1 4 4-1Z" /></svg></button>}<button className="settings-done"><QcUiIcon kind="check" /></button></header>
+    <main><nav>{rows.map(([icon, label], index) => <button key={label} className={index === active ? "is-active" : ""}><b><CapturedSettingsIcon kind={icon} /></b>{label}</button>)}</nav>
+      <section className="captured-settings-detail">
+        {view === "settings-support" && <><h1>About Us</h1><div className="support-company"><span><strong>Neural DSP Technologies LLC</strong><br />Elimäenkatu 20A<br />00510 Helsinki<br />Finland</span><b><i>ϟ</i> Neural</b></div><hr /><div className="support-contact"><span>If you need support, you can contact<br />support@neuraldsp.com.<br /><br />Also be sure to check out our user forums at<br />unity.neuraldsp.com.</span><SupportQr /></div></>}
+        {view === "settings-diagnostics" && <div className="captured-list">{["DSP Diagnostics", "Footswitch Statistics", "USB Statistics"].map(label => <button key={label}>{label}<span>›</span></button>)}</div>}
+        {view === "settings-storage" && <><h1>Device Storage</h1><div className="storage-captured">{[["presets", "My Presets", "270/3072", 9], ["captures", "My Captures", "65/2048", 3], ["irs", "My Impulse Responses", "0/2048", 0]].map(([kind, label, value, amount]) => <div key={String(label)}><span><CapturedSettingsIcon kind={String(kind)} /><strong>{label}</strong><i>›</i><em>{value}</em></span><b><i style={{ width: `${amount}%` }} /></b></div>)}</div></>}
+        {view === "settings-info" && <><h1>Device information</h1><div className="information-table"><span><b>Serial number:</b><i /></span><span><b>Device name:</b><i>Neural DSP Quad Cortex</i></span><span><b>MAC address:</b><i /></span></div><hr /><h1>Software information</h1><div className="information-table"><span><b>CorOS:</b><i>4.1.0</i></span><span><b>Linux kernel:</b><i>Linux buildroot 4.0.0-ADI-1.3.0 #1 PREEMPT Tue<br />Aug 18 01:26:58 EEST 2026 armv7l (none)</i></span><span><b>U-Boot:</b><i>U-Boot 2015.01 ADI-1.3.0 (Sep 30 2021 -<br />01:01:44)</i></span><span><b>Zeniack FW app:</b><i>d14e</i></span></div></>}
+        {view === "settings-wifi" && <><header className="wifi-header"><h1>Internet Connected</h1><button>Domain Settings</button><button>Internet Check</button></header><div className="wifi-network"><span>▣</span><b /><em>Weak connection</em><i>▥</i><strong>▮</strong></div><div className="wifi-secondary"><span>▣</span><strong>▮</strong></div><button className="wifi-reset">RESET WI-FI SETTINGS</button></>}
+      </section>
+    </main>
+  </section>;
+}
+
 function CorOsSettingsFixture({ view }: { view: SettingsFixtureView }) {
   if (view === "settings-account" || view === "settings-system" || view === "settings-device" || view === "settings-midi") return <CorOsOfficialSettings view={view} />;
-  const section = ["settings-support", "settings-info", "settings-diagnostics"].includes(view) ? "SUPPORT" : "SYSTEM";
-  const titles: Record<SettingsFixtureView, string> = { "settings-account": "Account Settings", "settings-system": "System Settings", "settings-device": "Device Settings", "settings-support": "Support Settings", "settings-wifi": "Connection", "settings-update": "Device Updates", "settings-storage": "Device Storage", "settings-midi": "MIDI Settings", "settings-info": "Device Information", "settings-diagnostics": "Diagnostics" };
-  const standardRows: Record<string, Array<[string, string]>> = {
-    "settings-account": [["MY ACCOUNT", "anton"], ["BACKUPS", "Cloud backups"], ["CORTEX CLOUD", "Connected"]],
-    "settings-system": [["CONNECTION", "Wi-Fi"], ["UPDATES", "CorOS 4.1.0"], ["BRIGHTNESS", "80%"], ["POWER FUNCTIONS", "Normal"], ["MASTER VOLUME KNOB", "Global"], ["DEVICE STORAGE", "62% used"], ["FACTORY RESET", ""]],
-    "settings-device": [["GLOBAL BYPASS", "Off"], ["SCENE BYPASS BEHAVIOR", "Always overwrite"], ["STOMP MODE BYPASS", "Auto assign"], ["HOLD TIMING", "750 ms"], ["SWAP TEMPO AND TUNER", "Off"], ["GIG VIEW ACCESS", "On"], ["LATENCY COMPENSATION", "Dynamic"], ["MIDI", "Channel 1"]],
-    "settings-support": [["ABOUT AND CONTACT", "Neural DSP"], ["DEVICE INFORMATION", "Quad Cortex"], ["SEND REPORT", ""], ["DIAGNOSTICS", "DSP, footswitches, USB"], ["3RD PARTY LICENSES", ""]]
-  };
-  return <section className="qc-screen coros-settings-fixture" aria-label={titles[view]}><header><button>‹</button><strong>{titles[view]}</strong><button>✓</button></header><main><nav>{[["ACCOUNT", "♙"], ["SYSTEM", "⚙"], ["DEVICE", "▣"], ["SUPPORT", "?" ]].map(([label, icon]) => <button key={label} className={label === section ? "is-active" : ""}><b>{icon}</b><span>{label}</span></button>)}</nav><section className="settings-content">
-    {standardRows[view]?.map(([label, value], index) => <button key={label} className={label === "FACTORY RESET" ? "is-danger" : ""}><span><strong>{label}</strong>{value && <small>{value}</small>}</span>{["Connected", "Off", "On"].includes(value) ? <i className={value === "Off" ? "" : "is-on"}><b /></i> : <em>›</em>}</button>)}
-    {view === "settings-wifi" && <><div className="settings-status"><span>WI-FI</span><i className="is-on"><b /></i></div>{[["Studio 5G", "Connected"], ["NeuralDSP", "Secured"], ["Guest", "Secured"], ["Add Network…", ""]].map(([name, state]) => <button key={name}><span><strong>⌁　{name}</strong><small>{state}</small></span><em>›</em></button>)}</>}
-    {view === "settings-update" && <div className="settings-update"><span>CURRENT VERSION</span><strong>CorOS 4.1.0</strong><i><b /></i><small>Your Quad Cortex is up to date</small><button>CHECK FOR UPDATES</button></div>}
-    {view === "settings-storage" && <><div className="storage-summary"><strong>DEVICE STORAGE</strong><span>6.2 GB of 10 GB used</span><i><b /></i></div>{[["Presets", "1.8 GB"], ["Neural Captures", "2.4 GB"], ["Impulse Responses", "1.2 GB"], ["Other", "0.8 GB"]].map(([name, value]) => <button key={name}><span><strong>{name}</strong><small>{value}</small></span><em>›</em></button>)}<button className="is-danger"><span><strong>FACTORY RESET</strong><small>Restore settings or remove user data</small></span><em>›</em></button></>}
-    {view === "settings-info" && <div className="device-info-card"><b>◫</b><strong>Quad Cortex</strong>{[["DEVICE NAME", "Neural DSP Quad Cortex"], ["SERIAL NUMBER", "QC-21-0410"], ["COROS VERSION", "4.1.0"], ["HARDWARE REVISION", "1"]].map(([name, value]) => <span key={name}><small>{name}</small>{value}</span>)}</div>}
-    {view === "settings-diagnostics" && <div className="diagnostics-grid">{[["DSP 1", "26%"], ["DSP 2", "18%"], ["FOOTSWITCHES", "11 / 11"], ["USB AUDIO", "16 channels"], ["TEMPERATURE", "42 °C"], ["UPTIME", "03:18:42"]].map(([name, value]) => <span key={name}><small>{name}</small><strong>{value}</strong><i><b /></i></span>)}</div>}
-  </section></main></section>;
+  if (view === "settings-support" || view === "settings-wifi" || view === "settings-storage" || view === "settings-info" || view === "settings-diagnostics") return <CorOsCapturedSettings view={view} />;
+  return <section className="qc-screen coros-settings-fixture" aria-label="Device Updates"><header><button>‹</button><strong>Device Updates</strong><button>✓</button></header><main><nav>{[["ACCOUNT", "♙"], ["SYSTEM", "⚙"], ["DEVICE", "▣"], ["SUPPORT", "?"]].map(([label, icon]) => <button key={label} className={label === "SYSTEM" ? "is-active" : ""}><b>{icon}</b><span>{label}</span></button>)}</nav><section className="settings-content"><div className="settings-update"><span>CURRENT VERSION</span><strong>CorOS 4.1.0</strong><i><b /></i><small>Your Quad Cortex is up to date</small><button>CHECK FOR UPDATES</button></div></section></main></section>;
 }
 
 function SceneTileTools() {
@@ -307,7 +374,7 @@ function SceneTileTools() {
   </span>;
 }
 
-function CorOsGigView({ snapshot, onClose, liveTuner = false }: { snapshot: PresetSnapshot; onClose: () => void; liveTuner?: boolean }) {
+function CorOsGigView({ snapshot, presetList, onClose, liveTuner = false }: { snapshot: PresetSnapshot; presetList?: PresetList; onClose: () => void; liveTuner?: boolean }) {
   const gridBlocks = snapshot.blocks.filter((block) => block.column >= 0 && block.column < 8);
   const assignments = Array.from({ length: 8 }, (_, index) => snapshot.blocks
     .filter((block) => block.footswitch === index)
@@ -315,10 +382,14 @@ function CorOsGigView({ snapshot, onClose, liveTuner = false }: { snapshot: Pres
   const sceneColors = ["#ff2421", "#101c21", "#292410", "#291021", "#102818", "#291810", "#181829", "#102821"];
   const sceneLetterColors = ["#e72018", "#082029", "#393408", "#390c29", "#083818", "#391c08", "#181c39", "#083c29"];
   const letterColors = ["#4df379", "#079dff", "#ff7d00", "#ff00b7", "#5beaff", "#7358ff", "#ffd333", "#f4f4f4"];
+  const bankStart = Math.floor(snapshot.presetPosition / 8) * 8;
+  const listedPresets = presetList?.setlistKey === snapshot.setlistKey ? presetList.presets : [];
   const presetTiles = Array.from({ length: 8 }, (_, index) => {
-    const active = index === snapshot.presetPosition % 8;
-    const bank = Math.floor(snapshot.presetPosition / 8) + 1;
-    return <button key={index} className={`gig-preset-tile${active ? " is-active" : ""}`}><span>{bank}<b style={{ color: letterColors[index] }}>{String.fromCharCode(65 + index)}</b></span><strong>{active ? snapshot.presetName : "Unsaved"}</strong></button>;
+    const position = bankStart + index;
+    const active = position === snapshot.presetPosition;
+    const entry = listedPresets.find((candidate) => candidate.position === position);
+    const name = active ? snapshot.presetName : entry?.name ?? "Unsaved";
+    return <button key={index} className={`gig-preset-tile${active ? " is-active" : ""}`}><span>{Math.floor(position / 8) + 1}<b style={{ color: letterColors[index] }}>{String.fromCharCode(65 + index)}</b></span><strong>{name}</strong></button>;
   });
   const sceneTiles = Array.from({ length: 8 }, (_, index) => <button key={index} className={`gig-scene-tile${index === snapshot.activeScene ? " is-active" : ""}`} style={{ "--gig-color": sceneColors[index], "--gig-letter": sceneLetterColors[index] } as CSSProperties}><SceneTileTools /><b>{String.fromCharCode(65 + index)}</b><strong>{snapshot.scenes[index] ?? `Scene ${String.fromCharCode(65 + index)}`}</strong></button>);
   const stompTiles = assignments.map((assigned, index) => {
@@ -329,7 +400,10 @@ function CorOsGigView({ snapshot, onClose, liveTuner = false }: { snapshot: Pres
       {block && <span className="gig-edit" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 9v11h11M8 16 19 5l-3-3L5 13l-1 5 5-1Z" /></svg></span>}<b>{String.fromCharCode(65 + index)}</b>{block && <strong className={block.name === "Parametric-8" ? "is-compact" : ""}>{block.name}</strong>}
     </button>;
   });
-  const tiles = snapshot.mode === "PRESET" ? presetTiles : snapshot.mode === "SCENE" ? sceneTiles : snapshot.mode === "HYBRID" ? [...sceneTiles.slice(0, 4), ...stompTiles.slice(4)] : stompTiles;
+  const tileForMode = (mode: "PRESET" | "SCENE" | "STOMP", index: number) => mode === "PRESET" ? presetTiles[index] : mode === "SCENE" ? sceneTiles[index] : stompTiles[index];
+  const tiles = snapshot.mode === "HYBRID"
+    ? Array.from({ length: 8 }, (_, index) => tileForMode(snapshot.footswitchModes?.[index < 4 ? 0 : 1] ?? (index < 4 ? "SCENE" : "STOMP"), index))
+    : Array.from({ length: 8 }, (_, index) => tileForMode(snapshot.mode as Exclude<PresetSnapshot["mode"], "HYBRID">, index));
   return <section className={`coros-gig-view${liveTuner ? " has-live-tuner" : ""}`} aria-label={liveTuner ? "Gig View with Live Tuner" : "Gig View"}>
     <header><strong>{snapshot.presetLocation} {snapshot.presetName}</strong><span className="gig-mode"><svg viewBox="0 0 24 24" aria-hidden="true"><ModeGlyph mode={snapshot.mode} /></svg></span><span className="gig-scene">{String.fromCharCode(65 + snapshot.activeScene)}</span><button aria-label="Close Gig View" onClick={onClose}>✓</button></header>
     {liveTuner && <div className="live-tuner-strip" aria-label="Live Tuner dormant" />}
@@ -352,12 +426,13 @@ function CorOsTuner({ onClose, liveTuner = false }: { onClose: () => void; liveT
 }
 
 function CorOsTempo({ bpm, onClose }: { bpm: number; onClose: () => void }) {
-  return <section className="coros-tempo" aria-label="Tempo and Metronome">
+  const official = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("tempoState") === "official";
+  return <section className={`coros-tempo${official ? " tempo-official" : ""}`} aria-label="Tempo and Metronome">
     <header><span>Tempo</span><div className="tempo-scene"><b>◀</b><strong>A</strong><b>▶</b></div><button aria-label="Close Tempo and Metronome" onClick={onClose}>✓</button></header>
-    <div className="tempo-display"><strong>{Math.round(bpm)}</strong><small>BPM = QUARTERS</small><div>{[0, 1, 2, 3].map((beat) => <i key={beat} className={beat === 0 ? "is-active" : ""} />)}</div></div>
+    <div className="tempo-display"><strong>{Math.round(bpm)}</strong><small>BPM = QUARTERS</small><div>{[0, 1, 2, 3].map((beat) => <i key={beat} className={beat === (official ? 1 : 0) ? "is-active" : ""} />)}</div></div>
     <div className="tempo-controls">
       <section className="tempo-control is-tempo"><span>TEMPO</span><div className="tempo-dial"><i /></div><strong>{Math.round(bpm)} BPM</strong></section>
-      <section className="tempo-control is-radio"><span>MODE <b className="tempo-info">i</b></span><label><i />Global</label><label><i className="is-active" />Preset</label></section>
+      <section className="tempo-control is-radio"><span>MODE <b className="tempo-info">i</b></span><label><i className={official ? "is-active" : ""} />Global</label><label><i className={official ? "" : "is-active"} />Preset</label></section>
       <section className="tempo-control is-radio"><span>TEMPO LED</span><label><i className="is-active" />On</label><label><i />Off</label></section>
       <section className="tempo-control is-volume"><span>VOLUME</span><div className="tempo-dial"><i /></div><strong>0.0 dB</strong></section>
       <section className="tempo-control is-mute"><button>UNMUTE</button></section>
@@ -395,7 +470,7 @@ function CorOsCpuMonitor({ snapshot, onClose }: { snapshot: PresetSnapshot; onCl
 type IoView = "overview" | "input" | "output" | "send-return" | "usb" | "headphones";
 const IO_PORTS: Array<{ id: IoView; label: string; sub: string; kind?: "square" | "midi" | "input" | "combo"; paired?: boolean }> = [
   { id: "usb", label: "", sub: "USB", kind: "square" }, { id: "send-return", label: "EXP 2", sub: "EXP 1", paired: true },
-  { id: "send-return", label: "MIDI OUT", sub: "", kind: "midi" }, { id: "send-return", label: "MIDI IN", sub: "", kind: "midi" },
+  { id: "send-return", label: "", sub: "MIDI OUT", kind: "midi" }, { id: "send-return", label: "", sub: "MIDI IN", kind: "midi" },
   { id: "output", label: "", sub: "OUT 2/R", kind: "combo", paired: true }, { id: "output", label: "", sub: "OUT 1/L", kind: "combo", paired: true },
   { id: "headphones", label: "♧", sub: "CAPTURE OUT", paired: true }, { id: "output", label: "OUT 4/R", sub: "OUT 3/L", paired: true },
   { id: "send-return", label: "RET 2", sub: "RET 1", paired: true }, { id: "send-return", label: "SEND 2", sub: "SEND 1", paired: true },
@@ -648,18 +723,18 @@ function CorOsDeviceBrowserFixture({ view }: { view: "device-search" | "device-f
     ["Plini Clean", "amp"], ["Plini Crunch", "amp"], ["Plini Lead", "amp"], ["Plini Cab (M)", "cab"], ["Plini Cab (ST)", "cab"], ["Plini Drive", "drive"]
   ];
   const rows = view === "device-favorites" ? [["Chief DS1", "OVERDRIVE", true], ["Brit 2203", "AMP", true], ["212 UK C30 65 (M)", "CAB", true], ["Digital Flanger", "MODULATION", true], ["Ambience", "REVERB", true]] as const : view === "device-search" ? [["Chief DS1", "OVERDRIVE", true], ["Chief SD1", "OVERDRIVE", true], ["Chief OD1", "OVERDRIVE", true]] as const : undefined;
-  return <section className={`qc-screen coros-browser-fixture${view === "plugin-list" ? " is-physical-plugin-list" : pluginModels ? ` is-physical-plugin-models${lockedPlugin ? " is-physical-plugin-locked" : ""}` : ""}`} aria-label={view.replaceAll("-", " ")}>
+  return <section className={`qc-screen coros-browser-fixture${view === "plugin-list" || view === "plugin-refresh" ? " is-physical-plugin-list" : pluginModels ? ` is-physical-plugin-models${lockedPlugin ? " is-physical-plugin-locked" : ""}` : ""}`} aria-label={view.replaceAll("-", " ")}>
     <div className="browser-fixture-panel">
       <nav>{COROS_DEVICE_CATEGORIES.slice(0, 8).map(([label, glyph, color], index) => <button key={label} className={(plugins ? index === 0 : index === 4) ? "is-active" : ""} style={{ "--device-color": color } as CSSProperties}><i><DeviceCategoryGlyph label={label} fallback={glyph} /></i></button>)}</nav>
       <main>
-        <header><strong>{view === "plugin-list" ? "Add device" : plugins ? "Plugins" : view === "device-favorites" ? "Favorites & Recent" : "Search devices"}</strong><button className={view === "plugin-refresh" ? "is-refreshing" : ""}>↻</button></header>
+        <header><strong>{view === "plugin-refresh" ? "Refreshing the list can take 10-20 seconds." : view === "plugin-list" ? "Add device" : plugins ? "Plugins" : view === "device-favorites" ? "Favorites & Recent" : "Search devices"}</strong><button className={view === "plugin-refresh" ? "is-refreshing" : ""}><GridToolbarIcon kind="refresh" /></button></header>
         {view === "device-search" && <div className="browser-search"><span>⌕</span><b>Chief</b><button>×</button></div>}
         {view === "device-favorites" && <div className="browser-tabs"><button className="is-active">FAVORITES</button><button>RECENT</button></div>}
-        {view === "plugin-refresh" ? <div className="plugin-refresh-state"><i>↻</i><strong>Refreshing plugin licenses…</strong><span>Checking your Neural DSP account</span></div> : pluginModels ? <div className="browser-result-list is-plugin-licenses">{PLUGIN_LICENSES.map(([name, available]) => { const selected = name === (lockedPlugin ? "Archetype: Cory Wong X" : "Archetype: Plini X"); return <button key={name} className={`${available ? "is-licensed" : "is-locked"}${selected ? " is-selected" : ""}`}>{!available && <i className="plugin-license-lock"><svg viewBox="0 0 20 24" aria-hidden="true"><path d="M4 10V7a6 6 0 0 1 12 0v3M2 10h16v13H2Z" /></svg></i>}<span><strong>{name}</strong></span>{selected && <em>›</em>}</button>; })}</div> : view === "plugin-list" ? <div className="browser-result-list is-plugin-licenses">{PLUGIN_LICENSES.map(([name, available]) => <button key={name} className={available ? "is-licensed" : "is-locked"}>{!available && <i className="plugin-license-lock"><svg viewBox="0 0 20 24" aria-hidden="true"><path d="M4 10V7a6 6 0 0 1 12 0v3M2 10h16v13H2Z" /></svg></i>}<span><strong>{name}</strong></span></button>)}</div> : <div className="browser-result-list">{rows?.map(([name, category]) => <button key={name}><i style={{ "--result-color": category === "AMP" ? "#ff424c" : category === "CAB" ? "#7257ff" : category === "MODULATION" ? "#a95cff" : category === "REVERB" ? "#35b9ff" : "#ff7900" } as CSSProperties}>{category === "AMP" ? "▭" : category === "CAB" ? "⊙" : "∿"}</i><span><strong>{name}</strong><small>{category}</small></span><b>★</b></button>)}</div>}
+        {pluginModels ? <div className="browser-result-list is-plugin-licenses">{PLUGIN_LICENSES.map(([name, available]) => { const selected = name === (lockedPlugin ? "Archetype: Cory Wong X" : "Archetype: Plini X"); return <button key={name} className={`${available ? "is-licensed" : "is-locked"}${selected ? " is-selected" : ""}`}>{!available && <i className="plugin-license-lock"><PluginLockIcon /></i>}<span><strong>{name}</strong></span>{selected && <em>›</em>}</button>; })}</div> : view === "plugin-list" || view === "plugin-refresh" ? <div className="browser-result-list is-plugin-licenses">{PLUGIN_LICENSES.map(([name, available]) => <button key={name} className={available ? "is-licensed" : "is-locked"}>{!available && <i className="plugin-license-lock"><PluginLockIcon /></i>}<span><strong>{name}</strong></span></button>)}</div> : <div className="browser-result-list">{rows?.map(([name, category]) => <button key={name}><i style={{ "--result-color": category === "AMP" ? "#ff424c" : category === "CAB" ? "#7257ff" : category === "MODULATION" ? "#a95cff" : category === "REVERB" ? "#35b9ff" : "#ff7900" } as CSSProperties}>{category === "AMP" ? "▭" : category === "CAB" ? "⊙" : "∿"}</i><span><strong>{name}</strong><small>{category}</small></span><b>★</b></button>)}</div>}
       </main>
-      {pluginModels && <><header className="plugin-model-header"><strong>{lockedPlugin ? "Plugin license not found" : "Add device"}</strong><button><GridToolbarIcon kind="refresh" /></button><button>×</button></header><section className="plugin-model-list">{pluginModelRows.map(([name, kind]) => <button key={name}><i className={kind === "cab" ? "is-cab" : kind === "drive" ? "is-drive" : ""}><PluginModelGlyph name={name} kind={kind} /></i>{lockedPlugin && <i className="plugin-model-lock"><svg viewBox="0 0 20 24" aria-hidden="true"><path d="M4 10V7a6 6 0 0 1 12 0v3M2 10h16v13H2Z" /></svg></i>}<span>{name}</span><em><DevicePresetGlyph /></em></button>)}</section></>}
+      {pluginModels && <><header className="plugin-model-header"><strong>{lockedPlugin ? "Plugin license not found" : "Add device"}</strong><button><GridToolbarIcon kind="refresh" /></button><button>×</button></header><section className="plugin-model-list">{pluginModelRows.map(([name, kind]) => <button key={name}><i className={kind === "cab" ? "is-cab" : kind === "drive" ? "is-drive" : ""}><PluginModelGlyph name={name} kind={kind} /></i>{lockedPlugin && <i className="plugin-model-lock"><PluginLockIcon /></i>}<span>{name}</span><em><DevicePresetGlyph /></em></button>)}</section></>}
     </div>
-    {view === "plugin-list" ? <div className="plugin-grid-underlay"><header><strong>32<span>G</span></strong><em>Unsaved*</em></header><main><i className="underlay-input">In<br />1</i><i className="underlay-plus">＋</i><i className="underlay-add">＋</i><i className="underlay-row-2">＋</i><i className="underlay-row-3">＋</i><i className="underlay-row-4">＋</i></main></div> : <div className="browser-grid-ghost"><b>3B</b><span>SCENE</span><i>＋</i><i>＋</i><i>＋</i></div>}
+    {view === "plugin-list" || view === "plugin-refresh" ? <div className="plugin-grid-underlay"><header><strong>2<span>F</span></strong><em>QC MCP TEST</em></header><main><i className="underlay-input">In<br />1</i><i className="underlay-plus">＋</i><i className="underlay-add">＋</i><i className="underlay-row-2">＋</i><i className="underlay-row-3">＋</i><i className="underlay-row-4">＋</i></main></div> : <div className="browser-grid-ghost"><b>3B</b><span>SCENE</span><i>＋</i><i>＋</i><i>＋</i></div>}
   </section>;
 }
 
@@ -668,13 +743,32 @@ function CorOsLooperEditor() {
   return <section className="qc-screen coros-looper" aria-label="Looper X editor"><header><button>⋮</button><span><small>LOOPER</small><strong>Looper X</strong></span><i /><button>◴　Params</button><button>◀　<b>A</b>　▶</button><button>✓</button></header><div className="looper-timeline"><span>USE <b>●</b> TO START RECORDING</span><span>USE <b className="looper-close-caret">⌃</b> TO CLOSE THE LOOPER VIEW</span><em>AVAILABLE 4:38</em></div><div className="looper-actions">{actions.map(([label, glyph, key]) => <button key={label}><small>{label}</small><strong>{glyph}</strong><b>{key}</b></button>)}</div></section>;
 }
 
+type CaptureLibraryView = "device-favorites" | "device-recents" | "device-search" | "device-search-entry" | "device-search-suggestions" | "device-search-results";
+
+function CaptureLibraryRail() {
+  return <nav className="capture-library-rail">{COROS_DEVICE_CATEGORIES.slice(0, 6).map(([label, glyph], index) => <button key={label} className={index === 2 ? "is-active" : ""}><i><DeviceCategoryGlyph label={label} fallback={glyph} /></i></button>)}</nav>;
+}
+
+function CaptureLibraryKeyboard({ query = "" }: { query?: string }) {
+  const rows = [["q","w","e","r","t","y","u","i","o","p"],["a","s","d","f","g","h","j","k","l"],["⇧","z","x","c","v","b","n","m","⌫"],["123",",","Space",".",query ? "Search" : "Done"]];
+  return <section className="capture-search-keyboard"><header><button>×</button><button className={query ? "is-ready" : ""}>⌕</button></header><h1>{query || "Search for ..."}</h1><small>{query ? "Suggestions" : "Recently searched"}</small>{query ? <div className="capture-search-suggestion"><i>≋</i> JQ~Marshall JMP (Gary Moore)~</div> : <div className="capture-recent-searches"><b>gary</b><b>whammy</b><b>still</b><button>Clear all</button></div>}<main>{rows.map((row, rowIndex) => <div key={rowIndex}>{row.map((key) => <button key={key} className={key === "Space" ? "is-space" : key === "Search" || key === "Done" ? "is-done" : key === "123" ? "is-numeric" : ""}>{key}</button>)}</div>)}</main></section>;
+}
+
+function CorOsCaptureLibrary({ view }: { view: CaptureLibraryView }) {
+  if (view === "device-search-entry") return <CaptureLibraryKeyboard />;
+  if (view === "device-search-suggestions") return <CaptureLibraryKeyboard query="gary" />;
+  if (view === "device-search" || view === "device-search-results") return <section className="qc-screen capture-search-results"><header><button>⌕&nbsp; gary</button><i /><button>▦ (0)</button><button className="is-active">≋ (1)</button><button>≋ (0)</button><button>▽</button><button>↥</button><button>✓</button></header><main><h2>DEVICE DIRECTORIES <b>⌄</b></h2><article><strong>JQ~Marshall JMP (Gary Moore)~</strong><small>Josepqr</small><em>J</em></article><h2>DOWNLOADS <b>⌄</b></h2><p>No results</p></main></section>;
+  const recent = view === "device-recents";
+  return <section className="qc-screen capture-library-browser"><CaptureLibraryRail /><header><span>Add device</span><button>▽</button><button>↥</button><button>⌕</button><button>×</button></header><aside>{[["♡","Favorites"],["◷","Recent"],["⇩","Downloads"],["╱╲","Captures Library"]].map(([icon,label], index) => <button key={label} className={index === (recent ? 1 : 0) ? "is-active" : ""}><b>{icon}</b><span>{label}</span>{index === 3 && <small>2127</small>}</button>)}<i /><button><b>□</b><span>Factory Captures V1</span></button><button><b>□</b><span>Factory Captures V2</span></button><button><b>□</b><span>My Captures</span></button></aside><main><i>∿</i></main></section>;
+}
+
 function CorOsDevicePresetScreen({ save = false, view = "factory" }: { save?: boolean; view?: "factory" | "user" | "actions" | "official-actions" | "official-factory" }) {
   const officialActions = view === "official-actions";
   const officialFactory = view === "official-factory";
   const categories = officialActions ? COROS_DEVICE_CATEGORIES.slice(1, 7) : COROS_DEVICE_CATEGORIES.slice(0, 6);
   const devices = officialActions || officialFactory ? ["Bogna Uber Clean", "Bogna Uber Lead", "Bogna Vishnu 20th Clean", "Brit 2203", "Brit 900 Clean", "Brit 900 Lead", "Brit Plexi 100 Bright"] : ["Exotic Z Boost", "81 Creations Drive", "Brit Blues", "Brit Governor", "Chief BD2", "Chief DS1", "Chief MT"];
   const presets = officialActions ? ["Lead Tone", "Low Gain"] : officialFactory ? ["Neural DSP® Default", "Balanced Crunch", "Basic Clean", "Bass Clean", "Bass Punk Drive", "Bass Tube Drive", "Bass Verge Of OD"] : ["Neural DSP® Default", "Bass More Push", "Bass Push", "Bass Tube Drive", "Bass Tube OD", "Bigger Maker", "Bright Boost"];
-  if (save) return <section className="qc-screen coros-device-preset-save" aria-label="Save Virtual Device preset"><header><button>×</button><strong>Save Current Parameters As…</strong><button>✓</button></header><label>PRESET NAME<input value="My Brit 2203" readOnly /></label><div><button className="is-active">USER</button><button>FACTORY</button></div><p>Virtual Device Preset names can contain up to 24 characters.</p><footer><button>CANCEL</button><button>SAVE</button></footer></section>;
+  if (save) return <CorOsKeyboardScreen />;
   const user = view === "user" || officialActions;
   return <section className={`qc-screen coros-device-presets is-physical is-${officialActions ? "official-actions" : officialFactory ? "official-factory" : view}`} aria-label="Virtual Device preset browser"><nav>{categories.map(([label, glyph, color], index) => <button key={label} className={index === (officialActions ? 0 : officialFactory ? 1 : 4) ? "is-active" : ""} style={{ "--device-color": color } as CSSProperties}><i><DeviceCategoryGlyph label={label} fallback={glyph} /></i></button>)}</nav><main><section><header><button className="is-active">GUITAR</button><button>BASS</button></header>{devices.map((name, index) => <button key={name} className={index === (officialActions ? 1 : officialFactory ? 3 : 0) ? "is-active" : ""}>{!officialActions && !officialFactory && index === 0 && <i className="device-pin" />}<span>{name}</span><b><DevicePresetGlyph /></b></button>)}</section><section><header><button className={user ? "" : "is-active"}>FACTORY</button><button className={user ? "is-active" : ""}>USER</button><span /><button className="preset-close">×</button>{officialFactory && <button className="preset-confirm">✓</button>}</header>{(officialActions || !user) && presets.map((name, index) => <button key={name}><span className={officialFactory && index === 1 ? "is-italic" : ""}>{name}<small>{officialActions ? "" : index ? "" : "Default"}</small></span><b>⋮</b></button>)}</section></main>{(view === "actions" || officialActions) && <aside className="device-preset-actions"><button>Set as Default</button><button>Edit Name</button><button>Overwrite</button><button>Delete</button></aside>}</section>;
 }
@@ -701,8 +795,32 @@ function CorOsAssignmentScreen({ view }: { view: "stomp-assignment" | "scene-ass
   return <section className="qc-screen coros-assignment is-expression" aria-label={view.replaceAll("-", " ")}><header><button>×</button><span><small>EXPRESSION PEDAL ASSIGNMENT</small><strong>DISTORTION</strong></span><button>✓</button></header><p>Move an expression pedal to assign its range</p><div className="expression-pedals"><button className="is-active"><b>EXP 1</b><i /><span>HEEL　0.0</span><span>TOE　10.0</span></button><button><b>EXP 2</b><i /><span>NOT ASSIGNED</span></button></div><footer><button>BYPASS ASSIGN</button><button>SWAP MIN / MAX</button><button>REMOVE</button></footer></section>;
 }
 
+function BlockContextIcon({ kind }: { kind: "change" | "copy" | "paste" | "reset" | "save" | "expression" | "bypass" }) {
+  const stroke = { fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  if (kind === "change") return <svg viewBox="0 0 24 24" aria-hidden="true"><g {...stroke}><path d="M3 8h17m0 0-4-4m4 4-4 4M21 16H4m0 0 4-4m-4 4 4 4" /></g></svg>;
+  if (kind === "copy") return <svg viewBox="0 0 24 24" aria-hidden="true"><g {...stroke}><rect x="3.5" y="7" width="14" height="13" rx="2.2" /><path d="M7 7V5.7A2.7 2.7 0 0 1 9.7 3h8.6A2.7 2.7 0 0 1 21 5.7v8.6a2.7 2.7 0 0 1-2.7 2.7h-.8" /></g></svg>;
+  if (kind === "paste") return <svg viewBox="0 0 24 24" aria-hidden="true"><g {...stroke}><path d="M8 5H5.5A2.5 2.5 0 0 0 3 7.5v11A2.5 2.5 0 0 0 5.5 21h11a2.5 2.5 0 0 0 2.5-2.5V16" /><rect x="8" y="3" width="13" height="13" rx="2.2" /></g></svg>;
+  if (kind === "reset") return <svg viewBox="0 0 24 24" aria-hidden="true"><g {...stroke}><path d="M7 7H3V3" /><path d="M3.8 7.2A9 9 0 1 1 3 15" /></g></svg>;
+  if (kind === "save") return <svg viewBox="0 0 24 24" aria-hidden="true"><g {...stroke}><rect x="3" y="3" width="18" height="18" rx="1.5" /><path d="M7 3v6h10V3M7 21v-8h10v8" /></g></svg>;
+  if (kind === "expression") return <svg viewBox="0 0 24 24" aria-hidden="true"><g {...stroke}><path d="M7 3h10l-1 18H8L7 3Z" /><path d="M9.5 5h5M10 18h4" /><path d="M5 5h2m10 0h2" /></g></svg>;
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><g {...stroke}><rect x="3" y="3" width="8" height="8" rx="1" fill="currentColor" stroke="none" /><rect x="13" y="13" width="8" height="8" rx="1" fill="currentColor" stroke="none" opacity=".42" /><path d="M7 11v4h6M11 7h4v6" /></g></svg>;
+}
+
 function CorOsBlockContext() {
-  return <section className="qc-screen coros-block-context" aria-label="Block contextual actions"><div className="context-grid"><RoutingGridDiagram /></div><aside><header><small>OVERDRIVE</small><strong>Chief DS1</strong></header>{["Footswitch Assignment", "Expression Pedal", "Copy", "Paste", "Set Parameters as Default", "Save Current Parameters As…", "Replace Device", "Remove Block"].map((label, index) => <button key={label} className={index === 7 ? "is-danger" : ""}><span>{["♞", "EXP", "□", "▣", "◇", "▱", "↔", "⌫"][index]}</span>{label}</button>)}</aside></section>;
+  const rows: Array<[Parameters<typeof BlockContextIcon>[0]["kind"], string, string]> = [
+    ["change", "Change device", ""],
+    ["copy", "Copy device", ""],
+    ["paste", "Paste device", "is-disabled"],
+    ["reset", "Reset to defaults", ""],
+    ["save", "Save Current Parameters as...", ""],
+    ["expression", "Assign expression pedal", ""],
+    ["bypass", "Mute/bypass", ""],
+  ];
+  return <section className="qc-screen coros-block-context" aria-label="Block contextual actions">
+    <div className="physical-eq-underlay"><header><button className="physical-eq-more" aria-label="More">⋮</button><span className="physical-eq-title"><small>EQ</small><strong>Parametric-8</strong></span><nav><button aria-label="Previous scene"><svg viewBox="0 0 24 24"><path d="m15 4-8 8 8 8Z" /></svg></button><b>A</b><button aria-label="Next scene"><svg viewBox="0 0 24 24"><path d="m9 4 8 8-8 8Z" /></svg></button><i /><button className="physical-eq-save" aria-label="Save"><svg viewBox="0 0 28 28"><path d="M7 9h14l2 3v10H5V12l2-3Z" /><path d="M8 9V6h12v3M9 14h10" /></svg></button><button className="physical-eq-confirm" aria-label="Confirm"><svg viewBox="0 0 28 28"><path d="m8 14 4 4 8-9" /></svg></button></nav></header><svg viewBox="0 0 800 480" aria-hidden="true"><g className="physical-eq-grid"><path d="M449 60v250M712 60v250" /><text x="465" y="71">1k</text><text x="728" y="71">10k</text></g><path className="physical-eq-curve" d="M0 300C80 180 180 195 310 165S500 42 610 92 750 170 790 310" />{[[105,185],[185,185],[512,119],[600,113],[770,219]].map(([cx,cy], index) => <g key={index}><circle cx={cx} cy={cy} r="20" /><text x={cx} y={cy + 5} textAnchor="middle">{index + 1}</text></g>)}</svg><footer><span>TYPE</span><span>GAIN</span><span>FREQ<i className="physical-eq-footer-dial is-frequency" /><strong>50 <small>Hz</small></strong></span><span>Q<i className="physical-eq-footer-dial is-q" /><strong>0.10</strong></span><span>BYPASS 1<i className="physical-eq-footer-power" /></span></footer></div>
+    <i className="block-context-scrim" />
+    <aside>{rows.map(([kind, label, className], index) => <button key={label} className={`${className}${index === 3 ? " has-gap" : ""}`}><span><BlockContextIcon kind={kind} /></span>{label}</button>)}</aside>
+  </section>;
 }
 
 const COROS_INPUT_MONO_ROUTES = ["Input 1", "Input 2", "Return 1", "Return 2", "USB input 5", "USB input 6", "USB input 7", "USB input 8"];
@@ -728,7 +846,11 @@ function DeviceCategoryGlyph({ label, fallback }: { label: string; fallback: str
 }
 
 function DevicePresetGlyph() {
-  return <svg viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"><path d="m8 11 8-5 8 5-8 5Z" /><path d="m8 16 8 5 8-5M8 21l8 5 8-5" /></g></svg>;
+  return <svg viewBox="0 0 32 32" aria-hidden="true"><g fill="currentColor"><path d="m6 10 10-6 10 6-10 6Z" /><path d="m6 15 3-1.8 7 4.2 7-4.2 3 1.8-10 6Z" /><path d="m6 20 3-1.8 7 4.2 7-4.2 3 1.8-10 6Z" /></g></svg>;
+}
+
+function PluginLockIcon() {
+  return <svg viewBox="0 0 20 24" aria-hidden="true"><path d="M4 10V7a6 6 0 0 1 12 0v3" fill="none" stroke="currentColor" strokeWidth="2" /><rect x="2" y="10" width="16" height="13" rx="1" fill="currentColor" /></svg>;
 }
 
 function RouteSymbol({ label }: { label: string }) {
@@ -766,7 +888,7 @@ function CorOsOfficialGrid({ snapshot, children, browserChrome = false }: { snap
   return <div className="qc-screen coros-vector-screen" aria-label="CorOS Grid">
     <svg className="coros-vector-canvas" viewBox="0 0 800 480" preserveAspectRatio="none" role="img" aria-label={`${snapshot.presetLocation} ${snapshot.presetName}, ${snapshot.mode} mode`}>
       <rect width="800" height="480" fill="#020202" />
-      <text x="14" y="76" fill="#f4f4f4" fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="64"><tspan letterSpacing="-2">{snapshot.presetLocation.slice(0, -1)}</tspan><tspan fill={browserChrome ? "#d63b3e" : "#2df36a"} letterSpacing="-2">{snapshot.presetLocation.slice(-1)}</tspan><tspan dx="14" fill="#f4f4f4" fontSize={browserChrome ? 40 : 64} letterSpacing={browserChrome ? 0 : -2}>{snapshot.presetName}</tspan></text>
+      <text x="14" y="76" fill="#f4f4f4" fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="64"><tspan letterSpacing="-2">{snapshot.presetLocation.slice(0, -1)}</tspan><tspan fill={browserChrome ? "#d63b3e" : "#2df36a"} letterSpacing="-2">{snapshot.presetLocation.slice(-1)}</tspan><tspan dx={browserChrome ? 16 : 14} dy={browserChrome ? -11 : 0} fill="#f4f4f4" fontSize={browserChrome ? 40 : 64} letterSpacing={browserChrome ? 0 : -2}>{snapshot.presetName}</tspan></text>
       <g fill="none" stroke="#f0f0f0" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="M620 13A13 13 0 1 1 607 26" /><path d="M613 15L621 9V20Z" fill="#f0f0f0" stroke="none" /></g>
       <g transform="translate(-7 0)" fill="#f0f0f0"><path d="M726 23H715V17H721V20H723V17H726V23Z" /><path d="M733 17.9863V23.7568C732.398 23.2743 731.726 22.8769 731 22.583V18.8047L727.252 15H714.001C713.448 15 713 15.4477 713 16V32C713 32.5523 713.448 33 714.001 33H720.584C720.878 33.7258 721.274 34.3984 721.757 35H714.002C712.344 34.9999 711 33.6568 711 32V16C711 14.3432 712.344 13.0001 714.002 13H728.09L733 17.9863Z" /></g>
       <g className="grid-scene-badge"><rect x="656" y="12" width="25" height="25" rx="3" fill="#f2cf32" /><text x="668.5" y="33" textAnchor="middle" fill="#141414" fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="22">A</text></g>
@@ -798,7 +920,7 @@ function CorOsCorpusDeviceBrowser({ snapshot, view }: { snapshot: PresetSnapshot
   </CorOsOfficialGrid>;
 }
 
-export function CorOsScreenFixture({ view, snapshot, onClose = () => undefined }: { view: CorOsScreenView; snapshot: PresetSnapshot; onClose?: () => void }) {
+export function CorOsScreenFixture({ view, snapshot, gigPresetList, onClose = () => undefined }: { view: CorOsScreenView; snapshot: PresetSnapshot; gigPresetList?: PresetList; onClose?: () => void }) {
   if (view === "grid-official-brit") return <CorOsOfficialGrid snapshot={snapshot} />;
   if (view === "corpus-device-browser-root" || view === "corpus-device-browser-models" || view === "corpus-device-browser-models-clean") return <CorOsCorpusDeviceBrowser snapshot={snapshot} view={view} />;
   if (view.startsWith("fixture-")) return <CorOsRemainingFixture view={view as RemainingFixtureView} />;
@@ -806,7 +928,7 @@ export function CorOsScreenFixture({ view, snapshot, onClose = () => undefined }
   if (view === "tuner-live-enabled") return <CorOsTuner liveTuner onClose={onClose} />;
   if (view.startsWith("gig-official-")) return <CorOsOfficialGig mode={view.replace("gig-official-", "") as OfficialGigMode} />;
   if (view === "device-presets-official") return <CorOsDevicePresetScreen view="official-factory" />;
-  if (view === "gig" || view === "gig-live-tuner") return <CorOsGigView snapshot={snapshot} liveTuner={view === "gig-live-tuner"} onClose={onClose} />;
+  if (view === "gig" || view === "gig-live-tuner") return <CorOsGigView snapshot={snapshot} presetList={gigPresetList} liveTuner={view === "gig-live-tuner"} onClose={onClose} />;
   if (view === "tuner") return <CorOsTuner onClose={onClose} />;
   if (view === "tempo") return <CorOsTempo bpm={snapshot.tempo} onClose={onClose} />;
   if (view === "midi-out") return <CorOsMidiOut onClose={onClose} />;
@@ -818,7 +940,8 @@ export function CorOsScreenFixture({ view, snapshot, onClose = () => undefined }
   if (view === "device-preset-actions-official") return <CorOsDevicePresetScreen view="official-actions" />;
   if (view === "modes-official") return <CorOsOfficialModes onClose={onClose} />;
   if (view === "splitter-placement" || view === "splitter-editor" || view === "mixer-editor" || view === "empty-slot") return <CorOsRoutingScreen view={view} snapshot={snapshot} />;
-  if (view === "device-search" || view === "device-favorites" || view === "plugin-folders" || view === "plugin-list" || view === "plugin-models" || view === "plugin-locked" || view === "plugin-refresh") return <CorOsDeviceBrowserFixture view={view} />;
+  if (view === "device-search" || view === "device-search-entry" || view === "device-search-suggestions" || view === "device-search-results" || view === "device-favorites" || view === "device-recents") return <CorOsCaptureLibrary view={view} />;
+  if (view === "plugin-folders" || view === "plugin-list" || view === "plugin-models" || view === "plugin-locked" || view === "plugin-refresh") return <CorOsDeviceBrowserFixture view={view} />;
   if (view === "looper-editor") return <CorOsLooperEditor />;
   if (view === "device-presets" || view === "device-presets-user" || view === "device-preset-actions" || view === "device-preset-save") return <CorOsDevicePresetScreen save={view === "device-preset-save"} view={view === "device-presets-user" ? "user" : view === "device-preset-actions" ? "actions" : "factory"} />;
   if (view === "stomp-assignment" || view === "scene-assignment" || view === "expression-parameter" || view === "expression-bypass") return <CorOsAssignmentScreen view={view} />;

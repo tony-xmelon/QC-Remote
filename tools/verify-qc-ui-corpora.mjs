@@ -20,6 +20,12 @@ function pngDimensions(payload) {
 }
 
 function classifyTree(tree) {
+  if (tree.includes("Refreshing the list can take 10-20 seconds.") || tree.includes("zenUI::RotatingBusyIndicator")) return "busy-progress";
+  if (tree.includes("zenUI::SearchResultsDialog") && tree.includes("zenUI::MessageDialog")) return "error-overlay";
+  if (tree.includes("zenUI::SearchResultsDialog")) return "device-search-results";
+  if (tree.includes("zenUI::SearchDialog")) return "device-search-entry";
+  if (tree.includes("zenUI::CheatSheetDialog")) return "io-settings";
+  if (tree.includes("zenUI::NCModelEditor")) return "neural-capture-editor";
   if (tree.includes("zenUI::Tuner")) return "tuner";
   if (tree.includes("zenUI::MetronomeEditor")) return "tempo";
   if (tree.includes("zenUI::HybridModeConfigDialog")) return "modes-configuration";
@@ -29,6 +35,11 @@ function classifyTree(tree) {
   if (tree.includes("zenUI::DirectoryDialog") && tree.includes("Save to...")) return "save-as-editor";
   if (tree.includes("zenUI::GigView")) return "gig-view";
   if (tree.includes("zenUI::Directory")) return "directory";
+  if (tree.includes("Device information")) return "settings-info";
+  if (tree.includes("DSP Diagnostics")) return "settings-diagnostics";
+  if (tree.includes("Internet Connected") || tree.includes("RESET WI-FI SETTINGS")) return "settings-wifi";
+  if (tree.split("Device Storage").length - 1 >= 2) return "settings-storage";
+  if (tree.includes("About and Contact") && tree.includes("zenUI::ContactUsMenu")) return "settings-support";
   if (tree.includes("zenUI::SplitControlPointGrid") && tree.includes("zenUI::ContainerWithSplitter") && tree.includes("zenUI::ParameterControl")) {
     return tree.split("zenUI::ParameterControl").length - 1 === 6 ? "mixer-editor" : "splitter-editor";
   }

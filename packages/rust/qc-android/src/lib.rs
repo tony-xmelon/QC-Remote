@@ -347,6 +347,13 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeEnco
                     .and_then(Value::as_u64)
                     .ok_or_else(|| "requestId must be a non-negative integer".to_string())?,
             )],
+            "screenSwipe" => commands::screen_drag(
+                unsigned(&args, "x")? as f32,
+                unsigned(&args, "y")? as f32,
+                unsigned(&args, "toX")? as f32,
+                unsigned(&args, "toY")? as f32,
+            )
+            .to_vec(),
             "keepalive" => vec![commands::keepalive()],
             "backup" => {
                 native

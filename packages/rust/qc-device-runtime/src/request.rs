@@ -1765,10 +1765,20 @@ pub fn plan_preset_recall(
         "device.recallPreset" => {
             let setlist_key =
                 validate_setlist_key(required_text(params, "setlistKey")?, "setlistKey")?;
-            if before.setlist_key.trim_end_matches('/') != setlist_key.trim_end_matches('/') {
-                return Err(
-                    "The active setlist changed on the Quad Cortex. Refresh and retry.".into(),
-                );
+            if let Some(expected_setlist_key) = params
+                .get("expectedSetlistKey")
+                .and_then(Value::as_str)
+                .filter(|value| !value.is_empty())
+            {
+                let expected_setlist_key =
+                    validate_setlist_key(expected_setlist_key.to_string(), "expectedSetlistKey")?;
+                if before.setlist_key.trim_end_matches('/')
+                    != expected_setlist_key.trim_end_matches('/')
+                {
+                    return Err(
+                        "The active setlist changed on the Quad Cortex. Refresh and retry.".into(),
+                    );
+                }
             }
             if before.dirty {
                 return Err("The current preset has unsaved changes. Save or revert them before recalling another preset.".into());
@@ -2809,6 +2819,17 @@ fn verification_for_operation(
     snapshot: Option<&GatewaySnapshot>,
 ) -> GatewayVerification {
     match operation {
+        DeviceOperation::SetLaneControlParameter {
+            row,
+            control,
+            parameter_index,
+            value,
+        } => GatewayVerification::Parameter {
+            row: *row,
+            column: if control == "inputGate" { 10 } else { 11 },
+            parameter_index: *parameter_index,
+            value: *value as f64,
+        },
         DeviceOperation::AddBlock {
             row,
             column,
@@ -3004,7 +3025,6 @@ fn verification_for_operation(
             .unwrap_or(GatewayVerification::None),
         DeviceOperation::Command(_)
         | DeviceOperation::SetRoutingParameter { .. }
-        | DeviceOperation::SetLaneControlParameter { .. }
         | DeviceOperation::ListPresetFolders
         | DeviceOperation::ReadVersion
         | DeviceOperation::SetDeviceName(_)
@@ -3331,6 +3351,11 @@ pub fn plan_gateway_write(
         }
         "device.previewLaneControlParameter" | "device.setLaneControlParameter" => {
             let operation = operation("setLaneControlParameter", params)?;
+            let verification = if method == "device.previewLaneControlParameter" {
+                GatewayVerification::None
+            } else {
+                verification_for_operation(&operation, params, snapshot)
+            };
             GatewayWritePlan {
                 write: PlannedWrite::HidOperation(operation),
                 detail: if method == "device.previewLaneControlParameter" {
@@ -3339,7 +3364,7 @@ pub fn plan_gateway_write(
                     "Lane control parameter update sent to the Quad Cortex"
                 }
                 .into(),
-                verification: GatewayVerification::None,
+                verification,
             }
         }
         "device.setLaneControlSceneMode" => {
@@ -3713,6 +3738,10 @@ mod tests {
             "device.moveBlock",
             "device.recallPreset",
             "device.setSceneLabel",
+            "device.createSetlist",
+            "device.deleteSetlist",
+            "device.deletePreset",
+            "device.movePreset",
         ] {
             assert!(
                 !gateway_write_is_realtime(method),
@@ -4423,6 +4452,42 @@ mod tests {
             ..GatewaySnapshot::default()
         };
         assert!(plan.matches(&after));
+
+        let cross_setlist = plan_preset_recall(
+            "device.recallPreset",
+            &json!({
+                "setlistKey": "/user/destination",
+                "position": 3,
+                "expectedPresetName": "Live",
+                "expectedPosition": 8,
+                "expectedSetlistKey": "/user/live/"
+            }),
+            Some(&before),
+        )
+        .unwrap();
+        assert_eq!(cross_setlist.setlist_key, "/user/destination");
+        assert_eq!(cross_setlist.position, 3);
+        assert!(cross_setlist.matches(&GatewaySnapshot {
+            setlist_key: "/user/destination/".into(),
+            preset_position: 3,
+            position_revision: 15,
+            preset_revision: 15,
+            ..GatewaySnapshot::default()
+        }));
+
+        let stale_setlist = plan_preset_recall(
+            "device.recallPreset",
+            &json!({
+                "setlistKey": "/user/destination",
+                "position": 3,
+                "expectedPresetName": "Live",
+                "expectedPosition": 8,
+                "expectedSetlistKey": "/user/stale"
+            }),
+            Some(&before),
+        )
+        .unwrap_err();
+        assert!(stale_setlist.contains("active setlist changed"));
     }
 
     #[test]
@@ -4598,6 +4663,8 @@ mod tests {
             PlannedWrite::HidOperation(DeviceOperation::SetLaneControlParameter {
                 row: 3, ref control, parameter_index: 0, value
             }) if control == "laneOutput" && value == 0.64));
+        assert_eq!(lane.verification.parameter_target(), Some((3, 11, 0)));
+        assert!(lane.verification.requires_authoritative_readback());
         assert!(plan_gateway_write(
             "device.setLaneControlParameter",
             &json!({"row": 0, "control": "models", "parameterIndex": 0, "value": 0.5}),

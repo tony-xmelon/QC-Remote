@@ -60,6 +60,9 @@ pub struct PresetSlotList {
 #[derive(Debug, Default)]
 pub struct PresetLibrary {
     listings: HashMap<String, PresetFolderListing>,
+    removed_setlists: std::collections::HashSet<String>,
+    removed_presets: std::collections::HashSet<(String, String)>,
+    preset_overrides: HashMap<(String, u32), qc_protocol::state::PresetFileListing>,
 }
 
 fn slot_name(position: u32) -> String {
@@ -73,10 +76,36 @@ fn slot_name(position: u32) -> String {
 impl PresetLibrary {
     pub fn clear(&mut self) {
         self.listings.clear();
+        self.removed_setlists.clear();
+        self.removed_presets.clear();
+        self.preset_overrides.clear();
     }
 
-    pub fn ingest(&mut self, listing: PresetFolderListing) {
+    pub fn ingest(&mut self, mut listing: PresetFolderListing) {
         let key = listing.key.trim_end_matches('/').to_string();
+        let normalized_key = key.to_ascii_lowercase();
+        if self.removed_setlists.contains(&normalized_key)
+            || self
+                .removed_setlists
+                .contains(&listing.name.to_ascii_lowercase())
+        {
+            return;
+        }
+        listing.files.retain(|file| {
+            !self
+                .removed_presets
+                .contains(&(normalized_key.clone(), file.name.to_ascii_lowercase()))
+        });
+        for ((override_key, position), file) in &self.preset_overrides {
+            if override_key != &normalized_key {
+                continue;
+            }
+            listing.files.retain(|candidate| {
+                candidate.position != *position && !candidate.name.eq_ignore_ascii_case(&file.name)
+            });
+            listing.files.push(file.clone());
+        }
+        listing.files.sort_by_key(|file| file.position);
         let replace = self
             .listings
             .get(&key)
@@ -84,6 +113,79 @@ impl PresetLibrary {
         if replace {
             self.listings.insert(key, listing);
         }
+    }
+
+    pub fn ensure_setlist(&mut self, key: &str) {
+        let key = key.trim_end_matches('/').to_string();
+        self.removed_setlists.remove(&key.to_ascii_lowercase());
+        self.removed_setlists.remove(
+            &key.rsplit('/')
+                .next()
+                .unwrap_or_default()
+                .to_ascii_lowercase(),
+        );
+        self.listings
+            .entry(key.clone())
+            .or_insert_with(|| PresetFolderListing {
+                name: key.rsplit('/').next().unwrap_or_default().to_string(),
+                key,
+                is_factory: false,
+                files: Vec::new(),
+            });
+    }
+
+    pub fn remove_setlist(&mut self, name: &str) {
+        let expected_key = format!("/media/p4/Presets/{name}").to_ascii_lowercase();
+        self.removed_setlists.insert(expected_key);
+        self.removed_setlists.insert(name.to_ascii_lowercase());
+        self.listings.retain(|key, listing| {
+            !listing.name.eq_ignore_ascii_case(name)
+                && !key
+                    .trim_end_matches('/')
+                    .rsplit('/')
+                    .next()
+                    .is_some_and(|component| component.eq_ignore_ascii_case(name))
+        });
+    }
+
+    pub fn remove_preset(&mut self, setlist_key: &str, name: &str) {
+        let normalized_key = setlist_key.trim_end_matches('/').to_ascii_lowercase();
+        self.removed_presets
+            .insert((normalized_key.clone(), name.to_ascii_lowercase()));
+        self.preset_overrides.retain(|(key, _), file| {
+            key != &normalized_key || !file.name.eq_ignore_ascii_case(name)
+        });
+        if let Some(listing) = self.listings.get_mut(setlist_key.trim_end_matches('/')) {
+            listing
+                .files
+                .retain(|file| !file.name.eq_ignore_ascii_case(name));
+        }
+    }
+
+    pub fn move_preset(&mut self, setlist_key: &str, name: &str, position: u32) {
+        let normalized_key = setlist_key.trim_end_matches('/').to_ascii_lowercase();
+        let Some(listing) = self.listings.get_mut(setlist_key.trim_end_matches('/')) else {
+            return;
+        };
+        let Some(index) = listing
+            .files
+            .iter()
+            .position(|file| file.name.eq_ignore_ascii_case(name))
+        else {
+            return;
+        };
+        let mut moved = listing.files.remove(index);
+        listing.files.retain(|file| file.position != position);
+        moved.position = position;
+        self.removed_presets
+            .insert((normalized_key.clone(), name.to_ascii_lowercase()));
+        self.preset_overrides.retain(|(key, _), file| {
+            key != &normalized_key || !file.name.eq_ignore_ascii_case(name)
+        });
+        self.preset_overrides
+            .insert((normalized_key, position), moved.clone());
+        listing.files.push(moved);
+        listing.files.sort_by_key(|file| file.position);
     }
 
     pub fn folders(&self) -> Vec<PresetFolder> {
@@ -201,6 +303,17 @@ impl PresetLibrary {
     }
 
     pub fn record_saved(&mut self, setlist_key: &str, position: u32, name: &str, instrument: i32) {
+        let normalized_key = setlist_key.trim_end_matches('/').to_ascii_lowercase();
+        self.removed_presets
+            .remove(&(normalized_key.clone(), name.to_ascii_lowercase()));
+        self.preset_overrides.insert(
+            (normalized_key, position),
+            qc_protocol::state::PresetFileListing {
+                position,
+                name: name.into(),
+                instrument,
+            },
+        );
         let Some(listing) = self.listings.get_mut(setlist_key.trim_end_matches('/')) else {
             return;
         };
@@ -538,6 +651,41 @@ mod tests {
         assert_eq!(list.presets[17].location, "3B");
         assert_eq!(list.presets[17].name, "Direct Rust");
         assert_eq!(list.current_position, 17);
+    }
+
+    #[test]
+    fn preset_library_keeps_accepted_structural_mutations_over_stale_pushes() {
+        let mut library = PresetLibrary::default();
+        let key = "/media/p4/Presets/QC MCP TEST";
+        let stale = PresetFolderListing {
+            key: key.into(),
+            name: "QC MCP TEST".into(),
+            is_factory: false,
+            files: vec![qc_protocol::state::PresetFileListing {
+                position: 3,
+                name: "Disposable".into(),
+                instrument: 1,
+            }],
+        };
+        library.ensure_setlist(key);
+        library.record_saved(key, 3, "Disposable", 1);
+        library.move_preset(key, "Disposable", 7);
+        library.ingest(stale.clone());
+        assert_eq!(library.entry(key, 7).unwrap().name, "Disposable");
+        assert!(library.entry(key, 3).is_none());
+
+        library.remove_preset(key, "disposable");
+        library.ingest(stale.clone());
+        assert!(library.entry(key, 7).is_none());
+        library.remove_setlist("qc mcp test");
+        library.ingest(stale);
+        library.ingest(PresetFolderListing {
+            key: "/media/p4/Presets/device-generated-key".into(),
+            name: "QC MCP TEST".into(),
+            is_factory: false,
+            files: Vec::new(),
+        });
+        assert!(library.folders().is_empty());
     }
 
     #[test]

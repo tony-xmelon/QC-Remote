@@ -88,12 +88,24 @@ try {
   }
   const connection = await call("device.reconnect", {}, 45_000);
   let before;
-  const snapshotDeadline = performance.now() + 5_000;
+  // Match the shared native ready budget. A freshly booted QC can enumerate
+  // while its control protocol remains silent for 9-17 seconds.
+  const snapshotDeadline = performance.now() + 35_000;
   while (!before && performance.now() < snapshotDeadline) {
     try { before = await call("device.snapshot"); }
     catch { await new Promise(resolve => setTimeout(resolve, 50)); }
   }
-  if (!before) throw new Error("The connected QC did not publish its active preset");
+  if (!before) {
+    let timeoutStatus;
+    try { timeoutStatus = await call("system.status"); }
+    catch (error) { timeoutStatus = { error: String(error) }; }
+    console.log(JSON.stringify({
+      stage: "snapshot-timeout",
+      connection,
+      status: timeoutStatus
+    }));
+    throw new Error("The connected QC did not publish its active preset");
+  }
   if (process.argv.includes("--app-sequence")) {
     try {
       console.log(JSON.stringify({ stage: "master-volume", result: await call("device.masterVolume") }));
@@ -139,6 +151,7 @@ try {
           position: target,
           expectedPresetName: before.presetName,
           expectedPosition: before.presetPosition,
+          expectedSetlistKey: before.setlistKey,
         }, 25_000);
     console.log(JSON.stringify({ stage: "result", elapsedMs: Math.round(performance.now() - recallStarted), firstPositionEventMs, result }));
     let moved = result.snapshot;
@@ -156,6 +169,7 @@ try {
         position: target,
         expectedPresetName: moved.presetName,
         expectedPosition: moved.presetPosition,
+        expectedSetlistKey: moved.setlistKey,
       }, 25_000);
       console.log(JSON.stringify({ stage: "second-result", elapsedMs: Math.round(performance.now() - secondStarted), firstPositionEventMs, second }));
       moved = second.snapshot;
@@ -178,6 +192,7 @@ try {
             position: before.presetPosition,
             expectedPresetName: moved.presetName,
             expectedPosition: moved.presetPosition,
+            expectedSetlistKey: moved.setlistKey,
           }, 25_000);
       console.log(JSON.stringify({ stage: "restored", restored }));
     }

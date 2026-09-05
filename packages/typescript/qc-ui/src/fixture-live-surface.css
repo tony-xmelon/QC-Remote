@@ -623,3 +623,125 @@
 .midi-expression label div > i::before { top: 1.5cqw; }
 .midi-expression label div > i::after { bottom: 1cqw; }
 }
+
+/* Physical CorOS 4.1 evidence: Virtual Device naming uses the full native keyboard. */
+.qc-screen.coros-physical-keyboard {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  overflow: hidden;
+  background: #101010;
+  color: #f0f1f0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.coros-physical-keyboard > header { position: relative; height: 60px; background: #101010; }
+.coros-physical-keyboard > header button { position: absolute; top: 8px; height: 44px; border: 0; border-radius: 7px; background: #292c29; color: #f4f4f4; font: 31px Arial,sans-serif; }
+.coros-physical-keyboard > header button:first-child { left: 8px; width: 98px; background: #182018; }
+.coros-physical-keyboard > header .keyboard-default-mark { left: 124px; width: 66px; font-size: 34px; }
+.coros-physical-keyboard > header span { position: absolute; left: 198px; top: 21px; color: #999c9a; font-size: 18px; }
+.coros-physical-keyboard > header b { position: absolute; left: 430px; top: 14px; color: #9a9d9b; font: 26px Arial,sans-serif; }
+.coros-physical-keyboard > header .keyboard-save-mark { right: 8px; width: 98px; background: #07143a; color: #3e4657; font-size: 23px; }
+.coros-physical-keyboard > h1 { position: absolute; left: 0; right: 0; top: 102px; margin: 0; color: #2e3130; font: 40px/1.2 Arial,sans-serif; text-align: center; }
+.physical-keyboard-rows { position: absolute; inset: 224px 8px 8px 7px; display: grid; grid-template-rows: repeat(4,56px); gap: 8px; }
+.physical-keyboard-rows > div { display: grid; gap: 8px; }
+.physical-keyboard-rows > div:nth-child(1) { grid-template-columns: repeat(10,1fr); }
+.physical-keyboard-rows > div:nth-child(2) { grid-template-columns: repeat(9,71px); justify-content: center; }
+.physical-keyboard-rows > div:nth-child(3) { grid-template-columns: 112px repeat(7,1fr) 112px; }
+.physical-keyboard-rows > div:nth-child(4) { grid-template-columns: 112px 71px 1fr 71px 112px; }
+.physical-keyboard-rows button { position: relative; border: 0; border-radius: 7px; background: #212421; color: #f4f4f4; font: 18px Arial,sans-serif; }
+.physical-keyboard-rows button small { position: absolute; right: 6px; top: 3px; color: #686d69; font-size: 12px; }
+.physical-keyboard-rows button.is-shift,
+.physical-keyboard-rows button.is-backspace,
+.physical-keyboard-rows button.is-numeric { font-size: 20px; }
+.physical-keyboard-rows button.is-space { font-size: 19px; }
+.physical-keyboard-rows button.is-done { background: #081008; color: #213523; }
+
+/* Physical Directory action drawer and confirmation overlay. */
+.coros-directory-fixture .directory-context-scrim { position: absolute; inset: 0; z-index: 4; background: rgba(92,96,92,.65); }
+.coros-directory-fixture.is-physical-context > header { position: relative; display: block; padding: 0; }
+.coros-directory-fixture.is-physical-context > header > button { position: absolute; top: 8px; width: 56px; min-width: 0; height: 44px; background: transparent; }
+.coros-directory-fixture.is-physical-context > header .directory-fixture-category { left: 8px; width: 256px; }
+.coros-directory-fixture.is-physical-context > header > button:nth-of-type(2) { left: 272px; width: 96px; }
+.coros-directory-fixture.is-physical-context > header > button:nth-of-type(3) { left: 464px; }
+.coros-directory-fixture.is-physical-context > header > button:nth-of-type(4) { left: 541px; }
+.coros-directory-fixture.is-physical-context > header > button:nth-of-type(5) { left: 614px; }
+.coros-directory-fixture.is-physical-context > header > em { position: absolute; left: 684px; top: 12px; width: 1px; height: 36px; margin: 0; }
+.coros-directory-fixture.is-physical-context > header > button:last-child { left: 694px; width: 98px; min-width: 98px; background: #272c28; }
+.coros-directory-fixture.is-physical-context > header svg { width: 24px; height: 24px; fill: currentColor; stroke: currentColor; stroke-width: 1.5; }
+.coros-directory-fixture.is-physical-context > header .directory-fixture-category svg { flex: none; color: #aaa; }
+.coros-directory-fixture.is-physical-context .physical-directory-status { width: 24px; height: 24px; overflow: visible; fill: none; stroke-width: 1.5; stroke-linecap: square; }
+.coros-directory-fixture.is-physical-context .physical-directory-status .status-error { stroke: #dc464d; }
+.coros-directory-fixture.is-physical-context .physical-directory-status .status-bars { stroke: #9a9d9b; }
+.coros-directory-fixture.is-physical-context > main { background: #101010; }
+.coros-directory-fixture.is-physical-context .directory-fixture-banks { display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(7, 1fr); gap: 8px 6px; background: transparent; }
+.coros-directory-fixture.is-physical-context .directory-fixture-banks button { min-height: 0; border-radius: 8px; background: #282d29; font-size: 16px; }
+.coros-directory-fixture.is-physical-context .directory-fixture-banks button.is-active { background: #202521; }
+.coros-directory-fixture.is-physical-context .directory-fixture-folders button { height: 60px; gap: 6%; font-size: 16px; }
+.coros-directory-fixture.is-physical-context .directory-fixture-folders button.is-child { padding-left: 6%; gap: 5%; }
+.coros-directory-fixture.is-physical-context .directory-fixture-folders button > b:first-child { flex: none; width: 24px; height: 24px; color: #aaa; }
+.coros-directory-fixture.is-physical-context .directory-fixture-folders button > b:first-child svg { width: 24px; height: 24px; fill: currentColor; stroke: currentColor; stroke-width: 1.5; }
+.coros-directory-fixture.is-physical-context .directory-fixture-folders .folder-number { fill: #202421; stroke: none; }
+.coros-directory-fixture.is-physical-context .directory-fixture-items { display: flex; flex-direction: column; gap: 0; background: #282d29; }
+.coros-directory-fixture.is-physical-context .directory-fixture-items button { flex: none; height: 52px; grid-template-columns: 1fr 10%; padding: 0 16px; border: 0; border-radius: 8px; background: #282d29; font-size: 16px; }
+.coros-directory-fixture.is-physical-context .directory-fixture-items button.is-current { background: #202521; }
+.coros-directory-fixture.is-physical-context .directory-fixture-items button > strong { font-size: 16px; }
+.coros-directory-fixture.is-physical-context .directory-fixture-items button > span { font-size: 16px; }
+.coros-directory-fixture.is-physical-context .directory-fixture-items button.is-current .physical-preset-name { color: #43ef72; }
+.coros-directory-fixture.is-physical-context .directory-fixture-items button small { font-size: 9px; }
+.coros-directory-fixture .directory-item-menu { left: 528px; right: auto; top: 264px; width: 256px; height: 208px; overflow: hidden; border: 0; border-radius: 8px; background: #000; box-shadow: none; }
+.coros-directory-fixture .directory-item-menu button { box-sizing: border-box; width: 100%; height: 54px; padding: 0 16px; border: 0; background: #000; color: #f0f0f0; font: 16px Arial,sans-serif; text-align: left; }
+.coros-directory-fixture .directory-item-menu button:nth-child(2) { transform: translateY(-1px); }
+.coros-directory-fixture .directory-item-menu button:nth-child(3) { transform: translateY(-3px); }
+.coros-directory-fixture .directory-item-menu button:nth-child(4) { transform: translateY(-6px); }
+.qc-screen.coros-physical-confirmation { position: absolute; inset: 0; z-index: 11; overflow: hidden; background: #111; color: #f1f1f1; font-family: Arial,Helvetica,sans-serif; }
+.coros-physical-confirmation > .coros-directory-fixture { position: absolute; inset: 0; }
+.coros-physical-confirmation > .confirmation-scrim { position: absolute; inset: 0; z-index: 4; background: rgba(92,96,92,.65); }
+.coros-physical-confirmation > aside { position: absolute; z-index: 5; left: 190px; top: 125px; box-sizing: border-box; width: 420px; height: 230px; border-radius: 10px; background: #101110; text-align: center; }
+.coros-physical-confirmation > aside h1 { margin: 43px 0 24px; font: 20px Arial,sans-serif; }
+.coros-physical-confirmation > aside p { margin: 0; font: 18px Arial,sans-serif; }
+.coros-physical-confirmation > aside footer { position: absolute; left: 32px; right: 32px; bottom: 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.coros-physical-confirmation > aside button { height: 45px; border: 0; border-radius: 8px; background: #030303; color: #efefef; font: 16px Arial,sans-serif; }
+.coros-physical-confirmation > aside button:last-child { background: #2040ff; }
+
+/* Physical editor overflow menu. */
+.qc-screen.coros-block-context { position: absolute; inset: 0; overflow: hidden; background: #111; color: #f2f2f2; font-family: Arial,Helvetica,sans-serif; }
+.physical-eq-underlay { position: absolute; inset: 0; overflow: hidden; background: #111312; }
+.physical-eq-underlay header { position: absolute; inset: 0 0 auto; height: 60px; color: #919591; }
+.physical-eq-underlay header .physical-eq-more { position: absolute; left: 20px; top: 8px; width: 22px; height: 44px; padding: 0; border: 0; background: transparent; color: #a2a5a2; font-size: 24px; }
+.physical-eq-underlay header .physical-eq-title small { position: absolute; left: 60px; top: 12px; font-size: 14px; }
+.physical-eq-underlay header .physical-eq-title strong { position: absolute; left: 60px; top: 34px; color: #008dff; font-size: 18px; font-weight: 400; }
+.physical-eq-underlay header nav { position: absolute; inset: 0 8px 0 auto; display: flex; align-items: center; gap: 7px; }
+.physical-eq-underlay header nav button { width: 32px; height: 44px; padding: 0; border: 0; background: transparent; color: #a3a6a3; }
+.physical-eq-underlay header nav button svg { width: 24px; height: 24px; fill: currentColor; }
+.physical-eq-underlay header nav b { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 3px; background: #ffd42d; color: #111; font-size: 18px; font-weight: 600; }
+.physical-eq-underlay header nav i { width: 1px; height: 24px; margin: 0 7px; background: #6c706c; }
+.physical-eq-underlay header nav .physical-eq-save { width: 52px; color: #0aa9ff; }
+.physical-eq-underlay header nav .physical-eq-save svg,.physical-eq-underlay header nav .physical-eq-confirm svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.physical-eq-underlay header nav .physical-eq-confirm { width: 98px; margin-left: 8px; border-radius: 8px; background: #202421; color: #f1f1f1; }
+.physical-eq-underlay > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.physical-eq-underlay > svg .physical-eq-curve { fill: none; stroke: #8f9490; stroke-width: 2; }
+.physical-eq-underlay > svg .physical-eq-grid path { fill: none; stroke: #343835; stroke-width: 1; }
+.physical-eq-underlay > svg text { fill: #737773; font: 14px Arial,sans-serif; }
+.physical-eq-underlay > svg circle { fill: #1c211d; stroke: #050505; stroke-width: 2; }
+.physical-eq-underlay footer { position: absolute; left: 8px; right: 8px; bottom: 8px; height: 108px; display: grid; grid-template-columns: repeat(5,1fr); border-radius: 8px; background: #282c29; }
+.physical-eq-underlay footer::before { content: ""; position: absolute; left: -8px; right: -8px; top: -45px; border-top: 1px solid #292d29; }
+.physical-eq-underlay footer span { position: relative; padding: 10px; border-right: 1px solid #151715; color: #aeb1ae; font-size: 16px; }
+.physical-eq-underlay footer span strong { position: absolute; left: 7%; bottom: 14%; color: #b0b3b0; font-size: 16px; font-weight: 400; }
+.physical-eq-underlay footer span strong small { font-size: 12px; }
+.physical-eq-footer-dial { position: absolute; top: 40px; width: 58px; height: 58px; box-sizing: border-box; border: 5px solid #111412; border-radius: 50%; background: radial-gradient(circle,#252826 0 68%,transparent 70%),conic-gradient(from 218deg,#1689ee 0 34deg,#252826 34deg); }
+.physical-eq-footer-dial::after { content: ""; position: absolute; left: calc(50% - 1px); top: 4%; width: 2px; height: 42%; background: #eceeed; transform-origin: 50% 100%; }
+.physical-eq-footer-dial.is-frequency { left: 52%; }
+.physical-eq-footer-dial.is-frequency::after { transform: rotate(-98deg); }
+.physical-eq-footer-dial.is-q { left: 54%; }
+.physical-eq-footer-dial.is-q::after { transform: rotate(-124deg); }
+.physical-eq-footer-power { position: absolute; left: 7%; top: 40px; width: 50px; height: 45px; border-radius: 7px; background: #171b18; }
+.physical-eq-footer-power::before { content: ""; position: absolute; left: 50%; top: 50%; width: 17px; height: 17px; translate: -50% -50%; border: 2px solid #dfe1df; border-top-color: transparent; border-radius: 50%; }
+.physical-eq-footer-power::after { content: ""; position: absolute; left: calc(50% - 1px); top: 11px; width: 2px; height: 10px; background: #dfe1df; }
+.coros-block-context > .block-context-scrim { position: absolute; inset: 0; z-index: 2; background: rgba(71,74,71,.92); }
+.qc-screen.coros-block-context > aside { position: absolute; z-index: 3; left: 30px; right: auto; top: 30px; bottom: 29px; width: 322px; display: block; overflow: hidden; border-radius: 7px; background: #101010; box-shadow: none; }
+.qc-screen.coros-block-context > aside::after { content: ""; position: absolute; right: 8px; top: 10px; bottom: 132px; border-right: 2px solid #343735; }
+.qc-screen.coros-block-context > aside button { box-sizing: border-box; flex: none; width: 100%; height: 60px; display: grid; grid-template-columns: 57px 1fr; align-items: center; padding: 0; border: 0; border-bottom: 0; background: #101010; color: #f2f2f2; font: 16px Roboto,Arial,sans-serif; text-align: left; }
+.qc-screen.coros-block-context > aside button span { display: grid; place-items: center; color: #f0f0f0; text-align: center; }
+.qc-screen.coros-block-context > aside button span svg { width: 24px; height: 24px; overflow: visible; }
+.qc-screen.coros-block-context > aside button.is-disabled { color: #18201a; }
+.qc-screen.coros-block-context > aside button.is-disabled span { color: #101811; }

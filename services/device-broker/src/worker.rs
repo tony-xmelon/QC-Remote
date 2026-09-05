@@ -8,8 +8,8 @@ use qc_protocol::domain::STATE_EVENT_MAXIMUM_LIMIT;
 use qc_protocol::responses::{decode_tempo_clock, TempoClock as TempoClockFrame};
 use qc_protocol::session::SessionMachine;
 use qc_protocol::state::{
-    decode_preset_folder, parse_model_repo, BlockDetails, ModelCatalog, ModelList, StateDecoder,
-    StateUpdate,
+    decode_preset_folder, parse_model_repo, BlockDetails, ModelCatalog, ModelList,
+    PresetFolderListing, StateDecoder, StateUpdate,
 };
 use serde::Serialize;
 use std::collections::{HashMap, VecDeque};
@@ -30,6 +30,8 @@ pub struct BrokerStatus {
     pub handshake_ms: Option<u128>,
     pub messages_received: u64,
     pub messages_sent: u64,
+    pub messages_received_by_type: HashMap<u16, u64>,
+    pub messages_sent_by_type: HashMap<u16, u64>,
     pub expected_write_stalls: u64,
     pub last_hid_write_duration_ms: u64,
     pub max_hid_write_duration_ms: u64,
@@ -60,6 +62,8 @@ impl Default for BrokerStatus {
             handshake_ms: None,
             messages_received: 0,
             messages_sent: 0,
+            messages_received_by_type: HashMap::new(),
+            messages_sent_by_type: HashMap::new(),
             expected_write_stalls: 0,
             last_hid_write_duration_ms: 0,
             max_hid_write_duration_ms: 0,
@@ -74,7 +78,9 @@ enum Command {
         force: bool,
         reply: mpsc::Sender<()>,
     },
-    Disconnect,
+    Disconnect {
+        reply: mpsc::Sender<()>,
+    },
     Send(u16, Vec<u8>, mpsc::Sender<Result<(), String>>),
     SendRealtime(u16, Vec<u8>),
     SendSequence {
@@ -108,6 +114,12 @@ struct RawEventBus {
 // history above is the catch-up source, so a stalled UI/client must not retain
 // an unbounded clone of every device frame.
 const SUBSCRIBER_QUEUE_CAPACITY: usize = qc_protocol::domain::STATE_EVENT_DEFAULT_LIMIT;
+// A File READ is an asynchronous broadcast request, and CorOS occasionally
+// omits a complete preset-library push for one request. Keep ordinary UI calls
+// coalesced, but allow another request soon enough to recover within the normal
+// 45-second authoritative verification window.
+const PRESET_LIBRARY_REFRESH_COALESCE: Duration = Duration::from_secs(8);
+const PRESET_LIBRARY_VERIFY_TIMEOUT: Duration = Duration::from_secs(45);
 
 trait RecoverPoison<T> {
     fn lock_recover(&self) -> MutexGuard<'_, T>;
@@ -131,6 +143,7 @@ pub struct DeviceController {
     state_subscribers: Arc<Mutex<Vec<mpsc::SyncSender<DecodedStateFrame>>>>,
     gateway_snapshot: Arc<Mutex<GatewaySnapshot>>,
     preset_library: Arc<Mutex<PresetLibrary>>,
+    preset_library_refresh: Mutex<Option<(Option<u128>, Instant)>>,
     state_commands: mpsc::Sender<StateDecoderCommand>,
     commands: mpsc::Sender<Command>,
 }
@@ -203,6 +216,7 @@ impl DeviceController {
             state_subscribers,
             gateway_snapshot,
             preset_library,
+            preset_library_refresh: Mutex::new(None),
             state_commands,
             commands,
         }
@@ -229,8 +243,14 @@ impl DeviceController {
             ))
             .map_err(|_| "Native QC worker did not acknowledge the reconnect request".to_string())
     }
-    pub fn disconnect(&self) {
-        let _ = self.commands.send(Command::Disconnect);
+    pub fn disconnect(&self) -> Result<(), String> {
+        let (reply, response) = mpsc::channel();
+        self.commands
+            .send(Command::Disconnect { reply })
+            .map_err(|_| "Native QC worker is not available".to_string())?;
+        response
+            .recv_timeout(Duration::from_secs(1))
+            .map_err(|_| "Native QC worker did not acknowledge the disconnect request".to_string())
     }
 
     pub fn latest_message(&self, message_type: u16) -> Option<IncomingMessage> {
@@ -364,7 +384,92 @@ impl DeviceController {
     }
 
     pub fn refresh_preset_library(&self) -> Result<(), String> {
-        self.send_operation(DeviceOperation::ListPresetFolders)
+        let connection_id = self.state.lock_recover().connected_at_unix_ms;
+        let now = Instant::now();
+        {
+            let mut refresh = self.preset_library_refresh.lock_recover();
+            if refresh.is_some_and(|(id, started)| {
+                id == connection_id
+                    && now.saturating_duration_since(started) < PRESET_LIBRARY_REFRESH_COALESCE
+            }) {
+                return Ok(());
+            }
+            *refresh = Some((connection_id, now));
+        }
+        if let Err(error) = self.send_operation(DeviceOperation::ListPresetFolders) {
+            *self.preset_library_refresh.lock_recover() = None;
+            return Err(error);
+        }
+        Ok(())
+    }
+
+    /// Wait for a new File listing emitted after this call and matching the
+    /// requested setlist. The in-memory catalog is intentionally not used as
+    /// proof: it may contain an optimistic save/move overlay or a listing from
+    /// before an eventually-consistent device mutation. Missed File pushes are
+    /// retried on the same cadence used by the public refresh coalescer.
+    pub fn wait_for_fresh_preset_listing(
+        &self,
+        key: &str,
+        predicate: impl Fn(&PresetFolderListing) -> bool,
+    ) -> Result<PresetFolderListing, String> {
+        let expected_key = key.trim_end_matches('/');
+        let events = self.subscribe_raw_events();
+        let deadline = Instant::now() + PRESET_LIBRARY_VERIFY_TIMEOUT;
+        let mut next_request = Instant::now();
+        let mut matching_listings = 0_u32;
+
+        loop {
+            let now = Instant::now();
+            if now >= deadline {
+                return Err(if matching_listings == 0 {
+                    format!(
+                        "The QC did not publish a fresh preset listing for {expected_key:?} within 45 seconds"
+                    )
+                } else {
+                    format!(
+                        "The QC published {matching_listings} fresh listing(s) for {expected_key:?}, but none confirmed the requested change within 45 seconds"
+                    )
+                });
+            }
+
+            if now >= next_request {
+                // Verification requests deliberately bypass the coalescer: this
+                // loop owns its retry cadence and must recover from a missed
+                // device push even if another UI refresh just ran.
+                self.send_operation(DeviceOperation::ListPresetFolders)?;
+                *self.preset_library_refresh.lock_recover() =
+                    Some((self.state.lock_recover().connected_at_unix_ms, now));
+                next_request = now + PRESET_LIBRARY_REFRESH_COALESCE;
+            }
+
+            let wake_at = std::cmp::min(deadline, next_request);
+            match events.recv_timeout(wake_at.saturating_duration_since(Instant::now())) {
+                Ok(message) if message.message_type == 4 => {
+                    let Ok(Some(listing)) = decode_preset_folder(&message.payload) else {
+                        continue;
+                    };
+                    if listing.key.trim_end_matches('/') != expected_key {
+                        continue;
+                    }
+                    matching_listings = matching_listings.saturating_add(1);
+                    if predicate(&listing) {
+                        // Raw subscribers are notified before the USB worker's
+                        // normal cache ingestion. Ingest synchronously here so
+                        // the caller can safely plan its next operation without
+                        // racing that worker step.
+                        self.preset_library.lock_recover().ingest(listing.clone());
+                        return Ok(listing);
+                    }
+                }
+                Ok(_) | Err(mpsc::RecvTimeoutError::Timeout) => {}
+                Err(mpsc::RecvTimeoutError::Disconnected) => {
+                    return Err(
+                        "The QC preset-listing event stream closed during verification".into(),
+                    );
+                }
+            }
+        }
     }
 
     pub fn preset_folders(&self) -> Vec<PresetFolder> {
@@ -391,6 +496,61 @@ impl DeviceController {
         self.preset_library
             .lock_recover()
             .record_saved(key, position, name, instrument);
+    }
+
+    pub fn ensure_preset_setlist(&self, key: &str) {
+        self.preset_library.lock_recover().ensure_setlist(key);
+    }
+
+    pub fn record_library_mutation(&self, method: &str, params: &serde_json::Value) {
+        let method = method.rsplit('.').next().unwrap_or(method);
+        if !matches!(
+            method,
+            "createSetlist"
+                | "create_setlist"
+                | "deleteSetlist"
+                | "delete_setlist"
+                | "deletePreset"
+                | "delete_preset"
+                | "movePreset"
+                | "move_preset"
+        ) {
+            return;
+        }
+        let mut library = self.preset_library.lock_recover();
+        match method {
+            "createSetlist" | "create_setlist" => {
+                if let Some(name) = params.get("name").and_then(serde_json::Value::as_str) {
+                    library.ensure_setlist(&format!("/media/p4/Presets/{name}"));
+                }
+            }
+            "deleteSetlist" | "delete_setlist" => {
+                if let Some(name) = params.get("name").and_then(serde_json::Value::as_str) {
+                    library.remove_setlist(name);
+                }
+            }
+            "deletePreset" | "delete_preset" => {
+                if let (Some(key), Some(name)) = (
+                    params.get("setlistKey").and_then(serde_json::Value::as_str),
+                    params.get("name").and_then(serde_json::Value::as_str),
+                ) {
+                    library.remove_preset(key, name);
+                }
+            }
+            "movePreset" | "move_preset" => {
+                if let (Some(key), Some(name), Some(position)) = (
+                    params.get("setlistKey").and_then(serde_json::Value::as_str),
+                    params.get("name").and_then(serde_json::Value::as_str),
+                    params
+                        .get("position")
+                        .and_then(serde_json::Value::as_u64)
+                        .and_then(|value| u32::try_from(value).ok()),
+                ) {
+                    library.move_preset(key, name, position);
+                }
+            }
+            _ => {}
+        }
     }
 
     pub fn plan_preset_mutation(
@@ -857,7 +1017,7 @@ fn run(
                     set_phase(&state, "searching", "Reconnect requested", false, false);
                     let _ = reply.send(());
                 }
-                Command::Disconnect => {
+                Command::Disconnect { reply } => {
                     connection = None;
                     fail_pending(&mut pending_requests, "Device session closed");
                     latest_messages.lock_recover().clear();
@@ -874,6 +1034,7 @@ fn run(
                         false,
                         false,
                     );
+                    let _ = reply.send(());
                 }
                 Command::Send(message_type, payload, reply) => {
                     let result = if let Some(connected) = connection.as_mut() {
@@ -1016,7 +1177,20 @@ fn run(
                 false,
             );
             let started = Instant::now();
-            match QcUsb::connect(&mut session, &session_clock) {
+            match QcUsb::connect(&mut session, &session_clock, |attempt, telemetry| {
+                let mut status = state.lock_recover();
+                status.phase = "handshaking".into();
+                status.detail =
+                    format!("Waiting for Quad Cortex ResetCommsBuffers reply (attempt {attempt})");
+                status.connected = false;
+                status.synchronized = false;
+                status.messages_sent = telemetry.messages_sent;
+                status.expected_write_stalls = telemetry.expected_write_stalls;
+                status.last_hid_write_duration_ms = telemetry.last_hid_write_duration_ms;
+                status.max_hid_write_duration_ms = telemetry.max_hid_write_duration_ms;
+                status.last_hid_write_completed = telemetry.last_hid_write_completed;
+                status.messages_sent_by_type = telemetry.messages_sent_by_type;
+            }) {
                 Ok(connected) => {
                     let handshake_ms = started.elapsed().as_millis();
                     state_generation = state_generation.saturating_add(1);
@@ -1102,10 +1276,24 @@ fn run(
                     continue;
                 }
             }
-            if session.keepalive_due(session_clock.elapsed().as_millis() as u64) {
-                connected.usb.send_command(commands::keepalive());
+            let now_ms = session_clock.elapsed().as_millis() as u64;
+            if session.liveness_probe_timed_out(now_ms) {
+                const DETAIL: &str = "USB link stopped answering the idle Version probe";
+                set_phase(&state, "searching", DETAIL, false, false);
+                fail_pending(&mut pending_requests, DETAIL);
+                session.disconnect(now_ms, true);
+                connection = None;
+                continue;
+            }
+            if session.keepalive_due(now_ms) {
+                // Pushed QC state remains authoritative. Only after five fully
+                // idle seconds issue one side-effect-free correlated read so
+                // an open-but-silent HID handle cannot remain falsely Ready.
+                connected
+                    .usb
+                    .send_command(commands::read(qc_protocol::profile::MESSAGE_TYPE_VERSION));
                 update_usb_telemetry(&state, connected);
-                session.outbound(session_clock.elapsed().as_millis() as u64);
+                session.liveness_probe_sent(now_ms);
             }
         } else {
             thread::sleep(Duration::from_millis(100));
@@ -1121,7 +1309,7 @@ fn reconnect_is_satisfied(force: bool, connected: bool, phase: &str) -> bool {
 fn deliver_pending(pending: &mut Vec<PendingRequest>, message: &IncomingMessage) {
     let request_id = qc_protocol::wire::varint_field(
         &message.payload,
-        if message.message_type == qc_protocol::profile::MESSAGE_TYPE_DEVICE_VERSION {
+        if message.message_type == qc_protocol::profile::MESSAGE_TYPE_RESET_COMMS_BUFFERS {
             1
         } else {
             2
@@ -1217,12 +1405,18 @@ fn install_connection_status(
     );
     status.handshake_ms = Some(handshake_ms);
     status.messages_received = connection.message_counts.values().sum::<usize>() as u64;
+    status.messages_received_by_type = connection
+        .message_counts
+        .iter()
+        .map(|(message_type, count)| (*message_type, *count as u64))
+        .collect();
     let telemetry = connection.usb.telemetry();
     status.messages_sent = telemetry.messages_sent;
     status.expected_write_stalls = telemetry.expected_write_stalls;
     status.last_hid_write_duration_ms = telemetry.last_hid_write_duration_ms;
     status.max_hid_write_duration_ms = telemetry.max_hid_write_duration_ms;
     status.last_hid_write_completed = telemetry.last_hid_write_completed;
+    status.messages_sent_by_type = telemetry.messages_sent_by_type;
     status.last_message_type = connection
         .latest_messages
         .values()
@@ -1238,6 +1432,7 @@ fn update_usb_telemetry(state: &Arc<Mutex<BrokerStatus>>, connection: &Connected
     status.last_hid_write_duration_ms = telemetry.last_hid_write_duration_ms;
     status.max_hid_write_duration_ms = telemetry.max_hid_write_duration_ms;
     status.last_hid_write_completed = telemetry.last_hid_write_completed;
+    status.messages_sent_by_type = telemetry.messages_sent_by_type;
 }
 
 fn update_message(
@@ -1259,6 +1454,11 @@ fn update_message(
     latest.insert(message_type, message);
     let mut status = state.lock_recover();
     status.messages_received = status.messages_received.saturating_add(1);
+    let count = status
+        .messages_received_by_type
+        .entry(message_type)
+        .or_default();
+    *count = count.saturating_add(1);
     status.last_message_type = Some(message_type);
     if message_type == 15 {
         status.phase = "ready".into();
@@ -1287,6 +1487,37 @@ mod tests {
 
         *value.lock_recover() += 1;
         assert_eq!(*value.lock_recover(), 42);
+    }
+
+    #[test]
+    fn accepted_library_mutations_update_the_session_catalog() {
+        let controller = DeviceController::start_disconnected();
+        let name = "QC MCP CACHE TEST";
+        controller
+            .record_library_mutation("device.createSetlist", &serde_json::json!({"name": name}));
+        assert!(controller
+            .preset_folders()
+            .iter()
+            .any(|folder| folder.name == name));
+        controller
+            .record_library_mutation("device.deleteSetlist", &serde_json::json!({"name": name}));
+        assert!(!controller
+            .preset_folders()
+            .iter()
+            .any(|folder| folder.name == name));
+    }
+
+    #[test]
+    fn duplicate_library_refreshes_are_coalesced_while_the_device_stream_is_active() {
+        let controller = DeviceController::start_disconnected();
+        *controller.preset_library_refresh.lock_recover() = Some((None, Instant::now()));
+        assert!(controller.refresh_preset_library().is_ok());
+
+        *controller.preset_library_refresh.lock_recover() = Some((
+            None,
+            Instant::now() - PRESET_LIBRARY_REFRESH_COALESCE - Duration::from_millis(1),
+        ));
+        assert!(controller.refresh_preset_library().is_err());
     }
 
     #[test]

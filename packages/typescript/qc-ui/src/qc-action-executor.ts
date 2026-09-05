@@ -567,7 +567,10 @@ export async function executeQcAction(call: AssistantToolCall, context: QcAction
   }
   if (call.name === "recall_preset") {
     assertExpectedNumber(call, "expected_position", snapshot.presetPosition);
-    const result = await gateway.recallPreset(stringArgument(call, "setlist_key"), integerArgument(call, "position"), snapshot.presetName, snapshot.presetPosition);
+    if (stringArgument(call, "expected_setlist_key").replace(/\/$/, "") !== snapshot.setlistKey.replace(/\/$/, "")) {
+      throw new Error("recall_preset was based on a stale device setlist; no action was taken.");
+    }
+    const result = await gateway.recallPreset(stringArgument(call, "setlist_key"), integerArgument(call, "position"), snapshot.presetName, snapshot.presetPosition, snapshot.setlistKey);
     return { ...actionResult(result), clearSelection: true };
   }
   if (call.name === "reload_preset") {

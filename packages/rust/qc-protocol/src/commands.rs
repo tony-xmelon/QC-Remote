@@ -734,7 +734,7 @@ impl DeviceCommand {
 
 pub fn reset_comms(request_id: u64, session_id: impl Into<String>) -> OutboundMessage {
     OutboundMessage::encoded(
-        profile::MESSAGE_TYPE_DEVICE_VERSION,
+        profile::MESSAGE_TYPE_RESET_COMMS_BUFFERS,
         pa::ResetCommsBuffersMessage {
             request_id: Some(pa::reset_comms_buffers_message::RequestId::RequestId(
                 request_id,
@@ -2058,6 +2058,45 @@ pub fn screen_tap(x: f32, y: f32) -> [OutboundMessage; 2] {
     ]
 }
 
+/// Send one complete touchscreen drag gesture through the QC remote-control
+/// protocol. The device protocol carries both endpoints in a dedicated DRAG
+/// message, so hosts must not approximate a swipe with disconnected taps.
+pub fn screen_drag(x: f32, y: f32, to_x: f32, to_y: f32) -> [OutboundMessage; 3] {
+    let mouse = |x, y, r#type, drag_target: Option<(f32, f32)>| {
+        OutboundMessage::encoded(
+            72,
+            pa::RemoteControlMessage {
+                action: pa::message_action::Enum::Update as i32,
+                mouse: Some(pa::RemoteControlMouse {
+                    x,
+                    y,
+                    r#type,
+                    to_x: drag_target.map_or(0.0, |target| target.0),
+                    to_y: drag_target.map_or(0.0, |target| target.1),
+                }),
+                ..Default::default()
+            },
+        )
+    };
+    [
+        // CorOS uses the recovered enum labels in reverse: RELEASE is the
+        // touch-down event and PRESS is touch-up (the same ordering as taps).
+        mouse(x, y, pa::remote_control_mouse::Type::Release as i32, None),
+        mouse(
+            x,
+            y,
+            pa::remote_control_mouse::Type::Drag as i32,
+            Some((to_x, to_y)),
+        ),
+        mouse(
+            to_x,
+            to_y,
+            pa::remote_control_mouse::Type::Press as i32,
+            None,
+        ),
+    ]
+}
+
 pub fn create_local_backup() -> OutboundMessage {
     OutboundMessage::encoded(
         profile::MESSAGE_TYPE_BACKUP,
@@ -2273,6 +2312,32 @@ mod tests {
             tap[1].payload,
             [0x08, 0x01, 0x1a, 0x0a, 0x0d, 0x00, 0x00, 0x38, 0x43, 0x15, 0x00, 0x00, 0x13, 0x43]
         );
+        let drag = screen_drag(400.0, 8.0, 400.0, 220.0);
+        let touch_down = pa::RemoteControlMessage::decode(drag[0].payload.as_slice())
+            .unwrap()
+            .mouse
+            .unwrap();
+        assert_eq!(
+            touch_down.r#type,
+            pa::remote_control_mouse::Type::Release as i32
+        );
+        assert_eq!((touch_down.x, touch_down.y), (400.0, 8.0));
+        let remote = pa::RemoteControlMessage::decode(drag[1].payload.as_slice()).unwrap();
+        let mouse = remote.mouse.unwrap();
+        assert_eq!(mouse.r#type, pa::remote_control_mouse::Type::Drag as i32);
+        assert_eq!(
+            (mouse.x, mouse.y, mouse.to_x, mouse.to_y),
+            (400.0, 8.0, 400.0, 220.0)
+        );
+        let touch_up = pa::RemoteControlMessage::decode(drag[2].payload.as_slice())
+            .unwrap()
+            .mouse
+            .unwrap();
+        assert_eq!(
+            touch_up.r#type,
+            pa::remote_control_mouse::Type::Press as i32
+        );
+        assert_eq!((touch_up.x, touch_up.y), (400.0, 220.0));
     }
 
     #[test]

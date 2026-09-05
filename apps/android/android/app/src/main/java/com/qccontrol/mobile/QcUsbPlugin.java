@@ -41,6 +41,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -78,8 +79,10 @@ public class QcUsbPlugin extends Plugin {
     private volatile int currentPosition = -1;
     private volatile boolean currentSetlistFactory;
     private volatile long messagesReceived;
+    private final ConcurrentHashMap<Integer, Long> messagesReceivedByType = new ConcurrentHashMap<>();
     private volatile long rawReportsReceived;
     private volatile long messagesSent;
+    private final ConcurrentHashMap<Integer, Long> messagesSentByType = new ConcurrentHashMap<>();
     private volatile long decodeErrors;
     private volatile long expectedWriteStalls;
     private volatile int lastMessageType = -1;
@@ -194,7 +197,7 @@ public class QcUsbPlugin extends Plugin {
                 try {
                     writeMessage(currentBackupActive
                         ? stateDecoder.keepaliveCommand()
-                        : stateDecoder.readCommand(10));
+                        : stateDecoder.readCommand(QcUsbProfile.MESSAGE_TYPE_VERSION));
                 } catch (Exception ignored) {}
             });
         }, MAINTENANCE_POLL_MS, MAINTENANCE_POLL_MS, TimeUnit.MILLISECONDS);
@@ -391,21 +394,33 @@ public class QcUsbPlugin extends Plugin {
         CompletableFuture<org.json.JSONObject> result = new CompletableFuture<>();
         QcPendingOperations.Entry<PendingBackup> pending = pendingOperations.register(new PendingBackup(name), result);
         pendingBackup = pending;
-        commandIo.execute(() -> {
-            try {
-                if (!isReady()) throw new RelayException("NOT_CONNECTED", "Quad Cortex USB disconnected before the backup.");
-                android.util.Log.i("QcUsbPlugin", "Sending native backup request 1; includeReportId=" + includeReportId);
-                writeMessage(stateDecoder.backupCommand());
-            } catch (Exception error) {
-                if (pendingBackup == pending) pendingBackup = null;
-                pendingOperations.remove(pending);
-                result.completeExceptionally(error);
-            }
-        });
+        issueBackupRequest(pending);
         pendingOperations.timeout(pending, QcUsbProfile.BACKUP_TOTAL_TIMEOUT_MS, keepalive,
             () -> new RelayException("READBACK_TIMEOUT", "The Quad Cortex did not finish the native backup within " + (QcUsbProfile.BACKUP_TOTAL_TIMEOUT_MS / 1000) + " seconds."));
         scheduleBackupWatchdog(pending, QcUsbProfile.BACKUP_FIRST_CHUNK_TIMEOUT_MS);
         return result;
+    }
+
+    /**
+     * LocalBackup replies have no correlation id. A retry is safe only before
+     * the first JSON chunk: a second request after a stream starts could
+     * create an unrelated document that must never be combined with it.
+     */
+    private void issueBackupRequest(QcPendingOperations.Entry<PendingBackup> pending) {
+        commandIo.execute(() -> {
+            try {
+                if (pendingBackup != pending || pending.result.isDone()
+                    || pending.operation.started || pending.operation.recoveryStarted) return;
+                if (!isReady()) throw new RelayException("NOT_CONNECTED", "Quad Cortex USB disconnected before the backup.");
+                android.util.Log.i("QcUsbPlugin", "Sending native backup request " + pending.operation.attempts
+                    + "; includeReportId=" + includeReportId);
+                writeMessage(stateDecoder.backupCommand());
+            } catch (Exception error) {
+                if (pendingBackup == pending) pendingBackup = null;
+                pendingOperations.remove(pending);
+                pending.result.completeExceptionally(error);
+            }
+        });
     }
 
     private void scheduleBackupWatchdog(QcPendingOperations.Entry<PendingBackup> pending, long delayMs) {
@@ -428,12 +443,19 @@ public class QcUsbPlugin extends Plugin {
                         + " raw HID reports and " + operation.decodedMessages + " decoded messages during the operation."));
                 return;
             }
+            if (operation.attempts < QcUsbProfile.BACKUP_MAXIMUM_ATTEMPTS) {
+                operation.attempts += 1;
+                operation.lastActivityAt = now;
+                issueBackupRequest(pending);
+                scheduleBackupWatchdog(pending, QcUsbProfile.BACKUP_FIRST_CHUNK_TIMEOUT_MS);
+                return;
+            }
             pendingBackup = null;
             if (pendingOperations.remove(pending)) pending.result.completeExceptionally(new RelayException(
-                "READBACK_TIMEOUT", "No native backup document started after one request. Android observed "
+                "READBACK_TIMEOUT", "No native backup document started after " + operation.attempts + " request(s). Android observed "
                     + operation.rawReports + " raw HID reports, " + operation.decodedMessages
                     + " decoded messages, and a last raw report length of " + operation.lastRawReportBytes
-                    + " bytes. Android never repeats a backup request because the device may have completed it without a visible USB reply."));
+                    + " bytes. Retries are allowed only before a JSON document starts; partial streams are never retried or combined."));
         }, Math.max(1, delayMs), TimeUnit.MILLISECONDS);
     }
 
@@ -949,13 +971,66 @@ public class QcUsbPlugin extends Plugin {
         call.resolve(usbDiagnostics());
     }
 
+    @PluginMethod
+    public void swipeScreen(PluginCall call) {
+        Integer x = call.getInt("x");
+        Integer y = call.getInt("y");
+        Integer toX = call.getInt("toX");
+        Integer toY = call.getInt("toY");
+        if (x == null || y == null || toX == null || toY == null
+            || x < 0 || x >= 800 || toX < 0 || toX >= 800
+            || y < 0 || y >= 480 || toY < 0 || toY >= 480) {
+            call.reject("Screen swipe coordinates must fit the 800 by 480 Quad Cortex display.", "INVALID_ARGUMENT");
+            return;
+        }
+        if (!isReady()) {
+            call.reject("Quad Cortex USB is not connected.", "NOT_CONNECTED");
+            return;
+        }
+        commandIo.execute(() -> {
+            try {
+                writeMessage(stateDecoder.screenSwipeCommand(x, y, toX, toY));
+                call.resolve(new JSObject().put("accepted", true));
+            } catch (Exception error) {
+                call.reject(error.getMessage() == null ? "The QC screen swipe failed." : error.getMessage(), "DEVICE_ERROR", error);
+            }
+        });
+    }
+
+    @PluginMethod
+    public void tapScreenDirect(PluginCall call) {
+        Integer x = call.getInt("x");
+        Integer y = call.getInt("y");
+        if (x == null || y == null || x < 0 || x >= 800 || y < 0 || y >= 480) {
+            call.reject("Screen tap coordinates must fit the 800 by 480 Quad Cortex display.", "INVALID_ARGUMENT");
+            return;
+        }
+        if (!isReady()) {
+            call.reject("Quad Cortex USB is not connected.", "NOT_CONNECTED");
+            return;
+        }
+        commandIo.execute(() -> {
+            try {
+                for (QcNativeStateDecoder.EncodedMessage message : stateDecoder.gatewayCommands(
+                    "device.tapScreen", new JSObject().put("x", x).put("y", y))) {
+                    writeMessage(message);
+                }
+                call.resolve(new JSObject().put("accepted", true));
+            } catch (Exception error) {
+                call.reject(error.getMessage() == null ? "The QC screen tap failed." : error.getMessage(), "DEVICE_ERROR", error);
+            }
+        });
+    }
+
     private JSObject usbDiagnostics() {
         JSObject result = new JSObject();
         result.put("connected", connection != null);
         result.put("device", device == null || device.getProductName() == null ? getContext().getString(R.string.device_name) : device.getProductName());
         result.put("messagesReceived", messagesReceived);
+        result.put("messagesReceivedByType", messageCountsJson(messagesReceivedByType));
         result.put("rawReportsReceived", rawReportsReceived);
         result.put("messagesSent", messagesSent);
+        result.put("messagesSentByType", messageCountsJson(messagesSentByType));
         result.put("decodeErrors", decodeErrors);
         result.put("expectedWriteStalls", expectedWriteStalls);
         result.put("lastMessageType", lastMessageType);
@@ -992,6 +1067,12 @@ public class QcUsbPlugin extends Plugin {
         result.put("readerExitedAt", readerExitedAt);
         if (lastReaderError != null) result.put("lastReaderError", lastReaderError);
         if (lastError != null) result.put("lastError", lastError);
+        return result;
+    }
+
+    private static JSObject messageCountsJson(ConcurrentHashMap<Integer, Long> counts) {
+        JSObject result = new JSObject();
+        counts.forEach((messageType, count) -> result.put(Integer.toString(messageType), count));
         return result;
     }
 
@@ -1117,8 +1198,10 @@ public class QcUsbPlugin extends Plugin {
         selectedInputEndpointAddress = selectedInput.getAddress();
         selectedInputMaxPacketSize = selectedInput.getMaxPacketSize();
         messagesReceived = 0;
+        messagesReceivedByType.clear();
         rawReportsReceived = 0;
         messagesSent = 0;
+        messagesSentByType.clear();
         decodeErrors = 0;
         expectedWriteStalls = 0;
         lastMessageType = -1;
@@ -1199,7 +1282,7 @@ public class QcUsbPlugin extends Plugin {
         // maintain the normal five-second cadence.
         keepalive.schedule(() -> commandIo.execute(() -> {
             if (!isReady() || !pendingOperations.isEmpty()) return;
-            try { writeMessage(stateDecoder.readCommand(10)); } catch (Exception ignored) {}
+            try { writeMessage(stateDecoder.readCommand(QcUsbProfile.MESSAGE_TYPE_VERSION)); } catch (Exception ignored) {}
         }), MAINTENANCE_POLL_MS, TimeUnit.MILLISECONDS);
     }
 
@@ -1231,6 +1314,7 @@ public class QcUsbPlugin extends Plugin {
             }
         }
         messagesSent++;
+        messagesSentByType.merge(message.messageType, 1L, Long::sum);
         stateDecoder.sessionOutbound(System.currentTimeMillis());
     }
 
@@ -1347,13 +1431,14 @@ public class QcUsbPlugin extends Plugin {
         if (decoded == null) return;
         if (activeBackup != null) activeBackup.operation.decodedMessages += 1;
         messagesReceived++;
+        messagesReceivedByType.merge(decoded.messageType, 1L, Long::sum);
         lastMessageType = decoded.messageType;
         if (decoded.messageType == 4) {
             android.util.Log.i("QcUsbPlugin", "Received preset catalog frame");
             lastPresetLibraryAt = System.currentTimeMillis();
             schedulePresetLibrarySettlement();
         }
-        if (decoded.messageType == QcUsbProfile.MESSAGE_TYPE_DEVICE_VERSION && resetReply != null) resetReply.countDown();
+        if (decoded.messageType == QcUsbProfile.MESSAGE_TYPE_RESET_COMMS_BUFFERS && resetReply != null) resetReply.countDown();
         dispatchGatewayResponse(decoded.messageType, decoded.payload);
         publishStateBatch(decoded.states, decoded.tempoClock);
     }

@@ -55,8 +55,8 @@ test("shared preset navigation uses one guarded adjacent recall on every host", 
   ];
   for (const transport of transports) await transport.movePreset(1);
   assert.deepEqual(calls, [
-    ["demo", 5, "", 4],
-    ["demo", 5, "", 4]
+    ["demo", 5, "", 4, "demo"],
+    ["demo", 5, "", 4, "demo"]
   ]);
 });
 

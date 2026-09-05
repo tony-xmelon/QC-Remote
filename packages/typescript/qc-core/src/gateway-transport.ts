@@ -24,7 +24,7 @@ export function createQcGatewayTransport(
       const position = Math.max(0, Math.min(255, state.presetPosition + delta));
       // An empty expected name deliberately avoids comparing the new preset's
       // name while retaining the position guard that serializes rapid taps.
-      return gateway.recallPreset(state.setlistKey, position, "", state.presetPosition);
+      return gateway.recallPreset(state.setlistKey, position, "", state.presetPosition, state.setlistKey);
     },
     pressFootswitch(index, snapshot) {
       const state = expected(snapshot);

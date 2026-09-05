@@ -171,7 +171,7 @@ export function usePresetWorkflow(options: UsePresetWorkflowOptions): PresetWork
     setPending(true);
     notice(`Recalling ${entry.location} · ${entry.name}…`);
     try {
-      const result = await gateway.recallPreset(presetList.setlistKey, entry.position, current.presetName, current.presetPosition);
+      const result = await gateway.recallPreset(presetList.setlistKey, entry.position, current.presetName, current.presetPosition, current.setlistKey);
       if (result.snapshot) commitPreset(result.snapshot);
       notice(result.detail ?? `${entry.location} · ${entry.name} recalled.`);
       setDirectoryOpen(false);
@@ -194,7 +194,7 @@ export function usePresetWorkflow(options: UsePresetWorkflowOptions): PresetWork
     if (entry.position === current.presetPosition) return `${entry.location} · ${entry.name} is already active.`;
     setPending(true);
     try {
-      const result = await gateway.recallPreset(list.setlistKey, entry.position, current.presetName, current.presetPosition);
+      const result = await gateway.recallPreset(list.setlistKey, entry.position, current.presetName, current.presetPosition, current.setlistKey);
       if (result.snapshot) commitPreset(result.snapshot);
       setDirectoryOpen(false);
       return result.detail ?? `${entry.location} · ${entry.name} recalled.`;

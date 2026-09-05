@@ -32,6 +32,7 @@ import {
   validatePerformanceEvidence,
   validateReleaseReports,
   validateTransportHealthEvidence,
+  usbMessageCountDelta,
   waitForPhysicalObservation
 } from "../tools/hardware-conformance-lib.mjs";
 
@@ -213,6 +214,36 @@ test("physical observation waits fail closed instead of returning stale state", 
     { timeoutMs: 100, intervalMs: 0, consecutiveMatches: 2 }
   );
   assert.equal(confirmed.confirmed, true);
+});
+
+test("physical evidence records exact per-type USB message deltas", () => {
+  const before = { usbDiagnostics: {
+    messagesSent: 4,
+    messagesReceived: 9,
+    messagesSentByType: { "10": 1, "15": 3 },
+    messagesReceivedByType: { "10": 1, "15": 8 }
+  } };
+  const after = { usbDiagnostics: {
+    messagesSent: 6,
+    messagesReceived: 11,
+    messagesSentByType: { "10": 2, "15": 4 },
+    messagesReceivedByType: { "10": 2, "15": 9 }
+  } };
+  assert.deepEqual(usbMessageCountDelta(before, after), {
+    sentByType: { "10": 1, "15": 1 },
+    receivedByType: { "10": 1, "15": 1 }
+  });
+  assert.equal(usbMessageCountDelta(before, before), undefined);
+  assert.deepEqual(usbMessageCountDelta(before, { usbDiagnostics: {
+    messagesSent: 1,
+    messagesReceived: 1,
+    messagesSentByType: { "52": 1 },
+    messagesReceivedByType: { "52": 1 }
+  } }), {
+    counterReset: true,
+    sentByType: { "52": 1 },
+    receivedByType: { "52": 1 }
+  });
 });
 
 test("direct gateway argument mapping matches the MCP adapter boundary", () => {

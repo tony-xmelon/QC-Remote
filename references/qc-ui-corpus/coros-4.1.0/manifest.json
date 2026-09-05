@@ -1233,7 +1233,7 @@
     },
     {
       "id": "input-gate-control",
-      "label": "Input Gate Control — Path 1",
+      "label": "Input Gate Control \u2014 Path 1",
       "screen": "input-gate-control",
       "image": "input-gate-control.png",
       "sha256": "c4161c9371ca6abd8ef8ce55aaf75f0cf3cb7924c4e0ba0c5274c3e4ee337f82",
@@ -1250,6 +1250,896 @@
         {
           "type": "wait",
           "seconds": 0.7
+        }
+      ]
+    },
+    {
+      "id": "block-context",
+      "label": "Block contextual actions \u2014 Parametric-8",
+      "screen": "block-context",
+      "image": "block-context.png",
+      "sha256": "9ee4f2c656be4b6db343d47c34001c2bb0cc38d16206a0e1231b702840817a19",
+      "bytes": 25953,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T14:11:14Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 610,
+          "y": 147
+        },
+        {
+          "type": "wait",
+          "seconds": 1.2
+        },
+        {
+          "type": "tap",
+          "x": 30,
+          "y": 30
+        },
+        {
+          "type": "wait",
+          "seconds": 0.9
+        }
+      ]
+    },
+    {
+      "id": "device-preset-save",
+      "label": "Save Virtual Device preset \u2014 keyboard",
+      "screen": "device-preset-save",
+      "image": "device-preset-save.png",
+      "sha256": "ffdcf4082d35f6292bf6bec4e1f45a29d8028cd82aa4af2edc9ee14b4d9d3660",
+      "bytes": 24912,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T14:15:34Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 610,
+          "y": 335
+        },
+        {
+          "type": "wait",
+          "seconds": 0.9
+        },
+        {
+          "type": "tap",
+          "x": 30,
+          "y": 225
+        },
+        {
+          "type": "wait",
+          "seconds": 0.7
+        },
+        {
+          "type": "tap",
+          "x": 190,
+          "y": 300
+        },
+        {
+          "type": "wait",
+          "seconds": 0.9
+        }
+      ]
+    },
+    {
+      "id": "directory-item-context",
+      "label": "Directory item contextual actions \u2014 current preset",
+      "screen": "directory-item-context",
+      "image": "directory-item-context.png",
+      "sha256": "282ec5708c1a765981f7a8312d1a1c3fdd6a6e0dae6d69513cd8fd0de816e623",
+      "bytes": 27846,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T14:23:09Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 300,
+          "y": 40
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        },
+        {
+          "type": "tap",
+          "x": 765,
+          "y": 390
+        },
+        {
+          "type": "wait",
+          "seconds": 0.9
+        }
+      ]
+    },
+    {
+      "id": "delete-confirmation",
+      "label": "Delete preset confirmation \u2014 before acceptance",
+      "screen": "delete-confirmation",
+      "image": "delete-confirmation.png",
+      "sha256": "eda07078f6ba5aae0242f7a3654b5585c5f4d4c4600ab91fd61c08a87572cd1f",
+      "bytes": 24627,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T14:23:32Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 300,
+          "y": 40
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        },
+        {
+          "type": "tap",
+          "x": 765,
+          "y": 390
+        },
+        {
+          "type": "wait",
+          "seconds": 0.9
+        },
+        {
+          "type": "tap",
+          "x": 570,
+          "y": 447
+        },
+        {
+          "type": "wait",
+          "seconds": 0.9
+        }
+      ]
+    },
+    {
+      "id": "onscreen-keyboard",
+      "label": "On-screen keyboard \u2014 Virtual Device preset name",
+      "screen": "onscreen-keyboard",
+      "image": "onscreen-keyboard.png",
+      "sha256": "ffdcf4082d35f6292bf6bec4e1f45a29d8028cd82aa4af2edc9ee14b4d9d3660",
+      "bytes": 24912,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T14:15:34Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 610,
+          "y": 335
+        },
+        {
+          "type": "tap",
+          "x": 30,
+          "y": 225
+        },
+        {
+          "type": "tap",
+          "x": 190,
+          "y": 300
+        }
+      ]
+    },
+    {
+      "id": "generic-confirmation",
+      "label": "Generic confirmation overlay \u2014 preset deletion",
+      "screen": "generic-confirmation",
+      "image": "generic-confirmation.png",
+      "sha256": "eda07078f6ba5aae0242f7a3654b5585c5f4d4c4600ab91fd61c08a87572cd1f",
+      "bytes": 24627,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T14:23:32Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 300,
+          "y": 40
+        },
+        {
+          "type": "tap",
+          "x": 765,
+          "y": 390
+        },
+        {
+          "type": "tap",
+          "x": 570,
+          "y": 447
+        }
+      ]
+    },
+    {
+      "id": "settings-support",
+      "label": "Support",
+      "screen": "settings-support",
+      "image": "settings-support.png",
+      "graphicsTree": "settings-support.tree.txt",
+      "sha256": "698788bcc176e38d993658e341bbbec129ea6cc692a130045420478de1a37946",
+      "bytes": 37174,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T18:46:07.684626Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 765,
+          "y": 24
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        },
+        {
+          "type": "swipe",
+          "from": [
+            720,
+            390
+          ],
+          "to": [
+            720,
+            120
+          ],
+          "duration": 0.35
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        },
+        {
+          "type": "tap",
+          "x": 550,
+          "y": 405
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        },
+        {
+          "type": "tap",
+          "x": 130,
+          "y": 30
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        },
+        {
+          "type": "tap",
+          "x": 100,
+          "y": 270
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        }
+      ]
+    },
+    {
+      "id": "settings-info",
+      "label": "Device Information",
+      "screen": "settings-info",
+      "image": "settings-info.png",
+      "graphicsTree": "settings-info.tree.txt",
+      "sha256": "776f7ae41f1dd09c2f13191bbe6e9366d73939f47cf8ffc3c3a0636c01733a39",
+      "bytes": 34052,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T18:46:36.549323Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 120,
+          "y": 150
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        }
+      ],
+      "redactions": [
+        "device serial",
+        "device MAC address"
+      ]
+    },
+    {
+      "id": "settings-diagnostics",
+      "label": "Diagnostics Overview",
+      "screen": "settings-diagnostics",
+      "image": "settings-diagnostics.png",
+      "graphicsTree": "settings-diagnostics.tree.txt",
+      "sha256": "4ca5af370ef2a4a17f3712b0ba99e083791ffb0f2649f70d7a3c061a0b31c6dc",
+      "bytes": 19339,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T18:47:09.768042Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 120,
+          "y": 270
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        }
+      ]
+    },
+    {
+      "id": "settings-wifi",
+      "label": "Wi-Fi Connection",
+      "screen": "settings-wifi",
+      "image": "settings-wifi.png",
+      "graphicsTree": "settings-wifi.tree.txt",
+      "sha256": "d34496d26bfb671c8576d6c9d0a5019e863226e93a8a613eee8b8ae2850f9893",
+      "bytes": 26473,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T18:47:46.996174Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 130,
+          "y": 30
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        },
+        {
+          "type": "tap",
+          "x": 100,
+          "y": 150
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        }
+      ],
+      "redactions": [
+        "Wi-Fi SSIDs",
+        "access-point MAC addresses",
+        "local IP address"
+      ]
+    },
+    {
+      "id": "settings-storage",
+      "label": "Device Storage",
+      "screen": "settings-storage",
+      "image": "settings-storage.png",
+      "graphicsTree": "settings-storage.tree.txt",
+      "sha256": "9fcb99a77d3960713496cbec7ee7d6abfdc312efc4ef19c1341d55eec40c5c9d",
+      "bytes": 32134,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T18:48:21.674943Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 120,
+          "y": 390
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        }
+      ]
+    },
+    {
+      "id": "io-overview",
+      "label": "I/O Settings overview",
+      "screen": "io-settings",
+      "image": "io-overview.png",
+      "graphicsTree": "io-overview.tree.txt",
+      "sha256": "d3140002cfb20699f99a1a5197d1e99699fbe857311a8e0ff532867cab16b6ff",
+      "bytes": 45534,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T19:35:51.456999Z",
+      "actions": [
+        {
+          "type": "swipe",
+          "from": [
+            400,
+            0
+          ],
+          "to": [
+            400,
+            479
+          ],
+          "duration": 0.35
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        }
+      ]
+    },
+    {
+      "id": "io-output",
+      "label": "Analog output detail",
+      "screen": "io-settings",
+      "image": "io-output.png",
+      "graphicsTree": "io-output.tree.txt",
+      "sha256": "88ec28b2e0a3990286485a0577c292bbe3fcc09aa41ac488e4918e54a95b2695",
+      "bytes": 43563,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T19:36:40.323152Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 362,
+          "y": 115
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        }
+      ]
+    },
+    {
+      "id": "io-send-return",
+      "label": "Send and Return detail",
+      "screen": "io-settings",
+      "image": "io-send-return.png",
+      "graphicsTree": "io-send-return.tree.txt",
+      "sha256": "8c45034f9a8959b4a9f949e655eb61125984dd96c4b7323cd75270972b8b45bf",
+      "bytes": 32765,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T19:37:04.955176Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 608,
+          "y": 173
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        }
+      ]
+    },
+    {
+      "id": "io-headphones",
+      "label": "Headphones detail",
+      "screen": "io-settings",
+      "image": "io-headphones.png",
+      "graphicsTree": "io-headphones.tree.txt",
+      "sha256": "87d41857e3f9b72fd59fc22c2d366b767c136b8e3af06a253bbcdc313e03546f",
+      "bytes": 34455,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T19:37:40.196910Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 430,
+          "y": 115
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        }
+      ]
+    },
+    {
+      "id": "device-browser-base",
+      "label": "Device browser categories",
+      "screen": "device-browser",
+      "image": "device-browser-base.png",
+      "graphicsTree": "device-browser-base.tree.txt",
+      "sha256": "45ef8e33cc36c8d9f298de972435d136c67d226b2686ca79882d54c36246a74f",
+      "bytes": 25085,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T19:38:59.703755Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 743,
+          "y": 30
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        },
+        {
+          "type": "tap",
+          "x": 361,
+          "y": 241
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        }
+      ]
+    },
+    {
+      "id": "device-browser-top",
+      "label": "Device browser categories top",
+      "screen": "device-browser",
+      "image": "device-browser-top.png",
+      "graphicsTree": "device-browser-top.tree.txt",
+      "sha256": "d612db1e520b33ad2c5066c3dce2576bc3a3b8df62466a6b283fa5e1690618fd",
+      "bytes": 26808,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T19:39:32.401518Z",
+      "actions": [
+        {
+          "type": "swipe",
+          "from": [
+            650,
+            120
+          ],
+          "to": [
+            650,
+            400
+          ],
+          "duration": 0.35
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        }
+      ]
+    },
+    {
+      "id": "device-browser-neural-capture",
+      "label": "Neural Capture browser",
+      "screen": "device-browser",
+      "image": "device-browser-neural-capture.png",
+      "graphicsTree": "device-browser-neural-capture.tree.txt",
+      "sha256": "c802706f6d7e86dcbe9f42aa5882906c108939952fedbe3c24556ce10983c9b4",
+      "bytes": 41367,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T19:40:08.152969Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 450,
+          "y": 200
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        }
+      ]
+    },
+    {
+      "id": "device-favorites",
+      "label": "Favorites device surface",
+      "screen": "device-browser",
+      "image": "device-favorites.png",
+      "graphicsTree": "device-favorites.tree.txt",
+      "sha256": "8f00ba3987a111ec513e806673d6ad7e00448aad3628487e6ace26fde746fe25",
+      "bytes": 26319,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T19:40:45.013810Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 200,
+          "y": 90
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        }
+      ]
+    },
+    {
+      "id": "device-recents",
+      "label": "Recent device surface",
+      "screen": "device-browser",
+      "image": "device-recents.png",
+      "graphicsTree": "device-recents.tree.txt",
+      "sha256": "3e30ece707b00a99d41903dc9b6c6e709953b976febfadf232df256d07f296cc",
+      "bytes": 25608,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T19:41:14.815721Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 200,
+          "y": 150
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        }
+      ]
+    },
+    {
+      "id": "device-search-entry",
+      "label": "Device search entry",
+      "screen": "device-search-entry",
+      "image": "device-search-entry.png",
+      "graphicsTree": "device-search-entry.tree.txt",
+      "sha256": "323a6db459443c6f7035a23cdd71a85f0f3bdd6af305b75b6f99aa5f50e21d2d",
+      "bytes": 23554,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T19:41:42.377461Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 643,
+          "y": 30
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        }
+      ]
+    },
+    {
+      "id": "device-search",
+      "label": "Device search results",
+      "screen": "device-search-entry",
+      "image": "device-search.png",
+      "graphicsTree": "device-search.tree.txt",
+      "sha256": "6f28b65958dd1391e772f16cacd794483289f22eb51a27e0b6702111da6bc2fb",
+      "bytes": 24796,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T19:42:17.318490Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 40,
+          "y": 194
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        }
+      ]
+    },
+    {
+      "id": "grid-context-menu-bottom",
+      "label": "Grid context menu lower actions",
+      "screen": "grid-context-menu",
+      "image": "grid-context-menu-bottom.png",
+      "graphicsTree": "grid-context-menu-bottom.tree.txt",
+      "sha256": "8a387d3b8e619933a96ff9e796ac66143f06c34b5924fd384e5f7afe0eb0b63a",
+      "bytes": 25348,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T19:47:23.633035Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 766,
+          "y": 25
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        },
+        {
+          "type": "swipe",
+          "from": [
+            700,
+            390
+          ],
+          "to": [
+            700,
+            120
+          ],
+          "duration": 0.35
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        }
+      ]
+    },
+    {
+      "id": "capture-type",
+      "label": "Neural Capture handoff empty Grid",
+      "screen": "grid",
+      "image": "capture-type.png",
+      "graphicsTree": "capture-type.tree.txt",
+      "sha256": "6d9e255fad709c46a5d76819150f602c33bff6ac7e93481336fe280c4bdc9454",
+      "bytes": 16986,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T19:48:01.086213Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 600,
+          "y": 165
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        }
+      ]
+    },
+    {
+      "id": "overlay-error",
+      "label": "Device search results alias",
+      "screen": "device-search-results",
+      "image": "overlay-error.png",
+      "graphicsTree": "overlay-error.tree.txt",
+      "sha256": "313f256d1214a71f600e989e40a9cd432f051a80200aca7177a4eec13fb6252a",
+      "bytes": 15515,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T19:50:30.335665Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 361,
+          "y": 241
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        },
+        {
+          "type": "swipe",
+          "from": [
+            650,
+            120
+          ],
+          "to": [
+            650,
+            400
+          ],
+          "duration": 0.35
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        },
+        {
+          "type": "tap",
+          "x": 450,
+          "y": 200
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        },
+        {
+          "type": "tap",
+          "x": 643,
+          "y": 30
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        },
+        {
+          "type": "tap",
+          "x": 40,
+          "y": 194
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        },
+        {
+          "type": "tap",
+          "x": 736,
+          "y": 445
+        },
+        {
+          "type": "wait",
+          "seconds": 2.0
+        }
+      ]
+    },
+    {
+      "id": "device-search-results",
+      "label": "Device search results list",
+      "screen": "device-search-results",
+      "image": "device-search-results.png",
+      "graphicsTree": "device-search-results.tree.txt",
+      "sha256": "313f256d1214a71f600e989e40a9cd432f051a80200aca7177a4eec13fb6252a",
+      "bytes": 15515,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T19:51:05.613721Z",
+      "actions": []
+    },
+    {
+      "id": "fixture-editor-capture",
+      "label": "Neural Capture block editor",
+      "screen": "neural-capture-editor",
+      "image": "fixture-editor-capture.png",
+      "graphicsTree": "fixture-editor-capture.tree.txt",
+      "sha256": "d3e0910fbc4eaf59dd3ee705fe292ae8f2672a9f8f405fafaad4cf73d64ba554",
+      "bytes": 29976,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T19:54:43.678572Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 186,
+          "y": 147
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        }
+      ]
+    },
+    {
+      "id": "plugin-browser-ready",
+      "label": "Plugin browser ready",
+      "screen": "device-browser",
+      "image": "plugin-browser-ready.png",
+      "graphicsTree": "plugin-browser-ready.tree.txt",
+      "sha256": "0b2f83893a79526f42aed3efa28ce921de899bf0d39703cec0a671d5fafd6b15",
+      "bytes": 31411,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T19:56:23.466084Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 361,
+          "y": 241
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        },
+        {
+          "type": "swipe",
+          "from": [
+            650,
+            120
+          ],
+          "to": [
+            650,
+            400
+          ],
+          "duration": 0.35
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        },
+        {
+          "type": "tap",
+          "x": 450,
+          "y": 45
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        }
+      ]
+    },
+    {
+      "id": "overlay-busy",
+      "label": "Catalog refresh in progress",
+      "screen": "busy-progress",
+      "image": "overlay-busy.png",
+      "graphicsTree": "overlay-busy.tree.txt",
+      "sha256": "9b0c906d09fb1597ed08558855189530c8d19f2ffb3b32bcf02dcd8523978d56",
+      "bytes": 33591,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T19:57:02.751625Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 758,
+          "y": 30
         }
       ]
     }

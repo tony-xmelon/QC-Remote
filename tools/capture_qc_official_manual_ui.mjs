@@ -14,7 +14,7 @@ const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
 const requestedIds = new Set((process.env.QC_CAPTURE_IDS ?? "").split(",").map((id) => id.trim()).filter(Boolean));
 const captures = manifest.captures.filter((capture) => capture.renderer && (!requestedIds.size || requestedIds.has(capture.id)));
 
-const browser = await chromium.launch({ headless: true, executablePath: process.env.QC_BROWSER_EXECUTABLE });
+const browser = await chromium.launch({ headless: true, executablePath: process.env.QC_BROWSER_EXECUTABLE, args: ["--disable-lcd-text"] });
 const windowsCss = `
   html, body, #root { width: 802px !important; height: 482px !important; overflow: hidden !important; }
   .menu-bar, .status-strip, .chat-dock, .restore-chat, .dialog-backdrop { display: none !important; }
@@ -63,6 +63,10 @@ async function captureHost(host, baseUrl, viewport, css) {
     if (!box || Math.round(box.width) !== 800 || Math.round(box.height) !== 480) {
       throw new Error(`${host}/${capture.id}: expected 800x480, got ${box?.width}x${box?.height}`);
     }
+    await page.evaluate(() => {
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+      window.getSelection()?.removeAllRanges();
+    });
     await screen.screenshot({ path: join(output, `${capture.id}.png`), animations: "disabled", timeout: 15000 });
     console.log(`Captured ${host} ${capture.id}`);
   }

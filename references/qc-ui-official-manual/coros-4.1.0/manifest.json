@@ -35,7 +35,8 @@
       "height": 480,
       "deviceVariant": "quad-cortex",
       "renderer": {
-        "screen": "tempo"
+        "screen": "tempo",
+        "tempoState": "official"
       }
     },
     {

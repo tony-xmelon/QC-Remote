@@ -296,6 +296,12 @@ export function validateConfig(config, { requireAll = false } = {}) {
   if (config.transport.kind === "gateway-stdio" && !config.transport.command) throw new Error("gateway-stdio requires transport.command.");
   if (config.transport.kind === "mcp-http" && !config.transport.endpoint) throw new Error("mcp-http requires transport.endpoint.");
   const missing = requiredFixturePaths.filter((path) => atPath(config, path) === undefined || atPath(config, path) === "");
+  if (config.screenTap?.restoreTaps !== undefined
+      && (!Number.isInteger(config.screenTap.restoreTaps)
+        || config.screenTap.restoreTaps < 1
+        || config.screenTap.restoreTaps > 4)) {
+    throw new Error("screenTap.restoreTaps must be an integer from 1 through 4.");
+  }
   if (requireAll && missing.length) throw new Error(`Full physical coverage requires config values: ${missing.join(", ")}`);
   if (requireAll) {
     if (!Number.isFinite(config.transport.timeoutMs)
@@ -482,6 +488,41 @@ export function redactEvidence(value) {
     }
   }
   return output;
+}
+
+function positiveCounterDelta(before = {}, after = {}, reset = false) {
+  const delta = {};
+  for (const [messageType, rawAfter] of Object.entries(after ?? {})) {
+    const afterCount = Number(rawAfter);
+    const beforeCount = reset ? 0 : Number(before?.[messageType] ?? 0);
+    if (!Number.isFinite(afterCount) || !Number.isFinite(beforeCount)) continue;
+    const count = afterCount - beforeCount;
+    if (count > 0) delta[messageType] = count;
+  }
+  return delta;
+}
+
+/** Return the logical USB messages observed around one gateway action. */
+export function usbMessageCountDelta(beforeStatus, afterStatus) {
+  const before = beforeStatus?.usbDiagnostics ?? beforeStatus;
+  const after = afterStatus?.usbDiagnostics ?? afterStatus;
+  if (!before || !after) return undefined;
+  const reset = Number(after.messagesSent ?? 0) < Number(before.messagesSent ?? 0)
+    || Number(after.messagesReceived ?? 0) < Number(before.messagesReceived ?? 0);
+  const sentByType = positiveCounterDelta(
+    before.messagesSentByType,
+    after.messagesSentByType,
+    reset
+  );
+  const receivedByType = positiveCounterDelta(
+    before.messagesReceivedByType,
+    after.messagesReceivedByType,
+    reset
+  );
+  if (Object.keys(sentByType).length === 0 && Object.keys(receivedByType).length === 0) {
+    return undefined;
+  }
+  return { ...(reset ? { counterReset: true } : {}), sentByType, receivedByType };
 }
 
 export function markPhysicalResultVerified(results, name, observation) {

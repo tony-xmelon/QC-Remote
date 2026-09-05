@@ -712,12 +712,13 @@ pub static ACTIONS: &[ActionSpec] = &[
         name: "recall_preset",
         rpc: "device.recallPreset",
         classification: Classification::LiveWrite,
-        description: "Immediately recall a preset by setlist key and position.",
+        description: "Immediately recall a preset by setlist key and position, guarded by the currently active setlist, preset name, and position.",
         properties: &[
             p!("setlist_key", Kind::String),
             p!("position", Kind::Integer { min: 0, max: None }),
             p!("expected_preset_name", Kind::String),
             p!("expected_position", Kind::Integer { min: 0, max: None }),
+            p!("expected_setlist_key", Kind::String),
         ],
         distinct_arguments: &[],
         gateway_arguments: &[
@@ -725,6 +726,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             ("position", "position"),
             ("expected_preset_name", "expectedPresetName"),
             ("expected_position", "expectedPosition"),
+            ("expected_setlist_key", "expectedSetlistKey"),
         ],
         gateway_true_arguments: &[],
     },

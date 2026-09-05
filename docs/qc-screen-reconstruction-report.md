@@ -1,14 +1,14 @@
 # Quad Cortex screen reconstruction report
 
-Audit date: 2026-09-05
+Audit date: 2026-09-03
 Reference: physical Quad Cortex, CorOS 4.1.0, 800x480 framebuffer corpus
 
 ## Executive summary
 
 | Client | Physical corpus rendered | Mean structural match | Mean color similarity |
 | --- | ---: | ---: | ---: |
-| Windows | 41/41 (100%) | **91.55%** | **97.39%** |
-| Android | 41/41 (100%) | **91.54%** | **97.39%** |
+| Windows | 70/70 (100%) | **83.78%** | **97.09%** |
+| Android | 70/70 (100%) | **83.78%** | **97.09%** |
 
 These are native-size measurements, not audit estimates. Both hosts render the
 same versioned `coros410` scratch-preset fixture through `@ndsp-qc/ui`; each
@@ -20,7 +20,10 @@ frame. An earlier driver did not wait for asynchronous editor opening and
 therefore compared the underlying Grid for seven editor states; those invalid
 measurements have been replaced. Both capture drivers now exclude the decorative
 host bezel and measure the same raw 800x480 framebuffer; their aggregate
-structural scores remain within 0.02 percentage points. The live Grid, Directory, routing, and
+structural scores remain within 0.01 points. The expanded corpus deliberately
+includes difficult new I/O, search, browser, Neural Capture editor, and busy-state
+frames, so its aggregate is not directly comparable to the earlier 52-frame score.
+The live Grid, Directory, routing, and
 parameter editor implementations are shared.
 
 The complete product target is larger than the measured corpus. The canonical
@@ -34,19 +37,20 @@ rows**. Current canonical CorOS implementation counts are:
 | Shell only | 0 | 0 |
 | Missing | 0 | 0 |
 
-“41/41” therefore means every physical regression state has a renderer. All 103
-cataloged states are built, but only 41 currently have matching device captures.
+“70/70” therefore means every physical regression state has a renderer. All 103
+cataloged states are built, and 70 captured device frames now participate in the
+physical comparison.
 
 The separate manual-reference smoke corpus now contains **85 states / 170 exact
 800x480 host captures** (Windows and Android). These validate shared composition
 and framebuffer containment but are intentionally excluded from the physical
 similarity percentages until matching device captures exist.
 
-Across the physical and official full-frame corpora, **59 canonical states**
+Across the physical and official full-frame corpora, **79 canonical states**
 have directly comparable 800x480 evidence. A separate checksummed corpus of
 **27 official manual SVG details** supplies scoped control, editor-fragment,
 interaction, or hardware-diagram evidence for additional states, bringing the
-number with some authoritative visual evidence to **79/103**. Detail assets do
+number with some authoritative visual evidence to **98/103**. Detail assets do
 not enter full-screen similarity averages.
 
 Two UI-bearing details now also have crop-level regression measurements. These
@@ -68,110 +72,280 @@ comparison.
 
 | Client | Official frames rendered | Mean structural match | Mean color similarity |
 | --- | ---: | ---: | ---: |
-| Windows | 36/36 (100%) | **91.94%** | **97.15%** |
-| Android | 36/36 (100%) | **91.94%** | **97.15%** |
+| Windows | 36/36 (100%) | **92.74%** | **97.27%** |
+| Android | 36/36 (100%) | **92.74%** | **97.27%** |
 
-This broader corpus is deliberately reported separately from the 41-frame
+This broader corpus is deliberately reported separately from the 70-frame
 physical-device regression pack. It adds authoritative coverage for I/O,
 Directory, Capture, Settings, Looper, expression assignment, plugin, and Hybrid
 Gig View states, while its lower score identifies which nominally Built screens
 still need pixel-level reconstruction work.
 
 The Android official-reference driver now neutralizes the same inner-screen
-radius and shadow as the physical driver. A fresh 36/36 rerun produces identical
-host scores, proving that the remaining differences are in the shared renderer
-rather than capture-shell decoration. The complete per-state evidence and score
-join is in [the canonical coverage matrix](qc-screen-coverage-matrix.md).
+radius and shadow as the physical driver. A fresh 36/36 rerun keeps the host
+scores within 0.01 structural points, showing that the remaining material
+differences are in the shared renderer rather than capture-shell decoration.
+The complete per-state evidence and score join is in
+[the canonical coverage matrix](qc-screen-coverage-matrix.md).
 
 ### Official-reference screen scores
 
 | Official state | Windows structural match | Android structural match |
 | --- | ---: | ---: |
-| `official-tuner` | **88.87%** | **88.88%** |
-| `official-tempo` | **90.89%** | **90.89%** |
-| `official-modes-configuration` | **91.84%** | **91.84%** |
-| `official-gig-view-preset` | **95.61%** | **95.61%** |
-| `official-gig-view-scene` | **93.50%** | **93.50%** |
-| `official-gig-view-stomp` | **88.85%** | **88.85%** |
-| `official-gig-view-hybrid` | **90.68%** | **90.68%** |
-| `official-io-settings-analog` | **87.81%** | **87.81%** |
-| `official-io-settings-usb` | **88.08%** | **88.08%** |
-| `official-global-eq` | **90.51%** | **90.51%** |
-| `official-grid-brit-2203` | **92.25%** | **92.26%** |
-| `official-empty-slot` | **94.02%** | **94.02%** |
-| `official-device-browser-amp` | **87.14%** | **87.14%** |
-| `official-device-presets` | **88.56%** | **88.55%** |
-| `official-device-preset-actions` | **89.97%** | **89.97%** |
-| `official-expression-bypass` | **91.73%** | **91.79%** |
-| `official-looper` | **90.72%** | **90.73%** |
-| `official-directory-presets` | **96.73%** | **96.73%** |
-| `official-directory-favorites` | **94.58%** | **94.58%** |
-| `official-directory-captures` | **92.53%** | **92.54%** |
-| `official-directory-irs` | **93.14%** | **93.15%** |
-| `official-directory-plugin-presets` | **96.42%** | **96.42%** |
-| `official-directory-search-results` | **92.72%** | **92.71%** |
-| `official-directory-nested` | **93.71%** | **93.72%** |
-| `official-directory-upload` | **96.01%** | **95.82%** |
-| `official-capture-settings` | **92.87%** | **92.87%** |
-| `official-capture-process` | **90.61%** | **90.65%** |
-| `official-capture-ab-test` | **88.57%** | **88.57%** |
-| `official-capture-metadata` | **92.95%** | **92.95%** |
-| `official-plugin-devices` | **89.66%** | **89.66%** |
-| `official-plugin-folders` | **96.44%** | **96.44%** |
-| `official-midi-settings` | **96.08%** | **96.08%** |
-| `official-midi-out` | **90.47%** | **90.47%** |
-| `official-settings-account` | **93.09%** | **93.09%** |
-| `official-settings-system` | **90.03%** | **90.02%** |
-| `official-settings-device` | **92.85%** | **92.85%** |
+| `official-tuner` | **92.13%** | **92.13%** |
+| `official-tempo` | **91.51%** | **91.51%** |
+| `official-modes-configuration` | **92.03%** | **92.04%** |
+| `official-gig-view-preset` | **95.48%** | **95.48%** |
+| `official-gig-view-scene` | **93.54%** | **93.54%** |
+| `official-gig-view-stomp` | **89.73%** | **89.73%** |
+| `official-gig-view-hybrid` | **90.93%** | **90.93%** |
+| `official-io-settings-analog` | **88.68%** | **88.67%** |
+| `official-io-settings-usb` | **88.70%** | **88.69%** |
+| `official-global-eq` | **91.48%** | **91.50%** |
+| `official-grid-brit-2203` | **92.21%** | **92.22%** |
+| `official-empty-slot` | **94.00%** | **94.00%** |
+| `official-device-browser-amp` | **89.57%** | **89.57%** |
+| `official-device-presets` | **89.60%** | **89.59%** |
+| `official-device-preset-actions` | **94.66%** | **94.66%** |
+| `official-expression-bypass` | **91.89%** | **91.87%** |
+| `official-looper` | **90.79%** | **90.79%** |
+| `official-directory-presets` | **96.81%** | **96.81%** |
+| `official-directory-favorites` | **94.67%** | **94.67%** |
+| `official-directory-captures` | **92.66%** | **92.67%** |
+| `official-directory-irs` | **93.16%** | **93.22%** |
+| `official-directory-plugin-presets` | **96.49%** | **96.49%** |
+| `official-directory-search-results` | **92.69%** | **92.68%** |
+| `official-directory-nested` | **93.82%** | **93.83%** |
+| `official-directory-upload` | **96.19%** | **96.00%** |
+| `official-capture-settings` | **92.89%** | **92.89%** |
+| `official-capture-process` | **91.03%** | **91.03%** |
+| `official-capture-ab-test` | **94.14%** | **94.14%** |
+| `official-capture-metadata` | **92.96%** | **92.96%** |
+| `official-plugin-devices` | **91.70%** | **91.70%** |
+| `official-plugin-folders` | **96.43%** | **96.44%** |
+| `official-midi-settings` | **96.16%** | **96.16%** |
+| `official-midi-out` | **93.10%** | **93.09%** |
+| `official-settings-account` | **93.11%** | **93.11%** |
+| `official-settings-system` | **90.80%** | **90.86%** |
+| `official-settings-device` | **92.92%** | **92.92%** |
 
 ## Measured physical corpus
 
 | Physical state | Windows structural match | Android structural match |
 | --- | ---: | ---: |
-| `grid-base` | **93.42%** | **93.42%** |
+| `grid-base` | **93.45%** | **93.45%** |
 | `grid-scene-selector` | **94.82%** | **94.82%** |
-| `grid-context-menu` | **89.56%** | **89.56%** |
-| `preset-directory` | **92.23%** | **92.25%** |
-| `input-route-selector` | **88.26%** | **88.31%** |
-| `output-route-selector` | **88.91%** | **88.95%** |
-| `device-browser-root` | **87.92%** | **87.94%** |
-| `device-browser-models` | **91.49%** | **91.49%** |
-| `device-browser-models-clean` | **89.10%** | **89.10%** |
-| `editor-simple-gate` | **92.56%** | **92.56%** |
-| `editor-chief-ds1` | **92.33%** | **92.33%** |
-| `editor-digital-flanger` | **88.10%** | **88.11%** |
-| `editor-ukc30-topboost` | **91.06%** | **91.06%** |
-| `editor-ukc30-cab` | **93.18%** | **93.18%** |
-| `editor-parametric-8` | **90.94%** | **90.94%** |
-| `editor-ambience` | **90.88%** | **90.88%** |
-| `gig-view` | **94.41%** | **94.41%** |
-| `grid-restored` | **93.42%** | **93.42%** |
-| `grid-scene-b` | **93.43%** | **93.43%** |
-| `grid-scene-a-restored` | **93.42%** | **93.42%** |
-| `tuner` | **90.77%** | **90.77%** |
-| `gig-view-preset` | **93.96%** | **93.96%** |
-| `gig-view-scene` | **90.91%** | **90.91%** |
-| `modes-configuration` | **96.39%** | **96.39%** |
-| `save-as-editor` | **89.49%** | **89.49%** |
-| `edit-details-editor` | **92.66%** | **92.66%** |
-| `copy-scene-destination` | **91.46%** | **91.46%** |
-| `swap-scene-destination` | **91.37%** | **91.37%** |
-| `preset-midi-out` | **89.34%** | **89.31%** |
-| `device-browser-plugin-list` | **88.75%** | **88.75%** |
-| `device-browser-plugin-models` | **92.05%** | **92.06%** |
-| `device-presets-exotic-z-boost` | **90.42%** | **90.42%** |
-| `device-browser-plugin-locked` | **92.04%** | **92.04%** |
-| `device-preset-actions` | **96.06%** | **96.06%** |
-| `device-presets-user` | **89.82%** | **89.81%** |
-| `tempo-metronome` | **89.88%** | **89.88%** |
-| `tuner-live-enabled` | **90.92%** | **90.92%** |
-| `gig-view-live-tuner` | **94.50%** | **94.50%** |
-| `splitter-editor` | **89.24%** | **89.24%** |
-| `mixer-editor` | **90.45%** | **90.45%** |
-| `input-gate-control` | **89.48%** | **89.48%** |
+| `grid-context-menu` | **89.73%** | **89.70%** |
+| `preset-directory` | **92.47%** | **92.48%** |
+| `input-route-selector` | **90.23%** | **90.23%** |
+| `output-route-selector` | **91.28%** | **91.27%** |
+| `device-browser-root` | **90.83%** | **90.83%** |
+| `device-browser-models` | **91.53%** | **91.53%** |
+| `device-browser-models-clean` | **92.13%** | **92.13%** |
+| `editor-simple-gate` | **92.61%** | **92.60%** |
+| `editor-chief-ds1` | **92.37%** | **92.37%** |
+| `editor-digital-flanger` | **88.16%** | **88.17%** |
+| `editor-ukc30-topboost` | **91.09%** | **91.09%** |
+| `editor-ukc30-cab` | **93.17%** | **93.16%** |
+| `editor-parametric-8` | **90.98%** | **90.98%** |
+| `editor-ambience` | **90.97%** | **90.95%** |
+| `gig-view` | **94.51%** | **94.51%** |
+| `grid-restored` | **93.45%** | **93.45%** |
+| `grid-scene-b` | **93.46%** | **93.46%** |
+| `grid-scene-a-restored` | **93.45%** | **93.45%** |
+| `tuner` | **90.84%** | **90.85%** |
+| `gig-view-preset` | **94.12%** | **94.12%** |
+| `gig-view-scene` | **91.25%** | **91.26%** |
+| `modes-configuration` | **96.50%** | **96.50%** |
+| `save-as-editor` | **89.83%** | **89.83%** |
+| `edit-details-editor` | **92.61%** | **92.61%** |
+| `copy-scene-destination` | **91.52%** | **91.52%** |
+| `swap-scene-destination` | **91.44%** | **91.44%** |
+| `preset-midi-out` | **93.06%** | **93.05%** |
+| `device-browser-plugin-list` | **90.05%** | **90.05%** |
+| `device-browser-plugin-models` | **91.64%** | **91.64%** |
+| `device-presets-exotic-z-boost` | **90.39%** | **90.38%** |
+| `device-browser-plugin-locked` | **91.78%** | **91.78%** |
+| `device-preset-actions` | **96.19%** | **96.19%** |
+| `device-presets-user` | **89.80%** | **89.80%** |
+| `tempo-metronome` | **90.46%** | **90.46%** |
+| `tuner-live-enabled` | **91.02%** | **91.02%** |
+| `gig-view-live-tuner` | **94.61%** | **94.61%** |
+| `splitter-editor` | **89.60%** | **89.63%** |
+| `mixer-editor` | **90.49%** | **90.53%** |
+| `input-gate-control` | **90.66%** | **90.66%** |
+| `block-context` | **87.93%** | **87.94%** |
+| `device-preset-save` | **95.89%** | **95.89%** |
+| `onscreen-keyboard` | **95.89%** | **95.89%** |
+| `directory-item-context` | **88.93%** | **88.93%** |
+| `delete-confirmation` | **90.03%** | **90.03%** |
+| `generic-confirmation` | **90.03%** | **90.03%** |
+| `settings-support` | **97.08%** | **97.08%** |
+| `settings-info` | **93.21%** | **93.21%** |
+| `settings-diagnostics` | **97.47%** | **97.47%** |
+| `settings-wifi` | **93.92%** | **93.92%** |
+| `settings-storage` | **93.31%** | **93.31%** |
 
 ## Improvements in this pass
 
+- Captured five additional physical Settings framebuffers directly from CorOS:
+  Support, Device Information, Diagnostics, Wi-Fi, and Device Storage. Serial,
+  MAC, IP, SSID, and BSSID regions are deterministically redacted in the public
+  corpus while the raw originals remain outside the repository. Replaced their
+  generic desktop sidebar with the measured shared CorOS two-pane shell and
+  reconstructed each detail view. Structural match rises from **13.04–18.20%**
+  to **97.08% Support**, **93.21% Device Information**, **97.47% Diagnostics**,
+  **93.92% Wi-Fi**, and **93.31% Device Storage** on both Windows and Android.
+  The expanded 52-frame corpus measures **92.16% structural / 97.55% color**
+  on both hosts, with **70/103** canonical states backed by full frames and
+  **90/103** backed by some authoritative visual evidence.
+- Aligned the physical Block Context menu's icon/text column boundary by the
+  measured one pixel and switched its labels to the captured Roboto metrics.
+  The screen rises from **87.34% to 87.93% on Windows** and from **87.35% to
+  87.94% on Android**, with **98.53% color similarity** on both hosts. The
+  complete physical corpus now measures **91.86% structural / 97.57% color**.
+- Scoped the Amp Browser to its measured white navigation, red selection, and
+  black selected/add-tile palette while keeping Plugin Devices independent.
+  The frame rises from **89.55% to 89.57% structural** and from **98.23% to
+  98.29% color** on both hosts. The complete official corpus now measures
+  **92.74% structural / 97.27% color**.
+- Matched System Settings to the manual's Roboto typography and exact
+  `#101010` / `#282c28` / `#181c18` surfaces plus `#40f860` brightness bars.
+  Structural similarity rises from **90.78% to 90.80% Windows** and **90.79% to
+  90.86% Android**, while color similarity rises from **96.48% to 96.73%** on
+  both hosts.
+- Replaced the I/O screen's inherited near-black header gradient with the
+  measured uniform CorOS `#101010` surface. Analog color similarity rises from
+  **97.33% to 97.56%** and USB from **96.50% to 96.74%** on both hosts while the
+  aggregate structural score remains **92.74%**. A larger encoder experiment
+  reduced structural fidelity and was discarded. The complete official corpus
+  now measures **92.74% structural / 97.26% color** on both hosts.
+- Recovered the official Plugin Devices screen's sampled CorOS palette instead
+  of using approximate browser colors: its black header, white navigation and
+  list content, green active outline, dim Grid controls, and seven category
+  borders now use the measured framebuffer values. The state rises from
+  **89.61% to 91.70% structural** and from **97.83% to 98.23% color** on both
+  hosts. The complete official corpus now measures **92.74% structural / 97.24%
+  color** on both hosts.
+- Split the official Virtual Device Preset states by their observed palettes:
+  Factory retains the standard CorOS green tint and yellow Guitar marker, while
+  the action-menu capture now uses its measured grayscale dim state. Factory
+  rises from **89.13% to 89.60% Windows / 89.59% Android** and from **96.68% to
+  96.98% color**. The action menu rises from **90.06% to 94.66% structural** and
+  from **96.10% to 97.73% color** on both hosts. The complete official corpus
+  now measures **92.68% structural / 97.23% color** on both hosts.
+- Matched the official Global EQ's 50px tab strip, four-pixel inter-panel gap,
+  lower control-panel baseline, and encoder diameter and centers. The frame
+  rises from **90.55% to 91.48% on Windows** and from **90.51% to 91.50% on
+  Android**. The complete official corpus now measures **92.54% structural /
+  97.18% color** on both hosts.
+- Replaced the official Amp browser's four Unicode add symbols with measured
+  two-stroke controls centered on the underlying Grid cells, raising the frame
+  from **88.91% / 88.92% to 89.55%** on Windows / Android. Added the one-pixel
+  assignment line observed across the applicable STOMP device glyphs, raising
+  official STOMP from **88.98% to 89.73%** and Hybrid from **90.68% to 90.93%**
+  on both hosts while also reducing color error. The complete official corpus
+  now measures **92.51% structural / 97.18% color** on both hosts.
+- Separated the current physical Tempo state from the older official-manual
+  state instead of forcing both references through one approximation. The
+  physical renderer now preserves its scene selector, Preset mode, and first
+  beat; the official renderer uses the documented Global mode, second beat,
+  hidden scene selector, and observed beat-tail marker. Physical Tempo rises
+  from **89.83% to 90.46%** and official Tempo from **90.83% to 91.51%** on
+  both hosts. The complete physical corpus now measures **91.84% structural /
+  97.57% color** on both hosts; at that checkpoint the official corpus measured
+  **92.47% / 97.18% on Windows** and **92.46% / 97.18% on Android**.
+- Reconstructed the dimmed Grid add controls beneath the physical plugin-device
+  browser with measured box, route-line, and two-stroke plus geometry. The
+  plugin-list frame rises from **88.96% to 90.05%** on both hosts after also
+  matching the six lock bounds to the captured filled-padlock geometry. A complete
+  47-frame rerun also incorporates the verified MIDI pedal reconstruction into
+  the physical benchmark: Preset MIDI Out rises from **89.82% to 93.06%
+  Windows / 93.05% Android**. Replacing the three physical preset-browser close
+  placeholders with measured two-stroke actions raises Factory, User, and the
+  action-overlay frames to **90.39% / 90.38%**, **89.80%**, and **96.19%**.
+  Aggregate physical structural match advances from **91.73% to 91.83%** on
+  both hosts while color remains **97.57%**.
+- Replaced the Amp browser's Unicode PRESET placeholder with a measured vector
+  matrix glyph and aligned the primary add slot to the official framebuffer,
+  raising that screen from **87.84% / 87.85% to 88.91% / 88.92%** on Windows /
+  Android. Reconstructed Capture Process's close action and progress spinner,
+  corrected the Training-step color, and changed the progress fill from an
+  approximate 32% to the measured 31.25%; that screen rises from **90.64% to
+  91.03%** on both hosts. The complete 36-frame official corpus now measures
+  **92.45% structural / 97.17% color on Windows** and **92.44% / 97.17% on
+  Android**.
+- Reconstructed the Tuner's Live Tuner control as the observed single vertical
+  switch, aligned its labels and action buttons, and raised the official frame
+  from **89.09% / 89.10% to 92.13%** on both hosts. Tapered both MIDI expression
+  pedals and their inset tread surfaces to the hardware geometry, raising
+  Preset MIDI Out from **89.94% to 93.10% / 93.09%**. Corrected an absolute-
+  positioning override that had attached the System brightness values to their
+  labels instead of the right edge, raising that frame from **90.10% / 90.11%
+  to 90.78% / 90.79%**. The complete official corpus now measures **92.41%
+  structural / 97.17% color** on both Windows and Android.
+- Refined the official Amp browser's category glyph and measured model-row
+  typography, raising it from **87.06% / 87.07% to 87.84% / 87.85%** on
+  Windows / Android. Moved the MIDI port labels to their observed lower
+  captions and corrected the selected analog-port treatment, raising Analog
+  I/O from **87.82% / 87.81% to 88.69% / 88.68%** and USB I/O from
+  **88.08% / 88.07% to 88.70%** on both hosts. Reconstructed Capture A/B's
+  target alignment, close action, headphone-level label, encoder geometry,
+  and reference-button baseline; that frame rises from **88.45% to 94.14%**.
+  Corrected the Virtual Device preset header actions and replaced outlined
+  preset-layer placeholders with the observed filled stack glyph, raising its
+  official frame from **88.49% to 89.13%**. At that checkpoint the complete
+  official corpus measured **92.22% structural / 97.17% color** on both hosts.
+- Rebuilt the physical Directory item menu beneath its overlay with the
+  observed 52px row pitch, compact preset labels, numbered folder glyphs,
+  measured header actions, and corrected menu baselines. Its structural match
+  rises from **72.74% to 88.93%**, while the two confirmation states that reuse
+  the composition rise from **82.90% / 82.91% to 90.03%** on both hosts.
+  Replaced the block action drawer's seven Unicode placeholders with shared
+  measured SVG controls for change, copy, paste, reset, save, expression, and
+  bypass, then reconstructed the visible EQ graph, scene controls, save action,
+  confirm action, nodes, and editor divider beneath its scrim. The state rises
+  from **84.29% / 84.30% to 87.34% / 87.35%**. Corrected shared Directory
+  strokes and the physical folder numbering as well; that full official
+  rerun reached **91.98% structural / 97.16% color**. The resulting complete
+  physical benchmark is **91.73% structural / 97.57% color** on both Windows
+  and Android.
+- Shifted the physical Input Gate preset title onto its captured baseline and
+  reduced the gate waveform to the observed amplitude, raising that screen
+  from **89.46% to 90.66% structural**. Replaced plugin-license outline
+  placeholders with the captured solid lock body and outlined shackle, and
+  replaced the single Unicode refresh mark with the shared two-arrow vector.
+  The plugin-list color similarity rises from **97.27% to 97.87%**; its
+  edge-only score changes from **89.38% to 88.96%** because the filled interior
+  intentionally adds the pixels present in the device reference.
+- Standardized all physical and official capture drivers on grayscale glyph
+  antialiasing and cleared browser focus/selection state before capture. This
+  removes host LCD color fringes that are absent from native QC framebuffers.
+  At that checkpoint complete reruns measured **91.01% structural / 97.55% color** for
+  both 47-frame physical corpora and **91.97% / 97.16%** for both 36-frame
+  official corpora. Aligned the Splitter route diagram and encoder centers,
+  raising that physical state from **89.28% / 89.31% to 89.60% / 89.63%**.
+  Reconstructed Preset MIDI Out's expression-pedal ribs from the observed dark
+  4px-on-10px texture, raising its physical match from **89.33% to 89.82%** on
+  both hosts. Corrected the physical plugin browser's selected category from a
+  green-tinted cell to the observed neutral rail with a black icon well, raising
+  that state from **88.65% / 88.66% to 89.38%** on Windows / Android.
+- Captured six additional native 800x480 hardware states: the block action
+  drawer, Virtual Device naming keyboard, Directory item menu, delete dialog,
+  and their shared keyboard/confirmation overlay mappings. Reconstructed all
+  six in the shared Windows/Android renderer. The expanded physical corpus is
+  complete at **47/47**. Full-frame authoritative
+  coverage rises from **59 to 65 canonical states**, leaving **18 smoke-only
+  acquisition gaps**. Reusing the captured physical Directory composition
+  beneath both confirmation mappings raises each from **69.41% to 82.92%**;
+  the Directory action state reaches **72.90%**. Matching the captured block
+  drawer's near-opaque scrim and true black surface raises it from **31.10% to
+  84.22% structural** and to **98.47% color**.
+  Sampling the physical keyboard palette and row bounds raises both keyboard
+  mappings from **87.40% / 97.18% structural/color to 95.86% / 98.70%**.
+  Correcting the browser-only preset name's measured 11px baseline error raises
+  Device Browser Root from **87.92% to 90.83%** and Models Clean from **89.10%
+  to 92.09%** without changing the normal Grid title.
 - Aligned Preset MIDI Out's disabled trash action and title baseline to the
   official framebuffer. The frame rises from **89.44% to 90.47% structural**
   and from **97.50% to 97.57% color** on both hosts, bringing the complete
@@ -1362,10 +1536,10 @@ covered by a gateway test. No preset content was changed.
 
 ## Remaining priorities
 
-1. Expand physical references from 40 toward all 103 cataloged CorOS states.
-2. Rebuild the remaining lowest-scoring official states: Directory upload,
-   Account Settings, Directory presets, Virtual Device presets, STOMP/HYBRID
-   Gig View, Global EQ, and plugin-device icon details.
+1. Expand physical references from 52 toward all 103 cataloged CorOS states,
+   starting with the seven remaining safe-navigation acquisitions.
+2. Rebuild the remaining lowest-scoring authoritative states, beginning with
+   physical Support and Device Information and the lowest official frames.
 3. Replace placeholder glyphs with traced or source-equivalent CorOS icons.
 4. Deepen specialized EQ, Cab, splitter, mixer, Looper X, assignment, Directory,
    Settings, Neural Capture, lifecycle, and recovery interactions beyond their
@@ -1373,10 +1547,10 @@ covered by a gateway test. No preset content was changed.
 5. Add visual thresholds once deliberately variable content and font rendering
    have per-family tolerances.
 
-The 24 states with smoke-only evidence now have a checked physical-acquisition
+The 13 states with smoke-only evidence have a checked physical-acquisition
 ledger at
 `references/qc-ui-coverage/coros-4.1.0/physical-capture-plan.json`. It separates
-18 safe navigation captures from 5 controlled transient captures, 1 scheduled
+7 safe navigation captures from 4 controlled transient captures, 1 scheduled
 disruptive Recovery capture, and 1 update-progress state that must be collected
 only during a user-initiated supported update or from an official full-frame
 source. Every entry defines its semantic route, exact capture checkpoint, and
@@ -1406,11 +1580,9 @@ for capture and comparison only. Legacy layout rules and measured color
 literals are isolated under `.qc-screen-fixture-root`, so they cannot override
 the live Grid.
 
-Fresh 800×480 captures from this port verified all 36 mapped official-manual
-frames on both hosts. Windows measures 89.60% edge F1 and 97.04% color match
-(MAE 0.0296); Android measures 88.54% edge F1 and 96.87% color match (MAE
-0.0313). The general interaction harness also completes all 40 physical-corpus
-captures on both hosts. Its current architecture-port baseline is 71.17% edge
-F1 / 92.47% color on Windows and 69.96% / 92.37% on Android; the gap is
-concentrated in the modern parameter editor, route picker, Directory, and Grid
-menus, while the isolated screen fixtures remain close to the pass-131 corpus.
+Fresh 800×480 captures verify all 36 mapped official-manual frames and all 52
+physical-corpus frames on both hosts. The current shared renderer measures
+92.74% structural / 97.27% color against the official full-frame corpus and
+92.16% structural / 97.55% color against the physical corpus on both Windows
+and Android. The remaining visual debt is concentrated in a few detailed icon
+and typography treatments rather than host-specific composition.

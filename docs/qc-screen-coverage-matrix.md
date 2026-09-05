@@ -5,15 +5,15 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 ## Coverage summary
 
 - Canonical device states: **103/103** routed through the shared Windows/Android surface.
-- Full-frame authoritative evidence: **59/103** states.
-- Official-detail-only evidence: **20/103** states.
-- Smoke-only evidence gaps: **24/103** states.
+- Full-frame authoritative evidence: **79/103** states.
+- Official-detail-only evidence: **19/103** states.
+- Smoke-only evidence gaps: **5/103** states.
 - Exact-size dual-host capture paths: **103/103** states.
 
 | Corpus | Windows structural | Windows color | Android structural | Android color |
 | --- | ---: | ---: | ---: | ---: |
-| Physical device | 91.55% | 97.39% | 91.54% | 97.39% |
-| Official manual | 91.94% | 97.15% | 91.94% | 97.15% |
+| Physical device | 83.78% | 97.09% | 83.78% | 97.09% |
+| Official manual | 92.74% | 97.27% | 92.74% | 97.27% |
 
 Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` color similarity. A canonical state that references multiple frames reports their mean. Detail evidence is scoped and therefore never promoted into a full-frame score.
 
@@ -23,22 +23,22 @@ Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` col
 | --- | ---: | ---: | ---: | ---: |
 | Lifecycle | 3 | 0 | 3 | 0 |
 | Grid | 8 | 6 | 0 | 2 |
-| Preset | 5 | 4 | 0 | 1 |
+| Preset | 5 | 5 | 0 | 0 |
 | MIDI | 1 | 1 | 0 | 0 |
 | Performance | 5 | 5 | 0 | 0 |
 | Gig View | 4 | 4 | 0 | 0 |
 | Monitoring | 1 | 0 | 1 | 0 |
-| I/O | 8 | 4 | 1 | 3 |
+| I/O | 8 | 8 | 0 | 0 |
 | Routing | 5 | 5 | 0 | 0 |
-| Device browser | 9 | 6 | 1 | 2 |
-| Editor | 9 | 5 | 1 | 3 |
+| Device browser | 9 | 8 | 1 | 0 |
+| Editor | 9 | 8 | 1 | 0 |
 | Assignment | 4 | 1 | 3 | 0 |
 | Virtual Device preset | 2 | 2 | 0 | 0 |
-| Directory | 16 | 8 | 7 | 1 |
+| Directory | 16 | 9 | 7 | 0 |
 | Capture V1 | 7 | 4 | 2 | 1 |
-| Settings | 10 | 4 | 0 | 6 |
+| Settings | 10 | 9 | 0 | 1 |
 | Recovery | 2 | 0 | 1 | 1 |
-| System overlay | 4 | 0 | 0 | 4 |
+| System overlay | 4 | 4 | 0 | 0 |
 
 ## All canonical device states
 
@@ -47,106 +47,106 @@ Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` col
 | GL-01 | Lifecycle | Power-on / boot progress | official detail | Built | Built | — / — | — / — | — / — | — / — |
 | GL-02 | Lifecycle | Power-off confirmation | official detail | Built | Built | — / — | — / — | — / — | — / — |
 | GL-03 | Lifecycle | Screen lock / power overlay | official detail | Built | Built | — / — | — / — | — / — | — / — |
-| GL-04 | Grid | Clean preset Grid | physical frame + official frame | Built | Built | 93.42% / 93.42% | 97.21% / 97.21% | 92.25% / 92.26% | 96.08% / 96.08% |
-| GL-05 | Grid | Modified preset Grid | physical frame | Built | Built | 93.43% / 93.43% | 97.21% / 97.21% | — / — | — / — |
-| GL-06 | Grid | Alternate active scene | physical frame | Built | Built | 93.42% / 93.42% | 97.21% / 97.21% | — / — | — / — |
-| GL-07 | Grid | Scene selector | physical frame + official detail | Built | Built | 94.81% / 94.81% | 97.15% / 97.15% | — / — | — / — |
-| GL-08 | Grid | Grid contextual menu | physical frame | Built | Built | 89.60% / 89.56% | 96.21% / 96.21% | — / — | — / — |
-| GL-09 | Preset | Save As editor | physical frame | Built | Built | 89.50% / 89.50% | 98.22% / 98.22% | — / — | — / — |
-| GL-10 | Preset | Edit Details / preset name editor | physical frame | Built | Built | 92.63% / 92.63% | 98.08% / 98.08% | — / — | — / — |
-| GL-11 | Preset | Copy Scene destination | physical frame | Built | Built | 91.79% / 91.47% | 99.04% / 99.06% | — / — | — / — |
-| GL-12 | Preset | Swap Scene destination | physical frame | Built | Built | 91.70% / 91.38% | 99.04% / 99.05% | — / — | — / — |
-| GL-13 | MIDI | Preset MIDI Out | physical frame + official frame | Built | Built | 89.33% / 89.33% | 97.52% / 97.52% | 90.47% / 90.47% | 97.57% / 97.57% |
-| GL-14 | Preset | Delete confirmation | smoke only | Built | Built | — / — | — / — | — / — | — / — |
-| GL-15 | Performance | Tuner | physical frame + official frame | Built | Built | 90.68% / 90.68% | 97.82% / 97.82% | 88.87% / 88.88% | 97.44% / 97.44% |
-| GL-16 | Performance | Live tuner / Gig View tuner | physical frame | Built | Built | 94.50% / 94.50% | 96.45% / 96.45% | — / — | — / — |
-| GL-17 | Performance | Tempo & Metronome | physical frame + official frame | Built | Built | 89.80% / 89.80% | 97.63% / 97.63% | 90.80% / 90.80% | 97.56% / 97.56% |
-| GL-18 | Performance | Modes Configuration | physical frame + official frame | Built | Built | 96.35% / 96.35% | 98.59% / 98.59% | 91.82% / 91.82% | 96.76% / 96.76% |
-| GL-19 | Gig View | PRESET mode | physical frame + official frame | Built | Built | 93.94% / 93.94% | 95.65% / 95.65% | 95.48% / 95.48% | 96.22% / 96.22% |
-| GL-20 | Gig View | SCENE mode | physical frame + official frame | Built | Built | 91.15% / 91.15% | 96.95% / 96.95% | 93.45% / 93.45% | 95.81% / 95.81% |
-| GL-21 | Gig View | STOMP mode | physical frame + official frame | Built | Built | 94.41% / 94.41% | 96.35% / 96.35% | 88.83% / 88.83% | 93.63% / 93.63% |
-| GL-22 | Gig View | HYBRID mode | official frame | Built | Built | — / — | — / — | 90.61% / 90.61% | 94.74% / 94.74% |
+| GL-04 | Grid | Clean preset Grid | physical frame + official frame | Built | Built | 82.33% / 82.33% | 96.54% / 96.54% | 92.21% / 92.22% | 96.08% / 96.08% |
+| GL-05 | Grid | Modified preset Grid | physical frame | Built | Built | 93.46% / 93.46% | 97.21% / 97.21% | — / — | — / — |
+| GL-06 | Grid | Alternate active scene | physical frame | Built | Built | 93.45% / 93.45% | 97.21% / 97.21% | — / — | — / — |
+| GL-07 | Grid | Scene selector | physical frame + official detail | Built | Built | 94.82% / 94.82% | 97.16% / 97.16% | — / — | — / — |
+| GL-08 | Grid | Grid contextual menu | physical frame | Built | Built | 80.60% / 80.58% | 95.88% / 95.88% | — / — | — / — |
+| GL-09 | Preset | Save As editor | physical frame | Built | Built | 89.83% / 89.83% | 98.23% / 98.23% | — / — | — / — |
+| GL-10 | Preset | Edit Details / preset name editor | physical frame | Built | Built | 92.61% / 92.61% | 98.08% / 98.08% | — / — | — / — |
+| GL-11 | Preset | Copy Scene destination | physical frame | Built | Built | 91.52% / 91.52% | 99.06% / 99.06% | — / — | — / — |
+| GL-12 | Preset | Swap Scene destination | physical frame | Built | Built | 91.44% / 91.44% | 99.05% / 99.05% | — / — | — / — |
+| GL-13 | MIDI | Preset MIDI Out | physical frame + official frame | Built | Built | 93.06% / 93.05% | 97.63% / 97.63% | 93.10% / 93.09% | 97.61% / 97.61% |
+| GL-14 | Preset | Delete confirmation | physical frame | Built | Built | 90.03% / 90.03% | 98.52% / 98.52% | — / — | — / — |
+| GL-15 | Performance | Tuner | physical frame + official frame | Built | Built | 90.84% / 90.85% | 97.82% / 97.82% | 92.13% / 92.13% | 97.50% / 97.50% |
+| GL-16 | Performance | Live tuner / Gig View tuner | physical frame | Built | Built | 94.61% / 94.61% | 96.47% / 96.47% | — / — | — / — |
+| GL-17 | Performance | Tempo & Metronome | physical frame + official frame | Built | Built | 90.46% / 90.46% | 97.68% / 97.68% | 91.51% / 91.51% | 97.74% / 97.74% |
+| GL-18 | Performance | Modes Configuration | physical frame + official frame | Built | Built | 96.50% / 96.50% | 98.59% / 98.59% | 92.03% / 92.04% | 96.76% / 96.76% |
+| GL-19 | Gig View | PRESET mode | physical frame + official frame | Built | Built | 94.12% / 94.12% | 95.66% / 95.66% | 95.48% / 95.48% | 96.23% / 96.23% |
+| GL-20 | Gig View | SCENE mode | physical frame + official frame | Built | Built | 91.25% / 91.26% | 96.96% / 96.96% | 93.54% / 93.54% | 95.83% / 95.83% |
+| GL-21 | Gig View | STOMP mode | physical frame + official frame | Built | Built | 94.51% / 94.51% | 96.37% / 96.37% | 89.73% / 89.73% | 93.71% / 93.71% |
+| GL-22 | Gig View | HYBRID mode | official frame | Built | Built | — / — | — / — | 90.93% / 90.93% | 94.77% / 94.77% |
 | GL-23 | Monitoring | CPU Monitor | official detail | Built | Built | — / — | — / — | — / — | — / — |
-| GL-24 | Performance | Tuner with Live Tuner enabled | physical frame | Built | Built | 90.85% / 90.86% | 97.82% / 97.82% | — / — | — / — |
-| IO-01 | I/O | I/O Settings overview | official detail | Built | Built | — / — | — / — | — / — | — / — |
-| IO-02 | I/O | Analog input detail | official frame | Built | Built | — / — | — / — | 87.81% / 87.81% | 97.31% / 97.31% |
-| IO-03 | I/O | Analog output detail | smoke only | Built | Built | — / — | — / — | — / — | — / — |
-| IO-04 | I/O | Send/Return detail | smoke only | Built | Built | — / — | — / — | — / — | — / — |
-| IO-05 | I/O | USB I/O detail | official frame | Built | Built | — / — | — / — | 88.10% / 88.09% | 96.48% / 96.48% |
-| IO-06 | I/O | Headphones detail | smoke only | Built | Built | — / — | — / — | — / — | — / — |
-| IO-07 | I/O | Global EQ | official frame | Built | Built | — / — | — / — | 90.55% / 90.52% | 96.41% / 96.41% |
-| IO-08 | I/O | Global input gate and bypass | physical frame | Built | Built | 89.45% / 89.45% | 97.45% / 97.45% | — / — | — / — |
-| GR-01 | Routing | Input route selector | physical frame | Built | Built | 90.19% / 90.22% | 96.54% / 96.54% | — / — | — / — |
-| GR-02 | Routing | Output route selector | physical frame | Built | Built | 91.23% / 91.24% | 96.48% / 96.48% | — / — | — / — |
-| GR-03 | Routing | Splitter/Mixer placement handles | physical frame | Built | Built | 89.28% / 89.31% | 97.47% / 97.47% | — / — | — / — |
-| GR-04 | Routing | Splitter parameter editor | physical frame | Built | Built | 89.28% / 89.31% | 97.47% / 97.47% | — / — | — / — |
-| GR-05 | Routing | Mixer parameter editor | physical frame | Built | Built | 90.48% / 90.52% | 97.54% / 97.54% | — / — | — / — |
-| GR-06 | Grid | Empty-slot target | official frame | Built | Built | — / — | — / — | 94.03% / 94.03% | 98.46% / 98.46% |
-| DB-01 | Device browser | Category root | physical frame | Built | Built | 87.92% / 87.94% | 97.44% / 97.45% | — / — | — / — |
-| DB-02 | Device browser | Guitar/Bass model list | physical frame + official frame | Built | Built | 90.30% / 90.30% | 97.53% / 97.53% | 87.13% / 87.13% | 98.22% / 98.22% |
-| DB-03 | Device browser | First-use device-preset tooltip | physical frame | Built | Built | 89.10% / 89.10% | 97.69% / 97.69% | — / — | — / — |
-| DB-04 | Device browser | Search results | smoke only | Built | Built | — / — | — / — | — / — | — / — |
-| DB-05 | Device browser | Favorites / Recent models | smoke only | Built | Built | — / — | — / — | — / — | — / — |
-| DB-06 | Device browser | Plugin device folders | official frame | Built | Built | — / — | — / — | 96.44% / 96.44% | 99.21% / 99.21% |
-| DB-07 | Device browser | Plugin device list / license state | physical frame + official frame | Built | Built | 90.22% / 90.22% | 97.28% / 97.28% | 89.61% / 89.61% | 97.82% / 97.82% |
+| GL-24 | Performance | Tuner with Live Tuner enabled | physical frame | Built | Built | 91.02% / 91.02% | 97.82% / 97.82% | — / — | — / — |
+| IO-01 | I/O | I/O Settings overview | physical frame + official detail | Built | Built | 73.89% / 73.87% | 96.54% / 96.54% | — / — | — / — |
+| IO-02 | I/O | Analog input detail | official frame | Built | Built | — / — | — / — | 88.68% / 88.67% | 97.56% / 97.56% |
+| IO-03 | I/O | Analog output detail | physical frame | Built | Built | 72.26% / 72.25% | 96.00% / 96.00% | — / — | — / — |
+| IO-04 | I/O | Send/Return detail | physical frame | Built | Built | 80.88% / 80.87% | 96.70% / 96.70% | — / — | — / — |
+| IO-05 | I/O | USB I/O detail | official frame | Built | Built | — / — | — / — | 88.70% / 88.69% | 96.74% / 96.74% |
+| IO-06 | I/O | Headphones detail | physical frame | Built | Built | 74.15% / 74.14% | 96.70% / 96.70% | — / — | — / — |
+| IO-07 | I/O | Global EQ | official frame | Built | Built | — / — | — / — | 91.48% / 91.50% | 96.39% / 96.38% |
+| IO-08 | I/O | Global input gate and bypass | physical frame | Built | Built | 90.66% / 90.66% | 97.56% / 97.56% | — / — | — / — |
+| GR-01 | Routing | Input route selector | physical frame | Built | Built | 90.23% / 90.23% | 96.53% / 96.53% | — / — | — / — |
+| GR-02 | Routing | Output route selector | physical frame | Built | Built | 91.28% / 91.27% | 96.48% / 96.48% | — / — | — / — |
+| GR-03 | Routing | Splitter/Mixer placement handles | physical frame | Built | Built | 89.60% / 89.63% | 97.46% / 97.46% | — / — | — / — |
+| GR-04 | Routing | Splitter parameter editor | physical frame | Built | Built | 89.60% / 89.63% | 97.46% / 97.46% | — / — | — / — |
+| GR-05 | Routing | Mixer parameter editor | physical frame | Built | Built | 90.49% / 90.53% | 97.54% / 97.54% | — / — | — / — |
+| GR-06 | Grid | Empty-slot target | official frame | Built | Built | — / — | — / — | 94.00% / 94.00% | 98.47% / 98.47% |
+| DB-01 | Device browser | Category root | physical frame | Built | Built | 79.60% / 79.60% | 97.11% / 97.11% | — / — | — / — |
+| DB-02 | Device browser | Guitar/Bass model list | physical frame + official frame | Built | Built | 91.83% / 91.83% | 97.58% / 97.58% | 89.57% / 89.57% | 98.29% / 98.29% |
+| DB-03 | Device browser | First-use device-preset tooltip | physical frame | Built | Built | 68.03% / 68.03% | 95.57% / 95.57% | — / — | — / — |
+| DB-04 | Device browser | Search results | physical frame | Built | Built | 30.93% / 30.93% | 94.01% / 94.00% | — / — | — / — |
+| DB-05 | Device browser | Favorites / Recent models | physical frame | Built | Built | 66.74% / 66.74% | 97.61% / 97.61% | — / — | — / — |
+| DB-06 | Device browser | Plugin device folders | official frame | Built | Built | — / — | — / — | 96.43% / 96.44% | 99.21% / 99.21% |
+| DB-07 | Device browser | Plugin device list / license state | physical frame + official frame | Built | Built | 89.41% / 89.41% | 97.49% / 97.49% | 91.70% / 91.70% | 98.23% / 98.23% |
 | DB-08 | Device browser | Plugin refresh state | official detail | Built | Built | — / — | — / — | — / — | — / — |
-| DB-09 | Device browser | Locked plugin / license-not-found models | physical frame | Built | Built | 91.84% / 91.84% | 96.00% / 96.00% | — / — | — / — |
-| ED-01 | Editor | Standard rotary parameter editor | physical frame | Built | Built | 90.99% / 90.99% | 97.41% / 97.41% | — / — | — / — |
+| DB-09 | Device browser | Locked plugin / license-not-found models | physical frame | Built | Built | 91.78% / 91.78% | 96.20% / 96.20% | — / — | — / — |
+| ED-01 | Editor | Standard rotary parameter editor | physical frame | Built | Built | 91.04% / 91.04% | 97.42% / 97.42% | — / — | — / — |
 | ED-02 | Editor | Multi-page parameter editor | official detail | Built | Built | — / — | — / — | — / — | — / — |
-| ED-03 | Editor | Cab editor | physical frame | Built | Built | 93.17% / 93.17% | 97.73% / 97.73% | — / — | — / — |
-| ED-04 | Editor | Parametric EQ editor | physical frame | Built | Built | 90.94% / 90.94% | 98.22% / 98.22% | — / — | — / — |
-| ED-05 | Editor | Neural Capture block editor | smoke only | Built | Built | — / — | — / — | — / — | — / — |
-| ED-06 | Editor | Looper X editor | official frame | Built | Built | — / — | — / — | 90.72% / 90.73% | 97.16% / 97.16% |
-| ED-07 | Editor | Virtual Device preset browser | physical frame + official frame | Built | Built | 90.33% / 90.33% | 97.49% / 97.49% | 88.49% / 88.49% | 96.61% / 96.61% |
-| ED-08 | Editor | Save Virtual Device preset | smoke only | Built | Built | — / — | — / — | — / — | — / — |
+| ED-03 | Editor | Cab editor | physical frame | Built | Built | 93.17% / 93.16% | 97.74% / 97.74% | — / — | — / — |
+| ED-04 | Editor | Parametric EQ editor | physical frame | Built | Built | 90.98% / 90.98% | 98.23% / 98.23% | — / — | — / — |
+| ED-05 | Editor | Neural Capture block editor | physical frame | Built | Built | 19.75% / 19.74% | 93.52% / 93.52% | — / — | — / — |
+| ED-06 | Editor | Looper X editor | official frame | Built | Built | — / — | — / — | 90.79% / 90.79% | 97.15% / 97.15% |
+| ED-07 | Editor | Virtual Device preset browser | physical frame + official frame | Built | Built | 90.39% / 90.38% | 97.55% / 97.55% | 89.60% / 89.59% | 96.98% / 96.98% |
+| ED-08 | Editor | Save Virtual Device preset | physical frame | Built | Built | 95.89% / 95.89% | 98.71% / 98.71% | — / — | — / — |
 | ED-09 | Assignment | STOMP assignment | official detail | Built | Built | — / — | — / — | — / — | — / — |
 | ED-10 | Assignment | Scene assignment / scene-safe controls | official detail | Built | Built | — / — | — / — | — / — | — / — |
 | ED-11 | Assignment | Expression parameter assignment | official detail | Built | Built | — / — | — / — | — / — | — / — |
-| ED-12 | Assignment | Expression bypass assignment | official frame | Built | Built | — / — | — / — | 91.82% / 91.79% | 96.95% / 96.95% |
-| ED-13 | Editor | Block contextual actions | smoke only | Built | Built | — / — | — / — | — / — | — / — |
+| ED-12 | Assignment | Expression bypass assignment | official frame | Built | Built | — / — | — / — | 91.89% / 91.87% | 96.94% / 96.94% |
+| ED-13 | Editor | Block contextual actions | physical frame | Built | Built | 87.93% / 87.94% | 98.53% / 98.53% | — / — | — / — |
 | ED-14 | Grid | I/O clipping warning | smoke only | Built | Built | — / — | — / — | — / — | — / — |
 | ED-15 | Grid | DSP/side-chain limit warning | smoke only | Built | Built | — / — | — / — | — / — | — / — |
-| ED-16 | Virtual Device preset | Factory preset row actions | physical frame + official frame | Built | Built | 96.10% / 96.10% | 96.58% / 96.58% | 89.97% / 89.97% | 96.06% / 96.06% |
-| ED-17 | Virtual Device preset | Empty User preset tab | physical frame | Built | Built | 89.71% / 89.70% | 98.29% / 98.29% | — / — | — / — |
+| ED-16 | Virtual Device preset | Factory preset row actions | physical frame + official frame | Built | Built | 96.19% / 96.19% | 96.58% / 96.58% | 94.66% / 94.66% | 97.73% / 97.73% |
+| ED-17 | Virtual Device preset | Empty User preset tab | physical frame | Built | Built | 89.80% / 89.80% | 98.34% / 98.34% | — / — | — / — |
 | DR-01 | Directory | Category chooser | official detail | Built | Built | — / — | — / — | — / — | — / — |
-| DR-02 | Directory | Presets browser | physical frame + official frame | Built | Built | 92.37% / 92.38% | 97.73% / 97.73% | 96.73% / 96.73% | 98.00% / 98.00% |
-| DR-03 | Directory | Neural Captures browser | official frame | Built | Built | — / — | — / — | 92.53% / 92.54% | 97.61% / 97.61% |
-| DR-04 | Directory | Impulse Responses browser | official frame | Built | Built | — / — | — / — | 93.14% / 93.15% | 97.94% / 97.94% |
-| DR-05 | Directory | Plugin Presets browser | official frame | Built | Built | — / — | — / — | 96.42% / 96.42% | 98.53% / 98.53% |
-| DR-06 | Directory | Favorites and Recent | official frame | Built | Built | — / — | — / — | 94.58% / 94.58% | 97.86% / 97.86% |
+| DR-02 | Directory | Presets browser | physical frame + official frame | Built | Built | 92.47% / 92.48% | 97.73% / 97.73% | 96.81% / 96.81% | 98.04% / 98.04% |
+| DR-03 | Directory | Neural Captures browser | official frame | Built | Built | — / — | — / — | 92.66% / 92.67% | 97.65% / 97.65% |
+| DR-04 | Directory | Impulse Responses browser | official frame | Built | Built | — / — | — / — | 93.16% / 93.22% | 97.97% / 97.97% |
+| DR-05 | Directory | Plugin Presets browser | official frame | Built | Built | — / — | — / — | 96.49% / 96.49% | 98.53% / 98.53% |
+| DR-06 | Directory | Favorites and Recent | official frame | Built | Built | — / — | — / — | 94.67% / 94.67% | 97.88% / 97.88% |
 | DR-07 | Directory | Search entry | official detail | Built | Built | — / — | — / — | — / — | — / — |
-| DR-08 | Directory | Search results | official frame | Built | Built | — / — | — / — | 92.72% / 92.71% | 97.42% / 97.42% |
+| DR-08 | Directory | Search results | official frame | Built | Built | — / — | — / — | 92.69% / 92.68% | 97.42% / 97.42% |
 | DR-09 | Directory | Sort menu | official detail | Built | Built | — / — | — / — | — / — | — / — |
 | DR-10 | Directory | Filter menu | official detail | Built | Built | — / — | — / — | — / — | — / — |
 | DR-11 | Directory | Arrange / multiselect mode | official detail | Built | Built | — / — | — / — | — / — | — / — |
 | DR-12 | Directory | Multiselect copy destination | official detail | Built | Built | — / — | — / — | — / — | — / — |
-| DR-13 | Directory | Nested folder browser | official frame | Built | Built | — / — | — / — | 93.71% / 93.72% | 97.85% / 97.85% |
+| DR-13 | Directory | Nested folder browser | official frame | Built | Built | — / — | — / — | 93.82% / 93.83% | 97.89% / 97.89% |
 | DR-14 | Directory | New folder / setlist editor | official detail | Built | Built | — / — | — / — | — / — | — / — |
-| DR-15 | Directory | Item contextual menu | smoke only | Built | Built | — / — | — / — | — / — | — / — |
-| DR-16 | Directory | Cortex Cloud upload mode | official frame | Built | Built | — / — | — / — | 96.01% / 95.82% | 98.32% / 98.32% |
+| DR-15 | Directory | Item contextual menu | physical frame | Built | Built | 88.93% / 88.93% | 98.87% / 98.87% | — / — | — / — |
+| DR-16 | Directory | Cortex Cloud upload mode | official frame | Built | Built | — / — | — / — | 96.19% / 96.00% | 98.34% / 98.34% |
 | NC-01 | Capture V1 | Capture introduction | official detail | Built | Built | — / — | — / — | — / — | — / — |
 | NC-02 | Capture V1 | Capture type selection | smoke only | Built | Built | — / — | — / — | — / — | — / — |
 | NC-03 | Capture V1 | Connection and routing | official detail | Built | Built | — / — | — / — | — / — | — / — |
-| NC-04 | Capture V1 | Calibration settings | official frame | Built | Built | — / — | — / — | 92.82% / 92.82% | 95.45% / 95.45% |
-| NC-05 | Capture V1 | Capture process / progress | official frame | Built | Built | — / — | — / — | 90.55% / 90.59% | 97.19% / 97.19% |
-| NC-06 | Capture V1 | A/B result | official frame | Built | Built | — / — | — / — | 88.50% / 88.50% | 97.89% / 97.89% |
-| NC-07 | Capture V1 | Metadata and save | official frame | Built | Built | — / — | — / — | 92.93% / 92.94% | 98.31% / 98.31% |
-| ST-01 | Settings | Account settings | official frame | Built | Built | — / — | — / — | 93.09% / 93.09% | 98.43% / 98.43% |
-| ST-02 | Settings | System settings | official frame | Built | Built | — / — | — / — | 90.04% / 90.05% | 96.45% / 96.45% |
-| ST-03 | Settings | Device settings | official frame | Built | Built | — / — | — / — | 92.86% / 92.86% | 96.36% / 96.37% |
-| ST-04 | Settings | Support settings | smoke only | Built | Built | — / — | — / — | — / — | — / — |
-| ST-05 | Settings | Wi-Fi/network chooser | smoke only | Built | Built | — / — | — / — | — / — | — / — |
+| NC-04 | Capture V1 | Calibration settings | official frame | Built | Built | — / — | — / — | 92.89% / 92.89% | 95.46% / 95.46% |
+| NC-05 | Capture V1 | Capture process / progress | official frame | Built | Built | — / — | — / — | 91.03% / 91.03% | 97.22% / 97.22% |
+| NC-06 | Capture V1 | A/B result | official frame | Built | Built | — / — | — / — | 94.14% / 94.14% | 97.94% / 97.94% |
+| NC-07 | Capture V1 | Metadata and save | official frame | Built | Built | — / — | — / — | 92.96% / 92.96% | 98.31% / 98.31% |
+| ST-01 | Settings | Account settings | official frame | Built | Built | — / — | — / — | 93.11% / 93.11% | 98.44% / 98.44% |
+| ST-02 | Settings | System settings | official frame | Built | Built | — / — | — / — | 90.80% / 90.86% | 96.73% / 96.73% |
+| ST-03 | Settings | Device settings | official frame | Built | Built | — / — | — / — | 92.92% / 92.92% | 96.37% / 96.38% |
+| ST-04 | Settings | Support settings | physical frame | Built | Built | 97.08% / 97.08% | 95.96% / 95.96% | — / — | — / — |
+| ST-05 | Settings | Wi-Fi/network chooser | physical frame | Built | Built | 93.92% / 93.92% | 97.69% / 97.69% | — / — | — / — |
 | ST-06 | Settings | Update availability/progress | smoke only | Built | Built | — / — | — / — | — / — | — / — |
-| ST-07 | Settings | Storage and factory reset | smoke only | Built | Built | — / — | — / — | — / — | — / — |
-| ST-08 | Settings | MIDI settings | official frame | Built | Built | — / — | — / — | 96.09% / 96.09% | 97.44% / 97.44% |
-| ST-09 | Settings | Device information | smoke only | Built | Built | — / — | — / — | — / — | — / — |
-| ST-10 | Settings | Diagnostics/report flow | smoke only | Built | Built | — / — | — / — | — / — | — / — |
+| ST-07 | Settings | Storage and factory reset | physical frame | Built | Built | 93.31% / 93.31% | 97.39% / 97.39% | — / — | — / — |
+| ST-08 | Settings | MIDI settings | official frame | Built | Built | — / — | — / — | 96.16% / 96.16% | 97.44% / 97.44% |
+| ST-09 | Settings | Device information | physical frame | Built | Built | 93.21% / 93.21% | 97.20% / 97.20% | — / — | — / — |
+| ST-10 | Settings | Diagnostics/report flow | physical frame | Built | Built | 97.47% / 97.47% | 98.52% / 98.52% | — / — | — / — |
 | RC-01 | Recovery | Recovery Mode entry | official detail | Built | Built | — / — | — / — | — / — | — / — |
 | RC-02 | Recovery | Recovery options | smoke only | Built | Built | — / — | — / — | — / — | — / — |
-| OV-01 | System overlay | On-screen keyboard / text entry | smoke only | Built | Built | — / — | — / — | — / — | — / — |
-| OV-02 | System overlay | Generic confirmation | smoke only | Built | Built | — / — | — / — | — / — | — / — |
-| OV-03 | System overlay | Error / unavailable state | smoke only | Built | Built | — / — | — / — | — / — | — / — |
-| OV-04 | System overlay | Busy / progress state | smoke only | Built | Built | — / — | — / — | — / — | — / — |
+| OV-01 | System overlay | On-screen keyboard / text entry | physical frame | Built | Built | 95.89% / 95.89% | 98.71% / 98.71% | — / — | — / — |
+| OV-02 | System overlay | Generic confirmation | physical frame | Built | Built | 90.03% / 90.03% | 98.52% / 98.52% | — / — | — / — |
+| OV-03 | System overlay | Error / unavailable state | physical frame | Built | Built | 91.78% / 91.78% | 96.20% / 96.20% | — / — | — / — |
+| OV-04 | System overlay | Busy / progress state | physical frame | Built | Built | 84.57% / 84.58% | 97.26% / 97.26% | — / — | — / — |
 
 ## Authoritative evidence gaps
 
@@ -154,30 +154,11 @@ These states are implemented and captured on both hosts, but only against determ
 
 | ID | Family | Screen/state | Renderer | Capture tier | Readiness | Dual-host smoke view |
 | --- | --- | --- | --- | --- | --- | --- |
-| GL-14 | Preset | Delete confirmation | `fixture-delete` | safe-navigation | ready | `fixture-delete` |
-| IO-03 | I/O | Analog output detail | `io-output` | safe-navigation | ready | `io-output` |
-| IO-04 | I/O | Send/Return detail | `io-send-return` | safe-navigation | ready | `io-send-return` |
-| IO-06 | I/O | Headphones detail | `io-headphones` | safe-navigation | ready | `io-headphones` |
-| DB-04 | Device browser | Search results | `device-search` | safe-navigation | ready | `device-search` |
-| DB-05 | Device browser | Favorites / Recent models | `device-favorites` | safe-navigation | ready | `device-favorites` |
-| ED-05 | Editor | Neural Capture block editor | `fixture-editor-capture` | safe-navigation | requires-content | `fixture-editor-capture` |
-| ED-08 | Editor | Save Virtual Device preset | `device-preset-save` | safe-navigation | ready | `device-preset-save` |
-| ED-13 | Editor | Block contextual actions | `block-context` | safe-navigation | ready | `block-context` |
 | ED-14 | Grid | I/O clipping warning | `fixture-warning-clip` | controlled-transient | requires-trigger | `fixture-warning-clip` |
 | ED-15 | Grid | DSP/side-chain limit warning | `fixture-warning-dsp` | controlled-transient | requires-disposable-preset | `fixture-warning-dsp` |
-| DR-15 | Directory | Item contextual menu | `directory-item-context` | safe-navigation | ready | `directory-item-context` |
 | NC-02 | Capture V1 | Capture type selection | `capture-type` | safe-navigation | ready | `capture-type` |
-| ST-04 | Settings | Support settings | `settings-support` | safe-navigation | ready | `settings-support` |
-| ST-05 | Settings | Wi-Fi/network chooser | `settings-wifi` | safe-navigation | ready | `settings-wifi` |
 | ST-06 | Settings | Update availability/progress | `settings-update` | external-evidence | do-not-trigger | `settings-update` |
-| ST-07 | Settings | Storage and factory reset | `settings-storage` | safe-navigation | ready | `settings-storage` |
-| ST-09 | Settings | Device information | `settings-info` | safe-navigation | ready | `settings-info` |
-| ST-10 | Settings | Diagnostics/report flow | `settings-diagnostics` | safe-navigation | ready | `settings-diagnostics` |
 | RC-02 | Recovery | Recovery options | `recovery-options` | disruptive | requires-scheduled-session | `recovery-options` |
-| OV-01 | System overlay | On-screen keyboard / text entry | `overlay-keyboard` | safe-navigation | ready | `overlay-keyboard` |
-| OV-02 | System overlay | Generic confirmation | `overlay-confirmation` | safe-navigation | ready | `overlay-confirmation` |
-| OV-03 | System overlay | Error / unavailable state | `overlay-error` | controlled-transient | recipe-discovery | `overlay-error` |
-| OV-04 | System overlay | Busy / progress state | `overlay-busy` | controlled-transient | ready | `overlay-busy` |
 
 ## Score source files
 

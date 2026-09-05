@@ -58,6 +58,18 @@ def png_dimensions(payload: bytes) -> tuple[int, int]:
 def classify_tree(tree: str) -> str:
     # Overlays and editors retain Grid in their backing view hierarchy, so the
     # most-specific screens must be checked before the Grid fallback.
+    if "Refreshing the list can take 10-20 seconds." in tree or "zenUI::RotatingBusyIndicator" in tree:
+        return "busy-progress"
+    if "zenUI::SearchResultsDialog" in tree and "zenUI::MessageDialog" in tree:
+        return "error-overlay"
+    if "zenUI::SearchResultsDialog" in tree:
+        return "device-search-results"
+    if "zenUI::SearchDialog" in tree:
+        return "device-search-entry"
+    if "zenUI::CheatSheetDialog" in tree:
+        return "io-settings"
+    if "zenUI::NCModelEditor" in tree:
+        return "neural-capture-editor"
     if "zenUI::Tuner" in tree:
         return "tuner"
     if "zenUI::MetronomeEditor" in tree:
@@ -76,6 +88,16 @@ def classify_tree(tree: str) -> str:
         return "gig-view"
     if "zenUI::Directory" in tree:
         return "directory"
+    if "Device information" in tree:
+        return "settings-info"
+    if "DSP Diagnostics" in tree:
+        return "settings-diagnostics"
+    if "Internet Connected" in tree or "RESET WI-FI SETTINGS" in tree:
+        return "settings-wifi"
+    if tree.count("Device Storage") >= 2:
+        return "settings-storage"
+    if "About and Contact" in tree and "zenUI::ContactUsMenu" in tree:
+        return "settings-support"
     if "zenUI::SplitControlPointGrid" in tree and "zenUI::ContainerWithSplitter" in tree and "zenUI::ParameterControl" in tree:
         # CorOS exposes the same routing hierarchy for both editors, but the
         # physical Mixer has six parameter controls while the Splitter has seven.

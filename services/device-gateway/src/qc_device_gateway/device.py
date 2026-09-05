@@ -177,7 +177,7 @@ def _factory_model_metadata(model_id: int) -> tuple[str, str] | None:
     return _factory_model_cache.get(int(model_id))
 
 
-def _send_qc_midi_cc(controller: int, value: int = 127) -> str:
+def send_qc_midi_cc(controller: int, value: int = 127) -> str:
     """Send one Windows MIDI CC to the connected Quad Cortex endpoint."""
     import ctypes
     from ctypes import wintypes
@@ -1349,6 +1349,7 @@ class PyQuadCortexDevice:
         position: int,
         expected_preset_name: str,
         expected_position: int | None = None,
+        expected_setlist_key: str = "",
     ) -> dict[str, Any]:
         pyquadcortex = _protocol_api()
 
@@ -1359,7 +1360,7 @@ class PyQuadCortexDevice:
         self._assert_expected_preset(expected_preset_name)
         if expected_position is not None and current_position != expected_position:
             raise RuntimeError("The active preset slot changed on the Quad Cortex. Refresh and retry.")
-        if current_key != setlist_key:
+        if expected_setlist_key and current_key.rstrip("/") != expected_setlist_key.rstrip("/"):
             raise RuntimeError("The active setlist changed on the Quad Cortex. Refresh and retry.")
         if qc.preset_dirty():
             raise RuntimeError("The current preset has unsaved changes. Save or revert them before recalling another preset.")
@@ -1398,11 +1399,12 @@ class PyQuadCortexDevice:
         position: int,
         expected_preset_name: str,
         expected_position: int,
+        expected_setlist_key: str,
     ) -> dict[str, Any]:
         if not isinstance(setlist_key, str) or not setlist_key:
             raise ValueError("Setlist key is required.")
         return self._recall_position(
-            setlist_key, position, expected_preset_name, expected_position
+            setlist_key, position, expected_preset_name, expected_position, expected_setlist_key
         )
 
     def reload_preset(
@@ -2990,7 +2992,7 @@ class PyQuadCortexDevice:
             raise RuntimeError("The current preset has unsaved changes. Save or revert them before pressing a preset footswitch.")
 
         before = self.snapshot()
-        endpoint = _send_qc_midi_cc(FOOTSWITCH_BASE_CONTROLLER + index, MIDI_PRESSED_VALUE)
+        endpoint = send_qc_midi_cc(FOOTSWITCH_BASE_CONTROLLER + index, MIDI_PRESSED_VALUE)
         time.sleep(0.35)
         try:
             self._remember_position(self._read_position_state(timeout=5.0))
@@ -3033,7 +3035,7 @@ class PyQuadCortexDevice:
                 f"Footswitch mode changed on the Quad Cortex: expected {expected_mode}, "
                 f"but it is {actual_mode}. Refresh and retry."
             )
-        endpoint = _send_qc_midi_cc(TAP_TEMPO_CONTROLLER, MIDI_PRESSED_VALUE)
+        endpoint = send_qc_midi_cc(TAP_TEMPO_CONTROLLER, MIDI_PRESSED_VALUE)
         return {"detail": f"Tap Tempo sent immediately through {endpoint}"}
 
     def select_mode_slot(self, slot: int, expected_preset_name: str) -> dict[str, Any]:
@@ -3041,7 +3043,7 @@ class PyQuadCortexDevice:
         if isinstance(slot, bool) or not isinstance(slot, int) or not 0 <= slot <= 2:
             raise ValueError("Mode slot must be 0, 1, or 2.")
         self._assert_expected_preset(expected_preset_name)
-        endpoint = _send_qc_midi_cc(MODE_SLOT_CONTROLLER, slot)
+        endpoint = send_qc_midi_cc(MODE_SLOT_CONTROLLER, slot)
         time.sleep(0.35)
         snapshot = self.snapshot()
         return {

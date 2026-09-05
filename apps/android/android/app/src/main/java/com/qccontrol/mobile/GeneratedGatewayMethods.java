@@ -4,7 +4,7 @@ package com.qccontrol.mobile;
 final class GeneratedGatewayMethods {
     private GeneratedGatewayMethods() {}
 
-    static final int API_VERSION = 17;
+    static final int API_VERSION = 18;
     static final String[] CAPABILITIES = {
         "modelRepoParameterMetadata",
         "nativeStateEvents",
@@ -462,7 +462,7 @@ final class GeneratedGatewayMethods {
             case "device.listPresets": allowed = new String[] { "refresh", "setlistKey" }; required = new String[] { "setlistKey" }; break;
             case "device.listPresetFolders": allowed = new String[] { "refresh" }; required = new String[] {  }; break;
             case "device.navigateBank": allowed = new String[] { "direction", "expectedPresetName", "expectedPosition" }; required = new String[] { "direction", "expectedPosition" }; break;
-            case "device.recallPreset": allowed = new String[] { "setlistKey", "position", "expectedPresetName", "expectedPosition" }; required = new String[] { "setlistKey", "position", "expectedPosition" }; break;
+            case "device.recallPreset": allowed = new String[] { "setlistKey", "position", "expectedPresetName", "expectedPosition", "expectedSetlistKey" }; required = new String[] { "setlistKey", "position", "expectedPosition", "expectedSetlistKey" }; break;
             case "device.reloadPreset": allowed = new String[] { "expectedPresetName", "expectedPosition" }; required = new String[] { "expectedPosition" }; break;
             case "device.blockDetails": allowed = new String[] { "row", "column", "expectedPresetName" }; required = new String[] { "row", "column" }; break;
             case "device.laneControlDetails": allowed = new String[] { "row", "control", "expectedPresetName" }; required = new String[] { "row", "control" }; break;
@@ -530,7 +530,7 @@ final class GeneratedGatewayMethods {
             case "device.setGlobalEqBand": kinds = new String[][] { { "band", "integer" }, { "gain", "nullable-number" }, { "frequency", "nullable-number" }, { "q", "nullable-number" }, { "filterType", "nullable-integer" }, { "enabled", "nullable-boolean" } }; break;
             case "device.setGlobalEqOutput": kinds = new String[][] { { "level", "nullable-number" }, { "out12", "nullable-boolean" }, { "out34", "nullable-boolean" } }; break;
             case "device.modeCycle": kinds = new String[][] {  }; break;
-            case "device.setModeCycle": kinds = new String[][] { { "slots", "integer" } }; break;
+            case "device.setModeCycle": kinds = new String[][] { { "slots", "array" } }; break;
             case "device.globalTempoSettings": kinds = new String[][] {  }; break;
             case "device.setTempoMetronome": kinds = new String[][] { { "ledEnabled", "nullable-boolean" }, { "volumeDb", "nullable-number" }, { "running", "nullable-boolean" }, { "pan", "nullable-number" }, { "timeSignature", "nullable-string" }, { "subdivision", "nullable-string" }, { "sound", "nullable-string" }, { "routing", "nullable-string" }, { "beats", "nullable-array" } }; break;
             case "device.setTempoMode": kinds = new String[][] { { "mode", "string" } }; break;
@@ -579,7 +579,7 @@ final class GeneratedGatewayMethods {
             case "device.listPresets": kinds = new String[][] { { "refresh", "boolean" }, { "setlistKey", "nullable-string" } }; break;
             case "device.listPresetFolders": kinds = new String[][] { { "refresh", "boolean" } }; break;
             case "device.navigateBank": kinds = new String[][] { { "direction", "integer" }, { "expectedPresetName", "string" }, { "expectedPosition", "integer" } }; break;
-            case "device.recallPreset": kinds = new String[][] { { "setlistKey", "string" }, { "position", "integer" }, { "expectedPresetName", "string" }, { "expectedPosition", "integer" } }; break;
+            case "device.recallPreset": kinds = new String[][] { { "setlistKey", "string" }, { "position", "integer" }, { "expectedPresetName", "string" }, { "expectedPosition", "integer" }, { "expectedSetlistKey", "string" } }; break;
             case "device.reloadPreset": kinds = new String[][] { { "expectedPresetName", "string" }, { "expectedPosition", "integer" } }; break;
             case "device.blockDetails": kinds = new String[][] { { "row", "integer" }, { "column", "integer" }, { "expectedPresetName", "string" } }; break;
             case "device.laneControlDetails": kinds = new String[][] { { "row", "integer" }, { "control", "string" }, { "expectedPresetName", "string" } }; break;

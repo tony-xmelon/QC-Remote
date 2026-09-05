@@ -1,0 +1,105 @@
+zenUI::RootGraphicsItem
+  zenUI::SettingsDialog
+    zenUI::GraphicsItem
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/24/done.png'
+          zenUI::PressAnimationView
+      zenUI::ComboBoxWithSelector
+        text : 'System'
+        image: 'icons/custom/down_triangle.png'
+        zenUI::GraphicsItem
+          image: 'icons/system/settings/system.png'
+        zenUI::PressAnimationView
+    zenUI::SettingsMenu
+      zenUI::GraphicsItem
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Connection'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/system/settings/system/connection.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Updates'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/system/settings/system/updates.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Brightness'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/system/settings/system/brightness.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Power Functions'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/system/settings/system/power.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Master Volume Knob'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/system/settings/system/volume.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Device Storage'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/system/settings/system/storage.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Factory Reset'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/system/settings/system/factory.png'
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+    zenUI::GraphicsItem
+      zenUI::WifiSettings
+        zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            text : 'Internet Connected'
+          zenUI::Button
+            text : 'Internet Check'
+            zenUI::PressAnimationView
+          zenUI::Button
+            text : 'Domain Settings'
+            zenUI::PressAnimationView
+          zenUI::WifiTable
+            zenUI::GraphicsItem
+              zenUI::WifiTableCell
+                zenUI::GraphicsItem
+                  text : '[redacted]'
+                zenUI::GraphicsItem
+                zenUI::GraphicsItem
+                  image: 'icons/system/settings/WiFi/2 bars.png'
+                zenUI::Button
+                  image: 'icons/24/delete.png'
+                  zenUI::PressAnimationView
+                zenUI::GraphicsItem
+                  image: 'icons/system/settings/WiFi/lock.png'
+                zenUI::GraphicsItem
+                  text : '[redacted]'
+                zenUI::GraphicsItem
+                  text : 'Weak connection'
+                zenUI::GraphicsItem
+                  text : '[redacted]'
+              zenUI::WifiTableCell
+                zenUI::GraphicsItem
+                  text : '[redacted]'
+                zenUI::GraphicsItem
+                zenUI::GraphicsItem
+                  image: 'icons/system/settings/WiFi/4 bars.png'
+                zenUI::GraphicsItem
+                  image: 'icons/system/settings/WiFi/lock.png'
+                zenUI::GraphicsItem
+                  text : '[redacted]'
+                zenUI::GraphicsItem
+          zenUI::Button
+            text : 'RESET WI-FI SETTINGS'
+            zenUI::PressAnimationView

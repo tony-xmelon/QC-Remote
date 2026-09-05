@@ -21,7 +21,7 @@ use thiserror::Error;
 pub enum UsbError {
     #[error("Quad Cortex is not present or its HID interface is owned by another application")]
     NotAvailable,
-    #[error("Quad Cortex did not answer the native handshake within the configured timeout")]
+    #[error("Quad Cortex HID opened, but no ResetCommsBuffers reply arrived within the native handshake timeout")]
     HandshakeTimeout,
     #[error("USB read failed: {0}")]
     Read(String),
@@ -55,9 +55,10 @@ pub struct BackupTransfer {
     pub side_messages: Vec<IncomingMessage>,
 }
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct UsbTelemetry {
     pub messages_sent: u64,
+    pub messages_sent_by_type: HashMap<u16, u64>,
     pub expected_write_stalls: u64,
     pub last_hid_write_duration_ms: u64,
     pub max_hid_write_duration_ms: u64,
@@ -72,6 +73,12 @@ impl UsbTelemetry {
         if !completed {
             self.expected_write_stalls = self.expected_write_stalls.saturating_add(1);
         }
+    }
+
+    fn record_message(&mut self, message_type: u16) {
+        self.messages_sent = self.messages_sent.saturating_add(1);
+        let count = self.messages_sent_by_type.entry(message_type).or_default();
+        *count = count.saturating_add(1);
     }
 }
 
@@ -245,6 +252,7 @@ impl QcUsb {
     pub fn connect(
         session: &mut SessionMachine,
         session_clock: &Instant,
+        mut report_handshake_attempt: impl FnMut(u32, UsbTelemetry),
     ) -> Result<ConnectedQc, UsbError> {
         let mut usb = Self::open()?;
         session.transport_opened(session_clock.elapsed().as_millis() as u64);
@@ -261,9 +269,10 @@ impl QcUsb {
             usb.flight
                 .event(format!("handshake-attempt-{}", attempt.number));
             usb.send_command(commands::reset_comms(attempt.number as u64, session_id));
+            report_handshake_attempt(attempt.number, usb.telemetry());
             while session.awaiting_handshake_reply(session_clock.elapsed().as_millis() as u64) {
                 if let Some(message) = usb.read_message(200)? {
-                    if message.message_type == profile::MESSAGE_TYPE_DEVICE_VERSION {
+                    if message.message_type == profile::MESSAGE_TYPE_RESET_COMMS_BUFFERS {
                         usb.flight.event("handshake-reply");
                         let connected = usb.finish_hello(attempt.number as u64 + 1)?;
                         session.handshake_completed(
@@ -384,7 +393,7 @@ impl QcUsb {
                 ));
             }
         }
-        self.telemetry.messages_sent = self.telemetry.messages_sent.saturating_add(1);
+        self.telemetry.record_message(message_type);
     }
 
     pub fn send_command(&mut self, message: OutboundMessage) {
@@ -392,7 +401,7 @@ impl QcUsb {
     }
 
     pub fn telemetry(&self) -> UsbTelemetry {
-        self.telemetry
+        self.telemetry.clone()
     }
 
     pub fn read_message(&mut self, timeout_ms: i32) -> Result<Option<IncomingMessage>, UsbError> {
@@ -584,9 +593,15 @@ mod tests {
         telemetry.record_write(3, true);
         telemetry.record_write(7, false);
         telemetry.record_write(2, true);
+        telemetry.record_message(10);
+        telemetry.record_message(10);
+        telemetry.record_message(52);
         assert_eq!(telemetry.expected_write_stalls, 1);
         assert_eq!(telemetry.last_hid_write_duration_ms, 2);
         assert_eq!(telemetry.max_hid_write_duration_ms, 7);
         assert!(telemetry.last_hid_write_completed);
+        assert_eq!(telemetry.messages_sent, 3);
+        assert_eq!(telemetry.messages_sent_by_type.get(&10), Some(&2));
+        assert_eq!(telemetry.messages_sent_by_type.get(&52), Some(&1));
     }
 }

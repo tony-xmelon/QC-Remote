@@ -44,6 +44,14 @@
 .gig-official.is-stomp .gig-official-tiles article > b { width: 8.75cqw; height: 8.75cqw; display: grid; place-items: center; border: .25cqw solid #2df36a; border-radius: 1.5cqw; background: #090a09; font-size: 4cqw; }
 .gig-official .gig-official-tiles article > b.has-device-glyph { border: 0; border-radius: 0; background: transparent; }
 .gig-official .gig-official-tiles article > b.has-device-glyph > svg { display: block; width: 100%; height: 100%; }
+.gig-official.is-stomp .gig-official-tiles article:nth-child(1) > b::after,
+.gig-official.is-stomp .gig-official-tiles article:nth-child(2) > b::after,
+.gig-official.is-stomp .gig-official-tiles article:nth-child(3) > b::after,
+.gig-official.is-stomp .gig-official-tiles article:nth-child(4) > b::after,
+.gig-official.is-stomp .gig-official-tiles article:nth-child(6) > b::after,
+.gig-official.is-stomp .gig-official-tiles article:nth-child(7) > b::after,
+.gig-official.is-hybrid .gig-official-tiles article:nth-child(6) > b::after,
+.gig-official.is-hybrid .gig-official-tiles article:nth-child(7) > b::after { content: ""; position: absolute; left: -.5cqw; right: -.5cqw; top: calc(50% - .25cqw); height: 1px; background: #c0c0c0; }
 .gig-official.is-stomp .gig-official-tiles article > strong { position: absolute; left: 2cqw; bottom: .75cqw; margin: 0; font-size: 4cqw; }
 .gig-official.is-stomp > header button:first-of-type { transform: translateX(-1.25cqw); }
 .gig-official.is-stomp > header button:nth-of-type(2) { width: 5.25cqw; }

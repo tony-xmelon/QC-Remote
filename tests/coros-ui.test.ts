@@ -286,7 +286,7 @@ test("master volume has an independent two-way live synchronization path", () =>
   assert.doesNotMatch(appSource, /const synchronizeVolume/, "master volume must not be polled continuously");
   assert.match(appSource, /const current = await tauriTransport\.currentSnapshot\(\)[\s\S]*?tauriTransport\.currentMasterVolume\(\)[\s\S]*?masterVolume: synchronizedVolume/, "startup must merge the authoritative Master Volume report before enabling the knob");
   assert.match(appSource, /useContinuousControlWorkflow\(\{/);
-  assert.match(controlsSource, /gateway\.setMasterVolume\(target, expected\)/, "app knob changes must still write to the hardware");
+  assert.match(controlsSource, /gateway\.setMasterVolume\(target, controller\.snapshotRef\.current\.masterVolume\)/, "app knob changes must write against the latest authoritative hardware value");
   assert.match(appSource, /masterVolume: recovered \? current\.masterVolume : snapshotRef\.current\.masterVolume/, "ordinary whole-preset synchronization must preserve the latest faster volume sample while recovery accepts the newly reattached device state");
   assert.match(transportSource, /createGatewayClientTransport<GatewayTransport>/, "native gateway calls must use the generated contract adapter");
   assert.match(gatewayBindings, /"currentMasterVolume": \{ rpc: "device\.masterVolume", tauri: "current_master_volume"/);
@@ -336,7 +336,8 @@ test("connection status owns one non-modal details and recovery panel", () => {
   assert.doesNotMatch(appSource, /className="menubar-more"/);
   assert.doesNotMatch(appSource, /className="menubar-reconnect"/);
   assert.doesNotMatch(appSource, /dialog === "connection"/);
-  assert.match(appSource, /connection\.phase === "ready" \? "QC READY"/);
+  assert.match(appSource, /deviceReady \? "QC READY"/);
+  assert.match(appSource, /deviceReady=\{deviceReady\}/);
 });
 
 test("device and chat own fixed-size status buttons and mutually exclusive detail panes", () => {
@@ -381,9 +382,29 @@ test("USB detach keeps a recovery poll and automatically restores live mode afte
   assert.match(liveSync, /if \(!recovering && nativeStateAvailable\.current\) return/, "healthy native state must disable full-snapshot polling entirely");
   assert.match(liveSync, /schedule\(liveSyncFailures\.current >= 2 \? 500 : 250\)/, "recovery must continue quickly while the event stream is unavailable");
   assert.doesNotMatch(liveSync, /30000/, "healthy sessions must not retain a periodic snapshot poll");
-  assert.match(liveSync, /phase: "ready", demo: false/, "first successful snapshot must restore the live UI");
+  assert.match(liveSync, /phase: "ready"(?: as const)?, demo: false/, "first successful snapshot must restore the live UI");
   assert.match(liveSync, /event: "live-sync-recovered"/);
   assert.doesNotMatch(liveSync, /Live synchronization stopped/);
+});
+
+test("all Windows ready indicators require the live synchronized broker status", () => {
+  const appSource = readFileSync(new URL("../apps/windows/src/App.tsx", import.meta.url), "utf8");
+  const menuSource = readFileSync(new URL("../apps/windows/src/menu-bar.tsx", import.meta.url), "utf8");
+  const readiness = readFileSync(new URL("../apps/windows/src/qc-readiness.ts", import.meta.url), "utf8");
+  const heartbeat = appSource.slice(appSource.indexOf("const monitorDeviceHealth"), appSource.indexOf("const pairPublicRelay"));
+  assert.match(readiness, /connection\.phase === "ready"[\s\S]*Boolean\(connection\.lastSync\)[\s\S]*runtimeHasSynchronizedQc\(runtime\)/);
+  assert.match(readiness, /usb\.phase === "ready"[\s\S]*usb\.connected[\s\S]*usb\.synchronized/, "Ready must fail closed unless the live USB worker itself is ready");
+  assert.match(heartbeat, /tauriTransport\.runtimeStatus\(\)/, "the local broker must remain under a liveness heartbeat");
+  assert.doesNotMatch(heartbeat, /currentSnapshot\(\)/, "the heartbeat must not poll the QC preset");
+  assert.match(heartbeat, /!runtimeHasSynchronizedQc\(status\)/);
+  assert.match(appSource, /setTimeout\(\(\) => void monitorDeviceHealth\(\), 250\)/, "local readiness should be revoked promptly without polling the QC");
+  assert.match(appSource, /deviceReady \? "LIVE"[\s\S]*"OFFLINE"/);
+  assert.match(menuSource, /deviceReady \? "QC READY"/);
+  assert.match(menuSource, /deviceReady \? "ready" : connection\.phase === "ready" \? "syncing"/);
+  assert.match(menuSource, /qcDeviceStatusDetail\(connection, deviceReady, syncProgress\)/);
+  assert.match(menuSource, /<p>\{deviceStatusDetail\}<\/p>/, "the open panel must not repeat stale transport text");
+  assert.match(appSource, /qcVisibleStatusNotice\(notice, deviceReady, presetLabel\)/, "the footer must use the same authoritative ready predicate");
+  assert.match(readiness, /Live and synchronized/);
 });
 
 test("UP and DOWN navigate adjacent presets instead of banks", () => {
@@ -404,7 +425,7 @@ test("UP and DOWN navigate adjacent presets instead of banks", () => {
   assert.match(controllerSource, /presetMoveQueueRef\.current\.push\(\{ transport, delta, expected, token, resolve, reject \}\)/, "consecutive UP\/DOWN presses must preview immediately and queue their device writes");
   assert.match(controllerSource, /presetMoveQueueRef\.current\.shift\(\)/, "queued navigation must advance after each verified device write");
   assert.match(navigationFlow, /controller\.runPresetMove\(transport, direction\)/, "adjacent navigation must use the shared guarded transport path");
-  assert.match(sharedTransport, /gateway\.recallPreset\(state\.setlistKey, position, "", state\.presetPosition\)/, "both hosts must use the same position-guarded recall");
+  assert.match(sharedTransport, /gateway\.recallPreset\(state\.setlistKey, position, "", state\.presetPosition, state\.setlistKey\)/, "both hosts must use the same setlist-and-position-guarded recall");
   assert.match(controllerSource, /while \(presetMoveQueueRef\.current\.length\)/, "queued navigation must be serialized against fresh device state");
   assert.doesNotMatch(navigationFlow, /listPresets/, "first navigation must not wait for the 256-slot directory download");
 });
@@ -668,6 +689,7 @@ test("Antigravity warms at startup and model writes execute directly", () => {
   assert.match(appSource, /modelChat\.warm\(\)/);
   assert.match(transportSource, /warm_chat_provider/);
   assert.match(appSource, /MODEL WARMING/);
+  assert.match(appSource, /modelChat\.warm\(\)[\s\S]*setChatStatus\("online"\)[\s\S]*setChatStatus\("error"\)/, "MODEL READY must require a successful live worker warm-up");
   assert.match(appSource, /await modelWarmupPromise\.current/);
   assert.match(chatSource, /antigravity_worker: AsyncMutex<Option<AntigravityWorker>>/);
   assert.match(chatSource, /pub async fn warm\(bridge: &ChatBridge\)/);

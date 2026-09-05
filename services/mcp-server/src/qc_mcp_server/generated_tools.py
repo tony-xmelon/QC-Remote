@@ -337,8 +337,9 @@ class GeneratedQcTools:
         position: int,
         expected_preset_name: str,
         expected_position: int,
+        expected_setlist_key: str,
     ) -> Any:
-        """Immediately recall a preset by setlist key and position."""
+        """Immediately recall a preset by setlist key and position, guarded by the currently active setlist, preset name, and position."""
         return self._invoke_generated_action("recall_preset", locals())
 
     def reload_preset(

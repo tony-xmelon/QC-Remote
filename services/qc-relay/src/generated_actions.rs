@@ -418,9 +418,9 @@ pub static ACTIONS: &[ActionPolicy] = &[
         rpc: "device.recallPreset",
         class: ActionClass::LiveWrite,
         required_argument_confirmations: NONE,
-        allowed_arguments: &["setlist_key", "position", "expected_preset_name", "expected_position"],
-        required_arguments: &["setlist_key", "position", "expected_preset_name", "expected_position"],
-        gateway_arguments: &[("setlist_key", "setlistKey"), ("position", "position"), ("expected_preset_name", "expectedPresetName"), ("expected_position", "expectedPosition")],
+        allowed_arguments: &["setlist_key", "position", "expected_preset_name", "expected_position", "expected_setlist_key"],
+        required_arguments: &["setlist_key", "position", "expected_preset_name", "expected_position", "expected_setlist_key"],
+        gateway_arguments: &[("setlist_key", "setlistKey"), ("position", "position"), ("expected_preset_name", "expectedPresetName"), ("expected_position", "expectedPosition"), ("expected_setlist_key", "expectedSetlistKey")],
         gateway_true_arguments: &[],
     },
     ActionPolicy {

@@ -18,6 +18,7 @@ import {
   resultSnapshot,
   summarizePerformanceSamples,
   summarizePhysicalResults,
+  usbMessageCountDelta,
   validateConfig,
   validateCoverage,
   validatePerformanceEvidence,
@@ -288,7 +289,8 @@ async function main() {
       assert(target && (target.occupied === false || !target.name), "Configured scratch destination is not empty; preparation refuses to overwrite it.");
       await transport.call("recall_preset", {
         setlist_key: config.sourcePreset.setlistKey, position: config.sourcePreset.position,
-        expected_preset_name: initial.presetName, expected_position: initial.presetPosition
+        expected_preset_name: initial.presetName, expected_position: initial.presetPosition,
+        expected_setlist_key: initial.setlistKey
       });
       const source = await transport.call("get_current_preset", {});
       assert(source.presetName === config.sourcePreset.expectedName, "Recalled source preset name does not match expectedName.");
@@ -342,7 +344,8 @@ async function main() {
           if (current.setlistKey !== initial.setlistKey || current.presetPosition !== initial.presetPosition) {
             await transport.call("recall_preset", {
               setlist_key: initial.setlistKey, position: initial.presetPosition,
-              expected_preset_name: current.presetName, expected_position: current.presetPosition
+              expected_preset_name: current.presetName, expected_position: current.presetPosition,
+              expected_setlist_key: current.setlistKey
             });
           }
         } catch {}
@@ -445,7 +448,10 @@ async function main() {
   let originalGlobalTempoSettings;
   let originalFavorites;
   let originalPinnedModels;
+  let presetFolders;
   let baselineDeviceScreen;
+  let pendingLaneRestore;
+  const pendingTemporarySetlists = new Set();
   let transportStarted = false;
   let deviceAuthorized = false;
   let firstScreenTapSent = false;
@@ -500,10 +506,23 @@ async function main() {
     const started = Date.now();
     process.stdout.write(`RUN ${name} ... `);
     try {
+      const wireBefore = await transport.status().catch(() => undefined);
       const value = await transport.call(name, args);
       if (verify) await verify(value);
+      const wireAfter = await transport.status().catch(() => undefined);
+      const usbMessages = usbMessageCountDelta(wireBefore, wireAfter);
       performed.add(name);
-      report.results.push({ name, phase: metadata.phase, hazard: metadata.hazard, status: "passed", durationMs: Date.now() - started, evidence: evidenceFor(name, value) });
+      report.results.push({
+        name,
+        phase: metadata.phase,
+        hazard: metadata.hazard,
+        status: "passed",
+        durationMs: Date.now() - started,
+        evidence: {
+          ...evidenceFor(name, value),
+          ...(usbMessages ? { usbMessages } : {})
+        }
+      });
       console.log("PASS");
       return value;
     } catch (error) {
@@ -518,12 +537,22 @@ async function main() {
     currentSnapshot = value;
     return value;
   };
-  const stableSnapshot = async (timeoutMs = 10000) => {
+  // One full native handshake can time out while Windows releases a prior HID
+  // owner; allow the broker's scheduled second attempt to prove recovery.
+  const stableSnapshot = async (timeoutMs = 75000) => {
     let previousIdentity;
     let repeated = 0;
     const observed = await waitForPhysicalObservation(
       async () => {
-        const value = await transport.call("get_current_preset", {});
+        let value;
+        try {
+          value = await transport.call("get_current_preset", {});
+        } catch (error) {
+          if (/not connected|has not been synchronized|No Quad Cortex preset has been synchronized|Opening native QC USB session/i.test(
+            error instanceof Error ? error.message : String(error)
+          )) return { value: undefined, stable: false };
+          throw error;
+        }
         const identityKey = value?.setlistKey && Number.isInteger(value?.presetPosition)
           ? `${value.setlistKey}\u0000${value.presetPosition}\u0000${value.presetName}`
           : undefined;
@@ -613,16 +642,26 @@ async function main() {
       { timeoutMs, intervalMs: 500, label: "QC pinned models" }
     );
   };
-  const waitForPresetFolders = async (predicate, timeoutMs = 20000) => {
+  const waitForPresetFolders = async (predicate, timeoutMs = 45000) => {
+    const cached = await transport.call("list_preset_folders", { refresh: false });
+    if (!cached.loading && predicate(cached)) return cached;
+    const refreshed = await transport.call("list_preset_folders", { refresh: true });
+    if (!refreshed.loading && predicate(refreshed)) return refreshed;
     return waitForPhysicalObservation(
-      () => transport.call("list_preset_folders", { refresh: true }), predicate,
-      { timeoutMs, intervalMs: 1000, label: "QC preset folders" }
+      () => transport.call("list_preset_folders", { refresh: true }),
+      (value) => !value.loading && predicate(value),
+      { timeoutMs, intervalMs: 250, label: "QC preset folders" }
     );
   };
-  const waitForPresets = async (setlistKey, predicate, timeoutMs = 20000) => {
+  const waitForPresets = async (setlistKey, predicate, timeoutMs = 45000) => {
+    const cached = await transport.call("list_presets", { refresh: false, setlist_key: setlistKey });
+    if (!cached.loading && predicate(cached)) return cached;
+    const refreshed = await transport.call("list_presets", { refresh: true, setlist_key: setlistKey });
+    if (!refreshed.loading && predicate(refreshed)) return refreshed;
     return waitForPhysicalObservation(
-      () => transport.call("list_presets", { refresh: true, setlist_key: setlistKey }), predicate,
-      { timeoutMs, intervalMs: 1000, label: "QC preset catalog" }
+      () => transport.call("list_presets", { refresh: true, setlist_key: setlistKey }),
+      (value) => !value.loading && predicate(value),
+      { timeoutMs, intervalMs: 250, label: "QC preset catalog" }
     );
   };
   const waitForBlockDetails = async (row, column, predicate, timeoutMs = 5000) => {
@@ -650,7 +689,8 @@ async function main() {
       setlist_key: preset.setlistKey,
       position: preset.position,
       expected_preset_name: expected.presetName,
-      expected_position: expected.presetPosition
+      expected_position: expected.presetPosition,
+      expected_setlist_key: expected.setlistKey
     });
     currentSnapshot = resultSnapshot(result) ?? await snapshot();
     return currentSnapshot;
@@ -872,7 +912,7 @@ async function main() {
       position: config.presetScreenshot.position,
       is_factory: Boolean(config.presetScreenshot.isFactory)
     }, (value) => assert(pngSignatureIsValid(value, 800, 384), "Preset screenshot PNG is invalid."));
-    const folders = await call("list_preset_folders", { refresh: true }, (value) => assert(Array.isArray(value.folders), "Preset folder list is invalid."));
+    presetFolders = await call("list_preset_folders", { refresh: true }, (value) => assert(Array.isArray(value.folders), "Preset folder list is invalid."));
     await call("list_presets", { refresh: false, setlist_key: config.scratchPreset.setlistKey }, (value) => assert(Array.isArray(value.presets), "Preset list is invalid."));
     await call("list_preset_slots", {}, (value) => assert(Array.isArray(value.slots), "Preset slot list is invalid."));
     await call("list_models", { query: null }, (value) => assert(Array.isArray(value.models) && value.models.length > 0, "Model list is empty."));
@@ -911,6 +951,12 @@ async function main() {
       if (enabledHazards.has("live")) {
         const laneOriginalValue = laneParameter.normalizedValue;
         const laneTestValue = Math.abs(laneOriginalValue - 0.55) >= 0.1 ? 0.55 : 0.35;
+        pendingLaneRestore = {
+          row: config.parameter.row,
+          control: "inputGate",
+          parameterIndex: laneParameter.index,
+          value: laneOriginalValue
+        };
         await call("preview_lane_control_parameter", {
           row: config.parameter.row, control: "inputGate", parameter_index: laneParameter.index,
           value: laneTestValue, expected_value: laneOriginalValue, expected_preset_name: currentSnapshot.presetName
@@ -933,6 +979,7 @@ async function main() {
           normalizedValue: restoredLaneParameter.parameters?.find((candidate) => candidate.index === laneParameter.index)?.normalizedValue,
           observedAt: restoredLaneParameter.observedAt
         });
+        pendingLaneRestore = undefined;
 
         const laneOriginalSceneMode = Boolean(laneParameter.sceneMode);
         await call("set_lane_control_scene_mode", {
@@ -1789,7 +1836,7 @@ async function main() {
       assert(JSON.stringify(modeCycle.slots) === JSON.stringify(testCycle), "Mode cycle did not read back.");
       await transport.call("set_mode_cycle", { slots: originalModeCycle.slots, confirm_persistent_write: true });
 
-      const scratchFolder = folders.folders.find(
+      const scratchFolder = presetFolders.folders.find(
         (folder) => folder.key?.replace(/\/$/, "") === config.scratchPreset.setlistKey.replace(/\/$/, ""));
       assert(scratchFolder, "Scratch preset setlist metadata is unavailable for Favorites conformance.");
       const originallyFavorite = originalFavorites.entries.some((entry) =>
@@ -1832,14 +1879,17 @@ async function main() {
       assert(pinned.models.includes(pinnedModelId) === originallyPinned, "Pinned-model restoration did not read back.");
 
       const emptySetlistName = uniqueName(config.persistent.namePrefix, "empty");
+      pendingTemporarySetlists.add(emptySetlistName);
       await call("create_setlist", { name: emptySetlistName, confirm_persistent_write: true });
       let setlists = await waitForPresetFolders((value) => value.folders.some((folder) => folder.name === emptySetlistName));
       assert(setlists.folders.some((folder) => folder.name === emptySetlistName), "Created setlist did not appear in the device library.");
       await call("delete_setlist", { name: emptySetlistName, confirm_persistent_write: true });
       setlists = await waitForPresetFolders((value) => !value.folders.some((folder) => folder.name === emptySetlistName));
       assert(!setlists.folders.some((folder) => folder.name === emptySetlistName), "Deleted setlist remained in the device library.");
+      pendingTemporarySetlists.delete(emptySetlistName);
 
       const duplicateName = uniqueName(config.persistent.namePrefix, "copy");
+      pendingTemporarySetlists.add(duplicateName);
       const duplicated = await call("duplicate_setlist", {
         source_setlist_key: config.scratchPreset.setlistKey,
         destination_name: duplicateName,
@@ -1857,7 +1907,8 @@ async function main() {
         setlist_key: config.scratchPreset.setlistKey,
         position: config.scratchPreset.position,
         expected_preset_name: currentSnapshot.presetName,
-        expected_position: currentSnapshot.presetPosition
+        expected_position: currentSnapshot.presetPosition,
+        expected_setlist_key: currentSnapshot.setlistKey
       });
       currentSnapshot = await waitForSnapshot((value) =>
         value.setlistKey === config.scratchPreset.setlistKey
@@ -1865,6 +1916,7 @@ async function main() {
       await transport.call("delete_setlist", { name: duplicateName, confirm_persistent_write: true });
       setlists = await waitForPresetFolders((value) => !value.folders.some((folder) => folder.name === duplicateName));
       assert(!setlists.folders.some((folder) => folder.name === duplicateName), "Duplicated setlist was not deleted during restoration.");
+      pendingTemporarySetlists.delete(duplicateName);
 
       const nameA = uniqueName(config.persistent.namePrefix, "A");
       const nameRenamed = uniqueName(config.persistent.namePrefix, "R");
@@ -1903,6 +1955,7 @@ async function main() {
         expected_preset_name: currentSnapshot.presetName, expected_position: currentSnapshot.presetPosition,
         confirm_overwrite: true, confirm_persistent_write: true
       });
+      const copiedStoredName = copied.savedName || copySource.name;
       currentSnapshot = resultSnapshot(copied) ?? await snapshot();
       await sleep(500);
       currentSnapshot = await snapshot();
@@ -1916,22 +1969,22 @@ async function main() {
       assert(!destinationPresets.presets.some((preset) => preset.name === nameRenamed), "Deleted preset remained in its setlist.");
       await call("move_preset", {
         setlist_key: config.persistent.slotB.setlistKey,
-        name: copySource.name,
+        name: copiedStoredName,
         position: config.persistent.slotA.position,
         confirm_persistent_write: true
       });
       destinationPresets = await waitForPresets(config.persistent.slotB.setlistKey,
-        (value) => value.presets.some((preset) => preset.name === copySource.name && preset.position === config.persistent.slotA.position));
-      assert(destinationPresets.presets.some((preset) => preset.name === copySource.name
+        (value) => value.presets.some((preset) => preset.name === copiedStoredName && preset.position === config.persistent.slotA.position));
+      assert(destinationPresets.presets.some((preset) => preset.name === copiedStoredName
         && preset.position === config.persistent.slotA.position), "Moved preset did not read back at its destination.");
       await call("delete_preset", {
         setlist_key: config.persistent.slotB.setlistKey,
-        name: copySource.name,
+        name: copiedStoredName,
         confirm_persistent_write: true
       });
       destinationPresets = await waitForPresets(config.persistent.slotB.setlistKey,
-        (value) => !value.presets.some((preset) => preset.name === copySource.name));
-      assert(!destinationPresets.presets.some((preset) => preset.name === copySource.name), "Moved preset was not deleted during restoration.");
+        (value) => !value.presets.some((preset) => preset.name === copiedStoredName));
+      assert(!destinationPresets.presets.some((preset) => preset.name === copiedStoredName), "Moved preset was not deleted during restoration.");
     }
 
     await recordTransportHealth("before-system-recovery");
@@ -1964,7 +2017,16 @@ async function main() {
         x: config.screenTap.x, y: config.screenTap.y,
         beforeSha256: screenDigest(screenBeforeTap), afterSha256: screenDigest(screenAfterTap)
       });
-      await transport.call("tap_screen", { x: config.screenTap.restoreX, y: config.screenTap.restoreY, confirm_risky_operation: true });
+      const restoreTaps = Number.isInteger(config.screenTap.restoreTaps)
+        ? Math.max(1, Math.min(4, config.screenTap.restoreTaps))
+        : 1;
+      for (let index = 0; index < restoreTaps; index += 1) {
+        await transport.call("tap_screen", {
+          x: config.screenTap.restoreX,
+          y: config.screenTap.restoreY,
+          confirm_risky_operation: true
+        });
+      }
       firstScreenTapSent = false;
       await waitForPhysicalObservation(
         () => transport.call("capture_screen", {}),
@@ -1972,6 +2034,16 @@ async function main() {
           && screenDigest(value) !== screenDigest(screenAfterTap),
         { timeoutMs: 5000, intervalMs: 150, label: "QC framebuffer restoration after tap_screen" }
       );
+      // A second tap only proves another framebuffer transition; it does not
+      // prove that an arbitrary overlay closed. LocalBackup is accepted only
+      // while the QC Grid is visible, so force the known scratch preset back
+      // onto the Grid before testing the backup stream.
+      const gridRestored = await transport.call("reload_preset", {
+        expected_preset_name: currentSnapshot.presetName,
+        expected_position: currentSnapshot.presetPosition,
+        confirm_risky_operation: true
+      });
+      currentSnapshot = resultSnapshot(gridRestored) ?? await snapshot();
     }
 
     // Backup is intentionally last: it is the longest operation and a bulk
@@ -1995,7 +2067,18 @@ async function main() {
         catch (error) { restoration.push({ name, status: "failed", error: error instanceof Error ? error.message : String(error) }); }
       };
       if (firstScreenTapSent) {
-        await restoreAttempt("screen", () => transport.call("tap_screen", { x: config.screenTap.restoreX, y: config.screenTap.restoreY, confirm_risky_operation: true }));
+        await restoreAttempt("screen", async () => {
+          const restoreTaps = Number.isInteger(config.screenTap.restoreTaps)
+            ? Math.max(1, Math.min(4, config.screenTap.restoreTaps))
+            : 1;
+          for (let index = 0; index < restoreTaps; index += 1) {
+            await transport.call("tap_screen", {
+              x: config.screenTap.restoreX,
+              y: config.screenTap.restoreY,
+              confirm_risky_operation: true
+            });
+          }
+        });
       }
       if (enabledHazards.has("system")) {
         await restoreAttempt("connection", () => transport.call("reconnect_device", { confirm_risky_operation: true }));
@@ -2126,6 +2209,72 @@ async function main() {
           });
         });
       }
+      if (pendingTemporarySetlists.size > 0) {
+        await restoreAttempt("temporary-setlists", async () => {
+          let current = await transport.call("get_current_preset", {});
+          if (current.dirty) {
+            await transport.call("reload_preset", {
+              expected_preset_name: current.presetName,
+              expected_position: current.presetPosition,
+              confirm_risky_operation: true
+            });
+            current = await waitForSnapshot((value) => !value.dirty);
+          }
+          if (current.setlistKey !== originalSnapshot.setlistKey || current.presetPosition !== originalSnapshot.presetPosition) {
+            await transport.call("recall_preset", {
+              setlist_key: originalSnapshot.setlistKey,
+              position: originalSnapshot.presetPosition,
+              expected_preset_name: current.presetName,
+              expected_position: current.presetPosition,
+              expected_setlist_key: current.setlistKey
+            });
+            current = await waitForSnapshot((value) =>
+              value.setlistKey === originalSnapshot.setlistKey
+                && value.presetPosition === originalSnapshot.presetPosition);
+          }
+          const folders = await transport.call("list_preset_folders", { refresh: true });
+          for (const name of [...pendingTemporarySetlists]) {
+            if (folders.folders?.some((folder) => folder.name === name)) {
+              await transport.call("delete_setlist", { name, confirm_persistent_write: true });
+              await waitForPresetFolders((value) => !value.folders.some((folder) => folder.name === name));
+            }
+            pendingTemporarySetlists.delete(name);
+          }
+        });
+      }
+      if (pendingLaneRestore) {
+        await restoreAttempt("lane-control-parameter", async () => {
+          let current = await transport.call("get_current_preset", {});
+          if (current.setlistKey !== config.scratchPreset.setlistKey || current.presetPosition !== config.scratchPreset.position) {
+            await transport.call("recall_preset", {
+              setlist_key: config.scratchPreset.setlistKey,
+              position: config.scratchPreset.position,
+              expected_preset_name: current.presetName,
+              expected_position: current.presetPosition,
+              expected_setlist_key: current.setlistKey
+            });
+            current = await transport.call("get_current_preset", {});
+          }
+          const details = await transport.call("get_lane_control_details", {
+            row: pendingLaneRestore.row,
+            control: pendingLaneRestore.control,
+            expected_preset_name: current.presetName
+          });
+          const parameter = details.parameters?.find((candidate) => candidate.index === pendingLaneRestore.parameterIndex);
+          assert(Number.isFinite(parameter?.normalizedValue), "Lane-control restoration could not read the current parameter value.");
+          if (Math.abs(parameter.normalizedValue - pendingLaneRestore.value) >= 0.002) {
+            await transport.call("set_lane_control_parameter", {
+              row: pendingLaneRestore.row,
+              control: pendingLaneRestore.control,
+              parameter_index: pendingLaneRestore.parameterIndex,
+              value: pendingLaneRestore.value,
+              expected_value: parameter.normalizedValue,
+              expected_preset_name: current.presetName
+            });
+          }
+          pendingLaneRestore = undefined;
+        });
+      }
       await restoreAttempt("starting-preset", async () => {
         let current = await transport.call("get_current_preset", {});
         if (current.dirty) {
@@ -2142,7 +2291,8 @@ async function main() {
             setlist_key: originalSnapshot.setlistKey,
             position: originalSnapshot.presetPosition,
             expected_preset_name: current.presetName,
-            expected_position: current.presetPosition
+            expected_position: current.presetPosition,
+            expected_setlist_key: current.setlistKey
           });
         }
       });

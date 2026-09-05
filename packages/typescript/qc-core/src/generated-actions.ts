@@ -1306,18 +1306,20 @@ export const SHARED_QC_ACTIONS = [
     "name": "recall_preset",
     "rpc": "device.recallPreset",
     "classification": "live-write",
-    "description": "Immediately recall a preset by setlist key and position.",
+    "description": "Immediately recall a preset by setlist key and position, guarded by the currently active setlist, preset name, and position.",
     "properties": {
       "setlist_key": "string",
       "position": "integer",
       "expected_preset_name": "string",
-      "expected_position": "integer"
+      "expected_position": "integer",
+      "expected_setlist_key": "string"
     },
     "required": [
       "setlist_key",
       "position",
       "expected_preset_name",
-      "expected_position"
+      "expected_position",
+      "expected_setlist_key"
     ],
     "access": "modify",
     "inputSchema": {
@@ -1338,13 +1340,18 @@ export const SHARED_QC_ACTIONS = [
         "expected_position": {
           "type": "integer",
           "minimum": 0
+        },
+        "expected_setlist_key": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
         "setlist_key",
         "position",
         "expected_preset_name",
-        "expected_position"
+        "expected_position",
+        "expected_setlist_key"
       ],
       "additionalProperties": false
     }

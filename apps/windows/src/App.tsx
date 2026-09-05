@@ -11,6 +11,7 @@ import { createSpeechRecognition, speechRecognitionAvailable, speechRecognitionE
 import { ChatDock } from "./chat-dock";
 import { useWindowsDeviceFrames } from "./use-windows-device-frames";
 import { divider, MenuBar, quotaResetLabel, type AppMenu, type ConnectionEvent, type MenuCommand, type MenuItem } from "./menu-bar";
+import { isQcConnectionFailure, qcConnectionIsVerified, qcVisibleStatusNotice, runtimeHasSynchronizedQc } from "./qc-readiness";
 import appPackage from "../package.json";
 
 const { enabled: corpusFixtureEnabled, screenView: fixtureScreenView, initialSnapshot: fixtureInitialSnapshot } =
@@ -62,6 +63,7 @@ export function App() {
   const { connection, setConnection } = useQcConnectionWorkflow(initialConnection);
   const [syncProgress, setSyncProgress] = useState<number | null>(null);
   const [runtime, setRuntime] = useState<RuntimeStatus>();
+  const deviceReady = qcConnectionIsVerified(connection, runtime, syncProgress);
   const qcController = useQcController(demoSnapshot);
   const {
     snapshot, snapshotRef, setSnapshot,
@@ -123,11 +125,25 @@ export function App() {
   const undoPresetContext = useRef(`${demoSnapshot.setlistKey}:${demoSnapshot.presetPosition}`);
   const syncProgressTimer = useRef<number | undefined>(undefined);
   const syncProgressValue = useRef(0);
+  const connectionRef = useRef(connection);
   const qcTransport = useMemo(() => createWindowsQcTransport(tauriTransport, () => snapshotRef.current), []);
+  connectionRef.current = connection;
+  const beginLiveRecovery = useCallback((cause: string) => {
+    const current = connectionRef.current;
+    if (current.demo || current.phase !== "ready") return;
+    const detail = `Live synchronization is waiting for USB recovery: ${cause}`;
+    nativeStateAvailable.current = false;
+    const next = { ...current, phase: "needs-attention" as const, demo: true, detail };
+    connectionRef.current = next;
+    setConnection(next);
+    setNotice(`Quad Cortex connection lost; automatic recovery remains active. ${cause}`);
+    setConnectionEvents((events) => [...events, { at: new Date().toISOString(), event: "live-health-failed", result: "failure", detail: cause }]);
+  }, [setConnection]);
   const actionFailed = useCallback((error: unknown) => {
     const detail = error instanceof Error ? error.message : String(error);
-    setNotice(detail);
-  }, []);
+    if (isQcConnectionFailure(detail)) beginLiveRecovery(detail);
+    else setNotice(detail);
+  }, [beginLiveRecovery]);
   const {
     status: relayStatus, pending: relayPending, pair: pairRelay,
     start: startRelay, unpair: unpairRelay, setAccessMode: setRelayAccessMode
@@ -143,7 +159,7 @@ export function App() {
     editor,
     selectedBlockId,
     setSelectedBlockId,
-    connected: corpusFixtureEnabled || (connection.phase === "ready" && !connection.demo),
+    connected: corpusFixtureEnabled || deviceReady,
     demo: corpusFixtureEnabled || connection.demo,
     pending: commandPending,
     setPending: setCommandPending,
@@ -172,8 +188,8 @@ export function App() {
   const continuousControls = useContinuousControlWorkflow({
     controller: qcController,
     gateway: tauriTransport,
-    connected: connection.phase === "ready" && !connection.demo,
-    demo: connection.demo,
+    connected: deviceReady,
+    demo: !deviceReady,
     reconcile: reconcileWorkflowSnapshot,
     recordHistory: recordUndo,
     notice: setNotice,
@@ -242,7 +258,7 @@ export function App() {
     grid: gridWorkflow,
     parameter: parameterWorkflow,
     performance: performanceWorkflow,
-    connected: connection.phase === "ready" && !connection.demo,
+    connected: deviceReady,
     pending: commandPending,
     notice: setNotice,
     openExpression: () => {
@@ -251,7 +267,7 @@ export function App() {
     }
   });
   useWindowsDeviceFrames({
-    enabled: connection.phase === "ready" && !connection.demo,
+    enabled: deviceReady,
     sequence: nativeStateSequence,
     available: nativeStateAvailable,
     consume: consumeLiveState,
@@ -304,8 +320,10 @@ export function App() {
 
   const formFactor = useMemo(() => formFactors.find((item) => item.id === formFactorId) ?? formFactors[0], [formFactorId]);
   const skin = useMemo(() => skins.find((item) => item.id === formFactor.defaultSkinId) ?? skins[0], [formFactor]);
+  const presetLabel = `${snapshot.presetLocation} · ${snapshot.presetName}`;
+  const visibleNotice = qcVisibleStatusNotice(notice, deviceReady, presetLabel);
   const appMenus = useMemo<AppMenu[]>(() => {
-    const ready = !connection.demo && connection.phase === "ready" && !commandPending;
+    const ready = deviceReady && !commandPending;
     const hasSelectedBlock = snapshot.blocks.some((block) => block.id === selectedBlockId && block.column >= 0 && block.modelId !== undefined);
     const clipboardCompatible = Boolean(blockClipboard && snapshot.blocks.some((block) => block.id === selectedBlockId && block.modelId === blockClipboard.modelId));
     const canCopyPreset = ready && !snapshot.dirty && snapshot.presetName !== "Unsaved";
@@ -370,7 +388,7 @@ export function App() {
         { id: "about", label: "About & Legal…" }
       ] }
     ];
-  }, [blockClipboard, chatOpen, commandPending, connection.demo, connection.phase, fullScreen, presetClipboard, redoEntry, selectedBlockId, snapshot.blocks, snapshot.dirty, snapshot.mode, snapshot.modeSlots, snapshot.presetName, snapshot.presetPosition, snapshot.setlistKey, surfaceView, undoEntry]);
+  }, [blockClipboard, chatOpen, commandPending, deviceReady, fullScreen, presetClipboard, redoEntry, selectedBlockId, snapshot.blocks, snapshot.dirty, snapshot.mode, snapshot.modeSlots, snapshot.presetName, snapshot.presetPosition, snapshot.setlistKey, surfaceView, undoEntry]);
 
   useEffect(() => {
     const sync = () => setFullScreen(Boolean(document.fullscreenElement));
@@ -402,14 +420,21 @@ export function App() {
     void modelChat.settings().then((settings) => {
       setChatSettings(settings);
       setChatSettingsDraft({ provider: settings.provider, model: settings.model, baseUrl: settings.baseUrl, timeoutMs: settings.timeoutMs });
-      setChatStatus(settings.available ? "online" : "offline");
+      const antigravityConfigured = settings.available && settings.provider === "antigravity-cli";
+      setChatStatus(settings.available ? (antigravityConfigured ? "checking" : "online") : "offline");
       void modelChat.quota().then(setChatQuota).catch(() => setChatQuota({ available: false, label: "Quota unavailable" }));
-      if (settings.available && settings.provider === "antigravity-cli") {
+      if (antigravityConfigured) {
         setModelWarming(true);
         setNotice("Starting the Google subscription model in the background…");
         const warmup = modelChat.warm()
-          .then(() => setNotice("Google subscription model is warm and ready."))
-          .catch((error) => setNotice(error instanceof Error ? error.message : String(error)))
+          .then(() => {
+            setChatStatus("online");
+            setNotice("Google subscription model is warm and ready.");
+          })
+          .catch((error) => {
+            setChatStatus("error");
+            setNotice(error instanceof Error ? error.message : String(error));
+          })
           .finally(() => {
             setModelWarming(false);
             modelWarmupPromise.current = undefined;
@@ -428,6 +453,45 @@ export function App() {
   useEffect(() => {
     if (relayStatus?.endpoint) setRelayEndpoint((current) => current || relayStatus.endpoint || "");
   }, [relayStatus?.endpoint]);
+
+  useEffect(() => {
+    if (!window.__TAURI_INTERNALS__ || corpusFixtureEnabled) return;
+    let cancelled = false;
+    let timer: number | undefined;
+    const schedule = () => {
+      // This is a local broker heartbeat, not a request to the QC. Keeping it
+      // fast prevents stale green UI without adding USB polling traffic.
+      if (!cancelled) timer = window.setTimeout(() => void monitorDeviceHealth(), 250);
+    };
+    const monitorDeviceHealth = async () => {
+      try {
+        const status = await tauriTransport.runtimeStatus();
+        if (cancelled) return;
+        setRuntime(status);
+        if (connectionRef.current.phase === "ready" && !connectionRef.current.demo) {
+          if (!runtimeHasSynchronizedQc(status)) {
+            beginLiveRecovery(status.usbDiagnostics?.detail || status.message || "The Quad Cortex is not synchronized");
+          }
+        }
+      } catch (error) {
+        if (cancelled) return;
+        const detail = error instanceof Error ? error.message : String(error);
+        setRuntime((current) => ({
+          platform: current?.platform ?? "Windows desktop runtime",
+          gatewayAvailable: false,
+          message: detail
+        }));
+        beginLiveRecovery(detail);
+      } finally {
+        schedule();
+      }
+    };
+    schedule();
+    return () => {
+      cancelled = true;
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
+  }, [beginLiveRecovery]);
 
   useEffect(() => {
     if (!window.__TAURI_INTERNALS__) return;
@@ -593,18 +657,25 @@ export function App() {
   const connect = async (mode: "reconnect" | "reset" = "reconnect") => {
     resetCommands();
     nativeStateSequence.current = 0;
+    nativeStateAvailable.current = false;
     setConnectionEvents((current) => [...current, { at: new Date().toISOString(), event: mode === "reset" ? "reset-started" : "connection-started", result: "pending", detail: mode === "reset" ? "Restarting the private gateway session and USB handshake." : "Discovering the gateway and opening the Quad Cortex session." }]);
     stopSyncProgressAnimation();
     showSyncProgress(null);
     showSyncProgress(2);
     animateSyncProgress(65, 10000);
-    setConnection({ phase: "discovering", detail: "Looking for device gateway…", demo: true });
+    const discovering = { phase: "discovering" as const, detail: "Looking for device gateway…", demo: true };
+    connectionRef.current = discovering;
+    setConnection(discovering);
+    setNotice(discovering.detail);
     try {
       const next = mode === "reset" ? await tauriTransport.resetSession() : await tauriTransport.reconnect();
       if (next.phase === "ready") {
         setConnectionEvents((events) => [...events, { at: new Date().toISOString(), event: "gateway-connected", result: "success", detail: next.detail }]);
         animateSyncProgress(92, 6000);
-        setConnection({ ...next, phase: "syncing", detail: "Quad Cortex connected; reading the active preset…" });
+        const syncing = { ...next, phase: "syncing" as const, detail: "Quad Cortex connected; reading the active preset…", lastSync: undefined };
+        connectionRef.current = syncing;
+        setConnection(syncing);
+        setNotice(syncing.detail);
         setConnectionEvents((events) => [...events, { at: new Date().toISOString(), event: "preset-sync-started", result: "pending", detail: "Reading the active preset, routes, scenes, assignments, and parameter state." }]);
         liveSyncFailures.current = 0;
         presetWorkflow.resetCache();
@@ -620,15 +691,23 @@ export function App() {
           }
         }
         const synchronized = { ...current, masterVolume: synchronizedVolume };
+        const verifiedRuntime = await tauriTransport.runtimeStatus();
+        if (!runtimeHasSynchronizedQc(verifiedRuntime)) {
+          throw new Error(verifiedRuntime.usbDiagnostics?.detail || "The Quad Cortex preset is not synchronized");
+        }
+        setRuntime(verifiedRuntime);
         setSnapshot(synchronized);
         setSelectedBlockId("");
         await finishSyncProgress();
         setNotice(`${next.detail}. Active preset synchronized; preset folders and the model catalog will load only when opened.`);
-        setConnection({ ...next, phase: "ready" });
+        const ready = { ...next, phase: "ready" as const, demo: false, lastSync: new Date().toISOString() };
+        connectionRef.current = ready;
+        setConnection(ready);
         showSyncProgress(null);
         setConnectionEvents((events) => [...events, { at: new Date().toISOString(), event: "preset-sync-complete", result: "success", detail: `${synchronized.presetLocation} · ${synchronized.presetName} synchronized successfully.` }]);
       } else {
         stopSyncProgressAnimation();
+        connectionRef.current = next;
         setConnection(next);
         showSyncProgress(null);
         setNotice(next.detail);
@@ -638,7 +717,9 @@ export function App() {
       const detail = error instanceof Error ? error.message : String(error);
       stopSyncProgressAnimation();
       showSyncProgress(null);
-      setConnection({ phase: "needs-attention", detail, demo: true });
+      const failed = { phase: "needs-attention" as const, detail, demo: true };
+      connectionRef.current = failed;
+      setConnection(failed);
       setNotice(detail);
       setConnectionEvents((events) => [...events, { at: new Date().toISOString(), event: "connection-failed", result: "failure", detail }]);
     }
@@ -650,21 +731,32 @@ export function App() {
       return;
     }
     setCommandPending(true);
+    const disconnecting = { phase: "disconnected" as const, detail: "Closing the Quad Cortex session…", demo: true };
+    // Revoke Ready before closing USB. This also prevents the liveness monitor
+    // from misclassifying an intentional close as an unexpected device loss.
+    connectionRef.current = disconnecting;
+    setConnection(disconnecting);
+    setNotice(disconnecting.detail);
     setConnectionEvents((events) => [...events, { at: new Date().toISOString(), event: "disconnect-started", result: "pending", detail: "Closing the live device and gateway session." }]);
     speechRecognition.current?.abort();
     setListening(false);
     try {
       const next = await tauriTransport.disconnect();
       nativeStateSequence.current = 0;
+      nativeStateAvailable.current = false;
       liveSyncFailures.current = 0;
       resetCommands();
+      connectionRef.current = next;
       setConnection(next);
       setNotice(next.detail);
       setConnectionEvents((events) => [...events, { at: new Date().toISOString(), event: "disconnected", result: "success", detail: next.detail }]);
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
+      const failed = { phase: "needs-attention" as const, detail, demo: true };
+      connectionRef.current = failed;
+      setConnection(failed);
       setConnectionEvents((events) => [...events, { at: new Date().toISOString(), event: "disconnect-failed", result: "failure", detail }]);
-      actionFailed(error);
+      setNotice(detail);
     } finally {
       setCommandPending(false);
     }
@@ -724,7 +816,12 @@ export function App() {
       try {
         const observationStartedAt = Date.now();
         const current = await tauriTransport.currentSnapshot();
+        const verifiedRuntime = recovering ? await tauriTransport.runtimeStatus() : runtime;
+        if (recovering && !runtimeHasSynchronizedQc(verifiedRuntime)) {
+          throw new Error(verifiedRuntime?.usbDiagnostics?.detail || "The Quad Cortex preset is not synchronized");
+        }
         if (cancelled) return;
+        if (verifiedRuntime) setRuntime(verifiedRuntime);
         const recovered = recovering || liveSyncFailures.current >= 2;
         liveSyncFailures.current = 0;
         // Master Volume has a dedicated faster hardware poll. Preserve its
@@ -739,7 +836,9 @@ export function App() {
         setSelectedBlockId((selected) => current.blocks.some((block) => block.id === selected) ? selected : "");
         if (recovered) {
           const detail = "Quad Cortex reconnected automatically; live state synchronized.";
-          setConnection((state) => ({ ...state, phase: "ready", demo: false, detail }));
+          const ready = { ...connectionRef.current, phase: "ready" as const, demo: false, detail, lastSync: new Date().toISOString() };
+          connectionRef.current = ready;
+          setConnection(ready);
           setNotice(detail);
           setConnectionEvents((events) => [...events, { at: new Date().toISOString(), event: "live-sync-recovered", result: "success", detail }]);
         }
@@ -748,9 +847,7 @@ export function App() {
         liveSyncFailures.current += 1;
         if (liveSyncFailures.current === 2) {
           const detail = error instanceof Error ? error.message : String(error);
-          setConnection((current) => ({ ...current, phase: "needs-attention", demo: true, detail: `Live synchronization is waiting for USB recovery: ${detail}` }));
-          setNotice(`Quad Cortex connection lost; automatic recovery remains active. ${detail}`);
-          setConnectionEvents((events) => [...events, { at: new Date().toISOString(), event: "live-sync-failed", result: "failure", detail }]);
+          beginLiveRecovery(detail);
         }
       }
       schedule(liveSyncFailures.current >= 2 ? 500 : 250);
@@ -760,16 +857,17 @@ export function App() {
       cancelled = true;
       if (timer !== undefined) window.clearTimeout(timer);
     };
-  }, [commandPending, connection.demo, connection.phase, presetFoldersLoading, presetListLoading]);
+  }, [beginLiveRecovery, commandPending, connection.demo, connection.phase, presetFoldersLoading, presetListLoading]);
 
   const refreshSnapshot = async () => {
-    if (connection.demo || commandPending) return;
+    if (!deviceReady || commandPending) return;
     setCommandPending(true);
     setNotice("Refreshing complete device state…");
     setConnectionEvents((events) => [...events, { at: new Date().toISOString(), event: "refresh-started", result: "pending", detail: "Reading the complete active preset state from the device." }]);
     try {
       const current = await tauriTransport.currentSnapshot();
       setSnapshot(current);
+      setConnection((state) => ({ ...state, lastSync: new Date().toISOString() }));
       setNotice("Live preset state refreshed.");
       setConnectionEvents((events) => [...events, { at: new Date().toISOString(), event: "refresh-complete", result: "success", detail: `${current.presetLocation} · ${current.presetName} refreshed successfully.` }]);
     } catch (error) {
@@ -822,7 +920,7 @@ export function App() {
   };
 
   const createDeviceBackup = async () => {
-    if (connection.demo || commandPending) return;
+    if (!deviceReady || commandPending) return;
     const today = new Date().toISOString().slice(0, 10);
     const name = window.prompt("Backup name", `QC Device Backup ${today}`)?.trim();
     if (!name) return;
@@ -1037,8 +1135,8 @@ export function App() {
       snapshot,
       selectedBlockId,
       accessMode: assistantAccessMode,
-      connected: connection.phase === "ready" && !connection.demo,
-      demo: connection.demo,
+      connected: deviceReady,
+      demo: !deviceReady,
       performance: performanceWorkflow,
       preset: presetWorkflow
     });
@@ -1079,7 +1177,7 @@ export function App() {
     const { result, attachment } = await executeAndReconcileQcAction(call, {
       gateway: tauriTransport,
       snapshot: liveSnapshot,
-      connected: connection.phase === "ready" && !connection.demo,
+      connected: deviceReady,
       accessMode: assistantAccessMode,
       selectedBlockId
     }, {
@@ -1442,11 +1540,12 @@ export function App() {
       menus={appMenus}
       onSelect={menuSelect}
       connection={connection}
+      deviceReady={deviceReady}
       syncProgress={syncProgress}
       busy={commandPending || syncProgress !== null}
       runtime={runtime}
       deviceName={snapshot.deviceName}
-      presetLabel={`${snapshot.presetLocation} · ${snapshot.presetName}`}
+      presetLabel={presetLabel}
       events={connectionEvents}
       chatOpen={chatOpen}
       chatStatus={chatStatus}
@@ -1510,14 +1609,14 @@ export function App() {
 
     <div className="status-strip" role="status">
       <span className="status-symbol">i</span>
-      <span className="status-notice">{notice}</span>
-      <span className="status-context"><span className="context-pill">{connection.demo ? "DEMO" : "LIVE"}</span><strong>{snapshot.presetLocation} · {snapshot.presetName}</strong><span>Scene {sceneLetter(snapshot.activeScene)}</span>{snapshot.dirty && <span className="dirty-state">UNSAVED</span>}{workspaceName && <span>{workspaceName}</span>}<span>{selectedBlockId ? snapshot.blocks.find((block) => block.id === selectedBlockId)?.name : "No selection"}</span></span>
+      <span className="status-notice">{visibleNotice}</span>
+      <span className="status-context"><span className="context-pill">{deviceReady ? "LIVE" : connection.phase === "syncing" ? "SYNC" : "OFFLINE"}</span><strong>{snapshot.presetLocation} · {snapshot.presetName}</strong><span>Scene {sceneLetter(snapshot.activeScene)}</span>{snapshot.dirty && <span className="dirty-state">UNSAVED</span>}{workspaceName && <span>{workspaceName}</span>}<span>{selectedBlockId ? snapshot.blocks.find((block) => block.id === selectedBlockId)?.name : "No selection"}</span></span>
     </div>
 
     {dialog && <div className="dialog-backdrop" role="presentation" onMouseDown={() => setDialog(null)}>
       <section className={`app-dialog${dialog === "settings" ? " settings-dialog" : ""}`} role="dialog" aria-modal="true" aria-labelledby="dialog-title" onMouseDown={(event) => event.stopPropagation()}>
         <button className="dialog-close" aria-label="Close" onClick={() => setDialog(null)}><QcUiIcon kind="close" /></button>
-        {dialog === "device-info" && <><div className="dialog-kicker">CURRENT DEVICE</div><h2 id="dialog-title">{snapshot.deviceName}</h2><dl><dt>Connection</dt><dd>{connection.phase}</dd><dt>Setlist</dt><dd>{snapshot.setlistName}</dd><dt>Preset</dt><dd>{snapshot.presetLocation} · {snapshot.presetName}</dd><dt>Mode</dt><dd>{snapshot.mode}</dd><dt>Scene</dt><dd>{sceneLetter(snapshot.activeScene)}</dd><dt>Tempo</dt><dd>{snapshot.tempo} BPM</dd><dt>Grid</dt><dd>{snapshot.blocks.length} blocks</dd><dt>State</dt><dd>{snapshot.dirty ? "Unsaved device changes" : "Clean"}</dd></dl><p>Hardware serial numbers and account identifiers are intentionally not read or displayed.</p></>}
+        {dialog === "device-info" && <><div className="dialog-kicker">CURRENT DEVICE</div><h2 id="dialog-title">{snapshot.deviceName}</h2><dl><dt>Connection</dt><dd>{deviceReady ? "ready" : connection.phase === "ready" ? "verifying" : connection.phase}</dd><dt>Setlist</dt><dd>{snapshot.setlistName}</dd><dt>Preset</dt><dd>{snapshot.presetLocation} · {snapshot.presetName}</dd><dt>Mode</dt><dd>{snapshot.mode}</dd><dt>Scene</dt><dd>{sceneLetter(snapshot.activeScene)}</dd><dt>Tempo</dt><dd>{snapshot.tempo} BPM</dd><dt>Grid</dt><dd>{snapshot.blocks.length} blocks</dd><dt>State</dt><dd>{snapshot.dirty ? "Unsaved device changes" : "Clean"}</dd></dl><p>Hardware serial numbers and account identifiers are intentionally not read or displayed.</p></>}
         {dialog === "settings" && <>
           <div className="dialog-kicker">SETTINGS</div><h2 id="dialog-title">{QC_BRAND.appName} settings</h2>
           <nav className="settings-tabs" aria-label="Settings sections">
