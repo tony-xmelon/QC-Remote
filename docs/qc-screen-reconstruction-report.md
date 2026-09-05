@@ -68,8 +68,8 @@ comparison.
 
 | Client | Official frames rendered | Mean structural match | Mean color similarity |
 | --- | ---: | ---: | ---: |
-| Windows | 36/36 (100%) | **91.91%** | **97.15%** |
-| Android | 36/36 (100%) | **91.91%** | **97.15%** |
+| Windows | 36/36 (100%) | **91.94%** | **97.15%** |
+| Android | 36/36 (100%) | **91.94%** | **97.15%** |
 
 This broader corpus is deliberately reported separately from the 41-frame
 physical-device regression pack. It adds authoritative coverage for I/O,
@@ -119,7 +119,7 @@ join is in [the canonical coverage matrix](qc-screen-coverage-matrix.md).
 | `official-plugin-devices` | **89.66%** | **89.66%** |
 | `official-plugin-folders` | **96.44%** | **96.44%** |
 | `official-midi-settings` | **96.08%** | **96.08%** |
-| `official-midi-out` | **89.46%** | **89.43%** |
+| `official-midi-out` | **90.47%** | **90.47%** |
 | `official-settings-account` | **93.09%** | **93.09%** |
 | `official-settings-system` | **90.03%** | **90.02%** |
 | `official-settings-device` | **92.85%** | **92.85%** |
@@ -172,6 +172,10 @@ join is in [the canonical coverage matrix](qc-screen-coverage-matrix.md).
 
 ## Improvements in this pass
 
+- Aligned Preset MIDI Out's disabled trash action and title baseline to the
+  official framebuffer. The frame rises from **89.44% to 90.47% structural**
+  and from **97.50% to 97.57% color** on both hosts, bringing the complete
+  official corpus to **91.94% structural**.
 - Replaced the Device Preset Actions screen's tiny fallback diamond with the
   full wireframe sixth-category glyph observed in the official frame. The
   screen rises from **89.09% to 89.97% structural** on both hosts, bringing the

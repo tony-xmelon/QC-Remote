@@ -13,7 +13,7 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 | Corpus | Windows structural | Windows color | Android structural | Android color |
 | --- | ---: | ---: | ---: | ---: |
 | Physical device | 91.55% | 97.39% | 91.54% | 97.39% |
-| Official manual | 91.91% | 97.15% | 91.91% | 97.15% |
+| Official manual | 91.94% | 97.15% | 91.94% | 97.15% |
 
 Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` color similarity. A canonical state that references multiple frames reports their mean. Detail evidence is scoped and therefore never promoted into a full-frame score.
 
@@ -56,7 +56,7 @@ Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` col
 | GL-10 | Preset | Edit Details / preset name editor | physical frame | Built | Built | 92.63% / 92.63% | 98.08% / 98.08% | — / — | — / — |
 | GL-11 | Preset | Copy Scene destination | physical frame | Built | Built | 91.79% / 91.47% | 99.04% / 99.06% | — / — | — / — |
 | GL-12 | Preset | Swap Scene destination | physical frame | Built | Built | 91.70% / 91.38% | 99.04% / 99.05% | — / — | — / — |
-| GL-13 | MIDI | Preset MIDI Out | physical frame + official frame | Built | Built | 89.33% / 89.33% | 97.52% / 97.52% | 89.44% / 89.44% | 97.50% / 97.50% |
+| GL-13 | MIDI | Preset MIDI Out | physical frame + official frame | Built | Built | 89.33% / 89.33% | 97.52% / 97.52% | 90.47% / 90.47% | 97.57% / 97.57% |
 | GL-14 | Preset | Delete confirmation | smoke only | Built | Built | — / — | — / — | — / — | — / — |
 | GL-15 | Performance | Tuner | physical frame + official frame | Built | Built | 90.68% / 90.68% | 97.82% / 97.82% | 88.87% / 88.88% | 97.44% / 97.44% |
 | GL-16 | Performance | Live tuner / Gig View tuner | physical frame | Built | Built | 94.50% / 94.50% | 96.45% / 96.45% | — / — | — / — |

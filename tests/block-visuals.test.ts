@@ -53,6 +53,12 @@ test("official device-preset actions retain the observed sixth category glyph", 
   assert.match(css, /\.coros-device-presets\.is-official-actions > nav button:nth-child\(6\) i > span \{[^}]*width: 5cqw;[^}]*data:image\/svg\+xml/);
 });
 
+test("official MIDI Out retains the measured disabled header action", () => {
+  const css = readFileSync("packages/typescript/qc-ui/src/official-settings-midi.css", "utf8");
+  assert.match(css, /\.coros-midi-out > header > span \{[^}]*translateY\(-1px\)/);
+  assert.match(css, /\.coros-midi-out > header \.midi-trash \{[^}]*width: 8\.25cqw;[^}]*translateX\(-\.375cqw\);[^}]*background: #101510;/);
+});
+
 test("vendored block sprite remains byte-identical to the verified Neural DSP SVG", () => {
   const canonical = readFileSync("apps/windows/public/qc-block-samples.svg", "utf8").replaceAll("\r\n", "\n");
   assert.equal(createHash("sha256").update(canonical).digest("hex"), "aa32a2304e05fc62a783df4ed94c31780c18ff7c1e5f34a73aa1371f748919fc");
