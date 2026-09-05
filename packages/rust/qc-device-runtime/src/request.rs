@@ -3212,9 +3212,7 @@ pub fn plan_gateway_write(
         | "device.createSetlist"
         | "device.deleteSetlist"
         | "device.deletePreset"
-        | "device.movePreset"
-        | "device.loadCapture"
-        | "device.loadIr" => {
+        | "device.movePreset" => {
             let operation_name = match method {
                 "device.setFavorite" => "setFavorite",
                 "device.setModelPinned" => "setModelPinned",
@@ -3222,13 +3220,25 @@ pub fn plan_gateway_write(
                 "device.deleteSetlist" => "deleteSetlist",
                 "device.deletePreset" => "deletePreset",
                 "device.movePreset" => "movePreset",
-                "device.loadCapture" => "loadCapture",
-                _ => "loadIr",
+                _ => "movePreset",
             };
             GatewayWritePlan {
                 write: PlannedWrite::HidOperation(operation(operation_name, params)?),
                 detail: format!("{operation_name} sent to the Quad Cortex"),
                 verification: GatewayVerification::None,
+            }
+        }
+        "device.loadCapture" | "device.loadIr" => {
+            let operation_name = if method == "device.loadCapture" {
+                "loadCapture"
+            } else {
+                "loadIr"
+            };
+            let operation = operation(operation_name, params)?;
+            GatewayWritePlan {
+                verification: verification_for_operation(&operation, params, snapshot),
+                write: PlannedWrite::HidOperation(operation),
+                detail: format!("{operation_name} sent to the Quad Cortex"),
             }
         }
         "device.selectScene" | "device.command.scene" => {
@@ -4752,6 +4762,27 @@ mod tests {
             PlannedWrite::HidOperation(DeviceOperation::LoadCapture {
                 row: 1, column: 2, ref key, ref name, model_id: None
             }) if key == "capture/" && name == "Crunch"
+        ));
+        let verified_capture = plan_gateway_write(
+            "device.loadCapture",
+            &json!({
+                "row": 1, "column": 2, "key": "capture/", "name": "Crunch",
+                "modelId": 14000, "expectedModelId": null, "expectedPresetName": "Current"
+            }),
+            Some(&GatewaySnapshot {
+                preset_name: "Current".into(),
+                ..GatewaySnapshot::default()
+            }),
+        )
+        .unwrap();
+        assert!(matches!(
+            verified_capture.verification,
+            GatewayVerification::Block {
+                row: 1,
+                column: 2,
+                model_id: Some(14000),
+                present: true
+            }
         ));
         assert!(plan_gateway_write(
             "device.loadIr",
