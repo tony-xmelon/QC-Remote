@@ -536,23 +536,12 @@ fn wait_for_transaction_event(
         }
         let frame = events.recv_timeout(Duration::from_millis(remaining)).ok()?;
         let snapshot = controller.gateway_snapshot()?;
-        let parameter_value = parameter_target.and_then(|(row, column, parameter_index)| {
-            controller
-                .block_details(row, column)
-                .ok()
-                .flatten()
-                .and_then(|details| {
-                    details
-                        .parameters
-                        .into_iter()
-                        .find(|parameter| parameter.index == parameter_index)
-                        .and_then(|parameter| parameter.normalized_value)
-                })
-        });
+        let parameter =
+            parameter_target.and_then(|target| observed_gateway_parameter(controller, target));
         let now_ms = started.elapsed().as_millis().min(u128::from(u64::MAX)) as u64;
         match transaction.state(
             &snapshot,
-            parameter_value,
+            parameter.as_ref(),
             u128::from(frame.sequence),
             now_ms,
         ) {
@@ -561,6 +550,23 @@ fn wait_for_transaction_event(
             GatewayTransactionState::Pending => {}
         }
     }
+}
+
+fn observed_gateway_parameter(
+    controller: &DeviceController,
+    (row, column, parameter_index): (u32, u32, u32),
+) -> Option<qc_protocol::state::BlockParameter> {
+    let details = match column {
+        10 => controller.lane_control_details(row, "inputGate"),
+        11 => controller.lane_control_details(row, "laneOutput"),
+        _ => controller.block_details(row, column),
+    }
+    .ok()
+    .flatten()?;
+    details
+        .parameters
+        .into_iter()
+        .find(|parameter| parameter.index == parameter_index)
 }
 
 fn gateway_select_scene(controller: &DeviceController, params: &Value) -> Result<Value, String> {
@@ -908,23 +914,11 @@ fn gateway_operation(
             plan.detail
         )
     })?;
-    let parameter_value =
-        plan.verification
-            .parameter_target()
-            .and_then(|(row, column, parameter_index)| {
-                controller
-                    .block_details(row, column)
-                    .ok()
-                    .flatten()
-                    .and_then(|details| {
-                        details
-                            .parameters
-                            .into_iter()
-                            .find(|parameter| parameter.index == parameter_index)
-                            .and_then(|parameter| parameter.normalized_value)
-                    })
-            });
-    if !plan.verification.matches(&snapshot, parameter_value) {
+    let parameter = plan
+        .verification
+        .parameter_target()
+        .and_then(|target| observed_gateway_parameter(controller, target));
+    if !plan.verification.matches(&snapshot, parameter.as_ref()) {
         return Err(format!(
             "{} was sent, but authoritative preset readback rejected it",
             plan.detail

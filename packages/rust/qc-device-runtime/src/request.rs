@@ -13,7 +13,7 @@ use qc_protocol::responses::{
     decode_library_files, decode_looper_status, decode_mode_cycle, decode_pinned_models,
     decode_preset_screenshot, decode_recents_favorites, decode_tuner_settings, PngImage,
 };
-use qc_protocol::state::MidiOutMessage;
+use qc_protocol::state::{BlockParameter, MidiOutMessage};
 use qc_protocol::{domain, profile};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -256,6 +256,20 @@ pub enum GatewayVerification {
         parameter_index: u32,
         value: f64,
     },
+    ParameterSceneMode {
+        row: u32,
+        column: u32,
+        parameter_index: u32,
+        enabled: bool,
+    },
+    ParameterExpression {
+        row: u32,
+        column: u32,
+        parameter_index: u32,
+        pedal: u32,
+        minimum: f64,
+        maximum: f64,
+    },
     Block {
         row: u32,
         column: u32,
@@ -372,14 +386,14 @@ impl GatewayTransaction {
     pub fn state(
         &self,
         snapshot: &GatewaySnapshot,
-        parameter_value: Option<f64>,
+        parameter: Option<&BlockParameter>,
         observation_token: u128,
         now_ms: u64,
     ) -> GatewayTransactionState {
         if now_ms >= self.deadline_ms {
             GatewayTransactionState::TimedOut
         } else if observation_token > self.after_observation_token
-            && self.verification.matches(snapshot, parameter_value)
+            && self.verification.matches(snapshot, parameter)
         {
             GatewayTransactionState::Verified
         } else {
@@ -411,12 +425,24 @@ impl GatewayVerification {
                 column,
                 parameter_index,
                 ..
+            }
+            | Self::ParameterSceneMode {
+                row,
+                column,
+                parameter_index,
+                ..
+            }
+            | Self::ParameterExpression {
+                row,
+                column,
+                parameter_index,
+                ..
             } => Some((*row, *column, *parameter_index)),
             _ => None,
         }
     }
 
-    pub fn matches(&self, snapshot: &GatewaySnapshot, parameter_value: Option<f64>) -> bool {
+    pub fn matches(&self, snapshot: &GatewaySnapshot, parameter: Option<&BlockParameter>) -> bool {
         match self {
             Self::None => false,
             Self::Scene { scene } => snapshot.active_scene == *scene,
@@ -475,9 +501,26 @@ impl GatewayVerification {
                     .and_then(|block| block.bypassed)
                     == Some(*bypassed)
             }
-            Self::Parameter { value, .. } => {
-                parameter_value.is_some_and(|actual| (actual - value).abs() <= 0.0005)
+            Self::Parameter { value, .. } => parameter
+                .and_then(|actual| actual.normalized_value)
+                .is_some_and(|actual| (actual - value).abs() <= 0.0005),
+            Self::ParameterSceneMode { enabled, .. } => {
+                parameter.is_some_and(|actual| actual.scene_mode == *enabled)
             }
+            Self::ParameterExpression {
+                pedal,
+                minimum,
+                maximum,
+                ..
+            } => parameter.is_some_and(|actual| {
+                actual.expression == Some(*pedal as i32)
+                    && actual
+                        .expression_minimum
+                        .is_some_and(|value| (f64::from(value) - minimum).abs() <= 0.0005)
+                    && actual
+                        .expression_maximum
+                        .is_some_and(|value| (f64::from(value) - maximum).abs() <= 0.0005)
+            }),
             Self::Block {
                 row,
                 column,
@@ -2897,6 +2940,43 @@ fn verification_for_operation(
             scene: *scene,
             color: format!("#{:06x}", color & 0x00ff_ffff),
         },
+        DeviceOperation::SetLaneControlSceneMode {
+            row,
+            control,
+            parameter_index,
+            enabled,
+        } => GatewayVerification::ParameterSceneMode {
+            row: *row,
+            column: if control == "inputGate" { 10 } else { 11 },
+            parameter_index: *parameter_index,
+            enabled: *enabled,
+        },
+        DeviceOperation::SetParameterSceneMode {
+            row,
+            column,
+            parameter_index,
+            enabled,
+        } => GatewayVerification::ParameterSceneMode {
+            row: *row,
+            column: *column,
+            parameter_index: *parameter_index,
+            enabled: *enabled,
+        },
+        DeviceOperation::SetParameterExpression {
+            row,
+            column,
+            parameter_index,
+            pedal,
+            minimum,
+            maximum,
+        } => GatewayVerification::ParameterExpression {
+            row: *row,
+            column: *column,
+            parameter_index: *parameter_index,
+            pedal: *pedal,
+            minimum: f64::from(*minimum),
+            maximum: f64::from(*maximum),
+        },
         DeviceOperation::CopyScene {
             from_index,
             to_index,
@@ -2925,9 +3005,6 @@ fn verification_for_operation(
         DeviceOperation::Command(_)
         | DeviceOperation::SetRoutingParameter { .. }
         | DeviceOperation::SetLaneControlParameter { .. }
-        | DeviceOperation::SetLaneControlSceneMode { .. }
-        | DeviceOperation::SetParameterSceneMode { .. }
-        | DeviceOperation::SetParameterExpression { .. }
         | DeviceOperation::ListPresetFolders
         | DeviceOperation::ReadVersion
         | DeviceOperation::SetDeviceName(_)
@@ -3255,11 +3332,14 @@ pub fn plan_gateway_write(
                 verification: GatewayVerification::None,
             }
         }
-        "device.setLaneControlSceneMode" => GatewayWritePlan {
-            write: PlannedWrite::HidOperation(operation("setLaneControlSceneMode", params)?),
-            detail: "Lane control scene behavior updated".into(),
-            verification: GatewayVerification::None,
-        },
+        "device.setLaneControlSceneMode" => {
+            let operation = operation("setLaneControlSceneMode", params)?;
+            GatewayWritePlan {
+                verification: verification_for_operation(&operation, params, snapshot),
+                write: PlannedWrite::HidOperation(operation),
+                detail: "Lane control scene behavior updated".into(),
+            }
+        }
         "device.setTempo" | "device.command.tempo" => {
             let bpm = bounded_u32(params, "bpm", domain::MAXIMUM_TEMPO_BPM)?;
             if bpm < domain::MINIMUM_TEMPO_BPM {
@@ -3350,7 +3430,7 @@ pub fn plan_gateway_write(
         "device.setParameterSceneMode" | "device.setParameterExpression" => {
             let operation = operation(method, params)?;
             GatewayWritePlan {
-                verification: GatewayVerification::None,
+                verification: verification_for_operation(&operation, params, snapshot),
                 write: PlannedWrite::HidOperation(operation),
                 detail: if method == "device.setParameterSceneMode" {
                     "Parameter scene behavior sent to the Quad Cortex"
@@ -3456,6 +3536,40 @@ mod tests {
     use super::*;
     use qc_protocol::state::{GridBlock, GridRoute, PresetFileListing, PresetFolderListing};
     use serde_json::json;
+
+    fn observed_parameter(normalized_value: f64) -> BlockParameter {
+        BlockParameter {
+            index: 7,
+            display_position: 7,
+            name: "Test".into(),
+            normalized_value: Some(normalized_value),
+            display_value: normalized_value.to_string(),
+            units: String::new(),
+            r#type: "float".into(),
+            minimum: 0.0,
+            maximum: 1.0,
+            value_scale: "linear".into(),
+            scale_exponent: None,
+            scale_points: Vec::new(),
+            scale_known: true,
+            display_precision: None,
+            minimum_label: None,
+            midpoint_label: None,
+            maximum_label: None,
+            steps: None,
+            scene_mode: false,
+            options: Vec::new(),
+            writable: true,
+            enabled: true,
+            expression_assignable: true,
+            linked_scene_mode: None,
+            expression: None,
+            expression_minimum: None,
+            expression_maximum: None,
+            led_value: None,
+            wire_value_kind: "float".into(),
+        }
+    }
 
     #[test]
     fn retry_policy_is_shared_and_excludes_relative_or_structural_writes() {
@@ -3907,6 +4021,18 @@ mod tests {
                 enabled: true,
             })
         );
+        assert!(matches!(
+            scene_mode.verification,
+            GatewayVerification::ParameterSceneMode {
+                row: 1,
+                column: 4,
+                parameter_index: 7,
+                enabled: true
+            }
+        ));
+        let mut observed = observed_parameter(0.5);
+        observed.scene_mode = true;
+        assert!(scene_mode.verification.matches(&snapshot, Some(&observed)));
 
         let expression = plan_gateway_write(
             "device.setParameterExpression",
@@ -3933,6 +4059,30 @@ mod tests {
                 maximum: 0.1,
             })
         );
+        assert!(matches!(
+            expression.verification,
+            GatewayVerification::ParameterExpression {
+                row: 1,
+                column: 4,
+                parameter_index: 7,
+                pedal: 2,
+                ..
+            }
+        ));
+        observed.expression = Some(2);
+        observed.expression_minimum = Some(0.9);
+        observed.expression_maximum = Some(0.1);
+        assert!(expression.verification.matches(&snapshot, Some(&observed)));
+
+        let lane_scene = plan_gateway_write(
+            "device.setLaneControlSceneMode",
+            &json!({"row": 0, "control": "inputGate", "parameterIndex": 7,
+                "enabled": true, "expectedPresetName": "Assignment Test"}),
+            Some(&snapshot),
+        )
+        .unwrap();
+        assert_eq!(lane_scene.verification.parameter_target(), Some((0, 10, 7)));
+        assert!(lane_scene.verification.matches(&snapshot, Some(&observed)));
         let splitter_scene = plan_gateway_write(
             "device.setParameterSceneMode",
             &json!({"row": 0, "column": 8, "parameterIndex": 4, "enabled": true,
@@ -4406,8 +4556,10 @@ mod tests {
             Some(&snapshot),
         )
         .unwrap();
-        assert!(parameter.verification.matches(&snapshot, Some(0.7504)));
-        assert!(!parameter.verification.matches(&snapshot, Some(0.76)));
+        let close = observed_parameter(0.7504);
+        let far = observed_parameter(0.76);
+        assert!(parameter.verification.matches(&snapshot, Some(&close)));
+        assert!(!parameter.verification.matches(&snapshot, Some(&far)));
 
         let splitter = plan_gateway_write(
             "device.setParameter",

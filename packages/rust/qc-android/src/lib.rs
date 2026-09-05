@@ -539,20 +539,23 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeGate
             .into_owned();
         let verification: GatewayVerification =
             serde_json::from_str(&verification_json).map_err(|error| error.to_string())?;
-        let parameter_value =
+        let parameter =
             if let Some((row, column, parameter_index)) = verification.parameter_target() {
-                native
+                let state = native
                     .state
                     .lock()
-                    .map_err(|_| "native QC state lock was poisoned".to_string())?
-                    .block_details(row, column)
-                    .and_then(|details| {
-                        details
-                            .parameters
-                            .into_iter()
-                            .find(|parameter| parameter.index == parameter_index)
-                            .and_then(|parameter| parameter.normalized_value)
-                    })
+                    .map_err(|_| "native QC state lock was poisoned".to_string())?;
+                let details = match column {
+                    10 => state.lane_control_details(row, "inputGate"),
+                    11 => state.lane_control_details(row, "laneOutput"),
+                    _ => state.block_details(row, column),
+                };
+                details.and_then(|details| {
+                    details
+                        .parameters
+                        .into_iter()
+                        .find(|parameter| parameter.index == parameter_index)
+                })
             } else {
                 None
             };
@@ -568,7 +571,7 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeGate
         );
         Ok::<_, String>(transaction.state(
             &snapshot,
-            parameter_value,
+            parameter.as_ref(),
             observation_sequence.max(0) as u128,
             now_ms.max(0) as u64,
         ))
