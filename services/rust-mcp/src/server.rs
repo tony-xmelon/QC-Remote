@@ -453,52 +453,13 @@ fn apply_confirmation_gate(spec: &ActionSpec, args: &mut Map<String, Value>) -> 
 }
 
 fn gateway_params(spec: &ActionSpec, args: Map<String, Value>) -> Map<String, Value> {
-    args.into_iter()
-        .filter_map(|(key, value)| {
-            let nullable = spec.properties.iter().any(|property| {
-                property.name == key
-                    && matches!(
-                        property.kind,
-                        crate::actions::Kind::NullableInteger { .. }
-                            | crate::actions::Kind::NullableString
-                            | crate::actions::Kind::NullableVisibleString { .. }
-                            | crate::actions::Kind::NullableBoolean
-                            | crate::actions::Kind::NullableNumber { .. }
-                    )
-            });
-            if value.is_null() && !nullable {
-                return None;
-            }
-            // These are MCP-side validation/discovery fields. Their gateway
-            // methods intentionally do not accept them.
-            if spec.name == "list_models" && key == "query" {
-                return None;
-            }
-            let gateway_key = match (spec.name, key.as_str()) {
-                ("rename_current_preset", "new_name") => "name".into(),
-                _ => snake_to_camel(&key),
-            };
-            Some((gateway_key, value))
-        })
+    spec.gateway_arguments
+        .iter()
+        .filter_map(|(source, target)| args.get(*source).cloned().map(|value| ((*target).into(), value)))
         .chain(
-            (spec.name == "rename_current_preset")
-                .then(|| ("confirmRename".into(), Value::Bool(true))),
+            spec.gateway_true_arguments
+                .iter()
+                .map(|name| ((*name).into(), Value::Bool(true))),
         )
         .collect()
-}
-
-fn snake_to_camel(value: &str) -> String {
-    let mut output = String::new();
-    let mut upper = false;
-    for c in value.chars() {
-        if c == '_' {
-            upper = true;
-        } else if upper {
-            output.extend(c.to_uppercase());
-            upper = false;
-        } else {
-            output.push(c);
-        }
-    }
-    output
 }

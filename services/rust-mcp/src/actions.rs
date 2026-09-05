@@ -71,6 +71,8 @@ pub struct ActionSpec {
     pub description: &'static str,
     pub properties: &'static [Property],
     pub distinct_arguments: &'static [(&'static str, &'static str)],
+    pub gateway_arguments: &'static [(&'static str, &'static str)],
+    pub gateway_true_arguments: &'static [&'static str],
 }
 
 macro_rules! p {

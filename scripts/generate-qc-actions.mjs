@@ -402,6 +402,8 @@ pub static ACTIONS: &[ActionSpec] = &[\n${actions.map((action) => `    ActionSpe
         description: ${JSON.stringify(action.description)},\n\
         properties: &[${Object.entries(action.properties).map(([name, kind]) => `${action.required.includes(name) ? "p!" : "p!"}(${action.required.includes(name) ? "" : "? "}${JSON.stringify(name)}, ${rustKind(action, name, kind)})`).join(", ")}],\n\
         distinct_arguments: &[${(action.distinctArguments ?? []).map(([left, right]) => `(${JSON.stringify(left)}, ${JSON.stringify(right)})`).join(", ")}],\n\
+        gateway_arguments: &[${gatewayProjection(action).mappings.map(([source, target]) => `(${JSON.stringify(source)}, ${JSON.stringify(target)})`).join(", ")}],\n\
+        gateway_true_arguments: &[${gatewayProjection(action).gatewayTrueArguments.map((name) => JSON.stringify(name)).join(", ")}],\n\
     }`).join(",\n")}\n];\n`;
 const rustMcpActions = execFileSync("rustfmt", ["--edition", "2024"], {
   input: rustMcpActionsRaw,

@@ -7,6 +7,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Reconnect the native Quad Cortex transport after explicit confirmation.",
         properties: &[p!("confirm_risky_operation", BOOL)],
         distinct_arguments: &[],
+        gateway_arguments: &[],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "reset_device_session",
@@ -15,6 +17,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Reset and re-synchronize the native Quad Cortex communication session after explicit confirmation.",
         properties: &[p!("confirm_risky_operation", BOOL)],
         distinct_arguments: &[],
+        gateway_arguments: &[],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "disconnect_device",
@@ -23,6 +27,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Close the native Quad Cortex transport after explicit confirmation.",
         properties: &[p!("confirm_risky_operation", BOOL)],
         distinct_arguments: &[],
+        gateway_arguments: &[],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "get_current_preset",
@@ -31,6 +37,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Read the authoritative current preset, scene, tempo and Grid state.",
         properties: &[],
         distinct_arguments: &[],
+        gateway_arguments: &[],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "get_state_events",
@@ -39,6 +47,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Read native state frames after a sequence cursor.",
         properties: &[p!("after_sequence", UINT), p!("limit", UINT)],
         distinct_arguments: &[],
+        gateway_arguments: &[("after_sequence", "afterSequence"), ("limit", "limit")],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "get_tempo_clock",
@@ -47,6 +57,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Read the most recent native metronome beat, bar and tick state.",
         properties: &[],
         distinct_arguments: &[],
+        gateway_arguments: &[],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "get_block_details",
@@ -59,6 +71,12 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("row", "row"),
+            ("column", "column"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "get_lane_control_details",
@@ -71,6 +89,12 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("row", "row"),
+            ("control", "control"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "list_models",
@@ -79,6 +103,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Find installed block models and their numeric IDs.",
         properties: &[p!("query", Kind::NullableString)],
         distinct_arguments: &[],
+        gateway_arguments: &[],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "list_presets",
@@ -87,6 +113,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "List presets in a setlist, optionally refreshing the device index.",
         properties: &[p!("refresh", BOOL), p!("setlist_key", Kind::NullableString)],
         distinct_arguments: &[],
+        gateway_arguments: &[("refresh", "refresh"), ("setlist_key", "setlistKey")],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "list_preset_folders",
@@ -95,6 +123,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "List preset folders and setlists, optionally refreshing the device index.",
         properties: &[p!("refresh", BOOL)],
         distinct_arguments: &[],
+        gateway_arguments: &[("refresh", "refresh")],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "list_preset_slots",
@@ -103,6 +133,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "List preset destinations and their occupancy before a persistent write.",
         properties: &[],
         distinct_arguments: &[],
+        gateway_arguments: &[],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "get_master_volume",
@@ -111,6 +143,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Read the authoritative master output volume.",
         properties: &[],
         distinct_arguments: &[],
+        gateway_arguments: &[],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "get_device_identity",
@@ -119,6 +153,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Read the connected Quad Cortex serial number, firmware version, type and custom name.",
         properties: &[],
         distinct_arguments: &[],
+        gateway_arguments: &[],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "get_inhibited_modules",
@@ -127,6 +163,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Read the authoritative Global Gate and Global EQ inhibition state.",
         properties: &[],
         distinct_arguments: &[],
+        gateway_arguments: &[],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "get_tuner_settings",
@@ -135,6 +173,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Read the tuner input, mute preference, and reference pitch without changing or engaging the tuner.",
         properties: &[],
         distinct_arguments: &[],
+        gateway_arguments: &[],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_tuner_input",
@@ -153,6 +193,11 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_risky_operation", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("input_port_id", "inputPortId"),
+            ("confirm_tuner_activation", "confirmTunerActivation"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_tuner_mute",
@@ -165,6 +210,11 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_risky_operation", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("muted", "muted"),
+            ("confirm_tuner_activation", "confirmTunerActivation"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "restore_tuner_audio",
@@ -176,6 +226,8 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_risky_operation", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[("confirm_preference_reset", "confirmPreferenceReset")],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_tuner_reference",
@@ -194,6 +246,11 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_risky_operation", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("reference_offset_hz", "referenceOffsetHz"),
+            ("confirm_tuner_activation", "confirmTunerActivation"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "get_preset_screenshot",
@@ -206,6 +263,12 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("is_factory", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("folder_name", "folderName"),
+            ("position", "position"),
+            ("is_factory", "isFactory"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "capture_screen",
@@ -214,6 +277,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Capture the current Quad Cortex touchscreen as a PNG image.",
         properties: &[],
         distinct_arguments: &[],
+        gateway_arguments: &[],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "preview_parameter",
@@ -230,6 +295,16 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("row", "row"),
+            ("column", "column"),
+            ("parameter_index", "parameterIndex"),
+            ("value", "value"),
+            ("expected_value", "expectedValue"),
+            ("expected_scene", "expectedScene"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "preview_lane_control_parameter",
@@ -245,6 +320,15 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("row", "row"),
+            ("control", "control"),
+            ("parameter_index", "parameterIndex"),
+            ("value", "value"),
+            ("expected_value", "expectedValue"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "create_device_backup",
@@ -256,6 +340,8 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_persistent_write", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[("name", "name")],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_device_name",
@@ -267,6 +353,8 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_persistent_write", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[("name", "name")],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "undo_device",
@@ -275,6 +363,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Undo the most recent device edit after explicit confirmation.",
         properties: &[p!("confirm_risky_operation", BOOL)],
         distinct_arguments: &[],
+        gateway_arguments: &[],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "redo_device",
@@ -283,6 +373,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Redo the most recently undone device edit after explicit confirmation.",
         properties: &[p!("confirm_risky_operation", BOOL)],
         distinct_arguments: &[],
+        gateway_arguments: &[],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "tap_screen",
@@ -307,6 +399,8 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_risky_operation", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[("x", "x"), ("y", "y")],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "select_scene",
@@ -315,6 +409,11 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Immediately select a performance scene, numbered 0 through 7.",
         properties: &[p!("scene", SCENE), p!("expected_preset_name", TEXT)],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("scene", "scene"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "copy_scene",
@@ -328,6 +427,13 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[("from_scene", "to_scene")],
+        gateway_arguments: &[
+            ("from_scene", "fromScene"),
+            ("to_scene", "toScene"),
+            ("swap", "swap"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_scene_label",
@@ -340,6 +446,12 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("scene", "scene"),
+            ("label", "label"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_scene_color",
@@ -358,6 +470,12 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("scene", "scene"),
+            ("color", "color"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "press_footswitch",
@@ -376,6 +494,12 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("index", "index"),
+            ("expected_mode", "expectedMode"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "tap_tempo",
@@ -384,6 +508,11 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Tap the dedicated Quad Cortex tempo control through its official MIDI command.",
         properties: &[p!("expected_mode", TEXT), p!("expected_preset_name", TEXT)],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("expected_mode", "expectedMode"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "navigate_bank",
@@ -396,6 +525,12 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_position", UINT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("direction", "direction"),
+            ("expected_preset_name", "expectedPresetName"),
+            ("expected_position", "expectedPosition"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "show_tuner",
@@ -404,6 +539,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Show or hide the tuner.",
         properties: &[p!("shown", BOOL)],
         distinct_arguments: &[],
+        gateway_arguments: &[("shown", "shown")],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "show_gig_view",
@@ -412,6 +549,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Show or hide Gig View.",
         properties: &[p!("shown", BOOL)],
         distinct_arguments: &[],
+        gateway_arguments: &[("shown", "shown")],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "select_mode_slot",
@@ -429,6 +568,11 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("slot", "slot"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_master_volume",
@@ -441,6 +585,8 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_risky_operation", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[("value", "value"), ("expected_value", "expectedValue")],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "recall_preset",
@@ -454,6 +600,13 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_position", UINT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("setlist_key", "setlistKey"),
+            ("position", "position"),
+            ("expected_preset_name", "expectedPresetName"),
+            ("expected_position", "expectedPosition"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "reload_preset",
@@ -466,6 +619,11 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_risky_operation", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("expected_preset_name", "expectedPresetName"),
+            ("expected_position", "expectedPosition"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_tempo",
@@ -478,6 +636,12 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("bpm", "bpm"),
+            ("expected_tempo", "expectedTempo"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_bypass",
@@ -493,6 +657,15 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("row", "row"),
+            ("column", "column"),
+            ("desired_bypassed", "desiredBypassed"),
+            ("expected_bypassed", "expectedBypassed"),
+            ("expected_scene", "expectedScene"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_parameter",
@@ -509,6 +682,16 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("row", "row"),
+            ("column", "column"),
+            ("parameter_index", "parameterIndex"),
+            ("value", "value"),
+            ("expected_value", "expectedValue"),
+            ("expected_scene", "expectedScene"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_parameter_scene_mode",
@@ -523,6 +706,14 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("row", "row"),
+            ("column", "column"),
+            ("parameter_index", "parameterIndex"),
+            ("enabled", "enabled"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_parameter_expression",
@@ -545,6 +736,16 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("row", "row"),
+            ("column", "column"),
+            ("parameter_index", "parameterIndex"),
+            ("pedal", "pedal"),
+            ("minimum", "minimum"),
+            ("maximum", "maximum"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_lane_control_parameter",
@@ -560,6 +761,15 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("row", "row"),
+            ("control", "control"),
+            ("parameter_index", "parameterIndex"),
+            ("value", "value"),
+            ("expected_value", "expectedValue"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_lane_control_scene_mode",
@@ -574,6 +784,14 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("row", "row"),
+            ("control", "control"),
+            ("parameter_index", "parameterIndex"),
+            ("enabled", "enabled"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_expression_bypass",
@@ -591,6 +809,17 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("row", "row"),
+            ("column", "column"),
+            ("pedal", "pedal"),
+            ("mode", "mode"),
+            ("invert", "invert"),
+            ("delay_ms", "delayMs"),
+            ("latch_emulation", "latchEmulation"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "move_block",
@@ -605,6 +834,14 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("row", "row"),
+            ("from_column", "fromColumn"),
+            ("to_column", "toColumn"),
+            ("expected_model_id", "expectedModelId"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "add_block",
@@ -618,6 +855,13 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("row", "row"),
+            ("column", "column"),
+            ("model_id", "modelId"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "remove_block",
@@ -631,6 +875,13 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("row", "row"),
+            ("column", "column"),
+            ("expected_model_id", "expectedModelId"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_block_footswitch",
@@ -658,6 +909,15 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("row", "row"),
+            ("column", "column"),
+            ("footswitch", "footswitch"),
+            ("expected_footswitch", "expectedFootswitch"),
+            ("expected_model_id", "expectedModelId"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_stomp_momentary",
@@ -670,6 +930,12 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("footswitch", "footswitch"),
+            ("momentary", "momentary"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_stomp_label",
@@ -682,6 +948,12 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("footswitch", "footswitch"),
+            ("label", "label"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_midi_out",
@@ -700,6 +972,12 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("source", "source"),
+            ("messages", "messages"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_preset_load_midi_out",
@@ -711,6 +989,11 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("messages", "messages"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_chain_input",
@@ -724,6 +1007,13 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("row", "row"),
+            ("input_id", "inputId"),
+            ("expected_input_id", "expectedInputId"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_chain_output",
@@ -737,6 +1027,13 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("row", "row"),
+            ("output_id", "outputId"),
+            ("expected_output_id", "expectedOutputId"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_chain_split",
@@ -776,6 +1073,15 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("row", "row"),
+            ("split_column", "splitColumn"),
+            ("mix_column", "mixColumn"),
+            ("expected_split_column", "expectedSplitColumn"),
+            ("expected_mix_column", "expectedMixColumn"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_split_mute",
@@ -789,6 +1095,13 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("row", "row"),
+            ("muted", "muted"),
+            ("expected_muted", "expectedMuted"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "save_preset_as",
@@ -805,6 +1118,15 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_persistent_write", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("setlist_key", "setlistKey"),
+            ("position", "position"),
+            ("name", "name"),
+            ("expected_preset_name", "expectedPresetName"),
+            ("expected_position", "expectedPosition"),
+            ("confirm_overwrite", "confirmOverwrite"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "rename_current_preset",
@@ -818,6 +1140,12 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_persistent_write", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("new_name", "name"),
+            ("expected_preset_name", "expectedPresetName"),
+            ("expected_position", "expectedPosition"),
+        ],
+        gateway_true_arguments: &["confirmRename"],
     },
     ActionSpec {
         name: "copy_preset",
@@ -836,6 +1164,17 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_persistent_write", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("source_setlist_key", "sourceSetlistKey"),
+            ("source_position", "sourcePosition"),
+            ("source_name", "sourceName"),
+            ("destination_setlist_key", "destinationSetlistKey"),
+            ("destination_position", "destinationPosition"),
+            ("expected_preset_name", "expectedPresetName"),
+            ("expected_position", "expectedPosition"),
+            ("confirm_overwrite", "confirmOverwrite"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "get_general_settings",
@@ -844,6 +1183,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Read the QC Device Settings and System settings without changing them.",
         properties: &[],
         distinct_arguments: &[],
+        gateway_arguments: &[],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "get_io_settings",
@@ -852,6 +1193,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Read complete input, output, headphone, USB, MIDI, expression-pedal, connection, and output-pairing settings.",
         properties: &[],
         distinct_arguments: &[],
+        gateway_arguments: &[],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_input_port",
@@ -897,6 +1240,14 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_persistent_write", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("input_port_id", "inputPortId"),
+            ("level_db", "levelDb"),
+            ("impedance", "impedance"),
+            ("input_type", "inputType"),
+            ("ground_lift", "groundLift"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_output_port",
@@ -929,6 +1280,13 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_persistent_write", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("output_port_id", "outputPortId"),
+            ("level", "level"),
+            ("ground_lift", "groundLift"),
+            ("mute", "mute"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_usb_port",
@@ -960,6 +1318,12 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_persistent_write", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("level", "level"),
+            ("headphones_source", "headphonesSource"),
+            ("dry_wet", "dryWet"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_midi_thru",
@@ -968,6 +1332,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Enable or disable the QC MIDI Thru setting after explicit confirmation.",
         properties: &[p!("enabled", BOOL), p!("confirm_persistent_write", BOOL)],
         distinct_arguments: &[],
+        gateway_arguments: &[("enabled", "enabled")],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_output_pairing",
@@ -980,6 +1346,11 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_persistent_write", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("xlr12_linked", "xlr12Linked"),
+            ("out34_linked", "out34Linked"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "get_global_eq",
@@ -988,6 +1359,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Read Global EQ bypass state and all 28 normalized parameters.",
         properties: &[],
         distinct_arguments: &[],
+        gateway_arguments: &[],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_global_eq_bypassed",
@@ -996,6 +1369,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Enable or bypass the global EQ after explicit confirmation.",
         properties: &[p!("bypassed", BOOL), p!("confirm_persistent_write", BOOL)],
         distinct_arguments: &[],
+        gateway_arguments: &[("bypassed", "bypassed")],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_global_eq_band",
@@ -1042,6 +1417,15 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_persistent_write", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("band", "band"),
+            ("gain", "gain"),
+            ("frequency", "frequency"),
+            ("q", "q"),
+            ("filter_type", "filterType"),
+            ("enabled", "enabled"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_global_eq_output",
@@ -1061,6 +1445,8 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_persistent_write", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[("level", "level"), ("out12", "out12"), ("out34", "out34")],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "get_mode_cycle",
@@ -1069,6 +1455,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Read the configured footswitch modes in cycle order.",
         properties: &[],
         distinct_arguments: &[],
+        gateway_arguments: &[],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_mode_cycle",
@@ -1089,6 +1477,8 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_persistent_write", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[("slots", "slots")],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "get_global_tempo_settings",
@@ -1097,6 +1487,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Read the device-global tempo block, including PRESET/GLOBAL mode, metronome options, routing, and all thirteen beat cells.",
         properties: &[],
         distinct_arguments: &[],
+        gateway_arguments: &[],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_tempo_metronome",
@@ -1170,6 +1562,18 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_persistent_write", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("led_enabled", "ledEnabled"),
+            ("volume_db", "volumeDb"),
+            ("running", "running"),
+            ("pan", "pan"),
+            ("time_signature", "timeSignature"),
+            ("subdivision", "subdivision"),
+            ("sound", "sound"),
+            ("routing", "routing"),
+            ("beats", "beats"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_tempo_mode",
@@ -1181,6 +1585,8 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_persistent_write", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[("mode", "mode")],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "get_looper_status",
@@ -1189,6 +1595,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "Read the complete Looper X transport and progress state when a looper is present.",
         properties: &[],
         distinct_arguments: &[],
+        gateway_arguments: &[],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "control_looper",
@@ -1225,6 +1633,8 @@ pub static ACTIONS: &[ActionSpec] = &[
             ),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[("command", "command"), ("value", "value")],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "list_recents",
@@ -1233,6 +1643,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "List recently used presets with authoritative folder metadata.",
         properties: &[],
         distinct_arguments: &[],
+        gateway_arguments: &[],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "list_favorites",
@@ -1241,6 +1653,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "List favorite presets using request correlation even when the reply omits its favorites flag.",
         properties: &[],
         distinct_arguments: &[],
+        gateway_arguments: &[],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_favorite",
@@ -1256,6 +1670,14 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_persistent_write", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("name", "name"),
+            ("folder_key", "folderKey"),
+            ("folder_name", "folderName"),
+            ("is_factory", "isFactory"),
+            ("favorite", "favorite"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "list_pinned_models",
@@ -1264,6 +1686,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "List model IDs and capture keys pinned in the device model browser.",
         properties: &[],
         distinct_arguments: &[],
+        gateway_arguments: &[],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_model_pinned",
@@ -1276,6 +1700,8 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_persistent_write", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[("model_id", "modelId"), ("pinned", "pinned")],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "list_captures",
@@ -1284,6 +1710,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "List loadable Neural Captures with their content keys and names.",
         properties: &[],
         distinct_arguments: &[],
+        gateway_arguments: &[],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "load_capture",
@@ -1303,6 +1731,16 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("row", "row"),
+            ("column", "column"),
+            ("key", "key"),
+            ("name", "name"),
+            ("model_id", "modelId"),
+            ("expected_model_id", "expectedModelId"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "list_irs",
@@ -1311,6 +1749,8 @@ pub static ACTIONS: &[ActionSpec] = &[
         description: "List loadable Impulse Responses from the whole library or a selected device folder.",
         properties: &[p!("folder", Kind::NullableString)],
         distinct_arguments: &[],
+        gateway_arguments: &[("folder", "folder")],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "load_ir",
@@ -1337,6 +1777,17 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("expected_preset_name", TEXT),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("row", "row"),
+            ("column", "column"),
+            ("key", "key"),
+            ("name", "name"),
+            ("slot", "slot"),
+            ("model_id", "modelId"),
+            ("expected_model_id", "expectedModelId"),
+            ("expected_preset_name", "expectedPresetName"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "create_setlist",
@@ -1348,6 +1799,8 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_persistent_write", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[("name", "name")],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "delete_setlist",
@@ -1359,6 +1812,8 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_persistent_write", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[("name", "name")],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "duplicate_setlist",
@@ -1386,6 +1841,14 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_persistent_write", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("source_setlist_key", "sourceSetlistKey"),
+            ("destination_name", "destinationName"),
+            ("limit", "limit"),
+            ("expected_preset_name", "expectedPresetName"),
+            ("expected_position", "expectedPosition"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "delete_preset",
@@ -1398,6 +1861,8 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_persistent_write", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[("setlist_key", "setlistKey"), ("name", "name")],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "move_preset",
@@ -1417,6 +1882,12 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_persistent_write", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("setlist_key", "setlistKey"),
+            ("name", "name"),
+            ("position", "position"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_general_integer",
@@ -1438,6 +1909,8 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_persistent_write", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[("setting", "setting"), ("value", "value")],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_general_toggle",
@@ -1463,6 +1936,8 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_persistent_write", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[("setting", "setting"), ("enabled", "enabled")],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_scene_bypass_behavior",
@@ -1477,6 +1952,8 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_persistent_write", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[("behavior", "behavior")],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_master_volume_assignment",
@@ -1491,6 +1968,13 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_persistent_write", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[
+            ("out12", "out12"),
+            ("out34", "out34"),
+            ("send12", "send12"),
+            ("headphones", "headphones"),
+        ],
+        gateway_true_arguments: &[],
     },
     ActionSpec {
         name: "set_global_bypass",
@@ -1503,5 +1987,7 @@ pub static ACTIONS: &[ActionSpec] = &[
             p!("confirm_persistent_write", BOOL),
         ],
         distinct_arguments: &[],
+        gateway_arguments: &[("cab", "cab"), ("ir", "ir")],
+        gateway_true_arguments: &[],
     },
 ];

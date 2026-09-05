@@ -313,6 +313,9 @@ test("one shared action registry drives model tools and MCP safety classes", () 
   assert.equal((generatedPythonTools.match(/^    def /gm) ?? []).length, actions.length);
   assert.match(rustRuntime, /include!\("generated_actions\.rs"\)/);
   assert.doesNotMatch(rustRuntime, /name:\s*"reconnect_device"/);
+  const rustServer = source("services/rust-mcp/src/server.rs");
+  assert.match(rustServer, /spec\.gateway_arguments/);
+  assert.doesNotMatch(rustServer, /fn snake_to_camel/);
   assert.equal((rustGenerated.match(/\bActionSpec \{/g) ?? []).length, actions.length);
   assert.match(pythonParityTests, /test_python_callable_signatures_match_all_contract_properties/);
   assert.match(pythonParityTests, /test_every_python_tool_emits_exactly_the_canonical_gateway_arguments/);
