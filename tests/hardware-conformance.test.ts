@@ -18,6 +18,7 @@ import {
   pngSignatureIsValid,
   redactEvidence,
   retryTransientRead,
+  summarizePhysicalResults,
   validateConfig,
   validateCoverage,
   validateReleaseReports,
@@ -60,6 +61,22 @@ test("physical runner executes every contract action instead of only registering
     contract.actions.map((action: { name: string }) => action.name).filter((name: string) => !invoked.has(name)),
     []
   );
+});
+
+test("physical summaries count unique contract methods instead of repeated restore calls", () => {
+  const summary = summarizePhysicalResults(
+    [
+      { name: "system.status", status: "passed" },
+      { name: "recall_preset", status: "passed" },
+      { name: "recall_preset", status: "passed" },
+      { name: "get_current_preset", status: "passed" },
+      { name: "load_ir", status: "skipped" }
+    ],
+    ["recall_preset", "get_current_preset", "load_ir"],
+    undefined,
+    new Set(["recall_preset", "get_current_preset"])
+  );
+  assert.deepEqual(summary, { passed: 3, failed: 0, skipped: 1, complete: false });
 });
 
 test("full execution requires explicit fixtures and distinct disposable slots", () => {

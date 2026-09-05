@@ -15,6 +15,7 @@ import {
   redactEvidence,
   retryTransientRead,
   resultSnapshot,
+  summarizePhysicalResults,
   validateConfig,
   validateCoverage,
   waitForPhysicalObservation
@@ -1620,11 +1621,12 @@ async function main() {
         report.results.push({ name: action.name, phase: metadata.phase, hazard: metadata.hazard, status: "not-run", reason: report.failure ? "Suite stopped after failure." : "Scenario prerequisite was not enabled." });
       }
     }
-    const passed = report.results.filter((result) => result.status === "passed").length;
-    const actionFailures = report.results.filter((result) => result.status === "failed").length;
-    const failed = actionFailures + (report.failure && actionFailures === 0 ? 1 : 0);
-    const skipped = report.results.filter((result) => result.status === "skipped" || result.status === "not-run").length;
-    report.summary = { passed, failed, skipped, complete: failed === 0 && contract.actions.every((action) => performed.has(action.name)) };
+    report.summary = summarizePhysicalResults(
+      report.results,
+      contract.actions.map((action) => action.name),
+      report.failure,
+      performed
+    );
     const outputPath = resolve(option("--output") ?? resolve(root, "artifacts/hardware-conformance", `${new Date().toISOString().replace(/[:.]/g, "-")}-${config.target}.json`));
     await mkdir(dirname(outputPath), { recursive: true });
     await writeFile(outputPath, `${JSON.stringify(report, null, 2)}\n`);

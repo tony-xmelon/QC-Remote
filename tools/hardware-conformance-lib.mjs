@@ -320,6 +320,26 @@ export function actionPlan(contract, enabledHazards = new Set(["read"])) {
   }));
 }
 
+export function summarizePhysicalResults(results, contractActionNames, failure, performedNames) {
+  const expectedNames = ["system.status", ...contractActionNames];
+  const rowsFor = (name) => results.filter((result) => result.name === name);
+  const failedNames = expectedNames.filter((name) => rowsFor(name).some((result) => result.status === "failed"));
+  const passedNames = expectedNames.filter((name) => {
+    const rows = rowsFor(name);
+    return rows.some((result) => result.status === "passed")
+      && rows.every((result) => result.status === "passed");
+  });
+  const failed = failedNames.length + (failure && failedNames.length === 0 ? 1 : 0);
+  return {
+    passed: passedNames.length,
+    failed,
+    skipped: expectedNames.length - passedNames.length - failedNames.length,
+    complete: failed === 0
+      && rowsFor("system.status").some((result) => result.status === "passed")
+      && contractActionNames.every((name) => performedNames.has(name))
+  };
+}
+
 export function assertMutationAcknowledged(environment = process.env) {
   if (environment.QC_HARDWARE_TEST_ACK !== MUTATION_ACK) {
     throw new Error(`Mutation execution requires QC_HARDWARE_TEST_ACK=${MUTATION_ACK}.`);
