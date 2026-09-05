@@ -68,8 +68,8 @@ comparison.
 
 | Client | Official frames rendered | Mean structural match | Mean color similarity |
 | --- | ---: | ---: | ---: |
-| Windows | 36/36 (100%) | **91.88%** | **97.15%** |
-| Android | 36/36 (100%) | **91.88%** | **97.15%** |
+| Windows | 36/36 (100%) | **91.89%** | **97.15%** |
+| Android | 36/36 (100%) | **91.89%** | **97.15%** |
 
 This broader corpus is deliberately reported separately from the 41-frame
 physical-device regression pack. It adds authoritative coverage for I/O,
@@ -87,7 +87,7 @@ join is in [the canonical coverage matrix](qc-screen-coverage-matrix.md).
 
 | Official state | Windows structural match | Android structural match |
 | --- | ---: | ---: |
-| `official-tuner` | **88.59%** | **88.59%** |
+| `official-tuner` | **88.87%** | **88.88%** |
 | `official-tempo` | **90.89%** | **90.89%** |
 | `official-modes-configuration` | **91.84%** | **91.84%** |
 | `official-gig-view-preset` | **95.61%** | **95.61%** |
@@ -172,6 +172,10 @@ join is in [the canonical coverage matrix](qc-screen-coverage-matrix.md).
 
 ## Improvements in this pass
 
+- Matched the official Tuner's larger, lower 440 Hz encoder without changing
+  the physical Tuner state. The frame rises from **88.62% / 88.63% to 88.87% /
+  88.88% structural** on Windows / Android, and the complete official corpus
+  now reaches **91.89% structural** on both hosts.
 - Extended the shared official Directory canvas through the measured bottom
   edge, while retaining Plugin Presets' distinct 8 px inset. All seven affected
   authoritative frames improve on both hosts: Presets reaches **96.73%**,

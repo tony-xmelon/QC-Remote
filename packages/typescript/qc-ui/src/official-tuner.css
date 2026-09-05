@@ -15,7 +15,7 @@
 .tuner-official .tuner-note { left: 50%; transform: translateX(-50%); color: #f8fcf8; font-size: 8cqw; line-height: .9; }
 .tuner-official .tuner-sharp { right: 3%; font-size: 4cqw; }
 .tuner-official > footer { background: #282c28; }
-.tuner-official .tuner-frequency > i { left: 9.125cqw; background: radial-gradient(circle at center, #282c28 0 63%, transparent 65%), conic-gradient(from 220deg, #40f860 0 42%, #101010 42%); }
+.tuner-official .tuner-frequency > i { left: 9.125cqw; top: .55cqw; width: 7.75cqw; height: 7.75cqw; background: radial-gradient(circle at center, #282c28 0 63%, transparent 65%), conic-gradient(from 220deg, #40f860 0 42%, #101010 42%); }
 .tuner-official .tuner-frequency > i::after { content: ""; position: absolute; left: 50%; top: .4cqw; width: .25cqw; height: 3cqw; transform: translateX(-50%); background: #f8fcf8; }
 
 }

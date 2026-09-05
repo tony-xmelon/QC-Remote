@@ -43,6 +43,11 @@ test("official directory panels retain the measured bottom edge", () => {
   assert.match(css, /\.directory-official\.is-plugins > main \{[^}]*bottom: 1cqw;/s);
 });
 
+test("official tuner retains the measured 440 Hz encoder geometry", () => {
+  const css = readFileSync("packages/typescript/qc-ui/src/official-tuner.css", "utf8");
+  assert.match(css, /\.tuner-official \.tuner-frequency > i \{[^}]*top: \.55cqw;[^}]*width: 7\.75cqw;[^}]*height: 7\.75cqw;/s);
+});
+
 test("vendored block sprite remains byte-identical to the verified Neural DSP SVG", () => {
   const canonical = readFileSync("apps/windows/public/qc-block-samples.svg", "utf8").replaceAll("\r\n", "\n");
   assert.equal(createHash("sha256").update(canonical).digest("hex"), "aa32a2304e05fc62a783df4ed94c31780c18ff7c1e5f34a73aa1371f748919fc");
