@@ -292,7 +292,6 @@ fn normalize_public_arguments(
             .filter_map(|(source, target)| {
                 arguments
                     .get(*source)
-                    .filter(|value| !value.is_null())
                     .map(|value| ((*target).to_owned(), value.clone()))
             })
             .chain(

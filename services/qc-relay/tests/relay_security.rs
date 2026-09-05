@@ -379,6 +379,70 @@ async fn public_actions_reject_smuggled_fields_and_translate_only_gateway_argume
     assert!(caller.await.unwrap().is_ok());
 }
 
+#[tokio::test]
+async fn public_actions_preserve_explicit_null_safety_guards() {
+    let credentials = DeviceCredentialStore::new();
+    let pairing = PairingManager::new(credentials.clone());
+    let (alice, credential) = paired("alice", "phone-a", &credentials, &pairing).await;
+    let hub = RelayHub::with_timeout(credentials, Duration::from_secs(1));
+    let mut connection = hub.connect(credential).await;
+    connection.set_ready(true);
+
+    let caller = {
+        let hub = hub.clone();
+        tokio::spawn(async move {
+            hub.invoke(
+                &alice,
+                InvokeRequest {
+                    device_id: DeviceId("phone-a".into()),
+                    action: "load_capture".into(),
+                    arguments: json!({
+                        "row": 3,
+                        "column": 6,
+                        "key": "capture-key",
+                        "name": "Capture",
+                        "model_id": 14000,
+                        "expected_model_id": null,
+                        "expected_preset_name": "Scratch"
+                    }),
+                    confirmation: None,
+                },
+            )
+            .await
+        })
+    };
+    let DeviceFrame::Invoke { id, method, params, .. } = connection.outbound.recv().await.unwrap() else {
+        panic!("invoke expected");
+    };
+    assert_eq!(method, "device.loadCapture");
+    assert_eq!(
+        params,
+        json!({
+            "row": 3,
+            "column": 6,
+            "key": "capture-key",
+            "name": "Capture",
+            "modelId": 14000,
+            "expectedModelId": null,
+            "expectedPresetName": "Scratch"
+        })
+    );
+    connection
+        .accept(DeviceFrame::Result {
+            id,
+            ok: true,
+            result: Some(json!({
+                "accepted": true,
+                "verified": true,
+                "verification": "authoritative_readback",
+                "detail": "Capture loaded"
+            })),
+            error: None,
+        })
+        .await;
+    assert!(caller.await.unwrap().is_ok());
+}
+
 #[test]
 fn generated_action_policy_has_one_closed_argument_surface() {
     let mut names = std::collections::HashSet::new();
