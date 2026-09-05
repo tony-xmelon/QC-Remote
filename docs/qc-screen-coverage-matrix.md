@@ -12,8 +12,8 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 
 | Corpus | Windows structural | Windows color | Android structural | Android color |
 | --- | ---: | ---: | ---: | ---: |
-| Physical device | 91.45% | 97.39% | 91.44% | 97.39% |
-| Official manual | 90.87% | 97.12% | 90.87% | 97.12% |
+| Physical device | 91.49% | 97.39% | 91.47% | 97.39% |
+| Official manual | 90.88% | 97.12% | 90.87% | 97.12% |
 
 Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` color similarity. A canonical state that references multiple frames reports their mean. Detail evidence is scoped and therefore never promoted into a full-frame score.
 
@@ -69,7 +69,7 @@ Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` col
 | GL-23 | Monitoring | CPU Monitor | official detail | Built | Built | — / — | — / — | — / — | — / — |
 | GL-24 | Performance | Tuner with Live Tuner enabled | physical frame | Built | Built | 90.85% / 90.86% | 97.82% / 97.82% | — / — | — / — |
 | IO-01 | I/O | I/O Settings overview | official detail | Built | Built | — / — | — / — | — / — | — / — |
-| IO-02 | I/O | Analog input detail | official frame | Built | Built | — / — | — / — | 87.73% / 87.73% | 97.31% / 97.32% |
+| IO-02 | I/O | Analog input detail | official frame | Built | Built | — / — | — / — | 87.81% / 87.81% | 97.31% / 97.31% |
 | IO-03 | I/O | Analog output detail | smoke only | Built | Built | — / — | — / — | — / — | — / — |
 | IO-04 | I/O | Send/Return detail | smoke only | Built | Built | — / — | — / — | — / — | — / — |
 | IO-05 | I/O | USB I/O detail | official frame | Built | Built | — / — | — / — | 88.10% / 88.09% | 96.48% / 96.48% |
@@ -82,9 +82,9 @@ Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` col
 | GR-04 | Routing | Splitter parameter editor | physical frame | Built | Built | 89.28% / 89.31% | 97.47% / 97.47% | — / — | — / — |
 | GR-05 | Routing | Mixer parameter editor | physical frame | Built | Built | 90.48% / 90.52% | 97.54% / 97.54% | — / — | — / — |
 | GR-06 | Grid | Empty-slot target | official frame | Built | Built | — / — | — / — | 94.03% / 94.03% | 98.46% / 98.46% |
-| DB-01 | Device browser | Category root | physical frame | Built | Built | 87.48% / 87.50% | 97.43% / 97.44% | — / — | — / — |
-| DB-02 | Device browser | Guitar/Bass model list | physical frame + official frame | Built | Built | 89.84% / 89.84% | 97.52% / 97.52% | 87.13% / 87.13% | 98.22% / 98.22% |
-| DB-03 | Device browser | First-use device-preset tooltip | physical frame | Built | Built | 88.64% / 88.64% | 97.68% / 97.68% | — / — | — / — |
+| DB-01 | Device browser | Category root | physical frame | Built | Built | 87.92% / 87.94% | 97.44% / 97.45% | — / — | — / — |
+| DB-02 | Device browser | Guitar/Bass model list | physical frame + official frame | Built | Built | 90.30% / 90.30% | 97.53% / 97.53% | 87.13% / 87.13% | 98.22% / 98.22% |
+| DB-03 | Device browser | First-use device-preset tooltip | physical frame | Built | Built | 89.10% / 89.10% | 97.69% / 97.69% | — / — | — / — |
 | DB-04 | Device browser | Search results | smoke only | Built | Built | — / — | — / — | — / — | — / — |
 | DB-05 | Device browser | Favorites / Recent models | smoke only | Built | Built | — / — | — / — | — / — | — / — |
 | DB-06 | Device browser | Plugin device folders | official frame | Built | Built | — / — | — / — | 87.92% / 87.91% | 99.05% / 99.05% |
@@ -181,7 +181,7 @@ These states are implemented and captured on both hosts, but only against determ
 
 ## Score source files
 
-- Physical Windows: `.artifacts/ui-looper-final/windows-comparison/summary.json`
-- Physical Android: `.artifacts/ui-looper-final/android-comparison/summary.json`
-- Official Windows: `.artifacts/ui-official-looper-final/windows-comparison/summary.json`
-- Official Android: `.artifacts/ui-official-looper-final/android-comparison/summary.json`
+- Physical Windows: `.artifacts/ui-parity-final/windows-comparison/summary.json`
+- Physical Android: `.artifacts/ui-parity-final/android-comparison/summary.json`
+- Official Windows: `.artifacts/ui-official-parity-final/windows-comparison/summary.json`
+- Official Android: `.artifacts/ui-official-parity-final/android-comparison/summary.json`

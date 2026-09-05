@@ -7,8 +7,8 @@ Reference: physical Quad Cortex, CorOS 4.1.0, 800x480 framebuffer corpus
 
 | Client | Physical corpus rendered | Mean structural match | Mean color similarity |
 | --- | ---: | ---: | ---: |
-| Windows | 41/41 (100%) | **91.45%** | **97.39%** |
-| Android | 41/41 (100%) | **91.44%** | **97.39%** |
+| Windows | 41/41 (100%) | **91.49%** | **97.39%** |
+| Android | 41/41 (100%) | **91.47%** | **97.39%** |
 
 These are native-size measurements, not audit estimates. Both hosts render the
 same versioned `coros410` scratch-preset fixture through `@ndsp-qc/ui`; each
@@ -68,7 +68,7 @@ comparison.
 
 | Client | Official frames rendered | Mean structural match | Mean color similarity |
 | --- | ---: | ---: | ---: |
-| Windows | 36/36 (100%) | **90.87%** | **97.12%** |
+| Windows | 36/36 (100%) | **90.88%** | **97.12%** |
 | Android | 36/36 (100%) | **90.87%** | **97.12%** |
 
 This broader corpus is deliberately reported separately from the 41-frame
@@ -94,7 +94,7 @@ join is in [the canonical coverage matrix](qc-screen-coverage-matrix.md).
 | `official-gig-view-scene` | **93.50%** | **93.50%** |
 | `official-gig-view-stomp` | **88.85%** | **88.85%** |
 | `official-gig-view-hybrid` | **90.68%** | **90.68%** |
-| `official-io-settings-analog` | **87.71%** | **87.70%** |
+| `official-io-settings-analog` | **87.81%** | **87.81%** |
 | `official-io-settings-usb` | **88.08%** | **88.08%** |
 | `official-global-eq` | **90.51%** | **90.51%** |
 | `official-grid-brit-2203` | **92.25%** | **92.26%** |
@@ -134,9 +134,9 @@ join is in [the canonical coverage matrix](qc-screen-coverage-matrix.md).
 | `preset-directory` | **92.23%** | **92.25%** |
 | `input-route-selector` | **88.26%** | **88.31%** |
 | `output-route-selector` | **88.91%** | **88.95%** |
-| `device-browser-root` | **87.48%** | **87.50%** |
-| `device-browser-models` | **91.05%** | **91.05%** |
-| `device-browser-models-clean` | **88.64%** | **88.64%** |
+| `device-browser-root` | **87.92%** | **87.94%** |
+| `device-browser-models` | **91.49%** | **91.49%** |
+| `device-browser-models-clean` | **89.10%** | **89.10%** |
 | `editor-simple-gate` | **92.56%** | **92.56%** |
 | `editor-chief-ds1` | **92.33%** | **92.33%** |
 | `editor-digital-flanger` | **87.66%** | **87.68%** |
@@ -172,6 +172,15 @@ join is in [the canonical coverage matrix](qc-screen-coverage-matrix.md).
 
 ## Improvements in this pass
 
+- Hid the Grid's routing connector badges beneath the physical device-browser
+  overlay, matching all three captured browser states. Root rises from **87.48%
+  / 87.50% to 87.92% / 87.94%**, Models from **91.05% to 91.49%**, and Models
+  Clean from **88.64% to 89.10%** on Windows / Android. Resizing and anchoring
+  only Analog I/O's encoder wells also raises that official frame from **87.73%
+  to 87.81%** on both hosts without changing USB I/O. Complete reruns reach
+  **91.49% Windows / 91.47% Android structural and 97.39% color** across the
+  41-frame physical corpus, plus **90.88% / 90.87% structural and 97.12% color**
+  across the 36-frame official corpus, with no missing renders.
 - Rebuilt Looper X's instruction spacing and action glyph geometry from the
   official 800x480 reference, including the One Shot loop, numeric half-speed
   mark, playback/reverse triangles, and Undo arrow. Looper rises from **87.36%

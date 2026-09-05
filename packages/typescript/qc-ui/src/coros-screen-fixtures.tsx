@@ -777,9 +777,9 @@ function CorOsOfficialGrid({ snapshot, children, browserChrome = false }: { snap
         {rowY.map((y, row) => <g key={`rails-${row}`}>{railLabel(routes[row]?.input, 30, y)}{railLabel(routes[row]?.output, 770, y)}</g>)}
       </g>
       <g fill="none" stroke="#8f9092" strokeWidth="1.4">{rowY.map((y, row) => screenBlocks.some((block) => block.row === row) ? <path key={row} d={`M52 ${y}H748`} /> : null)}</g>
-      <g aria-hidden="true">
+      {!browserChrome && <g aria-hidden="true">
         {[[53, 147, false], [587, 147, false], [159, 335, true]].map(([x, y, dimmed]) => <g key={`${x}-${y}`} transform={`translate(${x} ${y})`} opacity={dimmed ? .42 : 1}><rect x="-8" y="-7" width="16" height="14" rx="5" fill="#f1f2f1" /><circle cx="-3" cy="0" r="2" fill="#171917" /><path d="M0-3 5 0 0 3Z" fill="#171917" /></g>)}
-      </g>
+      </g>}
       <g>{screenBlocks.map((block) => { const cx = columns[block.column]; const cy = rowY[block.row]; return <g key={block.id} opacity={block.bypassed ? .48 : 1}><DeviceGlyph block={block} x={cx} y={cy} />{block.bypassed && <path d={`M${cx - 32} ${cy}H${cx + 32}`} fill="none" stroke="#c9c9ca" strokeWidth="2" opacity=".9" />}</g>; })}</g>
     </svg>{children}
   </div>;
