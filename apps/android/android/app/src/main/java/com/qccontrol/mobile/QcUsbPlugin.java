@@ -847,8 +847,6 @@ public class QcUsbPlugin extends Plugin {
         long queuedAt = System.currentTimeMillis();
         midiIo.execute(() -> {
             try {
-                lastMidiQueueDelayMs = Math.max(0, System.currentTimeMillis() - queuedAt);
-                maxMidiQueueDelayMs = Math.max(maxMidiQueueDelayMs, lastMidiQueueDelayMs);
                 long remaining = QcUsbProfile.PERFORMANCE_MIDI_GAP_MS - (System.currentTimeMillis() - lastMidiCommandAt);
                 if (remaining > 0) Thread.sleep(remaining);
                 byte[] packet = {
@@ -862,9 +860,12 @@ public class QcUsbPlugin extends Plugin {
                 int written = activeMidiConnection.bulkTransfer(midiOutputEndpoint, packet, packet.length, MIDI_WRITE_TIMEOUT_MS);
                 lastMidiCommandAt = System.currentTimeMillis();
                 if (written != packet.length) throw new RelayException("MIDI_WRITE_FAILED", "The complete MIDI packet was not written.");
+                lastMidiQueueDelayMs = Math.max(0, System.currentTimeMillis() - queuedAt);
+                maxMidiQueueDelayMs = Math.max(maxMidiQueueDelayMs, lastMidiQueueDelayMs);
                 result.complete(new org.json.JSONObject()
                     .put("accepted", true).put("verified", false)
                     .put("verification", "accepted_unverified")
+                    .put("dispatchLatencyMs", lastMidiQueueDelayMs)
                     .put("detail", "Performance MIDI command accepted; live USB state will reconcile the result."));
             } catch (Exception error) { result.completeExceptionally(error); }
         });
