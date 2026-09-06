@@ -5,8 +5,8 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 ## Coverage summary
 
 - Canonical device states: **103/103** routed through the shared Windows/Android surface.
-- Full-frame authoritative evidence: **85/103** states.
-- Official-detail-only evidence: **13/103** states.
+- Full-frame authoritative evidence: **86/103** states.
+- Official-detail-only evidence: **12/103** states.
 - Smoke-only evidence gaps: **5/103** states.
 - Exact-size dual-host capture paths: **103/103** states.
 
@@ -17,15 +17,15 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 
 Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` color similarity. A canonical state that references multiple frames reports their mean. Detail evidence is scoped and therefore never promoted into a full-frame score.
 
-Twenty-one captures were added from hardware in the CorOS 4.1.0 session of 2026-09-06:
+Twenty-two captures were added from hardware in the CorOS 4.1.0 session of 2026-09-06:
 
-- Directory — `directory-categories`, `-captures`, `-irs`, `-plugins`, `-favorites`, `-search`, `-search-results`, `-sort`, `-arrange`
+- Directory — `directory-categories`, `-captures`, `-irs`, `-plugins`, `-favorites`, `-search`, `-search-results`, `-sort`, `-arrange`, `-new-folder`
 - I/O — `io-input`, `io-usb`, `global-eq`
 - Editor — `expression-parameter`, `expression-bypass`
 - Grid and browser — `empty-slot`, `plugin-folders`
 - Monitoring and Settings — `cpu-monitor`, `settings-account`, `settings-device`, `settings-midi`, `settings-system`
 
-Full-frame authoritative coverage moved from 79/103 to 85/103 as a result, which the summary counts above reflect.
+Full-frame authoritative coverage moved from 79/103 to 86/103 as a result, which the summary counts above reflect.
 
 Two things below are **not** refreshed for them, because both come from a scored dual-host render pass that has not been run: the score table, and the per-state `Evidence` column, which still reads `official frame` or `official detail` for the promoted states. Their wording has been checked against the device's own scene graph with `npm run verify:qc-screen-text`; their pixels have not been scored.
 
@@ -46,7 +46,7 @@ Two things below are **not** refreshed for them, because both come from a scored
 | Editor | 9 | 8 | 1 | 0 |
 | Assignment | 4 | 2 | 2 | 0 |
 | Virtual Device preset | 2 | 2 | 0 | 0 |
-| Directory | 16 | 13 | 3 | 0 |
+| Directory | 16 | 14 | 2 | 0 |
 | Capture V1 | 7 | 4 | 2 | 1 |
 | Settings | 10 | 9 | 0 | 1 |
 | Recovery | 2 | 0 | 1 | 1 |

@@ -841,6 +841,9 @@
       ],
       "smoke": [
         "directory-new-folder"
+      ],
+      "physical": [
+        "directory-new-folder"
       ]
     },
     {
