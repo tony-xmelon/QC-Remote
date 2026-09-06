@@ -108,6 +108,23 @@ async function step(name, body) {
 
 const expect = (condition, message) => { if (!condition) throw new Error(message); };
 
+/**
+ * The broker serves one device operation at a time and names the collision
+ * rather than queueing behind it. A poll that races a write is the harness's
+ * problem, not the app's: wait and ask again.
+ */
+async function invokeWhenFree(method, params = {}, budgetMs = 8_000) {
+  const deadline = Date.now() + budgetMs;
+  for (;;) {
+    try { return await invoke(method, params); }
+    catch (error) {
+      const busy = /transport is busy/i.test(String(error?.message ?? error));
+      if (!busy || Date.now() >= deadline) throw error;
+      await sleep(150);
+    }
+  }
+}
+
 /** Poll a device condition rather than guessing at a fixed delay. */
 async function waitFor(condition, message, budgetMs = timeoutMs) {
   const deadline = Date.now() + budgetMs;
@@ -116,6 +133,38 @@ async function waitFor(condition, message, budgetMs = timeoutMs) {
     await sleep(250);
   }
   throw new Error(message);
+}
+
+/**
+ * The editing steps need a preset that actually holds blocks. An empty slot is
+ * a legitimate thing to be parked on, so look for a populated one rather than
+ * reporting the whole workflow as untested. Step 22 puts the device back.
+ */
+async function loadPresetWithBlocks(attempts = 6) {
+  let snapshot = await invoke("device.snapshot");
+  if (snapshot.blocks.some((block) => block.column >= 0 && block.modelId !== undefined)) {
+    return { snapshot, recalled: false };
+  }
+  if (snapshot.dirty) return { snapshot, recalled: false, blocked: "the loaded preset has unsaved changes" };
+  const listing = await invoke("device.listPresets", { setlistKey: snapshot.setlistKey });
+  const candidates = (listing.presets ?? listing.entries ?? [])
+    .filter((entry) => entry.name && entry.name !== "Unsaved" && entry.position !== snapshot.presetPosition)
+    .slice(0, attempts);
+  for (const candidate of candidates) {
+    const current = await invoke("device.snapshot");
+    await invoke("device.recallPreset", {
+      setlistKey: snapshot.setlistKey, position: candidate.position,
+      expectedPresetName: current.presetName ?? "", expectedPosition: current.presetPosition,
+      expectedSetlistKey: current.setlistKey
+    }).catch(() => undefined);
+    await waitFor(async () => (await invoke("device.snapshot")).presetPosition === candidate.position,
+      `the device did not recall ${candidate.location}`, 25_000).catch(() => undefined);
+    snapshot = await invoke("device.snapshot");
+    if (snapshot.blocks.some((block) => block.column >= 0 && block.modelId !== undefined)) {
+      return { snapshot, recalled: true, at: snapshot.presetLocation };
+    }
+  }
+  return { snapshot, recalled: candidates.length > 0, blocked: "no preset in this setlist reported blocks" };
 }
 
 /** Put the device back on the preset this run found loaded. */
@@ -414,13 +463,30 @@ await step("08-master-volume-round-trips-without-losing-sync", async (record) =>
   const uiVolume = () => page.evaluate(() =>
     Number(document.querySelector('[aria-label="Master volume knob"]')?.getAttribute("aria-valuenow")));
   const observed = async () => ({
-    gateway: (await invoke("device.masterVolume")).value,
+    gateway: (await invokeWhenFree("device.masterVolume")).value,
     ui: await uiVolume()
   });
-  const waitForVolume = (value) => waitFor(async () => {
-    const now = await observed();
-    return now.gateway === value && now.ui === value;
-  }, `Master Volume never settled on ${value}`, timeoutMs);
+  const statusNotice = () => page.evaluate(() =>
+    document.querySelector(".status-notice")?.textContent?.trim() ?? null).catch(() => null);
+  const waitForVolume = async (value) => {
+    try {
+      await waitFor(async () => {
+        const now = await observed();
+        return now.gateway === value && now.ui === value;
+      }, "settle", timeoutMs);
+    } catch {
+      // Say what the device and the app each hold, and what the app last said
+      // about it: "never settled" alone names neither side of the mismatch.
+      const now = await observed().catch((error) => ({ error: String(error?.message ?? error) }));
+      throw new Error(`Master Volume never settled on ${value}: gateway=${now.gateway} ui=${now.ui} notice="${await statusNotice()}"`);
+    }
+  };
+  const notices = [];
+  const stepNoticeWatch = setInterval(async () => {
+    const notice = await statusNotice();
+    if (notice && notices.at(-1) !== notice) notices.push(notice);
+  }, 120);
+  record.facts.notices = notices;
   const initial = await observed();
   expect(initial.gateway === initial.ui, `volume disagrees at rest: gateway ${initial.gateway}, UI ${initial.ui}`);
   const increase = initial.gateway < 100;
@@ -441,10 +507,8 @@ await step("08-master-volume-round-trips-without-losing-sync", async (record) =>
   const sweepUp = initial.gateway <= 100 - sweepSteps;
   const sweepKey = sweepUp ? "ArrowUp" : "ArrowDown";
   const sweepTarget = initial.gateway + (sweepUp ? sweepSteps : -sweepSteps);
-  const notices = [];
   const noticeWatch = setInterval(async () => {
-    const notice = await page.evaluate(() => document.querySelector(".status-notice")?.textContent?.trim() ?? null)
-      .catch(() => null);
+    const notice = await statusNotice();
     if (notice && notices.at(-1) !== notice) notices.push(notice);
   }, 120);
   let sweep;
@@ -459,6 +523,7 @@ await step("08-master-volume-round-trips-without-losing-sync", async (record) =>
   } finally {
     clearInterval(noticeWatch);
   }
+  clearInterval(stepNoticeWatch);
   // Put the device back where it was regardless of how the sweep went.
   const beforeRestore = await observed();
   if (beforeRestore.gateway !== initial.gateway) {
@@ -592,10 +657,11 @@ await step("14-block-bypass-round-trips-through-the-grid", async (record) => {
   // The navigation steps leave the device elsewhere; the editing steps need the
   // preset this run started on, which is the one the user actually had loaded.
   record.facts.returned = await returnToStartingPreset();
-  const start = await invoke("device.snapshot");
-  const block = start.blocks.find((candidate) => candidate.column >= 0 && candidate.modelId !== undefined)
-    ?? start.blocks[0];
-  if (!block) return { skipped: "the loaded preset has no blocks" };
+  const located = await loadPresetWithBlocks();
+  record.facts.located = { recalled: located.recalled, at: located.at, blocked: located.blocked };
+  const start = located.snapshot;
+  const block = start.blocks.find((candidate) => candidate.column >= 0 && candidate.modelId !== undefined);
+  if (!block) return { skipped: located.blocked ?? "no preset with blocks could be loaded" };
   const original = Boolean(block.bypassed);
   // Read the scene immediately before the write: the guard compares against the
   // device's live scene, and an earlier step may still be settling.
@@ -628,9 +694,10 @@ await step("14-block-bypass-round-trips-through-the-grid", async (record) => {
 });
 
 await step("15-parameter-edit-reads-back-and-restores", async () => {
-  const start = await invoke("device.snapshot");
+  const located = await loadPresetWithBlocks();
+  const start = located.snapshot;
   const block = start.blocks.find((candidate) => candidate.column >= 0 && candidate.modelId !== undefined);
-  if (!block) return { skipped: "the loaded preset has no editable blocks" };
+  if (!block) return { skipped: located.blocked ?? "no preset with editable blocks could be loaded" };
   const details = await invoke("device.blockDetails", { row: block.row, column: block.column, expectedPresetName: start.presetName ?? "" });
   const parameter = (details.parameters ?? []).find((candidate) => typeof candidate.normalizedValue === "number");
   if (!parameter) return { skipped: `${block.name} reports no continuous parameter` };
