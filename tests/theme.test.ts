@@ -10,6 +10,19 @@ const sha256 = (path: string) => createHash("sha256").update(path.endsWith(".svg
   ? readFileSync(path, "utf8").replaceAll("\r\n", "\n")
   : readFileSync(path)).digest("hex");
 
+test("device typography ships deterministic Windows and Android faces", () => {
+  const themeCss = read("packages/typescript/qc-theme/src/theme.css");
+  const deviceCss = read("packages/typescript/qc-ui/src/qc-device-typography.css");
+  const themePackage = JSON.parse(read("packages/typescript/qc-theme/package.json"));
+  assert.match(themeCss, /@fontsource-variable\/arimo/);
+  assert.match(themeCss, /@fontsource-variable\/roboto/);
+  assert.equal(themePackage.dependencies["@fontsource-variable/arimo"], "^5.3.0");
+  assert.equal(themePackage.dependencies["@fontsource-variable/roboto"], "^5.3.0");
+  assert.match(deviceCss, /html body #root#root \.qc-screen-bezel \*/);
+  assert.match(deviceCss, /font-family: "Arimo Variable"/);
+  assert.match(deviceCss, /font-family: "Roboto Variable"/);
+});
+
 test("shared theme retains every measured native QC color", () => {
   assert.deepEqual(QC_COLORS.captured, {
     screen: "#000000",
@@ -54,7 +67,8 @@ test("shared theme retains every measured native QC color", () => {
     headerSave: "#eceeec",
     headerMenu: "#ffffff",
     modeJoin: "#707c70",
-    sceneBadge: "#ffd331"
+    sceneBadge: "#ffd331",
+    presetBrown: "#9b613c"
   });
   assert.deepEqual(QC_COLORS.browserCategory, {
     plugin: "#42fb63", amp: "#ff2421", capture: "#949694", cab: "#6b55ff", overdrive: "#ff7100",
@@ -66,7 +80,7 @@ test("shared theme retains every measured native QC color", () => {
   assert.equal(QC_GEOMETRY.screen.height, 480);
   assert.equal(QC_GEOMETRY.grid.rows, 4);
   assert.equal(QC_GEOMETRY.grid.columns, 6);
-  assert.match(QC_TYPOGRAPHY.device, /Arial Narrow/);
+  assert.match(QC_TYPOGRAPHY.device, /Arimo Variable/);
 });
 
 test("theme CSS mirrors the typed tokens and is loaded by both apps", () => {
@@ -168,9 +182,10 @@ test("authored app and device sources cannot bypass the shared visual contract",
     .filter((file) => existsSync(file))
     .filter((file) => /\.(?:css|html|java|json|mjs|ps1|py|rs|ts|tsx|xml)$/.test(file))
     .filter((file) => !file.startsWith("packages/typescript/qc-theme/"))
-    .filter((file) => !file.startsWith("packages/typescript/qc-ui/src/official-") && !file.startsWith("packages/typescript/qc-ui/src/remaining-fixtures") && !file.endsWith("/coros-screen-fixtures.tsx") && !file.endsWith("/fixture-live-surface.css") && !file.endsWith("/reference-parameter-editor.css"))
+    .filter((file) => !file.startsWith("packages/typescript/qc-ui/src/official-") && !file.startsWith("packages/typescript/qc-ui/src/remaining-fixtures") && !file.endsWith("/coros-screen-fixtures.tsx") && !file.endsWith("/fixture-live-surface.css") && !file.endsWith("/reference-parameter-editor.css") && !file.endsWith("/qc-device-typography.css"))
     .filter((file) => !/^tools\/capture_.*\.mjs$/.test(file))
     .filter((file) => file !== "tools/sweep_qc_font.mjs")
+    .filter((file) => file !== "tools/compare_qc_font_candidates.py")
     .filter((file) => file !== "apps/android/capacitor.config.json")
     .filter((file) => !file.includes("/tests/") && !file.endsWith(".test.ts") && !file.endsWith(".test.tsx"))
     .filter((file) => !/generated[-_]/i.test(file) && !file.endsWith("package-lock.json"));

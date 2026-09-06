@@ -1,6 +1,7 @@
 import { readFile, mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { writeTypographyMask, writeTypographySnapshot } from "./qc-typography-snapshot.mjs";
 
 const playwrightModule = process.env.CODEX_WORKSPACE_NODE_MODULES
   ? pathToFileURL(join(process.env.CODEX_WORKSPACE_NODE_MODULES, "playwright", "index.mjs")).href
@@ -12,6 +13,8 @@ const androidUrl = process.argv[4] ?? "http://127.0.0.1:5173/";
 const outputRoot = process.argv[5] ?? ".artifacts/ui-official-manual";
 const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
 const requestedIds = new Set((process.env.QC_CAPTURE_IDS ?? "").split(",").map((id) => id.trim()).filter(Boolean));
+const requestedHosts = new Set((process.env.QC_CAPTURE_HOSTS ?? "windows,android").split(",").map((host) => host.trim()).filter(Boolean));
+const forcedFont = process.env.QC_FORCE_FONT?.trim();
 const captures = manifest.captures.filter((capture) => capture.renderer && (!requestedIds.size || requestedIds.has(capture.id)));
 
 const browser = await chromium.launch({ headless: true, executablePath: process.env.QC_BROWSER_EXECUTABLE, args: ["--disable-lcd-text"] });
@@ -47,6 +50,10 @@ async function captureHost(host, baseUrl, viewport, css) {
     }
     await page.goto(url.href, { waitUntil: "networkidle" });
     if (css) await page.addStyleTag({ content: css });
+    if (forcedFont) {
+      await page.addStyleTag({ content: `html body .qc-screen-bezel, html body .qc-screen-bezel * { font-family: ${JSON.stringify(forcedFont)} !important; }` });
+      await page.evaluate(() => document.fonts.ready);
+    }
     if (process.env.QC_CAPTURE_DEBUG_STYLES) {
       const styles = await page.evaluate(() => Object.fromEntries([".qc-screen-bezel", ".qc-screen-fixture-root", ".qc-screen", ".coros-device-browser-official"].map((selector) => {
         const element = document.querySelector(selector);
@@ -67,15 +74,17 @@ async function captureHost(host, baseUrl, viewport, css) {
       if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
       window.getSelection()?.removeAllRanges();
     });
+    await writeTypographySnapshot(page, screen, join(output, `${capture.id}.typography.json`), host, capture.id);
     await screen.screenshot({ path: join(output, `${capture.id}.png`), animations: "disabled", timeout: 15000 });
+    await writeTypographyMask(page, screen, join(output, `${capture.id}.no-text.png`));
     console.log(`Captured ${host} ${capture.id}`);
   }
   await page.close();
 }
 
 await Promise.all([
-  captureHost("windows", windowsUrl, { width: 802, height: 482 }, windowsCss),
-  captureHost("android", androidUrl, { width: 822, height: 1280 }, androidCss),
+  requestedHosts.has("windows") && captureHost("windows", windowsUrl, { width: 802, height: 482 }, windowsCss),
+  requestedHosts.has("android") && captureHost("android", androidUrl, { width: 822, height: 1280 }, androidCss),
 ]);
 await browser.close();
-console.log(`Captured ${captures.length} official-manual states per host in ${outputRoot}`);
+console.log(`Captured ${captures.length} official-manual states for ${[...requestedHosts].join(", ")} in ${outputRoot}`);

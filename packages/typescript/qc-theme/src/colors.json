@@ -42,7 +42,8 @@
     "headerSave": "#eceeec",
     "headerMenu": "#ffffff",
     "modeJoin": "#707c70",
-    "sceneBadge": "#ffd331"
+    "sceneBadge": "#ffd331",
+    "presetBrown": "#9b613c"
   },
   "scene": [
     "#ff2727",
