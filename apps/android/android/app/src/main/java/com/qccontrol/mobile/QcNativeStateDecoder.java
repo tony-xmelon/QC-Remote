@@ -166,7 +166,9 @@ final class QcNativeStateDecoder implements AutoCloseable {
     }
 
     List<EncodedMessage> initializationCommands() throws Exception {
-        return commands("initialize", new JSObject());
+        // The QC keeps no trustworthy clock of its own; the attached host sets
+        // it during the handshake and the device dates saved content with it.
+        return commands("initialize", new JSObject().put("nowMs", System.currentTimeMillis()));
     }
 
     EncodedMessage readCommand(int messageType) throws Exception {

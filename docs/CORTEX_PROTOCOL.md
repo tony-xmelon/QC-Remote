@@ -422,13 +422,22 @@ absent from our Rust by search, not assumed:
 | 46 CloudProduct, 18 CloudLogin | Cortex Cloud plumbing | account features we do not implement |
 | 71 ModelPreset | read at connect and around edits | contract not established |
 
-**`SystemTimeSync` is the one with a user-visible consequence.** The host tells
-the device what time it is — `ms_since_epoch` — and the device stamps what it
-saves with it. The IR imported earlier came back with
-`date_ms_since_epoch = 1788715934000`, which is only correct because Cortex
-Control had set the clock. Nothing in this stack ever sends type 43, so a unit
-driven only by our app has whatever clock it last received, and content it saves
-is dated accordingly.
+**`SystemTimeSync` is now sent, but do not believe the obvious story about it.**
+The host hands the device a `ms_since_epoch` once per connection, and the
+obvious reading — that this is where saved content gets its dates — is wrong.
+Two tests on hardware say so:
+
+| test | result |
+| --- | --- |
+| import an IR with the `date` field omitted | stored with **no date at all**, whatever the clock said |
+| set the clock to 2020-01-02, then save a preset | stamped with the **true wall time**, with and without a `request_id` |
+
+So an IR's `date_ms_since_epoch` is the host's own `date` string echoed back,
+and preset dates come from a time source the sync does not override. Type 43
+answers no READ either, so the device clock cannot be inspected directly. What
+the field actually reaches — device logs, backups, the unit's own UI — is not
+established. `commands::sync_system_time` is in `initialization` for handshake
+fidelity, and its doc comment says exactly this so no caller builds on it.
 
 **The host is the device's internet connection.** `UpdaterForward` (61) carries
 a plain-JSON body the host fetched on the device's behalf:

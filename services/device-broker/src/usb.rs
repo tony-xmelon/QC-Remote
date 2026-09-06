@@ -16,6 +16,14 @@ use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 
+/// Wall-clock milliseconds, for the SystemTimeSync the QC is sent at connect.
+fn unix_time_ms() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64
+}
+
 #[derive(Debug, Error)]
 pub enum UsbError {
     #[error("Quad Cortex is not present or its HID interface is owned by another application")]
@@ -310,7 +318,7 @@ impl QcUsb {
         // one protocol plan with Android. Directory enumeration stays on
         // demand so it cannot starve the active preset.
         self.flight.event("initialization-started");
-        for message in commands::initialization() {
+        for message in commands::initialization(unix_time_ms()) {
             self.send_command(message);
         }
         self.flight.event("initialization-sent");
