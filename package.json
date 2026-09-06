@@ -64,7 +64,8 @@
     "compare:qc-iconography": "python tools/compare_qc_iconography.py --require-exact-colors",
     "report:qc-coverage": "node tools/report_qc_screen_coverage.mjs",
     "security:audit": "npm audit --omit=dev --audit-level=moderate && npm audit --audit-level=high",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "verify:cortex-protocol": "python tools/generate_cortex_protos.py --check && python tools/verify_cortex_protocol_fidelity.py"
   },
   "engines": {
     "node": ">=22"

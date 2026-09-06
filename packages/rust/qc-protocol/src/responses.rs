@@ -11,7 +11,7 @@ use crate::{
     },
     profile,
     proto::cortex_protobuf_v2 as pa,
-    proto::{param, param_value, Param},
+    proto::{param_value, Param},
 };
 use prost::Message;
 use serde::Serialize;
@@ -154,10 +154,10 @@ impl BackupAssembler {
         let message: pa::LocalBackupMessage = decode_reply(payload)?;
         let terminal = matches!(
             message.is_last_chunk,
-            Some(pa::local_backup_message::IsLastChunk::IsLastChunk(true))
+            Some(true)
         );
         let chunk = match message.backup_json {
-            Some(pa::local_backup_message::BackupJson::BackupJson(chunk)) => chunk,
+            Some(chunk) => chunk,
             None => String::new(),
         };
 
@@ -210,7 +210,7 @@ impl BackupAssembler {
 
 pub fn decode_tempo_clock(payload: &[u8]) -> Result<Option<TempoClock>, ResponseDecodeError> {
     let message: pa::GlobalTempoMessage = decode_reply(payload)?;
-    let Some(pa::global_tempo_message::MetronomeStatus::MetronomeStatus(status)) =
+    let Some(status) =
         message.metronome_status
     else {
         return Ok(None);
@@ -230,18 +230,16 @@ pub fn decode_device_identity(payload: &[u8]) -> Result<DeviceIdentity, Response
         ));
     }
     let serial = match message.device_serial_number {
-        Some(pa::version_message::DeviceSerialNumber::DeviceSerialNumber(value)) => value,
+        Some(value) => value,
         None => return Err(ResponseDecodeError::Incomplete("device serial number")),
     };
     let app_fw_version = message
-        .app_fw_version
-        .map(|pa::version_message::AppFwVersion::AppFwVersion(value)| value);
+        .app_fw_version;
     let custom_name = message
-        .custom_name
-        .map(|pa::version_message::CustomName::CustomName(value)| value);
-    let device_type = message.device_type.map(|value| match value {
-        pa::version_message::DeviceTypeOneOf::DeviceType(value) => value,
-    });
+        .custom_name;
+    // proto3 renders an enum field as its i32 tag, which is what DeviceIdentity
+    // carries; the wrapper this used to unwrap is gone with the oneof.
+    let device_type = message.device_type;
     Ok(DeviceIdentity {
         serial,
         app_fw_version,
@@ -262,7 +260,6 @@ pub fn decode_recents_favorites(
     }
     let actual_id = message
         .request_id
-        .map(|pa::recents_favorites_message::RequestId::RequestId(value)| value)
         .ok_or(ResponseDecodeError::Incomplete(
             "recents/favorites request_id",
         ))?;
@@ -314,8 +311,7 @@ pub fn decode_library_files(
     // produced them, the action may be UPDATE or the protobuf default CREATE;
     // folder identity (plus request_id for typed reads) is authoritative.
     let actual_id = message
-        .request_id
-        .map(|pa::file_message::RequestId::RequestId(value)| value);
+        .request_id;
     if let Some(request_id) = request_id {
         if actual_id != Some(request_id) {
             return Err(ResponseDecodeError::Mismatch(
@@ -325,11 +321,9 @@ pub fn decode_library_files(
     }
     let folder = message
         .folder
-        .map(|pa::file_message::Folder::Folder(value)| value)
         .ok_or(ResponseDecodeError::Incomplete("file listing folder"))?;
     let actual_key = folder
         .key
-        .map(|pa::folder_info::Key::Key(value)| value)
         .ok_or(ResponseDecodeError::Incomplete("file listing folder key"))?;
     if actual_key.trim_end_matches('/') != folder_key.trim_end_matches('/') {
         return Err(ResponseDecodeError::Mismatch(
@@ -338,11 +332,9 @@ pub fn decode_library_files(
     }
     let is_factory = folder
         .is_factory
-        .map(|pa::folder_info::IsFactory::IsFactory(value)| value)
         .unwrap_or(false);
     let folder_name = folder
         .name
-        .map(|pa::folder_info::Name::Name(value)| value)
         .unwrap_or_else(|| {
             actual_key
                 .trim_end_matches('/')
@@ -358,23 +350,19 @@ pub fn decode_library_files(
             .map(|file| {
                 let key = file
                     .key
-                    .map(|pa::product_data::Key::Key(value)| value)
                     .filter(|value| !value.is_empty())
                     .ok_or(ResponseDecodeError::Incomplete("file key"))?;
                 let name = file
                     .name
-                    .map(|pa::product_data::Name::Name(value)| value)
                     .filter(|value| !value.is_empty())
                     .ok_or(ResponseDecodeError::Incomplete("file name"))?;
                 let position = file
                     .index
-                    .map(|pa::product_data::Index::Index(value)| value)
                     .map(u32::try_from)
                     .transpose()
                     .map_err(|_| ResponseDecodeError::Mismatch("negative file position"))?;
                 let instrument = file
-                    .instrument
-                    .map(|pa::product_data::Instrument::Instrument(value)| value);
+                    .instrument;
                 Ok(LibraryEntry {
                     name,
                     key,
@@ -397,15 +385,12 @@ pub fn decode_tuner_settings(payload: &[u8]) -> Result<TunerSettings, ResponseDe
     }
     let input_port_id = message
         .input_port_id
-        .map(|pa::tuner_message::InputPortId::InputPortId(value)| value)
         .ok_or(ResponseDecodeError::Incomplete("tuner input_port_id"))?;
     let reference_offset_hz = message
         .frequency
-        .map(|pa::tuner_message::Frequency::Frequency(value)| value)
         .ok_or(ResponseDecodeError::Incomplete("tuner frequency"))?;
     let muted = message
         .mute
-        .map(|pa::tuner_message::Mute::Mute(value)| value)
         .ok_or(ResponseDecodeError::Incomplete("tuner mute"))?;
     Ok(TunerSettings {
         input_port_id,
@@ -423,7 +408,7 @@ pub fn decode_general_settings(payload: &[u8]) -> Result<GeneralSettings, Respon
         ));
     }
     let scene_bypass_behavior = match message.scene_block_bypass {
-        Some(pa::general_settings_message::SceneBlockBypass::SceneBlockBypass(value)) => Some(
+        Some(value) => Some(
             match value {
                 0 => "alwaysOverwrite",
                 1 => "nonstompOverwrite",
@@ -439,7 +424,7 @@ pub fn decode_general_settings(payload: &[u8]) -> Result<GeneralSettings, Respon
         None => return Err(ResponseDecodeError::Incomplete("scene_block_bypass")),
     };
     let midi_clock_out = match message.midi_clock_out {
-        Some(pa::general_settings_message::MidiClockOut::MidiClockOut(value)) => Some(
+        Some(value) => Some(
             match value {
                 0 => "off",
                 1 => "midiDinOnly",
@@ -462,55 +447,47 @@ pub fn decode_general_settings(payload: &[u8]) -> Result<GeneralSettings, Respon
         row4: value.row4,
     };
     let hold_timing_index = message
-        .hold_timing
-        .map(|pa::general_settings_message::HoldTiming::HoldTiming(value)| value);
+        .hold_timing;
     if hold_timing_index.is_some_and(|value| !(0..=5).contains(&value)) {
         return Err(ResponseDecodeError::Mismatch("hold_timing is out of range"));
     }
     Ok(GeneralSettings {
         screen_brightness: message.screen_brightness.map(
-            |pa::general_settings_message::ScreenBrightness::ScreenBrightness(value)| value,
+            |value| value,
         ),
         led_brightness: message
-            .led_brightness
-            .map(|pa::general_settings_message::LedBrightness::LedBrightness(value)| value),
+            .led_brightness,
         dimmed_led_brightness: message.dimmed_led_brightness.map(
-            |pa::general_settings_message::DimmedLedBrightness::DimmedLedBrightness(value)| value,
+            |value| value,
         ),
         lock_screen_and_volume_knob: message.lock_screen_and_volume_knob.map(
-            |pa::general_settings_message::LockScreenAndVolumeKnob::LockScreenAndVolumeKnob(
-                value,
-            )| value,
+            |value,| value,
         ),
         global_bypass_cab: message.global_bypass_cab.map(
-            |pa::general_settings_message::GlobalBypassCab::GlobalBypassCab(value)| rows(value),
+            |value| rows(value),
         ),
         global_bypass_ir: message.global_bypass_ir.map(
-            |pa::general_settings_message::GlobalBypassIr::GlobalBypassIr(value)| rows(value),
+            |value| rows(value),
         ),
         scene_bypass_behavior,
         midi_over_usb: message
-            .midi_over_usb
-            .map(|pa::general_settings_message::MidiOverUsb::MidiOverUsb(value)| value),
+            .midi_over_usb,
         midi_channel: message
-            .midi_channel
-            .map(|pa::general_settings_message::MidiChannel::MidiChannel(value)| value),
+            .midi_channel,
         ignore_duplicate_pc: message.ignore_duplicate_pc.map(
-            |pa::general_settings_message::IgnoreDuplicatePc::IgnoreDuplicatePc(value)| value,
+            |value| value,
         ),
         available_disk_space: message.available_disk_space.map(
-            |pa::general_settings_message::AvailableDiskSpace::AvailableDiskSpace(value)| value,
+            |value| value,
         ),
         total_disk_space: message.total_disk_space.map(
-            |pa::general_settings_message::TotalDiskSpace::TotalDiskSpace(value)| value,
+            |value| value,
         ),
         internal_midi_clock_enabled: message.internal_midi_clock_enabled.map(
-            |pa::general_settings_message::InternalMidiClockEnabled::InternalMidiClockEnabled(
-                value,
-            )| value,
+            |value,| value,
         ),
         master_volume_assignment: message.master_volume_assignment.map(
-            |pa::general_settings_message::MasterVolumeAssignment::MasterVolumeAssignment(value)| {
+            |value| {
                 MasterVolumeAssignment {
                     out12: value.out12,
                     out34: value.out34,
@@ -520,34 +497,32 @@ pub fn decode_general_settings(payload: &[u8]) -> Result<GeneralSettings, Respon
             },
         ),
         stomp_mode_auto_assign: message.stomp_mode_auto_assign.map(
-            |pa::general_settings_message::StompModeAutoAssign::StompModeAutoAssign(value)| value,
+            |value| value,
         ),
         swap_tempo_tuner_access: message.swap_tempo_tuner_access.map(
-            |pa::general_settings_message::SwapTempoTunerAccess::SwapTempoTunerAccess(value)| value,
+            |value| value,
         ),
         midi_clock_out,
         disable_internet_connection_check: message.disable_internet_connection_check.map(
-            |pa::general_settings_message::DisableInternetConnectionCheck::DisableInternetConnectionCheck(value)| value,
+            |value| value,
         ),
         dynamic_delay_compensation: message.enable_dynamic_delay_compensation.map(
-            |pa::general_settings_message::EnableDynamicDelayCompensation::EnableDynamicDelayCompensation(value)| value,
+            |value| value,
         ),
         preset_dimmed: message.enable_preset_dimmed.map(
-            |pa::general_settings_message::EnablePresetDimmed::EnablePresetDimmed(value)| value,
+            |value| value,
         ),
         scene_dimmed: message.enable_scene_dimmed.map(
-            |pa::general_settings_message::EnableSceneDimmed::EnableSceneDimmed(value)| value,
+            |value| value,
         ),
         stomp_dimmed: message.enable_stomp_dimmed.map(
-            |pa::general_settings_message::EnableStompDimmed::EnableStompDimmed(value)| value,
+            |value| value,
         ),
         midi_clock_in: message.midi_clock_in_enabled.map(
-            |pa::general_settings_message::MidiClockInEnabled::MidiClockInEnabled(value)| value,
+            |value| value,
         ),
         gig_view_stomp_access: message.gig_view_stomp_access_enabled.map(
-            |pa::general_settings_message::GigViewStompAccessEnabled::GigViewStompAccessEnabled(
-                value,
-            )| value,
+            |value,| value,
         ),
         hold_timing_index,
         hold_timing_ms: hold_timing_index.map(|value| 500 + 100 * value),
@@ -563,7 +538,6 @@ pub fn decode_io_settings(payload: &[u8]) -> Result<IoSettings, ResponseDecodeEr
     }
     let settings = message
         .settings
-        .map(|pa::io_settings_message::Settings::Settings(value)| value)
         .ok_or(ResponseDecodeError::Incomplete("I/O settings"))?;
     if settings.in_port.is_empty() {
         return Err(ResponseDecodeError::Incomplete("input ports"));
@@ -574,24 +548,19 @@ pub fn decode_io_settings(payload: &[u8]) -> Result<IoSettings, ResponseDecodeEr
         .into_iter()
         .map(|port| {
             let level = port
-                .level
-                .map(|pa::input_port_settings::Level::Level(value)| value);
+                .level;
             InputPortSettings {
                 input_port_id: port.input_port_id,
                 level,
                 level_db: level.map(|value| -12.0 + 72.0 * value),
                 impedance: port
-                    .input_zmode
-                    .map(|pa::input_port_settings::InputZmode::InputZmode(value)| value),
+                    .input_zmode,
                 input_type: port
-                    .input_type
-                    .map(|pa::input_port_settings::InputType::InputType(value)| value),
+                    .input_type,
                 ground_lift: port
-                    .ground_lift
-                    .map(|pa::input_port_settings::GroundLift::GroundLift(value)| value),
+                    .ground_lift,
                 plugged: port
-                    .plugged
-                    .map(|pa::input_port_settings::Plugged::Plugged(value)| value),
+                    .plugged,
             }
         })
         .collect();
@@ -601,17 +570,13 @@ pub fn decode_io_settings(payload: &[u8]) -> Result<IoSettings, ResponseDecodeEr
         .map(|port| OutputPortSettings {
             output_port_id: port.output_port_id,
             level: port
-                .level
-                .map(|pa::output_port_settings::Level::Level(value)| value),
+                .level,
             ground_lift: port
-                .ground_lift
-                .map(|pa::output_port_settings::GroundLift::GroundLift(value)| value),
+                .ground_lift,
             muted: port
-                .mute
-                .map(|pa::output_port_settings::Mute::Mute(value)| value),
+                .mute,
             plugged: port
-                .plugged
-                .map(|pa::output_port_settings::Plugged::Plugged(value)| value),
+                .plugged,
         })
         .collect();
     let expression_ports = settings
@@ -620,19 +585,16 @@ pub fn decode_io_settings(payload: &[u8]) -> Result<IoSettings, ResponseDecodeEr
         .map(|port| ExpressionPortSettings {
             expression_port_id: port.exp_port_id,
             plugged: port
-                .plugged
-                .map(|pa::exp_port_settings::Plugged::Plugged(value)| value),
+                .plugged,
             level: port
-                .level
-                .map(|pa::exp_port_settings::Level::Level(value)| value),
+                .level,
             calibrating: port
-                .calibrating
-                .map(|pa::exp_port_settings::Calibrating::Calibrating(value)| value),
+                .calibrating,
         })
         .collect();
     let headphones =
         settings.hp_port.map(
-            |pa::port_settings::HpPort::HpPort(port)| HeadphonesSettings {
+            |port| HeadphonesSettings {
                 feeds: port
                     .hp_feed
                     .into_iter()
@@ -642,35 +604,28 @@ pub fn decode_io_settings(payload: &[u8]) -> Result<IoSettings, ResponseDecodeEr
                     })
                     .collect(),
                 level: port
-                    .level
-                    .map(|pa::headphones_settings::Level::Level(value)| value),
+                    .level,
                 plugged: port
-                    .plugged
-                    .map(|pa::headphones_settings::Plugged::Plugged(value)| value),
+                    .plugged,
             },
         );
     let usb = settings.usb_port.map(
-        |pa::port_settings::UsbPort::UsbPort(port)| UsbPortSettings {
+        |port| UsbPortSettings {
             level: port
-                .level
-                .map(|pa::usb_port_settings::Level::Level(value)| value),
+                .level,
             headphones_source: port
-                .hp_select
-                .map(|pa::usb_port_settings::HpSelect::HpSelect(value)| value),
+                .hp_select,
             plugged: port
-                .plugged
-                .map(|pa::usb_port_settings::Plugged::Plugged(value)| value),
+                .plugged,
             dry_wet: port
-                .dry_wet
-                .map(|pa::usb_port_settings::DryWet::DryWet(value)| value),
+                .dry_wet,
         },
     );
     let midi =
         settings.midi_port.map(
-            |pa::port_settings::MidiPort::MidiPort(port)| MidiPortSettings {
+            |port| MidiPortSettings {
                 thru: port
-                    .midi_thru
-                    .map(|pa::midi_port_settings::MidiThru::MidiThru(value)| value),
+                    .midi_thru,
             },
         );
 
@@ -682,11 +637,9 @@ pub fn decode_io_settings(payload: &[u8]) -> Result<IoSettings, ResponseDecodeEr
         usb,
         midi,
         xlr12_linked: message
-            .xlr1_2_linked
-            .map(|pa::io_settings_message::Xlr12Linked::Xlr12Linked(value)| value),
+            .xlr1_2_linked,
         out34_linked: message
-            .out3_4_linked
-            .map(|pa::io_settings_message::Out34Linked::Out34Linked(value)| value),
+            .out3_4_linked,
     })
 }
 
@@ -707,11 +660,7 @@ pub fn decode_global_eq(payload: &[u8]) -> Result<GlobalEqSettings, ResponseDeco
             })
             .collect(),
         bypassed: message
-            .bypassed
-            .map(|pa::global_eq_message::Bypassed::Bypassed(value)| value),
-        has_user_defaults: message
-            .has_user_defaults
-            .map(|pa::global_eq_message::HasUserDefaults::HasUserDefaults(value)| value),
+            .bypassed,
     })
 }
 
@@ -722,7 +671,7 @@ pub fn decode_mode_cycle(payload: &[u8]) -> Result<ModeCycle, ResponseDecodeErro
     }
     let slots = message
         .available_modes
-        .map(|pa::mode_message::AvailableModes::AvailableModes(value)| value.modes)
+        .map(|value| value.modes)
         .filter(|values| !values.is_empty())
         .ok_or(ResponseDecodeError::Incomplete("mode cycle"))?;
     Ok(ModeCycle { slots })
@@ -735,7 +684,6 @@ pub fn decode_looper_status(payload: &[u8]) -> Result<LooperStatus, ResponseDeco
     }
     let status = message
         .status
-        .map(|pa::looper_message::Status::Status(value)| value)
         .ok_or(ResponseDecodeError::Incomplete("looper status"))?;
     Ok(LooperStatus {
         state: Some(status.state),
@@ -761,17 +709,13 @@ pub fn decode_looper_status(payload: &[u8]) -> Result<LooperStatus, ResponseDeco
         transition: Some(status.transition),
         action: Some(status.action),
         one_shot_play: message
-            .one_shot_play
-            .map(|pa::looper_message::OneShotPlay::OneShotPlay(value)| value),
+            .one_shot_play,
         sync_start_waiting: message
-            .sync_start_waiting
-            .map(|pa::looper_message::SyncStartWaiting::SyncStartWaiting(value)| value),
+            .sync_start_waiting,
         quantize_enabled: message
-            .quantize_enabled
-            .map(|pa::looper_message::QuantizeEnabled::QuantizeEnabled(value)| value),
+            .quantize_enabled,
         update_type: message
-            .update_type
-            .map(|pa::looper_message::UpdateType::UpdateType(value)| value),
+            .update_type,
     })
 }
 
@@ -830,7 +774,7 @@ pub fn decode_tempo_settings(parameters: &[Param]) -> TempoSettings {
     let mut values = [None; 23];
     for (position, parameter) in parameters.iter().enumerate() {
         let index = match parameter.index {
-            Some(param::Index::Index(index)) => index as usize,
+            Some(index) => index as usize,
             None => position,
         };
         if index < values.len() {
@@ -863,7 +807,7 @@ pub fn decode_tempo_mode(payload: &[u8]) -> Result<TempoModeSettings, ResponseDe
         .params
         .iter()
         .find_map(|parameter| {
-            matches!(parameter.index, Some(param::Index::Index(1)))
+            matches!(parameter.index, Some(1))
                 .then(|| tempo_value(parameter))?
         })
         .ok_or(ResponseDecodeError::Incomplete(
@@ -896,14 +840,14 @@ pub fn decode_preset_tempo_settings(
 ) -> Result<TempoSettings, ResponseDecodeError> {
     let message: pa::RecallPresetMessage = decode_reply(payload)?;
     let request_id = match message.request_id {
-        Some(pa::recall_preset_message::RequestId::RequestId(value)) => value,
+        Some(value) => value,
         None => return Err(ResponseDecodeError::Incomplete("request id")),
     };
     if request_id != expected_request_id {
         return Err(ResponseDecodeError::Mismatch("current preset request id"));
     }
     let preset = match message.preset {
-        Some(pa::recall_preset_message::Preset::Preset(value)) => value,
+        Some(value) => value,
         None => return Err(ResponseDecodeError::Incomplete("current preset")),
     };
     let tempo = preset
@@ -921,11 +865,11 @@ pub fn decode_inhibited_modules(payload: &[u8]) -> Result<InhibitedModules, Resp
         ));
     }
     let global_gate = match message.global_gate {
-        Some(pa::compiler_inhibited_modules_message::GlobalGate::GlobalGate(value)) => value,
+        Some(value) => value,
         None => return Err(ResponseDecodeError::Incomplete("global_gate")),
     };
     let global_eq = match message.global_eq {
-        Some(pa::compiler_inhibited_modules_message::GlobalEq::GlobalEq(value)) => value,
+        Some(value) => value,
         None => return Err(ResponseDecodeError::Incomplete("global_eq")),
     };
     Ok(InhibitedModules {
@@ -971,7 +915,7 @@ pub fn decode_preset_screenshot(
 ) -> Result<PngImage, ResponseDecodeError> {
     let message: pa::ScreenshotMessage = decode_reply(payload)?;
     let request_id = match message.request_id {
-        Some(pa::screenshot_message::RequestId::RequestId(value)) => value,
+        Some(value) => value,
         None => return Err(ResponseDecodeError::Incomplete("request id")),
     };
     let expected_position = i32::try_from(position)
@@ -984,7 +928,7 @@ pub fn decode_preset_screenshot(
         return Err(ResponseDecodeError::Mismatch("preset screenshot target"));
     }
     let bytes = match message.png {
-        Some(pa::screenshot_message::Png::Png(value)) => value,
+        Some(value) => value,
         None => return Err(ResponseDecodeError::Incomplete("PNG payload")),
     };
     png_image(bytes)
@@ -1058,9 +1002,9 @@ mod tests {
     fn tuner_settings_are_complete_and_expose_absolute_reference() {
         let payload = pa::TunerMessage {
             action: pa::message_action::Enum::Update as i32,
-            input_port_id: Some(pa::tuner_message::InputPortId::InputPortId(5)),
-            frequency: Some(pa::tuner_message::Frequency::Frequency(2.0)),
-            mute: Some(pa::tuner_message::Mute::Mute(true)),
+            input_port_id: Some(5),
+            frequency: Some(2.0),
+            mute: Some(true),
             ..Default::default()
         }
         .encode_to_vec();
@@ -1072,7 +1016,7 @@ mod tests {
 
         let incomplete = pa::TunerMessage {
             action: pa::message_action::Enum::Update as i32,
-            input_port_id: Some(pa::tuner_message::InputPortId::InputPortId(5)),
+            input_port_id: Some(5),
             ..Default::default()
         }
         .encode_to_vec();
@@ -1087,21 +1031,19 @@ mod tests {
         let payload = pa::GeneralSettingsMessage {
             action: pa::message_action::Enum::Update as i32,
             screen_brightness: Some(
-                pa::general_settings_message::ScreenBrightness::ScreenBrightness(59),
+                59,
             ),
             scene_block_bypass: Some(
-                pa::general_settings_message::SceneBlockBypass::SceneBlockBypass(1),
+                1,
             ),
-            hold_timing: Some(pa::general_settings_message::HoldTiming::HoldTiming(3)),
+            hold_timing: Some(3),
             master_volume_assignment: Some(
-                pa::general_settings_message::MasterVolumeAssignment::MasterVolumeAssignment(
-                    pa::MasterVolumeAssignmentOptions {
+                pa::MasterVolumeAssignmentOptions {
                         out12: true,
                         out34: false,
                         send12: true,
                         headphones: false,
                     },
-                ),
             ),
             ..Default::default()
         }
@@ -1122,48 +1064,44 @@ mod tests {
     fn io_settings_preserve_every_sparse_port_field() {
         let payload = pa::IoSettingsMessage {
             action: pa::message_action::Enum::Update as i32,
-            settings: Some(pa::io_settings_message::Settings::Settings(
-                pa::PortSettings {
+            settings: Some(pa::PortSettings {
                     in_port: vec![pa::InputPortSettings {
                         input_port_id: 1,
-                        level: Some(pa::input_port_settings::Level::Level(0.5)),
-                        input_zmode: Some(pa::input_port_settings::InputZmode::InputZmode(0.75)),
-                        plugged: Some(pa::input_port_settings::Plugged::Plugged(true)),
+                        level: Some(0.5),
+                        input_zmode: Some(0.75),
+                        plugged: Some(true),
                         ..Default::default()
                     }],
                     out_port: vec![pa::OutputPortSettings {
                         output_port_id: 4,
-                        mute: Some(pa::output_port_settings::Mute::Mute(true)),
+                        mute: Some(true),
                         ..Default::default()
                     }],
-                    hp_port: Some(pa::port_settings::HpPort::HpPort(pa::HeadphonesSettings {
+                    hp_port: Some(pa::HeadphonesSettings {
                         hp_feed: vec![pa::HeadphonesFeedLevel {
                             level: 0.25,
                             output_port_id: 4,
                         }],
-                        level: Some(pa::headphones_settings::Level::Level(0.6)),
-                        plugged: Some(pa::headphones_settings::Plugged::Plugged(true)),
-                    })),
-                    usb_port: Some(pa::port_settings::UsbPort::UsbPort(pa::UsbPortSettings {
-                        hp_select: Some(pa::usb_port_settings::HpSelect::HpSelect(0.5)),
-                        dry_wet: Some(pa::usb_port_settings::DryWet::DryWet(1.0)),
+                        level: Some(0.6),
+                        plugged: Some(true),
+                    }),
+                    usb_port: Some(pa::UsbPortSettings {
+                        hp_select: Some(0.5),
+                        dry_wet: Some(1.0),
                         ..Default::default()
-                    })),
-                    midi_port: Some(pa::port_settings::MidiPort::MidiPort(
-                        pa::MidiPortSettings {
-                            midi_thru: Some(pa::midi_port_settings::MidiThru::MidiThru(1.0)),
-                        },
-                    )),
+                    }),
+                    midi_port: Some(pa::MidiPortSettings {
+                            midi_thru: Some(1.0),
+                        }),
                     exp_port: vec![pa::ExpPortSettings {
                         exp_port_id: 0,
-                        level: Some(pa::exp_port_settings::Level::Level(0.33)),
-                        calibrating: Some(pa::exp_port_settings::Calibrating::Calibrating(false)),
+                        level: Some(0.33),
+                        calibrating: Some(false),
                         ..Default::default()
                     }],
-                },
-            )),
-            xlr1_2_linked: Some(pa::io_settings_message::Xlr12Linked::Xlr12Linked(true)),
-            out3_4_linked: Some(pa::io_settings_message::Out34Linked::Out34Linked(false)),
+                }),
+            xlr1_2_linked: Some(true),
+            out3_4_linked: Some(false),
             ..Default::default()
         }
         .encode_to_vec();
@@ -1186,9 +1124,7 @@ mod tests {
 
         let incomplete = pa::IoSettingsMessage {
             action: pa::message_action::Enum::Update as i32,
-            settings: Some(pa::io_settings_message::Settings::Settings(
-                pa::PortSettings::default(),
-            )),
+            settings: Some(pa::PortSettings::default()),
             ..Default::default()
         }
         .encode_to_vec();
@@ -1228,14 +1164,12 @@ mod tests {
     #[test]
     fn tempo_clock_and_chunked_backup_are_projected_once_for_every_host() {
         let tempo = pa::GlobalTempoMessage {
-            metronome_status: Some(pa::global_tempo_message::MetronomeStatus::MetronomeStatus(
-                pa::MetronomeStatusUpdate {
+            metronome_status: Some(pa::MetronomeStatusUpdate {
                     current_beat: 2,
                     current_bar: 3,
                     current_tick: 4,
                     ..Default::default()
-                },
-            )),
+                }),
             ..Default::default()
         }
         .encode_to_vec();
@@ -1250,17 +1184,13 @@ mod tests {
 
         let mut backup = BackupAssembler::default();
         let first = pa::LocalBackupMessage {
-            backup_json: Some(pa::local_backup_message::BackupJson::BackupJson(
-                "{\"type\":\"backup\",".into(),
-            )),
+            backup_json: Some("{\"type\":\"backup\",".into()),
             ..Default::default()
         }
         .encode_to_vec();
         let last = pa::LocalBackupMessage {
-            backup_json: Some(pa::local_backup_message::BackupJson::BackupJson(
-                "\"creator\":\"quad\"}".into(),
-            )),
-            is_last_chunk: Some(pa::local_backup_message::IsLastChunk::IsLastChunk(true)),
+            backup_json: Some("\"creator\":\"quad\"}".into()),
+            is_last_chunk: Some(true),
             ..Default::default()
         }
         .encode_to_vec();
@@ -1271,10 +1201,8 @@ mod tests {
         );
 
         let stale_tail = pa::LocalBackupMessage {
-            backup_json: Some(pa::local_backup_message::BackupJson::BackupJson(
-                "old-tail".into(),
-            )),
-            is_last_chunk: Some(pa::local_backup_message::IsLastChunk::IsLastChunk(true)),
+            backup_json: Some("old-tail".into()),
+            is_last_chunk: Some(true),
             ..Default::default()
         }
         .encode_to_vec();
@@ -1289,7 +1217,7 @@ mod tests {
     #[test]
     fn tempo_settings_project_every_named_option_and_reject_clock_only_mode_reads() {
         let parameter = |index: u32, value: f32| Param {
-            index: Some(param::Index::Index(index)),
+            index: Some(index),
             param_values: vec![crate::proto::ParamValue {
                 value: Some(param_value::Value::FloatValue(value)),
             }],
@@ -1324,9 +1252,7 @@ mod tests {
         assert_eq!(settings.routing.as_deref(), Some("OUT 3/4"));
         assert_eq!(settings.beats, vec!["DOWN"]);
         let clock = pa::GlobalTempoMessage {
-            metronome_status: Some(pa::global_tempo_message::MetronomeStatus::MetronomeStatus(
-                Default::default(),
-            )),
+            metronome_status: Some(Default::default()),
             ..Default::default()
         }
         .encode_to_vec();
@@ -1337,16 +1263,14 @@ mod tests {
 
         let preset_payload = pa::RecallPresetMessage {
             action: pa::message_action::Enum::Update as i32,
-            request_id: Some(pa::recall_preset_message::RequestId::RequestId(42)),
-            preset: Some(pa::recall_preset_message::Preset::Preset(
-                crate::proto::BinaryPreset {
+            request_id: Some(42),
+            preset: Some(crate::proto::BinaryPreset {
                     tempo_program_data: vec![crate::proto::Model {
                         params: vec![parameter(0, 0.355), parameter(1, 0.0), parameter(2, 0.0)],
                         ..Default::default()
                     }],
                     ..Default::default()
-                },
-            )),
+                }),
             ..Default::default()
         }
         .encode_to_vec();
@@ -1363,18 +1287,14 @@ mod tests {
     #[test]
     fn backup_ignores_an_uncorrelated_stale_tail_before_the_next_document() {
         let stale_tail = pa::LocalBackupMessage {
-            backup_json: Some(pa::local_backup_message::BackupJson::BackupJson(
-                "end-of-an-older-document".into(),
-            )),
-            is_last_chunk: Some(pa::local_backup_message::IsLastChunk::IsLastChunk(true)),
+            backup_json: Some("end-of-an-older-document".into()),
+            is_last_chunk: Some(true),
             ..Default::default()
         }
         .encode_to_vec();
         let valid = pa::LocalBackupMessage {
-            backup_json: Some(pa::local_backup_message::BackupJson::BackupJson(
-                "{\"type\":\"backup\",\"creator\":\"quad\"}".into(),
-            )),
-            is_last_chunk: Some(pa::local_backup_message::IsLastChunk::IsLastChunk(true)),
+            backup_json: Some("{\"type\":\"backup\",\"creator\":\"quad\"}".into()),
+            is_last_chunk: Some(true),
             ..Default::default()
         }
         .encode_to_vec();
@@ -1393,17 +1313,13 @@ mod tests {
     #[test]
     fn backup_rejects_a_partial_document_instead_of_splicing_a_retry() {
         let first = pa::LocalBackupMessage {
-            backup_json: Some(pa::local_backup_message::BackupJson::BackupJson(
-                "{\"type\":\"backup\",".into(),
-            )),
+            backup_json: Some("{\"type\":\"backup\",".into()),
             ..Default::default()
         }
         .encode_to_vec();
         let broken_last = pa::LocalBackupMessage {
-            backup_json: Some(pa::local_backup_message::BackupJson::BackupJson(
-                "not-json".into(),
-            )),
-            is_last_chunk: Some(pa::local_backup_message::IsLastChunk::IsLastChunk(true)),
+            backup_json: Some("not-json".into()),
+            is_last_chunk: Some(true),
             ..Default::default()
         }
         .encode_to_vec();
@@ -1425,10 +1341,7 @@ mod tests {
                 parameter_index: 6,
                 value: 0.75,
             }],
-            bypassed: Some(pa::global_eq_message::Bypassed::Bypassed(false)),
-            has_user_defaults: Some(pa::global_eq_message::HasUserDefaults::HasUserDefaults(
-                true,
-            )),
+            bypassed: Some(false),
             ..Default::default()
         }
         .encode_to_vec();
@@ -1439,11 +1352,9 @@ mod tests {
 
         let modes = pa::ModeMessage {
             action: pa::message_action::Enum::Update as i32,
-            available_modes: Some(pa::mode_message::AvailableModes::AvailableModes(
-                pa::AvailableModes {
+            available_modes: Some(pa::AvailableModes {
                     modes: vec![7, 1, 2],
-                },
-            )),
+                },),
             ..Default::default()
         }
         .encode_to_vec();
@@ -1451,15 +1362,15 @@ mod tests {
 
         let looper = pa::LooperMessage {
             action: pa::message_action::Enum::Update as i32,
-            status: Some(pa::looper_message::Status::Status(pa::LooperStatus {
+            status: Some(pa::LooperStatus {
                 state: 3,
                 progress: 0.5,
                 in_reverse: 1,
                 undo_count: 2,
                 ..Default::default()
-            })),
-            one_shot_play: Some(pa::looper_message::OneShotPlay::OneShotPlay(true)),
-            quantize_enabled: Some(pa::looper_message::QuantizeEnabled::QuantizeEnabled(false)),
+            }),
+            one_shot_play: Some(true),
+            quantize_enabled: Some(false),
             ..Default::default()
         }
         .encode_to_vec();
@@ -1474,16 +1385,18 @@ mod tests {
     fn library_replies_are_correlated_and_preserve_device_metadata() {
         let recents = pa::RecentsFavoritesMessage {
             action: pa::message_action::Enum::Update as i32,
-            request_id: Some(pa::recents_favorites_message::RequestId::RequestId(71)),
+            request_id: Some(71),
             // Favorites replies observed on-device can omit the flag, leaving
             // its protobuf default false. Request correlation is authoritative.
             is_favorites: false,
+            r#type: pa::recents_favorites_message::RecentFavoriteType::Preset as i32,
             items: vec![pa::RecentsFavoritesItem {
                 name: "Stage".into(),
                 folder_key: "/media/p4/Presets/Live".into(),
                 folder_name: "Live".into(),
                 is_factory: false,
                 is_plugin: true,
+                product_key: String::new(),
             }],
         }
         .encode_to_vec();
@@ -1508,20 +1421,20 @@ mod tests {
 
         let files = pa::FileMessage {
             action: pa::message_action::Enum::Update as i32,
-            request_id: Some(pa::file_message::RequestId::RequestId(73)),
-            folder: Some(pa::file_message::Folder::Folder(pa::FolderInfo {
-                key: Some(pa::folder_info::Key::Key("local_ir_root".into())),
-                name: Some(pa::folder_info::Name::Name("Impulse Responses".into())),
-                is_factory: Some(pa::folder_info::IsFactory::IsFactory(false)),
+            request_id: Some(73),
+            folder: Some(pa::FolderInfo {
+                key: Some("local_ir_root".into()),
+                name: Some("Impulse Responses".into()),
+                is_factory: Some(false),
                 files: vec![pa::ProductData {
-                    key: Some(pa::product_data::Key::Key("ir/key".into())),
-                    name: Some(pa::product_data::Name::Name("Room".into())),
-                    index: Some(pa::product_data::Index::Index(4)),
-                    instrument: Some(pa::product_data::Instrument::Instrument(2)),
+                    key: Some("ir/key".into()),
+                    name: Some("Room".into()),
+                    index: Some(4),
+                    instrument: Some(2),
                     ..Default::default()
                 }],
                 ..Default::default()
-            })),
+            }),
             ..Default::default()
         }
         .encode_to_vec();
@@ -1535,15 +1448,15 @@ mod tests {
         ));
 
         let files_without_request_id = pa::FileMessage {
-            folder: Some(pa::file_message::Folder::Folder(pa::FolderInfo {
-                key: Some(pa::folder_info::Key::Key("local_ir_root".into())),
+            folder: Some(pa::FolderInfo {
+                key: Some("local_ir_root".into()),
                 files: vec![pa::ProductData {
-                    key: Some(pa::product_data::Key::Key("ir/key".into())),
-                    name: Some(pa::product_data::Name::Name("Room".into())),
+                    key: Some("ir/key".into()),
+                    name: Some("Room".into()),
                     ..Default::default()
                 }],
                 ..Default::default()
-            })),
+            }),
             ..Default::default()
         }
         .encode_to_vec();
@@ -1559,11 +1472,11 @@ mod tests {
 
         let files_with_wrong_request_id = pa::FileMessage {
             action: pa::message_action::Enum::Update as i32,
-            request_id: Some(pa::file_message::RequestId::RequestId(74)),
-            folder: Some(pa::file_message::Folder::Folder(pa::FolderInfo {
-                key: Some(pa::folder_info::Key::Key("local_ir_root".into())),
+            request_id: Some(74),
+            folder: Some(pa::FolderInfo {
+                key: Some("local_ir_root".into()),
                 ..Default::default()
-            })),
+            }),
             ..Default::default()
         }
         .encode_to_vec();
@@ -1580,19 +1493,19 @@ mod tests {
         let listing = |file: pa::ProductData| {
             pa::FileMessage {
                 action: pa::message_action::Enum::Update as i32,
-                request_id: Some(pa::file_message::RequestId::RequestId(9)),
-                folder: Some(pa::file_message::Folder::Folder(pa::FolderInfo {
-                    key: Some(pa::folder_info::Key::Key("library".into())),
+                request_id: Some(9),
+                folder: Some(pa::FolderInfo {
+                    key: Some("library".into()),
                     files: vec![file],
                     ..Default::default()
-                })),
+                }),
                 ..Default::default()
             }
             .encode_to_vec()
         };
 
         let missing_key = listing(pa::ProductData {
-            name: Some(pa::product_data::Name::Name("Preset".into())),
+            name: Some("Preset".into()),
             ..Default::default()
         });
         assert!(matches!(
@@ -1601,9 +1514,9 @@ mod tests {
         ));
 
         let negative_position = listing(pa::ProductData {
-            key: Some(pa::product_data::Key::Key("preset-key".into())),
-            name: Some(pa::product_data::Name::Name("Preset".into())),
-            index: Some(pa::product_data::Index::Index(-1)),
+            key: Some("preset-key".into()),
+            name: Some("Preset".into()),
+            index: Some(-1),
             ..Default::default()
         });
         assert!(matches!(
@@ -1621,7 +1534,7 @@ mod tests {
         ));
 
         let parameter = |value| Param {
-            index: Some(param::Index::Index(6)),
+            index: Some(6),
             param_values: vec![crate::proto::ParamValue {
                 value: Some(param_value::Value::FloatValue(value)),
             }],
@@ -1643,7 +1556,7 @@ mod tests {
         let invalid_general = pa::GeneralSettingsMessage {
             action: pa::message_action::Enum::Update as i32,
             scene_block_bypass: Some(
-                pa::general_settings_message::SceneBlockBypass::SceneBlockBypass(99),
+                99,
             ),
             ..Default::default()
         }

@@ -8,6 +8,19 @@ Re-run the extraction with `tools/extract-cortex-protocol.py`. It writes the
 serialized descriptors, the message-type table, and the coverage map under
 `artifacts/cortex-protocol/`.
 
+The schema is **generated, not transcribed**. `tools/generate_cortex_protos.py`
+renders `packages/rust/qc-protocol/proto/*.proto` from those descriptors, and
+`tools/verify_cortex_protocol_fidelity.py` compiles the result with the same
+vendored protoc the Rust build uses and compares it to the shipped descriptor
+field by field. Both run in one command:
+
+```
+npm run verify:cortex-protocol
+```
+
+which the release preflight also runs, so the schema cannot drift again without
+a red build.
+
 ## What the binary carries
 
 `Cortex Control.exe` 4.1.0 (64 MB, PE) embeds two serialized
@@ -23,9 +36,45 @@ The blobs have no length prefix. Their end is found by walking the top-level
 a truncated prefix does not parse, so growing a candidate window never gets a
 foothold.
 
-**The copies in `packages/rust/qc-protocol/proto/` are complete.** A message-set
-diff against the freshly extracted descriptors reports 153/153 and 15/15 with
-nothing missing on either side. There is no schema drift to chase.
+### A name-level diff is not enough, and once hid real drift
+
+An earlier revision of this document said the copies in
+`packages/rust/qc-protocol/proto/` were complete, because a **message-set** diff
+reported 153/153 and 15/15 with nothing missing on either side. That comparison
+only ever looked at message *names*. Comparing fields found **27 real
+differences** behind those matching names:
+
+| difference | what it was |
+| --- | --- |
+| `GlobalEQMessage` field 5 | we declared `bool has_user_defaults`; the binary says `ModelPresetID model_preset_to_load`. A bool is wire type 0 and a message is wire type 2, so anything we sent there was malformed |
+| `GlobalEQMessage` field 6 | `default_parameter_action`, with a `DefaultParameterAction` enum. Ours only; absent from the shipped schema |
+| 24 fields | added by newer firmware and simply missing here, including `FileMessage.omit_factory_content` and `.user_content_estimate`, `GridMessage.model_preset_to_load`, `IOSettingsMessage.preset_to_load`, `RecentsFavoritesItem.product_key`, `StompModeAssignment.type`, `VersionMessage.cloud_endpoint`, and four `SOC2ARMCommsDiagnosticsMessage` USB-audio counters |
+| 2 enums | `RecentsFavoritesMessage.RecentFavoriteType` and `StompModeAssignment.Type` were absent |
+| `GridMessage.UpdateType` | missing the `MODEL_PRESET = 1` value |
+
+The lesson is the same one the UI corpus taught: a check that passes for the
+wrong reason is worse than no check. The protos are now generated from the
+descriptor and verified field for field, so this class of drift is gone rather
+than fixed.
+
+#### What the device says about `GlobalEQMessage` field 5
+
+pyquadcortex carries the same older definition we did, so the two schemas
+disagree about a field a controller might send. Reading Global EQ from the
+connected unit settles the practical question: the reply carries **fields 1, 3
+and 4 only**, and never populates field 5 at all.
+
+```
+--- GlobalEQ payload: 229 bytes ---
+field 1: varint = 1                       action = UPDATE
+field 3: length-delimited (x27)           parameters
+field 4: varint = 1                       bypassed
+```
+
+So adopting the shipped definition costs nothing on the read path, and it is
+the only definition that can be correct on the write path. `has_user_defaults`
+is gone from `GlobalEqSettings` in `contracts/qc-payloads.v1.schema.json`,
+because the protocol has no such field to report.
 
 ## The message-type table
 
@@ -70,8 +119,8 @@ encodes or decodes with the numbers actually exchanged during a full 102-action
 hardware conformance run.
 
 - **32 types observed on the wire** in one complete conformance pass.
-- **45 of 72 implemented or observed.**
-- **27 never touched**, and they fall into coherent groups:
+- **46 of 72 implemented or observed.**
+- **26 never touched**, and they fall into coherent groups:
   - factory and production test: 65-70
   - 71 ModelPreset — *not* production test despite sitting in that range;
     Cortex Control sends it during ordinary block editing (see the wire
@@ -79,8 +128,12 @@ hardware conformance run.
   - Cloud forwarding and account: 18, 29, 30, 31, 41, 45, 46
   - telemetry, meters and logs: 5, 7, 26, 37, 44
   - updater and calibration: 61, 62
-  - other: 39 RecentSearches, 43 SystemTimeSync, 55 GigViewButton,
-    59 PresetSpeedTest, 63 NeuralCapture2, 64 Serialization
+  - other: 39 RecentSearches, 55 GigViewButton, 59 PresetSpeedTest,
+    63 NeuralCapture2, 64 Serialization
+
+43 SystemTimeSync used to sit in that list and is now implemented; its type
+number is declared in `contracts/qc-usb-profile.v1.json` so every binding
+generates the constant rather than one language hand-writing it.
 
 None of those are needed to control a device; the untouched set is
 manufacturing, telemetry, and Cortex Cloud plumbing.

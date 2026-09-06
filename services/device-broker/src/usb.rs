@@ -4,7 +4,6 @@ use prost::Message;
 use qc_protocol::commands::{self, OutboundMessage};
 use qc_protocol::framing;
 use qc_protocol::profile;
-use qc_protocol::proto;
 use qc_protocol::proto::cortex_protobuf_v2 as pa;
 use qc_protocol::session::{FrameAssembler, SessionMachine};
 use std::cell::UnsafeCell;
@@ -498,15 +497,12 @@ impl QcUsb {
 
 pub fn preset_name(payload: &[u8]) -> Option<String> {
     let message = pa::RecallPresetMessage::decode(payload).ok()?;
-    let pa::recall_preset_message::Preset::Preset(preset) = message.preset?;
-    let proto::binary_preset::Name::Name(name) = preset.name?;
-    Some(name)
+    message.preset?.name
 }
 
 pub fn scene_value(payload: &[u8]) -> Option<u32> {
     let message = pa::SceneMessage::decode(payload).ok()?;
-    let pa::scene_message::SelectedScene::SelectedScene(scene) = message.selected_scene?;
-    Some(scene)
+    message.selected_scene
 }
 
 impl Drop for QcUsb {

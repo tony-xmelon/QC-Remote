@@ -7,8 +7,8 @@
 use crate::generated_payloads::MidiOutMessage;
 use crate::proto::cortex_protobuf_v2 as pa;
 use crate::proto::{
-    bypass, chain, col_bypass, model, param, param_value, BinaryPreset, Bypass, Chain, ColBypass,
-    Model, Param, ParamValue, SceneBypass, SplitControlPoints, StompModeAssignment,
+    param_value, BinaryPreset, Bypass, Chain, ColBypass, Model, Param, ParamValue, SceneBypass,
+    SplitControlPoints, StompModeAssignment,
 };
 use crate::{domain, profile};
 use prost::Message;
@@ -736,12 +736,8 @@ pub fn reset_comms(request_id: u64, session_id: impl Into<String>) -> OutboundMe
     OutboundMessage::encoded(
         profile::MESSAGE_TYPE_RESET_COMMS_BUFFERS,
         pa::ResetCommsBuffersMessage {
-            request_id: Some(pa::reset_comms_buffers_message::RequestId::RequestId(
-                request_id,
-            )),
-            session_id: Some(pa::reset_comms_buffers_message::SessionId::SessionId(
-                session_id.into(),
-            )),
+            request_id: Some(request_id,),
+            session_id: Some(session_id.into()),
         },
     )
 }
@@ -752,9 +748,7 @@ pub fn version_hello() -> OutboundMessage {
         pa::VersionMessage {
             action: pa::message_action::Enum::Update as i32,
             cortex_control_version: Some(
-                pa::version_message::CortexControlVersion::CortexControlVersion(
-                    profile::CORTEX_CONTROL_VERSION.into(),
-                ),
+                profile::CORTEX_CONTROL_VERSION.into(),
             ),
             ..Default::default()
         },
@@ -774,7 +768,7 @@ pub fn set_global_eq_bypassed(bypassed: bool) -> OutboundMessage {
         38,
         pa::GlobalEqMessage {
             action: pa::message_action::Enum::Update as i32,
-            bypassed: Some(pa::global_eq_message::Bypassed::Bypassed(bypassed)),
+            bypassed: Some(bypassed),
             ..Default::default()
         },
     )
@@ -806,11 +800,9 @@ pub fn set_mode_cycle(slots: &[u32]) -> OutboundMessage {
         14,
         pa::ModeMessage {
             action: pa::message_action::Enum::Update as i32,
-            available_modes: Some(pa::mode_message::AvailableModes::AvailableModes(
-                pa::AvailableModes {
+            available_modes: Some(pa::AvailableModes {
                     modes: slots.to_vec(),
-                },
-            )),
+                }),
             ..Default::default()
         },
     )
@@ -825,9 +817,7 @@ pub fn read_recents_favorites(favorites: bool, request_id: u64) -> OutboundMessa
         20,
         pa::RecentsFavoritesMessage {
             action: pa::message_action::Enum::Read as i32,
-            request_id: Some(pa::recents_favorites_message::RequestId::RequestId(
-                request_id,
-            )),
+            request_id: Some(request_id,),
             is_favorites: favorites,
             ..Default::default()
         },
@@ -856,6 +846,10 @@ pub fn set_favorite(
                 folder_name,
                 is_factory,
                 is_plugin: false,
+                // Added by a newer Cortex Control. Empty is what proto3 omits,
+                // so the bytes on the wire are unchanged until we have a
+                // product key to send.
+                product_key: String::new(),
             }],
             ..Default::default()
         },
@@ -890,8 +884,8 @@ pub fn read_library_files(
         4,
         pa::FileMessage {
             action: pa::message_action::Enum::Read as i32,
-            request_id: request_id.map(pa::file_message::RequestId::RequestId),
-            r#type: file_type.map(pa::file_message::Type::Type),
+            request_id: request_id,
+            r#type: file_type,
             ..Default::default()
         },
     )
@@ -903,13 +897,13 @@ pub fn create_setlist(name: String) -> OutboundMessage {
         4,
         pa::FileMessage {
             action: pa::message_action::Enum::Create as i32,
-            r#type: Some(pa::file_message::Type::Type(0)),
-            folder: Some(pa::file_message::Folder::Folder(pa::FolderInfo {
-                key: Some(pa::folder_info::Key::Key(key)),
-                name: Some(pa::folder_info::Name::Name(name)),
-                is_factory: Some(pa::folder_info::IsFactory::IsFactory(false)),
+            r#type: Some(0),
+            folder: Some(pa::FolderInfo {
+                key: Some(key),
+                name: Some(name),
+                is_factory: Some(false),
                 ..Default::default()
-            })),
+            }),
             ..Default::default()
         },
     )
@@ -921,12 +915,12 @@ pub fn delete_setlist(name: String) -> OutboundMessage {
         4,
         pa::FileMessage {
             action: pa::message_action::Enum::Delete as i32,
-            r#type: Some(pa::file_message::Type::Type(0)),
-            folder: Some(pa::file_message::Folder::Folder(pa::FolderInfo {
-                key: Some(pa::folder_info::Key::Key(key)),
-                name: Some(pa::folder_info::Name::Name(name)),
+            r#type: Some(0),
+            folder: Some(pa::FolderInfo {
+                key: Some(key),
+                name: Some(name),
                 ..Default::default()
-            })),
+            }),
             ..Default::default()
         },
     )
@@ -938,16 +932,16 @@ pub fn delete_preset(setlist_key: String, name: String) -> OutboundMessage {
         4,
         pa::FileMessage {
             action: pa::message_action::Enum::Delete as i32,
-            r#type: Some(pa::file_message::Type::Type(0)),
-            folder: Some(pa::file_message::Folder::Folder(pa::FolderInfo {
-                key: Some(pa::folder_info::Key::Key(setlist_key)),
-                is_factory: Some(pa::folder_info::IsFactory::IsFactory(false)),
+            r#type: Some(0),
+            folder: Some(pa::FolderInfo {
+                key: Some(setlist_key),
+                is_factory: Some(false),
                 files: vec![pa::ProductData {
-                    key: Some(pa::product_data::Key::Key(file_key)),
+                    key: Some(file_key),
                     ..Default::default()
                 }],
                 ..Default::default()
-            })),
+            }),
             ..Default::default()
         },
     )
@@ -959,24 +953,24 @@ pub fn move_preset(setlist_key: String, name: String, position: u32) -> Outbound
         4,
         pa::FileMessage {
             action: pa::message_action::Enum::Move as i32,
-            r#type: Some(pa::file_message::Type::Type(0)),
-            folder: Some(pa::file_message::Folder::Folder(pa::FolderInfo {
-                key: Some(pa::folder_info::Key::Key(setlist_key.clone())),
-                is_factory: Some(pa::folder_info::IsFactory::IsFactory(false)),
+            r#type: Some(0),
+            folder: Some(pa::FolderInfo {
+                key: Some(setlist_key.clone()),
+                is_factory: Some(false),
                 files: vec![pa::ProductData {
-                    key: Some(pa::product_data::Key::Key(source_key)),
+                    key: Some(source_key),
                     ..Default::default()
                 }],
                 ..Default::default()
-            })),
-            to_folder: Some(pa::file_message::ToFolder::ToFolder(pa::FolderInfo {
-                key: Some(pa::folder_info::Key::Key(setlist_key)),
+            }),
+            to_folder: Some(pa::FolderInfo {
+                key: Some(setlist_key),
                 files: vec![pa::ProductData {
-                    index: Some(pa::product_data::Index::Index(position as i32)),
+                    index: Some(position as i32),
                     ..Default::default()
                 }],
                 ..Default::default()
-            })),
+            }),
             ..Default::default()
         },
     )
@@ -986,7 +980,7 @@ pub fn connection(connected: bool) -> OutboundMessage {
     OutboundMessage::encoded(
         49,
         pa::ConnectionMessage {
-            connected: Some(pa::connection_message::Connected::Connected(connected)),
+            connected: Some(connected),
             ..Default::default()
         },
     )
@@ -1057,7 +1051,7 @@ pub fn read_current_preset(request_id: u64) -> OutboundMessage {
         15,
         pa::RecallPresetMessage {
             action: pa::message_action::Enum::Read as i32,
-            request_id: Some(pa::recall_preset_message::RequestId::RequestId(request_id)),
+            request_id: Some(request_id),
             ..Default::default()
         },
     )
@@ -1069,9 +1063,7 @@ pub fn read_setlist_position(request_id: u64) -> OutboundMessage {
         2,
         pa::SetlistPositionMessage {
             action: pa::message_action::Enum::Read as i32,
-            request_id: Some(pa::setlist_position_message::RequestId::RequestId(
-                request_id,
-            )),
+            request_id: Some(request_id,),
             ..Default::default()
         },
     )
@@ -1082,7 +1074,7 @@ pub fn select_scene(scene: u32) -> OutboundMessage {
         13,
         pa::SceneMessage {
             action: pa::message_action::Enum::Update as i32,
-            selected_scene: Some(pa::scene_message::SelectedScene::SelectedScene(scene)),
+            selected_scene: Some(scene),
             ..Default::default()
         },
     )
@@ -1131,9 +1123,9 @@ pub fn set_scene_color(scene: u32, color: u32) -> OutboundMessage {
 pub fn set_bypass(row: u32, column: u32, bypassed: bool) -> OutboundMessage {
     let preset = BinaryPreset {
         bypass: vec![Bypass {
-            row: Some(bypass::Row::Row(row)),
+            row: Some(row),
             col_bypass: vec![ColBypass {
-                column: Some(col_bypass::Column::Column(column)),
+                column: Some(column),
                 scene_bypass: vec![SceneBypass { bypass: bypassed }],
                 ..Default::default()
             }],
@@ -1179,14 +1171,14 @@ fn parameter_update(
 ) -> OutboundMessage {
     let parameter = Param {
         param_values: vec![ParamValue { value: Some(value) }],
-        index: Some(param::Index::Index(parameter_index)),
+        index: Some(parameter_index),
         ..Default::default()
     };
     let preset = BinaryPreset {
         chains: vec![Chain {
-            row: Some(chain::Row::Row(row)),
+            row: Some(row),
             models: vec![Model {
-                column: Some(model::Column::Column(column)),
+                column: Some(column),
                 params: vec![parameter],
                 ..Default::default()
             }],
@@ -1203,17 +1195,17 @@ fn parameter_metadata_update(row: u32, column: u32, parameter: Param) -> Outboun
         ..Default::default()
     };
     let mut chain = Chain {
-        row: Some(chain::Row::Row(row)),
+        row: Some(row),
         ..Default::default()
     };
     match column {
         0..=7 => {
-            target.column = Some(model::Column::Column(column));
+            target.column = Some(column);
             chain.models.push(target);
         }
         8 => chain.combined_splitter.push(target),
         9 => {
-            target.hash = Some(model::Hash::Hash(11_000));
+            target.hash = Some(11_000);
             chain.mixer.push(target);
         }
         _ => panic!("unsupported parameter target column: {column}"),
@@ -1230,16 +1222,16 @@ fn lane_control_update(row: u32, control: &str, parameter: Param) -> OutboundMes
         ..Default::default()
     };
     let mut chain = Chain {
-        row: Some(chain::Row::Row(row)),
+        row: Some(row),
         ..Default::default()
     };
     match control {
         "inputGate" => {
-            target.hash = Some(model::Hash::Hash(28_000));
+            target.hash = Some(28_000);
             chain.input_control.push(target);
         }
         "laneOutput" => {
-            target.hash = Some(model::Hash::Hash(23_000));
+            target.hash = Some(23_000);
             chain.output_control.push(target);
         }
         _ => panic!("unsupported lane control: {control}"),
@@ -1260,7 +1252,7 @@ pub fn set_lane_control_parameter(
         row,
         control,
         Param {
-            index: Some(param::Index::Index(parameter_index)),
+            index: Some(parameter_index),
             param_values: vec![ParamValue {
                 value: Some(param_value::Value::FloatValue(value)),
             }],
@@ -1279,8 +1271,8 @@ pub fn set_lane_control_scene_mode(
         row,
         control,
         Param {
-            index: Some(param::Index::Index(parameter_index)),
-            scene_mode: Some(param::SceneMode::SceneMode(enabled)),
+            index: Some(parameter_index),
+            scene_mode: Some(enabled),
             ..Default::default()
         },
     )
@@ -1297,8 +1289,8 @@ pub fn set_parameter_scene_mode(
         row,
         column,
         Param {
-            index: Some(param::Index::Index(parameter_index)),
-            scene_mode: Some(param::SceneMode::SceneMode(enabled)),
+            index: Some(parameter_index),
+            scene_mode: Some(enabled),
             ..Default::default()
         },
     )
@@ -1317,10 +1309,10 @@ pub fn set_parameter_expression(
         row,
         column,
         Param {
-            index: Some(param::Index::Index(parameter_index)),
-            expression: Some(param::Expression::Expression(pedal as i32)),
-            expression_min: Some(param::ExpressionMin::ExpressionMin(minimum)),
-            expression_max: Some(param::ExpressionMax::ExpressionMax(maximum)),
+            index: Some(parameter_index),
+            expression: Some(pedal as i32),
+            expression_min: Some(minimum),
+            expression_max: Some(maximum),
             ..Default::default()
         },
     )
@@ -1338,9 +1330,9 @@ pub fn set_expression_bypass(
 ) -> OutboundMessage {
     grid_update(BinaryPreset {
         chains: vec![Chain {
-            row: Some(chain::Row::Row(row)),
+            row: Some(row),
             models: vec![Model {
-                column: Some(model::Column::Column(column)),
+                column: Some(column),
                 bypass_expression: vec![crate::proto::Expression {
                     expression: pedal as i32,
                     expression_min: 0.0,
@@ -1363,10 +1355,10 @@ pub fn set_expression_bypass(
 pub fn set_block(row: u32, column: u32, model_id: u32) -> OutboundMessage {
     grid_update(BinaryPreset {
         chains: vec![Chain {
-            row: Some(chain::Row::Row(row)),
+            row: Some(row),
             models: vec![Model {
-                hash: Some(model::Hash::Hash(model_id)),
-                column: Some(model::Column::Column(column)),
+                hash: Some(model_id),
+                column: Some(column),
                 ..Default::default()
             }],
             ..Default::default()
@@ -1378,10 +1370,10 @@ pub fn set_block(row: u32, column: u32, model_id: u32) -> OutboundMessage {
 pub fn remove_block(row: u32, column: u32) -> OutboundMessage {
     let preset = BinaryPreset {
         chains: vec![Chain {
-            row: Some(chain::Row::Row(row)),
+            row: Some(row),
             models: vec![Model {
-                hash: Some(model::Hash::Hash(0)),
-                column: Some(model::Column::Column(column)),
+                hash: Some(0),
+                column: Some(column),
                 ..Default::default()
             }],
             ..Default::default()
@@ -1392,7 +1384,7 @@ pub fn remove_block(row: u32, column: u32) -> OutboundMessage {
         1,
         pa::GridMessage {
             action: pa::message_action::Enum::Delete as i32,
-            preset: Some(pa::grid_message::Preset::Preset(preset)),
+            preset: Some(preset),
             ..Default::default()
         },
     )
@@ -1419,15 +1411,18 @@ pub fn set_footswitch(row: u32, column: u32, footswitch: Option<u32>) -> Vec<Out
         row,
         column,
         stomp_index: footswitch.unwrap_or_default(),
+        // PRIMARY/SECONDARY, added by a newer Cortex Control. Left absent so
+        // the encoding matches what this client sent before the field existed.
+        r#type: None,
     };
     let delete = OutboundMessage::encoded(
         1,
         pa::GridMessage {
             action: pa::message_action::Enum::Delete as i32,
-            preset: Some(pa::grid_message::Preset::Preset(BinaryPreset {
+            preset: Some(BinaryPreset {
                 stomp_mode_assignments: vec![assignment],
                 ..Default::default()
-            })),
+            }),
             ..Default::default()
         },
     );
@@ -1439,6 +1434,7 @@ pub fn set_footswitch(row: u32, column: u32, footswitch: Option<u32>) -> Vec<Out
             row,
             column,
             stomp_index: footswitch,
+            r#type: None,
         }],
         ..Default::default()
     });
@@ -1471,7 +1467,7 @@ pub fn set_midi_out(
 ) -> OutboundMessage {
     let messages = pa::GeneralMidiMessages {
         messages: vec![pa::GeneralMidiMessage {
-            source: Some(pa::general_midi_message::Source::Source(source)),
+            source: Some(source),
             msg: messages
                 .into_iter()
                 .map(|message| crate::proto::MidiMessageInfo {
@@ -1489,10 +1485,10 @@ pub fn set_midi_out(
         pa::MidiSettingsMessage {
             action: pa::message_action::Enum::Update as i32,
             preset_load_messages: preset_load.then_some(
-                pa::midi_settings_message::PresetLoadMessages::PresetLoadMessages(messages.clone()),
+                messages.clone(),
             ),
             general_midi_messages: (!preset_load).then_some(
-                pa::midi_settings_message::GeneralMidiMessages::GeneralMidiMessages(messages),
+                messages,
             ),
             ..Default::default()
         },
@@ -1502,8 +1498,8 @@ pub fn set_midi_out(
 pub fn set_chain_input(row: u32, input_id: u32) -> OutboundMessage {
     grid_update(BinaryPreset {
         chains: vec![Chain {
-            row: Some(chain::Row::Row(row)),
-            in_portid: Some(chain::InPortid::InPortid(input_id)),
+            row: Some(row),
+            in_portid: Some(input_id),
             ..Default::default()
         }],
         ..Default::default()
@@ -1513,8 +1509,8 @@ pub fn set_chain_input(row: u32, input_id: u32) -> OutboundMessage {
 pub fn set_chain_output(row: u32, output_id: u32) -> OutboundMessage {
     grid_update(BinaryPreset {
         chains: vec![Chain {
-            row: Some(chain::Row::Row(row)),
-            out_portid: Some(chain::OutPortid::OutPortid(output_id)),
+            row: Some(row),
+            out_portid: Some(output_id),
             ..Default::default()
         }],
         ..Default::default()
@@ -1532,7 +1528,7 @@ pub fn set_chain_split(
     };
     grid_update(BinaryPreset {
         chains: vec![Chain {
-            row: Some(chain::Row::Row(row)),
+            row: Some(row),
             split_control_points: vec![SplitControlPoints { split, mix }],
             ..Default::default()
         }],
@@ -1546,7 +1542,7 @@ pub fn set_chain_split(
 pub fn set_split_mute(row: u32, muted: bool) -> OutboundMessage {
     grid_update(BinaryPreset {
         chains: vec![Chain {
-            row: Some(chain::Row::Row(row)),
+            row: Some(row),
             split_bypass: vec![SceneBypass { bypass: muted }],
             ..Default::default()
         }],
@@ -1564,11 +1560,11 @@ pub fn set_routing_parameter(
         param_values: vec![ParamValue {
             value: Some(param_value::Value::FloatValue(value)),
         }],
-        index: Some(param::Index::Index(parameter_index)),
+        index: Some(parameter_index),
         ..Default::default()
     };
     let mut chain_value = Chain {
-        row: Some(chain::Row::Row(row)),
+        row: Some(row),
         ..Default::default()
     };
     match node {
@@ -1577,7 +1573,7 @@ pub fn set_routing_parameter(
             ..Default::default()
         }),
         "mixer" => chain_value.mixer.push(Model {
-            hash: Some(model::Hash::Hash(11_000)),
+            hash: Some(11_000),
             params: vec![parameter],
             ..Default::default()
         }),
@@ -1598,18 +1594,18 @@ pub fn save_preset(
     OutboundMessage::encoded(
         4,
         pa::FileMessage {
-            r#type: Some(pa::file_message::Type::Type(0)),
-            folder: Some(pa::file_message::Folder::Folder(pa::FolderInfo {
-                key: Some(pa::folder_info::Key::Key(setlist_key.into())),
-                is_factory: Some(pa::folder_info::IsFactory::IsFactory(false)),
+            r#type: Some(0),
+            folder: Some(pa::FolderInfo {
+                key: Some(setlist_key.into()),
+                is_factory: Some(false),
                 files: vec![pa::ProductData {
-                    index: Some(pa::product_data::Index::Index(position as i32)),
-                    name: Some(pa::product_data::Name::Name(name.into())),
-                    instrument: Some(pa::product_data::Instrument::Instrument(instrument)),
+                    index: Some(position as i32),
+                    name: Some(name.into()),
+                    instrument: Some(instrument),
                     ..Default::default()
                 }],
                 ..Default::default()
-            })),
+            }),
             ..Default::default()
         },
     )
@@ -1647,7 +1643,7 @@ pub fn acknowledge_capture_dialog(shown: bool) -> OutboundMessage {
         36,
         pa::NeuralCaptureMessage {
             action: pa::message_action::Enum::Update as i32,
-            show_dialog: Some(pa::neural_capture_message::ShowDialog::ShowDialog(shown)),
+            show_dialog: Some(shown),
             ..Default::default()
         },
     )
@@ -1680,7 +1676,7 @@ pub fn set_tuner_input(input_port_id: i32) -> OutboundMessage {
         6,
         pa::TunerMessage {
             action: pa::message_action::Enum::Update as i32,
-            input_port_id: Some(pa::tuner_message::InputPortId::InputPortId(input_port_id)),
+            input_port_id: Some(input_port_id),
             ..Default::default()
         },
     )
@@ -1693,7 +1689,7 @@ pub fn set_tuner_mute(muted: bool) -> OutboundMessage {
         6,
         pa::TunerMessage {
             action: pa::message_action::Enum::Update as i32,
-            mute: Some(pa::tuner_message::Mute::Mute(muted)),
+            mute: Some(muted),
             ..Default::default()
         },
     )
@@ -1718,7 +1714,7 @@ pub fn set_tuner_meter(enabled: bool) -> OutboundMessage {
         6,
         pa::TunerMessage {
             action: pa::message_action::Enum::Update as i32,
-            enable_meter: Some(pa::tuner_message::EnableMeter::EnableMeter(enabled)),
+            enable_meter: Some(enabled),
             ..Default::default()
         },
     )
@@ -1731,7 +1727,7 @@ pub fn set_tuner_reference(offset_hz: f32) -> OutboundMessage {
         6,
         pa::TunerMessage {
             action: pa::message_action::Enum::Update as i32,
-            frequency: Some(pa::tuner_message::Frequency::Frequency(offset_hz)),
+            frequency: Some(offset_hz),
             ..Default::default()
         },
     )
@@ -1755,24 +1751,22 @@ pub fn set_general_integer(setting: &str, value: i32) -> OutboundMessage {
     match setting {
         "screenBrightness" => {
             message.screen_brightness =
-                Some(pa::general_settings_message::ScreenBrightness::ScreenBrightness(value))
+                Some(value)
         }
         "ledBrightness" => {
             message.led_brightness = Some(
-                pa::general_settings_message::LedBrightness::LedBrightness(value),
+                value,
             )
         }
         "dimmedLedBrightness" => {
             message.dimmed_led_brightness =
-                Some(pa::general_settings_message::DimmedLedBrightness::DimmedLedBrightness(value))
+                Some(value)
         }
         "holdTiming" => {
-            message.hold_timing = Some(pa::general_settings_message::HoldTiming::HoldTiming(value))
+            message.hold_timing = Some(value)
         }
         "midiChannel" => {
-            message.midi_channel = Some(pa::general_settings_message::MidiChannel::MidiChannel(
-                value,
-            ))
+            message.midi_channel = Some(value,)
         }
         _ => panic!("unsupported validated GeneralSettings integer: {setting}"),
     }
@@ -1787,33 +1781,31 @@ pub fn set_general_toggle(setting: &str, enabled: bool) -> OutboundMessage {
     match setting {
         "midiOverUsb" => {
             message.midi_over_usb =
-                Some(pa::general_settings_message::MidiOverUsb::MidiOverUsb(enabled))
+                Some(enabled)
         }
         "ignoreDuplicatePc" => message.ignore_duplicate_pc = Some(
-            pa::general_settings_message::IgnoreDuplicatePc::IgnoreDuplicatePc(enabled),
+            enabled,
         ),
         "stompModeAutoAssign" => message.stomp_mode_auto_assign = Some(
-            pa::general_settings_message::StompModeAutoAssign::StompModeAutoAssign(enabled),
+            enabled,
         ),
         "swapTempoTunerAccess" => message.swap_tempo_tuner_access = Some(
-            pa::general_settings_message::SwapTempoTunerAccess::SwapTempoTunerAccess(enabled),
+            enabled,
         ),
         "disableInternetConnectionCheck" => message.disable_internet_connection_check = Some(
-            pa::general_settings_message::DisableInternetConnectionCheck::DisableInternetConnectionCheck(enabled),
+            enabled,
         ),
         "dynamicDelayCompensation" => message.enable_dynamic_delay_compensation = Some(
-            pa::general_settings_message::EnableDynamicDelayCompensation::EnableDynamicDelayCompensation(enabled),
+            enabled,
         ),
         "presetDimmed" => message.enable_preset_dimmed = Some(
-            pa::general_settings_message::EnablePresetDimmed::EnablePresetDimmed(enabled),
+            enabled,
         ),
         "midiClockIn" => message.midi_clock_in_enabled = Some(
-            pa::general_settings_message::MidiClockInEnabled::MidiClockInEnabled(enabled),
+            enabled,
         ),
         "gigViewStompAccess" => message.gig_view_stomp_access_enabled = Some(
-            pa::general_settings_message::GigViewStompAccessEnabled::GigViewStompAccessEnabled(
-                enabled,
-            ),
+            enabled,
         ),
         _ => panic!("unsupported validated GeneralSettings toggle: {setting}"),
     }
@@ -1826,7 +1818,7 @@ pub fn set_scene_bypass_behavior(behavior: i32) -> OutboundMessage {
         pa::GeneralSettingsMessage {
             action: pa::message_action::Enum::Update as i32,
             scene_block_bypass: Some(
-                pa::general_settings_message::SceneBlockBypass::SceneBlockBypass(behavior),
+                behavior,
             ),
             ..Default::default()
         },
@@ -1838,7 +1830,7 @@ fn io_update(settings: pa::PortSettings) -> OutboundMessage {
         3,
         pa::IoSettingsMessage {
             action: pa::message_action::Enum::Update as i32,
-            settings: Some(pa::io_settings_message::Settings::Settings(settings)),
+            settings: Some(settings),
             ..Default::default()
         },
     )
@@ -1855,14 +1847,12 @@ pub fn set_master_volume_assignment(
         pa::GeneralSettingsMessage {
             action: pa::message_action::Enum::Update as i32,
             master_volume_assignment: Some(
-                pa::general_settings_message::MasterVolumeAssignment::MasterVolumeAssignment(
-                    pa::MasterVolumeAssignmentOptions {
+                pa::MasterVolumeAssignmentOptions {
                         out12,
                         out34,
                         send12,
                         headphones,
                     },
-                ),
             ),
             ..Default::default()
         },
@@ -1881,10 +1871,10 @@ pub fn set_global_bypass(cab: [bool; 4], ir: [bool; 4]) -> OutboundMessage {
         pa::GeneralSettingsMessage {
             action: pa::message_action::Enum::Update as i32,
             global_bypass_cab: Some(
-                pa::general_settings_message::GlobalBypassCab::GlobalBypassCab(rows(cab)),
+                rows(cab),
             ),
             global_bypass_ir: Some(
-                pa::general_settings_message::GlobalBypassIr::GlobalBypassIr(rows(ir)),
+                rows(ir),
             ),
             ..Default::default()
         },
@@ -1913,15 +1903,15 @@ pub fn set_input_port(
             ..Default::default()
         };
         match field {
-            ("level", value) => port.level = Some(pa::input_port_settings::Level::Level(value)),
+            ("level", value) => port.level = Some(value),
             ("impedance", value) => {
-                port.input_zmode = Some(pa::input_port_settings::InputZmode::InputZmode(value))
+                port.input_zmode = Some(value)
             }
             ("inputType", value) => {
-                port.input_type = Some(pa::input_port_settings::InputType::InputType(value))
+                port.input_type = Some(value)
             }
             ("groundLift", value) => {
-                port.ground_lift = Some(pa::input_port_settings::GroundLift::GroundLift(value))
+                port.ground_lift = Some(value)
             }
             _ => unreachable!(),
         }
@@ -1944,7 +1934,7 @@ pub fn set_output_port(
         messages.push(io_update(pa::PortSettings {
             out_port: vec![pa::OutputPortSettings {
                 output_port_id,
-                level: Some(pa::output_port_settings::Level::Level(value)),
+                level: Some(value),
                 ..Default::default()
             }],
             ..Default::default()
@@ -1954,7 +1944,7 @@ pub fn set_output_port(
         messages.push(io_update(pa::PortSettings {
             out_port: vec![pa::OutputPortSettings {
                 output_port_id,
-                ground_lift: Some(pa::output_port_settings::GroundLift::GroundLift(value)),
+                ground_lift: Some(value),
                 ..Default::default()
             }],
             ..Default::default()
@@ -1964,7 +1954,7 @@ pub fn set_output_port(
         messages.push(io_update(pa::PortSettings {
             out_port: vec![pa::OutputPortSettings {
                 output_port_id,
-                mute: Some(pa::output_port_settings::Mute::Mute(value)),
+                mute: Some(value),
                 ..Default::default()
             }],
             ..Default::default()
@@ -1989,15 +1979,15 @@ pub fn set_usb_port(
     {
         let mut port = pa::UsbPortSettings::default();
         match field {
-            ("level", value) => port.level = Some(pa::usb_port_settings::Level::Level(value)),
+            ("level", value) => port.level = Some(value),
             ("headphonesSource", value) => {
-                port.hp_select = Some(pa::usb_port_settings::HpSelect::HpSelect(value))
+                port.hp_select = Some(value)
             }
-            ("dryWet", value) => port.dry_wet = Some(pa::usb_port_settings::DryWet::DryWet(value)),
+            ("dryWet", value) => port.dry_wet = Some(value),
             _ => unreachable!(),
         }
         messages.push(io_update(pa::PortSettings {
-            usb_port: Some(pa::port_settings::UsbPort::UsbPort(port)),
+            usb_port: Some(port),
             ..Default::default()
         }));
     }
@@ -2006,15 +1996,13 @@ pub fn set_usb_port(
 
 pub fn set_midi_thru(enabled: bool) -> OutboundMessage {
     io_update(pa::PortSettings {
-        midi_port: Some(pa::port_settings::MidiPort::MidiPort(
-            pa::MidiPortSettings {
-                midi_thru: Some(pa::midi_port_settings::MidiThru::MidiThru(if enabled {
+        midi_port: Some(pa::MidiPortSettings {
+                midi_thru: Some(if enabled {
                     1.0
                 } else {
                     0.0
-                })),
-            },
-        )),
+                }),
+            }),
         ..Default::default()
     })
 }
@@ -2027,8 +2015,8 @@ pub fn set_output_pairing(
         3,
         pa::IoSettingsMessage {
             action: pa::message_action::Enum::Update as i32,
-            xlr1_2_linked: xlr12_linked.map(pa::io_settings_message::Xlr12Linked::Xlr12Linked),
-            out3_4_linked: out34_linked.map(pa::io_settings_message::Out34Linked::Out34Linked),
+            xlr1_2_linked: xlr12_linked,
+            out3_4_linked: out34_linked,
             ..Default::default()
         },
     )
@@ -2039,7 +2027,7 @@ pub fn set_device_name(name: impl Into<String>) -> OutboundMessage {
         10,
         pa::VersionMessage {
             action: pa::message_action::Enum::Update as i32,
-            custom_name: Some(pa::version_message::CustomName::CustomName(name.into())),
+            custom_name: Some(name.into()),
             ..Default::default()
         },
     )
@@ -2050,7 +2038,7 @@ pub fn undo() -> OutboundMessage {
         21,
         pa::UndoRedoMessage {
             action: pa::message_action::Enum::Update as i32,
-            undo: Some(pa::undo_redo_message::Undo::Undo(true)),
+            undo: Some(true),
             ..Default::default()
         },
     )
@@ -2061,7 +2049,7 @@ pub fn redo() -> OutboundMessage {
         21,
         pa::UndoRedoMessage {
             action: pa::message_action::Enum::Update as i32,
-            redo: Some(pa::undo_redo_message::Redo::Redo(true)),
+            redo: Some(true),
             ..Default::default()
         },
     )
@@ -2087,7 +2075,7 @@ pub fn preset_screenshot(
         25,
         pa::ScreenshotMessage {
             action: pa::message_action::Enum::Read as i32,
-            request_id: Some(pa::screenshot_message::RequestId::RequestId(request_id)),
+            request_id: Some(request_id),
             folder_name: folder_name.into(),
             is_factory,
             index: position as i32,
@@ -2232,14 +2220,10 @@ pub fn setlist_position_with_request_id(
         2,
         pa::SetlistPositionMessage {
             action: pa::message_action::Enum::Update as i32,
-            request_id: request_id.map(pa::setlist_position_message::RequestId::RequestId),
-            folder_key: Some(pa::setlist_position_message::FolderKey::FolderKey(
-                setlist_key.into(),
-            )),
-            position: Some(pa::setlist_position_message::Position::Position(position)),
-            is_factory: Some(pa::setlist_position_message::IsFactory::IsFactory(
-                is_factory,
-            )),
+            request_id: request_id,
+            folder_key: Some(setlist_key.into()),
+            position: Some(position),
+            is_factory: Some(is_factory,),
             ..Default::default()
         },
     )
@@ -2261,12 +2245,12 @@ pub fn set_tempo(bpm: u32) -> OutboundMessage {
     let normalized = normalized_tempo(bpm);
     let preset = BinaryPreset {
         tempo_program_data: vec![Model {
-            hash: Some(model::Hash::Hash(25_000)),
+            hash: Some(25_000),
             params: vec![Param {
                 param_values: vec![ParamValue {
                     value: Some(param_value::Value::FloatValue(normalized)),
                 }],
-                index: Some(param::Index::Index(0)),
+                index: Some(0),
                 ..Default::default()
             }],
             ..Default::default()
@@ -2285,12 +2269,12 @@ pub fn set_tempo_parameters(parameters: Vec<(u32, f32)>) -> Vec<OutboundMessage>
         .map(|(index, value)| {
             grid_update(BinaryPreset {
                 tempo_program_data: vec![Model {
-                    hash: Some(model::Hash::Hash(25_000)),
+                    hash: Some(25_000),
                     params: vec![Param {
                         param_values: vec![ParamValue {
                             value: Some(param_value::Value::FloatValue(value.clamp(0.0, 1.0))),
                         }],
-                        index: Some(param::Index::Index(index)),
+                        index: Some(index),
                         ..Default::default()
                     }],
                     ..Default::default()
@@ -2308,7 +2292,7 @@ fn global_tempo_parameter(index: u32, value: f32) -> OutboundMessage {
         pa::GlobalTempoMessage {
             action: pa::message_action::Enum::Update as i32,
             params: vec![Param {
-                index: Some(param::Index::Index(index)),
+                index: Some(index),
                 param_values: vec![ParamValue {
                     value: Some(param_value::Value::FloatValue(value)),
                 }],
@@ -2351,9 +2335,7 @@ pub fn set_master_volume(volume: f32) -> OutboundMessage {
         17,
         pa::MasterVolumeMessage {
             action: pa::message_action::Enum::Update as i32,
-            volume: Some(pa::master_volume_message::Volume::Volume(
-                volume.clamp(0.0, 1.0),
-            )),
+            volume: Some(volume.clamp(0.0, 1.0)),
             ..Default::default()
         },
     )
@@ -2364,7 +2346,7 @@ fn grid_update(preset: BinaryPreset) -> OutboundMessage {
         1,
         pa::GridMessage {
             action: pa::message_action::Enum::Update as i32,
-            preset: Some(pa::grid_message::Preset::Preset(preset)),
+            preset: Some(preset),
             ..Default::default()
         },
     )
@@ -2494,14 +2476,14 @@ mod tests {
     fn parameter_and_bypass_commands_round_trip_through_the_schema() {
         let numeric = set_parameter_numeric(2, 5, 7, 0.25);
         let grid = pa::GridMessage::decode(numeric.payload.as_slice()).unwrap();
-        let pa::grid_message::Preset::Preset(preset) = grid.preset.unwrap();
+        let preset = grid.preset.unwrap();
         let parameter = &preset.chains[0].models[0].params[0];
-        assert_eq!(preset.chains[0].row, Some(chain::Row::Row(2)));
+        assert_eq!(preset.chains[0].row, Some(2));
         assert_eq!(
             preset.chains[0].models[0].column,
-            Some(model::Column::Column(5))
+            Some(5)
         );
-        assert_eq!(parameter.index, Some(param::Index::Index(7)));
+        assert_eq!(parameter.index, Some(7));
         assert!(matches!(
             parameter.param_values[0].value,
             Some(param_value::Value::FloatValue(value)) if value == 0.25
@@ -2509,7 +2491,7 @@ mod tests {
 
         let bypass = set_bypass(1, 4, true);
         let grid = pa::GridMessage::decode(bypass.payload.as_slice()).unwrap();
-        let pa::grid_message::Preset::Preset(preset) = grid.preset.unwrap();
+        let preset = grid.preset.unwrap();
         assert!(preset.bypass[0].col_bypass[0].scene_bypass[0].bypass);
     }
 
@@ -2520,7 +2502,7 @@ mod tests {
         for message in messages {
             assert_eq!(message.message_type, 3);
             let decoded = pa::IoSettingsMessage::decode(message.payload.as_slice()).unwrap();
-            let pa::io_settings_message::Settings::Settings(settings) = decoded.settings.unwrap();
+            let settings = decoded.settings.unwrap();
             assert_eq!(settings.in_port.len(), 1);
             let port = &settings.in_port[0];
             assert_eq!(port.input_port_id, 2);
@@ -2540,7 +2522,7 @@ mod tests {
         assert_eq!(messages.len(), 3);
         for message in messages {
             let decoded = pa::IoSettingsMessage::decode(message.payload.as_slice()).unwrap();
-            let pa::io_settings_message::Settings::Settings(settings) = decoded.settings.unwrap();
+            let settings = decoded.settings.unwrap();
             let port = &settings.out_port[0];
             let populated = [
                 port.level.is_some(),
@@ -2557,8 +2539,8 @@ mod tests {
         assert_eq!(messages.len(), 3);
         for message in messages {
             let decoded = pa::IoSettingsMessage::decode(message.payload.as_slice()).unwrap();
-            let pa::io_settings_message::Settings::Settings(settings) = decoded.settings.unwrap();
-            let pa::port_settings::UsbPort::UsbPort(port) = settings.usb_port.unwrap();
+            let settings = decoded.settings.unwrap();
+            let port = settings.usb_port.unwrap();
             let populated = [
                 port.level.is_some(),
                 port.hp_select.is_some(),
@@ -2575,11 +2557,11 @@ mod tests {
     fn io_midi_and_pairing_shapes_match_hardware_verified_upstream() {
         let midi = set_midi_thru(true);
         let decoded = pa::IoSettingsMessage::decode(midi.payload.as_slice()).unwrap();
-        let pa::io_settings_message::Settings::Settings(settings) = decoded.settings.unwrap();
-        let pa::port_settings::MidiPort::MidiPort(midi) = settings.midi_port.unwrap();
+        let settings = decoded.settings.unwrap();
+        let midi = settings.midi_port.unwrap();
         assert!(matches!(
             midi.midi_thru,
-            Some(pa::midi_port_settings::MidiThru::MidiThru(1.0))
+            Some(1.0)
         ));
 
         let pairing = set_output_pairing(None, Some(false));
@@ -2587,7 +2569,7 @@ mod tests {
         assert!(decoded.xlr1_2_linked.is_none());
         assert!(matches!(
             decoded.out3_4_linked,
-            Some(pa::io_settings_message::Out34Linked::Out34Linked(false))
+            Some(false)
         ));
     }
 
@@ -2595,44 +2577,44 @@ mod tests {
     fn parameter_assignment_updates_are_sparse_and_preserve_reversed_ranges() {
         let scene_mode = set_parameter_scene_mode(2, 5, 7, true);
         let grid = pa::GridMessage::decode(scene_mode.payload.as_slice()).unwrap();
-        let pa::grid_message::Preset::Preset(preset) = grid.preset.unwrap();
+        let preset = grid.preset.unwrap();
         let parameter = &preset.chains[0].models[0].params[0];
-        assert_eq!(preset.chains[0].row, Some(chain::Row::Row(2)));
+        assert_eq!(preset.chains[0].row, Some(2));
         assert_eq!(
             preset.chains[0].models[0].column,
-            Some(model::Column::Column(5))
+            Some(5)
         );
-        assert_eq!(parameter.index, Some(param::Index::Index(7)));
+        assert_eq!(parameter.index, Some(7));
         assert_eq!(
             parameter.scene_mode,
-            Some(param::SceneMode::SceneMode(true))
+            Some(true)
         );
         assert!(parameter.param_values.is_empty());
         assert!(parameter.expression.is_none());
 
         let expression = set_parameter_expression(1, 3, 9, 2, 0.85, 0.1);
         let grid = pa::GridMessage::decode(expression.payload.as_slice()).unwrap();
-        let pa::grid_message::Preset::Preset(preset) = grid.preset.unwrap();
+        let preset = grid.preset.unwrap();
         let parameter = &preset.chains[0].models[0].params[0];
-        assert_eq!(parameter.index, Some(param::Index::Index(9)));
-        assert_eq!(parameter.expression, Some(param::Expression::Expression(2)));
+        assert_eq!(parameter.index, Some(9));
+        assert_eq!(parameter.expression, Some(2));
         assert_eq!(
             parameter.expression_min,
-            Some(param::ExpressionMin::ExpressionMin(0.85))
+            Some(0.85)
         );
         assert_eq!(
             parameter.expression_max,
-            Some(param::ExpressionMax::ExpressionMax(0.1))
+            Some(0.1)
         );
         assert!(parameter.param_values.is_empty());
         assert!(parameter.scene_mode.is_none());
 
         let bypass = set_expression_bypass(2, 4, 1, 2, true, 250, true);
         let grid = pa::GridMessage::decode(bypass.payload.as_slice()).unwrap();
-        let pa::grid_message::Preset::Preset(preset) = grid.preset.unwrap();
+        let preset = grid.preset.unwrap();
         let model = &preset.chains[0].models[0];
-        assert_eq!(preset.chains[0].row, Some(chain::Row::Row(2)));
-        assert_eq!(model.column, Some(model::Column::Column(4)));
+        assert_eq!(preset.chains[0].row, Some(2));
+        assert_eq!(model.column, Some(4));
         assert_eq!(model.bypass_expression[0].expression, 1);
         assert_eq!(model.bypass_expression[0].expression_min, 0.0);
         assert_eq!(model.bypass_expression[0].expression_max, 1.0);
@@ -2644,26 +2626,26 @@ mod tests {
 
         let splitter_scene = set_parameter_scene_mode(0, 8, 4, true);
         let grid = pa::GridMessage::decode(splitter_scene.payload.as_slice()).unwrap();
-        let pa::grid_message::Preset::Preset(preset) = grid.preset.unwrap();
+        let preset = grid.preset.unwrap();
         assert!(preset.chains[0].models.is_empty());
         assert!(preset.chains[0].combined_splitter[0].hash.is_none());
         assert_eq!(
             preset.chains[0].combined_splitter[0].params[0].index,
-            Some(param::Index::Index(4))
+            Some(4)
         );
         assert_eq!(
             preset.chains[0].combined_splitter[0].params[0].scene_mode,
-            Some(param::SceneMode::SceneMode(true))
+            Some(true)
         );
 
         let mixer_expression = set_parameter_expression(2, 9, 3, 1, 0.2, 0.9);
         let grid = pa::GridMessage::decode(mixer_expression.payload.as_slice()).unwrap();
-        let pa::grid_message::Preset::Preset(preset) = grid.preset.unwrap();
+        let preset = grid.preset.unwrap();
         let mixer = &preset.chains[0].mixer[0];
-        assert_eq!(mixer.hash, Some(model::Hash::Hash(11_000)));
+        assert_eq!(mixer.hash, Some(11_000));
         assert_eq!(
             mixer.params[0].expression,
-            Some(param::Expression::Expression(1))
+            Some(1)
         );
     }
 
@@ -2671,46 +2653,46 @@ mod tests {
     fn splitter_and_mixer_parameters_use_their_native_chain_containers() {
         let splitter = set_routing_parameter(0, "splitter", 5, 0.25);
         let grid = pa::GridMessage::decode(splitter.payload.as_slice()).unwrap();
-        let pa::grid_message::Preset::Preset(preset) = grid.preset.unwrap();
+        let preset = grid.preset.unwrap();
         let chain = &preset.chains[0];
-        assert_eq!(chain.row, Some(chain::Row::Row(0)));
+        assert_eq!(chain.row, Some(0));
         assert!(chain.models.is_empty());
         assert!(chain.combined_splitter[0].hash.is_none());
         assert_eq!(
             chain.combined_splitter[0].params[0].index,
-            Some(param::Index::Index(5))
+            Some(5)
         );
 
         let mixer = set_routing_parameter(2, "mixer", 3, 0.75);
         let grid = pa::GridMessage::decode(mixer.payload.as_slice()).unwrap();
-        let pa::grid_message::Preset::Preset(preset) = grid.preset.unwrap();
+        let preset = grid.preset.unwrap();
         let model = &preset.chains[0].mixer[0];
-        assert_eq!(model.hash, Some(model::Hash::Hash(11_000)));
-        assert_eq!(model.params[0].index, Some(param::Index::Index(3)));
+        assert_eq!(model.hash, Some(11_000));
+        assert_eq!(model.params[0].index, Some(3));
     }
 
     #[test]
     fn lane_control_updates_use_their_native_chain_containers() {
         let input = set_lane_control_parameter(1, "inputGate", 2, 0.4);
         let grid = pa::GridMessage::decode(input.payload.as_slice()).unwrap();
-        let pa::grid_message::Preset::Preset(preset) = grid.preset.unwrap();
+        let preset = grid.preset.unwrap();
         let chain = &preset.chains[0];
         assert!(chain.models.is_empty());
         assert!(chain.output_control.is_empty());
-        assert_eq!(chain.input_control[0].hash, Some(model::Hash::Hash(28_000)));
+        assert_eq!(chain.input_control[0].hash, Some(28_000));
         assert_eq!(
             chain.input_control[0].params[0].index,
-            Some(param::Index::Index(2))
+            Some(2)
         );
 
         let output = set_lane_control_scene_mode(3, "laneOutput", 0, true);
         let grid = pa::GridMessage::decode(output.payload.as_slice()).unwrap();
-        let pa::grid_message::Preset::Preset(preset) = grid.preset.unwrap();
+        let preset = grid.preset.unwrap();
         let control = &preset.chains[0].output_control[0];
-        assert_eq!(control.hash, Some(model::Hash::Hash(23_000)));
+        assert_eq!(control.hash, Some(23_000));
         assert_eq!(
             control.params[0].scene_mode,
-            Some(param::SceneMode::SceneMode(true))
+            Some(true)
         );
         assert!(
             control.params[0].param_values.is_empty(),
@@ -2722,7 +2704,7 @@ mod tests {
     fn stomp_metadata_updates_are_sparse_and_keyed_by_footswitch() {
         let momentary = set_stomp_momentary(4, true);
         let grid = pa::GridMessage::decode(momentary.payload.as_slice()).unwrap();
-        let pa::grid_message::Preset::Preset(preset) = grid.preset.unwrap();
+        let preset = grid.preset.unwrap();
         assert!(matches!(preset.stomp_is_momentary.get(&4), Some(true)));
         assert!(preset.stomp_mode_assignments.is_empty());
         assert!(preset.stomp_labels.is_empty());
@@ -2730,7 +2712,7 @@ mod tests {
 
         let label = set_stomp_label(7, "Solo".into(), true);
         let grid = pa::GridMessage::decode(label.payload.as_slice()).unwrap();
-        let pa::grid_message::Preset::Preset(preset) = grid.preset.unwrap();
+        let preset = grid.preset.unwrap();
         assert_eq!(
             preset.single_stomp_labels.get(&7).map(String::as_str),
             Some("Solo")
@@ -2753,7 +2735,7 @@ mod tests {
         let decoded = pa::MidiSettingsMessage::decode(outbound.payload.as_slice()).unwrap();
         assert_eq!(decoded.action, pa::message_action::Enum::Update as i32);
         assert!(decoded.preset_load_messages.is_none());
-        let Some(pa::midi_settings_message::GeneralMidiMessages::GeneralMidiMessages(groups)) =
+        let Some(groups) =
             decoded.general_midi_messages
         else {
             panic!("general MIDI messages missing");
@@ -2761,7 +2743,7 @@ mod tests {
         assert_eq!(groups.messages.len(), 1);
         assert_eq!(
             groups.messages[0].source,
-            Some(pa::general_midi_message::Source::Source(7))
+            Some(7)
         );
         assert_eq!(groups.messages[0].msg[0].r#type, message.r#type);
         assert_eq!(groups.messages[0].msg[0].param3, message.param3);
@@ -2771,7 +2753,7 @@ mod tests {
         assert!(decoded.general_midi_messages.is_none());
         assert!(matches!(
             decoded.preset_load_messages,
-            Some(pa::midi_settings_message::PresetLoadMessages::PresetLoadMessages(_))
+            Some(_)
         ));
     }
 
@@ -2814,7 +2796,7 @@ mod tests {
     fn tempo_is_clamped_and_normalized_once() {
         let message = set_tempo(280);
         let grid = pa::GridMessage::decode(message.payload.as_slice()).unwrap();
-        let pa::grid_message::Preset::Preset(preset) = grid.preset.unwrap();
+        let preset = grid.preset.unwrap();
         assert!(matches!(
             preset.tempo_program_data[0].params[0].param_values[0].value,
             Some(param_value::Value::FloatValue(value)) if value == 1.0
@@ -2828,16 +2810,16 @@ mod tests {
         for (frame, index) in frames.iter().zip([6_u32, 10]) {
             assert_eq!(frame.message_type, 1);
             let grid = pa::GridMessage::decode(frame.payload.as_slice()).unwrap();
-            let pa::grid_message::Preset::Preset(preset) = grid.preset.unwrap();
+            let preset = grid.preset.unwrap();
             assert_eq!(
                 preset.tempo_program_data[0].params[0].index,
-                Some(param::Index::Index(index))
+                Some(index)
             );
         }
         let mode = set_tempo_mode(true);
         assert_eq!(mode.message_type, 33);
         let decoded = pa::GlobalTempoMessage::decode(mode.payload.as_slice()).unwrap();
-        assert_eq!(decoded.params[0].index, Some(param::Index::Index(1)));
+        assert_eq!(decoded.params[0].index, Some(1));
         assert!(matches!(
             decoded.params[0].param_values[0].value,
             Some(param_value::Value::FloatValue(1.0))
@@ -2852,7 +2834,7 @@ mod tests {
         assert_eq!(outbound.message_type, 33);
         let decoded = pa::GlobalTempoMessage::decode(outbound.payload.as_slice()).unwrap();
         assert_eq!(decoded.action, pa::message_action::Enum::Update as i32);
-        assert_eq!(decoded.params[0].index, Some(param::Index::Index(0)));
+        assert_eq!(decoded.params[0].index, Some(0));
         assert!(matches!(
             decoded.params[0].param_values[0].value,
             Some(param_value::Value::FloatValue(value)) if (value - 0.175).abs() < 1e-6
@@ -2889,7 +2871,7 @@ mod tests {
             assert_eq!(decoded.action, pa::message_action::Enum::Update as i32);
             assert_eq!(
                 decoded.enable_meter,
-                Some(pa::tuner_message::EnableMeter::EnableMeter(enabled))
+                Some(enabled)
             );
             // A tuner write that also carried input, mute or reference would
             // silently overwrite the user's settings.
@@ -2909,7 +2891,7 @@ mod tests {
         assert_eq!(message.action, pa::message_action::Enum::Update as i32);
         assert_eq!(
             message.volume,
-            Some(pa::master_volume_message::Volume::Volume(0.57))
+            Some(0.57)
         );
         assert!(message.calibrate.is_none());
     }
@@ -2940,11 +2922,11 @@ mod tests {
         let decoded = pa::SetlistPositionMessage::decode(outbound.payload.as_slice()).unwrap();
         assert_eq!(
             decoded.request_id,
-            Some(pa::setlist_position_message::RequestId::RequestId(9_001))
+            Some(9_001)
         );
         assert_eq!(
             decoded.position,
-            Some(pa::setlist_position_message::Position::Position(42))
+            Some(42)
         );
     }
 
@@ -2955,7 +2937,7 @@ mod tests {
         assert_eq!(decoded.action, pa::message_action::Enum::Read as i32);
         assert_eq!(
             decoded.request_id,
-            Some(pa::setlist_position_message::RequestId::RequestId(7_321))
+            Some(7_321)
         );
         assert!(decoded.position.is_none());
         assert!(decoded.folder_key.is_none());
@@ -2971,10 +2953,10 @@ mod tests {
         .encode();
         assert_eq!(add.len(), 1);
         let grid = pa::GridMessage::decode(add[0].payload.as_slice()).unwrap();
-        let pa::grid_message::Preset::Preset(preset) = grid.preset.unwrap();
+        let preset = grid.preset.unwrap();
         assert_eq!(
             preset.chains[0].models[0].hash,
-            Some(model::Hash::Hash(12_345))
+            Some(12_345)
         );
 
         let assignment = DeviceOperation::SetFootswitch {
@@ -2996,7 +2978,7 @@ mod tests {
         }
         .encode();
         let grid = pa::GridMessage::decode(split[0].payload.as_slice()).unwrap();
-        let pa::grid_message::Preset::Preset(preset) = grid.preset.unwrap();
+        let preset = grid.preset.unwrap();
         assert_eq!(
             preset.chains[0].split_control_points[0],
             SplitControlPoints { split: 2, mix: 7 }
@@ -3008,8 +2990,8 @@ mod tests {
         }
         .encode();
         let grid = pa::GridMessage::decode(mute[0].payload.as_slice()).unwrap();
-        let pa::grid_message::Preset::Preset(preset) = grid.preset.unwrap();
-        assert_eq!(preset.chains[0].row, Some(chain::Row::Row(2)));
+        let preset = grid.preset.unwrap();
+        assert_eq!(preset.chains[0].row, Some(2));
         assert_eq!(
             preset.chains[0].split_bypass,
             vec![SceneBypass { bypass: true }]
@@ -3025,11 +3007,11 @@ mod tests {
         .encode();
         assert_eq!(save[0].message_type, 4);
         let file = pa::FileMessage::decode(save[0].payload.as_slice()).unwrap();
-        let pa::file_message::Folder::Folder(folder) = file.folder.unwrap();
+        let folder = file.folder.unwrap();
         assert_eq!(folder.files.len(), 1);
         assert_eq!(
             folder.files[0].index,
-            Some(pa::product_data::Index::Index(220))
+            Some(220)
         );
     }
 
@@ -3058,7 +3040,7 @@ mod tests {
         }
         .encode();
         let decoded = pa::GeneralSettingsMessage::decode(assignment[0].payload.as_slice()).unwrap();
-        let pa::general_settings_message::MasterVolumeAssignment::MasterVolumeAssignment(value) =
+        let value =
             decoded.master_volume_assignment.unwrap();
         assert!(value.out12);
         assert!(!value.out34);
@@ -3074,7 +3056,7 @@ mod tests {
         assert_eq!(decoded.action, pa::message_action::Enum::Update as i32);
         assert!(matches!(
             decoded.bypassed,
-            Some(pa::global_eq_message::Bypassed::Bypassed(true))
+            Some(true)
         ));
         assert!(decoded.parameters.is_empty());
 
@@ -3088,7 +3070,7 @@ mod tests {
         let cycle = set_mode_cycle(&[7, 1, 2]);
         assert_eq!(cycle.message_type, 14);
         let decoded = pa::ModeMessage::decode(cycle.payload.as_slice()).unwrap();
-        let pa::mode_message::AvailableModes::AvailableModes(available) =
+        let available =
             decoded.available_modes.unwrap();
         assert_eq!(available.modes, vec![7, 1, 2]);
 
@@ -3106,7 +3088,7 @@ mod tests {
         assert!(!decoded.is_favorites);
         assert!(matches!(
             decoded.request_id,
-            Some(pa::recents_favorites_message::RequestId::RequestId(91))
+            Some(91)
         ));
 
         let favorite = set_favorite(
@@ -3145,11 +3127,11 @@ mod tests {
         assert_eq!(decoded.action, pa::message_action::Enum::Read as i32);
         assert!(matches!(
             decoded.request_id,
-            Some(pa::file_message::RequestId::RequestId(92))
+            Some(92)
         ));
         assert!(matches!(
             decoded.r#type,
-            Some(pa::file_message::Type::Type(1))
+            Some(1)
         ));
         assert!(decoded.folder.is_none());
 
@@ -3172,37 +3154,33 @@ mod tests {
         ] {
             let decoded = pa::FileMessage::decode(message.payload.as_slice()).unwrap();
             assert_eq!(decoded.action, action as i32);
-            let pa::file_message::Folder::Folder(folder) = decoded.folder.unwrap();
+            let folder = decoded.folder.unwrap();
             assert_eq!(
                 folder.key,
-                Some(pa::folder_info::Key::Key("/media/p4/Presets/Tour".into()))
+                Some("/media/p4/Presets/Tour".into())
             );
         }
 
         let moved = move_preset("/media/p4/Presets/Live".into(), "Stage".into(), 17);
         let decoded = pa::FileMessage::decode(moved.payload.as_slice()).unwrap();
         assert_eq!(decoded.action, pa::message_action::Enum::Move as i32);
-        let pa::file_message::Folder::Folder(source) = decoded.folder.unwrap();
+        let source = decoded.folder.unwrap();
         assert_eq!(
             source.files[0].key,
-            Some(pa::product_data::Key::Key(
-                "/media/p4/Presets/Live/Stage.pb".into()
-            ))
+            Some("/media/p4/Presets/Live/Stage.pb".into())
         );
-        let pa::file_message::ToFolder::ToFolder(destination) = decoded.to_folder.unwrap();
+        let destination = decoded.to_folder.unwrap();
         assert_eq!(
             destination.files[0].index,
-            Some(pa::product_data::Index::Index(17))
+            Some(17)
         );
 
         let deleted = delete_preset("/media/p4/Presets/Live".into(), "Stage".into());
         let decoded = pa::FileMessage::decode(deleted.payload.as_slice()).unwrap();
-        let pa::file_message::Folder::Folder(folder) = decoded.folder.unwrap();
+        let folder = decoded.folder.unwrap();
         assert_eq!(
             folder.files[0].key,
-            Some(pa::product_data::Key::Key(
-                "/media/p4/Presets/Live/Stage.pb".into()
-            ))
+            Some("/media/p4/Presets/Live/Stage.pb".into())
         );
     }
 
@@ -3211,13 +3189,13 @@ mod tests {
         fn text_update(message: &OutboundMessage) -> (u32, String) {
             assert_eq!(message.message_type, 1);
             let grid = pa::GridMessage::decode(message.payload.as_slice()).unwrap();
-            let pa::grid_message::Preset::Preset(preset) = grid.preset.unwrap();
+            let preset = grid.preset.unwrap();
             let parameter = &preset.chains[0].models[0].params[0];
             let value = parameter.param_values[0].value.as_ref().unwrap();
             let param_value::Value::StringValue(value) = value else {
                 panic!("expected text parameter update")
             };
-            let Some(param::Index::Index(index)) = parameter.index else {
+            let Some(index) = parameter.index else {
                 panic!("expected parameter index")
             };
             (index, value.clone())
@@ -3233,10 +3211,10 @@ mod tests {
         .encode();
         assert_eq!(capture.len(), 2);
         let grid = pa::GridMessage::decode(capture[0].payload.as_slice()).unwrap();
-        let pa::grid_message::Preset::Preset(model) = grid.preset.unwrap();
+        let model = grid.preset.unwrap();
         assert_eq!(
             model.chains[0].models[0].hash,
-            Some(model::Hash::Hash(14_000))
+            Some(14_000)
         );
         assert_eq!(text_update(&capture[1]), (5, "capture/Crunch".into()));
 

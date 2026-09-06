@@ -51,6 +51,7 @@ try {
     Invoke-Checked "TypeScript typecheck" { npm run typecheck }
     Invoke-Checked "TypeScript and UI tests" { npm test }
     Invoke-Checked "Generated protocol consistency" { npm run protocol:check }
+    Invoke-Checked "Cortex Control wire schema fidelity" { npm run verify:cortex-protocol }
     Invoke-Checked "Gateway surface coverage" { npm run gateway:coverage }
     Invoke-Checked "pyquadcortex upstream surface parity" { npm run parity:pyquadcortex }
     Invoke-Checked "Installed-client native runtime boundary" { npm run native:runtime-boundary }
