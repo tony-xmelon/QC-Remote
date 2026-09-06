@@ -839,6 +839,9 @@
       ],
       "smoke": [
         "directory-copy"
+      ],
+      "physical": [
+        "directory-copy"
       ]
     },
     {

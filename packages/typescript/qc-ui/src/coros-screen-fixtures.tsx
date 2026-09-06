@@ -138,7 +138,12 @@ function CorOsDirectoryFixture({ view, physicalContext = false }: { view: Direct
         "Drag items to reorder them", CANCEL and DONE along the bottom - came
         from the manual rather than from the unit. */}
     {view === "directory-arrange" && <div className="directory-mode-bar is-multiselect"><b className="multiselect-all" /><strong>Multi Select</strong><span /><button><DirectoryIcon kind="trash" /></button><button><QcUiIcon kind="edit" /></button><button><QcEditorIcon kind="copy" /></button><button><DirectoryIcon kind="cloud-upload" /></button><button><QcLibraryIcon kind="heart" /></button><button className="is-done"><DirectoryIcon kind="done" /></button></div>}
-    {view === "directory-copy" && <aside className="directory-copy-dialog"><header>Copy 3 items to…</header>{["My Presets", "ALI Live", "Festival", "Studio"].map((label, index) => <button key={label} className={index === 2 ? "is-active" : ""}>▰　{label}<b>›</b></button>)}<footer><button>CANCEL</button><button>COPY HERE</button></footer></aside>}
+    {/* Pasting does not ask for a destination folder; the destination is
+        wherever you already are. It asks how to lay the items into that
+        folder's banks. Captured as `directory-copy`; the previous
+        "Copy 3 items to..." folder picker with COPY HERE was not on the unit.
+        CorOS emits its own <b> markup inside these label strings. */}
+    {view === "directory-copy" && <aside className="directory-copy-dialog"><header>Choose pasting option</header><p>Please select how you would like to paste these 1 Preset(s) into the banks in <b>My Presets</b>:</p>{[<>Choose each slot manually</>, <>Paste consecutively from the first <b>chosen</b> slot onwards</>, <>Paste consecutively from the first <b>empty</b> slot onwards</>].map((label, index) => <button key={index} className={index === 0 ? "is-active" : ""}>{label}{index === 0 && <i>✓</i>}</button>)}<footer><button>CANCEL</button><button className="is-primary">CONTINUE</button></footer></aside>}
     {view === "directory-new-folder" && <aside className="directory-name-dialog"><header>New Setlist</header><label>NAME<input readOnly value="New Setlist" /></label><footer><button>CANCEL</button><button>CREATE</button></footer></aside>}
     {view === "directory-item-context" && <><i className="directory-context-scrim" /><aside className="directory-item-menu">{["Edit", "Copy", "Cut", "Delete"].map(label => <button key={label}>{label}</button>)}</aside></>}
     {view === "directory-cloud-upload" && <div className="directory-mode-bar is-cloud"><strong>UPLOAD TO CORTEX CLOUD</strong><span>Select Presets, Neural Captures, or IRs</span><button>CANCEL</button><button>UPLOAD (2)</button></div>}

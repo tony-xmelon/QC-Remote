@@ -3600,6 +3600,19 @@
           "seconds": 2.2
         }
       ]
+    },
+    {
+      "id": "directory-copy",
+      "label": "Directory - Choose pasting option",
+      "screen": "directory",
+      "image": "directory-copy.png",
+      "graphicsTree": "directory-copy.tree.txt",
+      "sha256": "edf72f08ab48b4ee8323d1def2efbee6a3ea9e65c2a71e0079dda456dbe49904",
+      "bytes": 39176,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T19:50:32.000060Z",
+      "actions": []
     }
   ]
 }

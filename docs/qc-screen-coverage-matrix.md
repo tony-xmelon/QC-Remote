@@ -5,8 +5,8 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 ## Coverage summary
 
 - Canonical device states: **103/103** routed through the shared Windows/Android surface.
-- Full-frame authoritative evidence: **90/103** states.
-- Official-detail-only evidence: **8/103** states.
+- Full-frame authoritative evidence: **91/103** states.
+- Official-detail-only evidence: **7/103** states.
 - Smoke-only evidence gaps: **5/103** states.
 - Exact-size dual-host capture paths: **103/103** states.
 
@@ -17,9 +17,9 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 
 Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` color similarity. A canonical state that references multiple frames reports their mean. Detail evidence is scoped and therefore never promoted into a full-frame score.
 
-Thirty-three captures were added from hardware in the CorOS 4.1.0 session of 2026-09-06:
+Thirty-four captures were added from hardware in the CorOS 4.1.0 session of 2026-09-06:
 
-- Directory — `directory-categories`, `-captures`, `-irs`, `-plugins`, `-favorites`, `-search`, `-search-results`, `-sort`, `-arrange`, `-new-folder`, `-nested`, `-filter`
+- Directory — `directory-categories`, `-captures`, `-irs`, `-plugins`, `-favorites`, `-search`, `-search-results`, `-sort`, `-arrange`, `-new-folder`, `-nested`, `-filter`, `-copy`
 - I/O — `io-input`, `io-usb`, `global-eq`
 - Editor — `expression-parameter`, `expression-bypass`, `fixture-editor-pages`, `looper-editor`, `stomp-assignment`
 - Grid and browser — `empty-slot`, `plugin-folders`, `plugin-refresh`
@@ -27,7 +27,7 @@ Thirty-three captures were added from hardware in the CorOS 4.1.0 session of 202
 - Cortex Cloud — `directory-cloud-upload`, `cloud-upload-overwrite`
 - Gig View — `gig-view-hybrid`
 
-Full-frame authoritative coverage moved from 79/103 to 90/103 as a result, which the summary counts above reflect.
+Full-frame authoritative coverage moved from 79/103 to 91/103 as a result, which the summary counts above reflect.
 
 Two things below are **not** refreshed for them, because both come from a scored dual-host render pass that has not been run: the score table, and the per-state `Evidence` column, which still reads `official frame` or `official detail` for the promoted states. Their wording has been checked against the device's own scene graph with `npm run verify:qc-screen-text`; their pixels have not been scored.
 
@@ -171,7 +171,6 @@ falls into three groups, and only the first is a matter of time.
 
 | state | renderer | what happened |
 | --- | --- | --- |
-| DR-12 | `directory-copy` | **Not reached, and the fixture is suspect.** Selection does work - screenshot first, tap the checkbox column at x=426 and the row ticks, the count badge moves to 1, the toolbar comes alive - and Copy stages the item, shown by a badge on the next icon. Pressing that badged icon then closes the Directory and creates nothing: tried in the source bank and, at the owner's suggestion, in a blank bank 8, with the preset count unchanged at 74 both times. The "Copy N items to... / CANCEL / COPY HERE" destination dialog our fixture draws was never seen, and may not exist; the clipboard also clears when Multi Select exits. |
 | ED-02 | `fixture-editor-pages` | Needs a block with more than one parameter page. The scratch preset carries a single-parameter Adaptive Gate, so a multi-page block has to be added first - a preset edit, revertible by reloading the slot. |
 | ED-06 | `looper-editor` | Same: a Looper block has to be added to the preset first. |
 | ED-10 | `scene-assignment` | Not yet captured. Like ED-09 it is an editor fragment rather than a screen: our fixture draws the block editor with one parameter carrying a per-scene badge, so it needs a parameter that has actually been scene-assigned. |
@@ -201,6 +200,23 @@ and the checker only reports strings the device shows and we lack, never chrome
 we invented. Either the fixture depicts a screen reached another way - an
 expression switch rather than a pedal - or it is invented like the other four.
 Worth resolving before the capture is treated as evidence for that renderer.
+
+`directory-copy` (DR-12) was captured with the owner driving the unit, after
+three failed attempts from here. Pasting does **not** ask for a destination
+folder - the destination is wherever you already are - it asks how to lay the
+items into that folder's banks: *Choose each slot manually*, *Paste consecutively
+from the first chosen slot onwards*, *Paste consecutively from the first empty
+slot onwards*, over CANCEL / CONTINUE. Our fixture drew a folder picker headed
+"Copy 3 items to..." with a COPY HERE button, which is not on the unit. That is
+the seventh reconstruction this session found to have been built from the manual
+rather than the device.
+
+Two mechanics fell out of it. CorOS emits its own `<b>` markup inside label
+strings - the body reads `...into the banks in <b>My Presets</b>:` - so a
+reconstruction has to reproduce the markup, not just the words. And the capture
+had to be taken by a watcher that connects once and polls: every one-shot
+screenshot reconnects, and reconnecting closes whatever dialog the owner is
+holding open.
 
 ### Physically impossible without the unit's owner
 
