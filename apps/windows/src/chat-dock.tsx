@@ -1,6 +1,6 @@
 import { type ClipboardEventHandler, type ReactNode, type RefObject } from "react";
 import type { ConversationMessage } from "@ndsp-qc/core";
-import { AssistantAttachmentList, CollapsibleAssistantResult, MicrophoneIcon, QcUiIcon } from "@ndsp-qc/ui";
+import { AssistantAttachmentList, CollapsibleAssistantResult, QcUiIcon } from "@ndsp-qc/ui";
 import type { ChatAttachment } from "./model-chat";
 
 const attachmentTypes = "image/jpeg,image/png,image/webp,image/gif,audio/mpeg,audio/wav,audio/aiff,audio/aac,audio/ogg,audio/flac,audio/m4a,audio/opus,audio/webm,video/mp4,video/mpeg,video/quicktime,video/avi,video/webm,video/wmv,video/3gpp,application/pdf,.txt,.md,.markdown,.csv,.json,.xml,.yaml,.yml,.log,.js,.jsx,.ts,.tsx,.css,.html,.htm,.py,.rs,.toml";
@@ -64,7 +64,7 @@ export function ChatDock(props: ChatDockProps) {
         <input ref={props.attachmentInputRef} className="visually-hidden" type="file" aria-label="Attach files" accept={attachmentTypes} multiple onChange={(event) => { props.onFiles(Array.from(event.target.files ?? [])); event.currentTarget.value = ""; }} />
         <select className="composer-model-select" aria-label="Conversational model" title="Conversational model" value={props.modelValue} disabled={props.modelDisabled} onChange={(event) => props.onSelectModel(event.target.value)}>{props.modelOptions}</select>
         <button type="button" className={`composer-tool${props.attachments.length ? " is-active" : ""}`} title="Attach files" aria-label="Attach files" onClick={() => props.attachmentInputRef.current?.click()} disabled={props.assistantPending || props.attachments.length >= 3}><QcUiIcon kind="attachment" /></button>
-        <button className={`mic-button${props.listening ? " is-listening" : ""}`} onClick={props.onToggleMicrophone} aria-pressed={props.listening} title="Push to talk" disabled={props.assistantPending}><MicrophoneIcon /><span>{props.listening ? "STOP" : "VOICE"}</span></button>
+        <button className={`mic-button${props.listening ? " is-listening" : ""}`} onClick={props.onToggleMicrophone} aria-pressed={props.listening} title="Push to talk" disabled={props.assistantPending}><QcUiIcon kind="microphone" /><span>{props.listening ? "STOP" : "VOICE"}</span></button>
         <button className="send-button" onClick={props.assistantPending && props.canCancel ? props.onCancel : props.onSend} disabled={props.assistantPending ? !props.canCancel : !props.value.trim() && !props.attachments.length} aria-label={props.assistantPending && props.canCancel ? "Cancel assistant response" : "Send message"}><QcUiIcon kind={props.assistantPending && props.canCancel ? "stop" : "send"} /></button>
       </div>
     </div>

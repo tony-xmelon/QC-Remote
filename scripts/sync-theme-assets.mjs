@@ -3,8 +3,6 @@ import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
 const check = process.argv.includes("--check");
-const visualAssets = JSON.parse(await readFile(resolve(root, "packages/typescript/qc-theme/src/assets.json"), "utf8"));
-const assetCopies = Object.values(visualAssets).map(({ sourcePath, deployedPaths }) => [sourcePath, deployedPaths]);
 const nativeTheme = JSON.parse(await readFile(resolve(root, "packages/typescript/qc-theme/src/native-theme.json"), "utf8"));
 const brand = JSON.parse(await readFile(resolve(root, "packages/typescript/qc-theme/src/brand.json"), "utf8"));
 const upper = (value) => value.toUpperCase();
@@ -72,21 +70,6 @@ const brandedJson = [
 ];
 
 let stale = false;
-for (const [source, targets] of assetCopies) {
-  const bytes = await readFile(resolve(root, source));
-  for (const target of targets) {
-    const targetPath = resolve(root, target);
-    if (check) {
-      const current = await readFile(targetPath).catch(() => Buffer.alloc(0));
-      if (!current.equals(bytes)) {
-        console.error(`${target} is not synchronized with ${source}`);
-        stale = true;
-      }
-    } else {
-      await writeFile(targetPath, bytes);
-    }
-  }
-}
 for (const [target, content] of generatedText) {
   const targetPath = resolve(root, target);
   if (check) {

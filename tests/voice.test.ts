@@ -24,8 +24,8 @@ test("Windows and Android use the same microphone glyph", () => {
   const androidSource = readFileSync(new URL("../apps/android/src/App.tsx", import.meta.url), "utf8");
   assert.match(iconSource, /<rect x="8\.25" y="2\.5" width="7\.5" height="13" rx="3\.75"/);
   assert.match(iconSource, /<path d="M5\.5 11\.25v\.75a6\.5 6\.5 0 0 0 13 0v-\.75/);
-  assert.match(windowsSource, /<MicrophoneIcon \/>/);
-  assert.match(androidSource, /<MicrophoneIcon \/>/);
+  assert.match(windowsSource, /<QcUiIcon kind="microphone" \/>/);
+  assert.match(androidSource, /<QcUiIcon kind="microphone" \/>/);
   assert.doesNotMatch(windowsSource, /\{listening \? "■" : "●"\}/);
   assert.doesNotMatch(androidSource, /aria-label="Speak a command">●<\/button>/);
 });
