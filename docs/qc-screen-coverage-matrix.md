@@ -160,6 +160,53 @@ Two things below are **not** refreshed for them, because both come from a scored
 | OV-03 | System overlay | Error / unavailable state | physical frame | Built | Built | 91.78% / 91.78% | 96.20% / 96.20% | — / — | — / — |
 | OV-04 | System overlay | Busy / progress state | physical frame | Built | Built | 84.57% / 84.58% | 97.26% / 97.26% | — / — | — / — |
 
+## Authoritative evidence gaps after the 2026-09-06 capture session
+
+Twenty-two screens were captured from hardware in that session. What is left
+falls into three groups, and only the first is a matter of time.
+
+### Blocked by the capture harness, not by risk
+
+| state | renderer | what happened |
+| --- | --- | --- |
+| DR-12 | `directory-copy` | Multi Select's per-row checkboxes do not respond to a synthetic RemoteControl tap. Rows, checkbox glyphs and the select-all box were all tried; the selection count never moved off zero, so the copy destination dialog cannot be reached this way. |
+| DR-13 | `directory-nested` | Not yet distinguished from `directory-irs`, which already shows a nested folder (`IRs Library` → `My IRs`). Needs a decision about what state DR-13 is meant to depict before it is worth capturing. |
+| DR-10 | `directory-filter` | The funnel in the search results dialog **applies** a filter and disappears from the toolbar; it does not open a menu. Our fixture draws a FILTER list of All items / Favorites / Downloaded / My items / Factory, and no such menu was found on the unit. Treat the fixture as unverified until the real control is located. |
+| DB-08 | `plugin-refresh` | Not attempted. The refresh is benign but slow, and `overlay-busy` already covers the same renderer. |
+| ED-02 | `fixture-editor-pages` | Needs a block with more than one parameter page. The scratch preset carries a single-parameter Adaptive Gate, so a multi-page block has to be added first - a preset edit, revertible by reloading the slot. |
+| ED-06 | `looper-editor` | Same: a Looper block has to be added to the preset first. |
+| ED-09, ED-10 | `stomp-assignment`, `scene-assignment` | No on-screen path was found. Both look like footswitch gestures - hold a switch in STOMP or SCENE mode - which the RemoteControl mouse cannot express. |
+
+### Physically impossible without the unit's owner
+
+| state | renderer | what it needs |
+| --- | --- | --- |
+| GL-01, GL-02, GL-03 | `fixture-boot`, `fixture-shutdown`, `power-overlay` | A power cycle, a power-button hold, and a short power press. |
+| RC-01, RC-02 | `recovery-entry`, `recovery-options` | The documented Recovery Mode boot gesture. |
+| ED-14 | `fixture-warning-clip` | A hot input signal. Nothing is plugged into the unit. |
+| NC-01 to NC-03 | `capture-intro`, `capture-type`, `capture-routing` | The Neural Capture wizard **refuses to open** with nothing connected: selecting *New Neural Capture* from the preset menu returns straight to the Grid. It needs an amp on Send/Return. |
+| NC-04 to NC-07 | calibration, progress, result, save | A capture actually being run. |
+
+### Deliberately not triggered
+
+| state | renderer | why |
+| --- | --- | --- |
+| DR-16 | `directory-cloud-upload` | Uploads the owner's presets to Cortex Cloud. Outward-facing and not reversible from here. |
+| ST-06 | `settings-update` | The acquisition plan marks it `do-not-trigger`: reaching update progress means starting a firmware update. |
+| ED-15 | `fixture-warning-dsp` | Needs a deliberately DSP-overloaded preset built on the scratch slot. |
+| GL-22 | `gig-official-hybrid` | Needs a Hybrid mode created in Modes Configuration, which is a device-wide setting, then removed again. |
+
+### A note on the capture guard
+
+`tools/capture_qc_ui_corpus.py` refuses a capture if touchscreen navigation
+changed the preset or its dirty state. That guard earned its place during this
+session - it caught the expression-pedal assignment immediately - but it has a
+blind spot worth fixing: it compares the preset **name**, and an unsaved slot
+reports an empty name. During the first batch the unit had drifted to an empty
+4F and the guard compared `''` to `''` and passed. The screens captured then are
+preset-independent, so the evidence stands, but the guard should compare the
+setlist position as well.
+
 ## Authoritative evidence gaps
 
 These states are implemented and captured on both hosts, but only against deterministic reconstruction fixtures. They require a physical framebuffer or an official visual before a visual-match percentage is meaningful.
