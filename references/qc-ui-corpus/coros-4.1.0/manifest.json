@@ -3254,6 +3254,111 @@
           "seconds": 1.8
         }
       ]
+    },
+    {
+      "id": "fixture-editor-pages",
+      "label": "Editor - amp with multiple parameter pages",
+      "screen": "parameter-editor",
+      "image": "fixture-editor-pages.png",
+      "graphicsTree": "fixture-editor-pages.tree.txt",
+      "sha256": "9cb832c7f6a75ccf2b029e16cda5b954c8c8ba93d99cec91308a144ae0d9794f",
+      "bytes": 31614,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T18:18:10.615883Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 187,
+          "y": 147
+        },
+        {
+          "type": "wait",
+          "seconds": 2.5
+        }
+      ]
+    },
+    {
+      "id": "looper-editor",
+      "label": "Editor - Looper block",
+      "screen": "parameter-editor",
+      "image": "looper-editor.png",
+      "graphicsTree": "looper-editor.tree.txt",
+      "sha256": "55134f45f207e11273154ac5b5373c503716637cc6559245e17b8fbcec0f9bf0",
+      "bytes": 25636,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T18:20:15.109001Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 280,
+          "y": 147
+        },
+        {
+          "type": "wait",
+          "seconds": 2.2
+        },
+        {
+          "type": "swipe",
+          "from": [
+            450,
+            430
+          ],
+          "to": [
+            450,
+            60
+          ],
+          "duration": 0.35
+        },
+        {
+          "type": "wait",
+          "seconds": 1.2
+        },
+        {
+          "type": "swipe",
+          "from": [
+            450,
+            430
+          ],
+          "to": [
+            450,
+            60
+          ],
+          "duration": 0.35
+        },
+        {
+          "type": "wait",
+          "seconds": 1.4
+        },
+        {
+          "type": "tap",
+          "x": 500,
+          "y": 355
+        },
+        {
+          "type": "wait",
+          "seconds": 2.2
+        },
+        {
+          "type": "tap",
+          "x": 600,
+          "y": 90
+        },
+        {
+          "type": "wait",
+          "seconds": 3.2
+        },
+        {
+          "type": "tap",
+          "x": 271,
+          "y": 147
+        },
+        {
+          "type": "wait",
+          "seconds": 2.5
+        }
+      ]
     }
   ]
 }

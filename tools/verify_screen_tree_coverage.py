@@ -66,9 +66,25 @@ PER_UNIT_VALUE = re.compile(
 )
 
 
+GLYPH_GAP = re.compile(r"\s{3,}")
+
+
 def squash(value: str) -> str:
     """Compare ignoring layout: CorOS wraps with newlines, JSX with `<br />`."""
     return re.sub(r"\s+", "", re.sub(r"<br\s*/?>", "", value))
+
+
+def fragments(value: str) -> list[str]:
+    """Split a device string on the gaps CorOS leaves for an inline glyph.
+
+    The Looper reads `USE         TO START RECORDING`, with a footswitch glyph
+    drawn into that run of spaces. A reconstruction puts an element there, so
+    the sentence never appears in source as one literal; each side of the gap
+    does. Runs of three or more spaces mark those gaps - ordinary wrapping in
+    these trees is a newline, not padding.
+    """
+    parts = [squash(part) for part in GLYPH_GAP.split(value)]
+    return [part for part in parts if part]
 
 
 BLOCK_COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
@@ -128,7 +144,7 @@ def main() -> int:
             if DATA_CELLS & set(chain) or PER_UNIT_VALUE.match(text):
                 continue
             checked += 1
-            if squash(text) in haystack:
+            if all(part in haystack for part in fragments(text)):
                 continue
             gaps.setdefault(screen, []).append((text, chain[-1]))
 

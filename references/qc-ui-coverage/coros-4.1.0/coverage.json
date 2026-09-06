@@ -514,6 +514,9 @@
       ],
       "smoke": [
         "fixture-editor-pages"
+      ],
+      "physical": [
+        "fixture-editor-pages"
       ]
     },
     {
@@ -553,6 +556,9 @@
         "official-looper"
       ],
       "smoke": [
+        "looper-editor"
+      ],
+      "physical": [
         "looper-editor"
       ]
     },

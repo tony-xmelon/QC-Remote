@@ -1,0 +1,124 @@
+zenUI::RootGraphicsItem
+  zenUI::GraphicsItem
+    zenUI::GraphicsItem
+      zenUI::NavigationBar
+      zenUI::NavMenuBlock
+        zenUI::ModeButton
+          text : 'PRESET'
+          image: 'icons/navigationBar/modes/preset.png'
+          zenUI::PressAnimationView
+        zenUI::Button
+          image: 'icons/24/presetMenu.png'
+          zenUI::PressAnimationView
+        zenUI::Button
+          image: 'icons/navigationBar/undo.png'
+          zenUI::PressAnimationView
+        zenUI::Button
+          zenUI::PressAnimationView
+        zenUI::SceneIndicator
+          zenUI::GraphicsItem
+            zenUI::GraphicsItem
+              text : 'A'
+        zenUI::Button
+          image: 'icons/navigationBar/save.png'
+          zenUI::PressAnimationView
+    zenUI::ParameterEditor
+      zenUI::GraphicsItem
+        zenUI::ModelEditor
+          zenUI::Looper1TrackModelEditor
+            zenUI::ParameterRowBackground
+              zenUI::GraphicsItem
+                image: 'icons/looper/rec_icon_small_red.png'
+              zenUI::GraphicsItem
+                image: 'icons/looper/up_icon_small.png'
+              zenUI::LooperProgressBar
+              zenUI::GraphicsItem
+                text : 'USE         TO START RECORDING'
+              zenUI::GraphicsItem
+                text : 'AVAILABLE 4:43'
+            zenUI::LooperButton
+              zenUI::GraphicsItem
+                text : '1'
+              zenUI::GraphicsItem
+                text : 'DUPLICATE'
+              zenUI::GraphicsItem
+                image: 'icons/looper/duplicate_x.png'
+              zenUI::PressAnimationView
+            zenUI::LooperButton
+              zenUI::GraphicsItem
+                image: 'icons/looper/one_shot.png'
+              zenUI::GraphicsItem
+                text : 'ONE SHOT'
+              zenUI::PressAnimationView
+            zenUI::LooperButton
+              zenUI::GraphicsItem
+                image: 'icons/looper/half_speed.png'
+              zenUI::GraphicsItem
+                text : 'HALF SPEED'
+              zenUI::PressAnimationView
+            zenUI::LooperButton
+              zenUI::GraphicsItem
+                image: 'icons/looper/punch_in.png'
+              zenUI::GraphicsItem
+                text : 'PUNCH IN'
+              zenUI::PressAnimationView
+            zenUI::LooperButton
+              zenUI::GraphicsItem
+                image: 'icons/looper/record.png'
+              zenUI::GraphicsItem
+                text : 'RECORD'
+              zenUI::PressAnimationView
+            zenUI::LooperButton
+              zenUI::GraphicsItem
+                image: 'icons/looper/play.png'
+              zenUI::GraphicsItem
+                text : 'PLAY'
+              zenUI::PressAnimationView
+            zenUI::LooperButton
+              zenUI::GraphicsItem
+                image: 'icons/looper/reverse.png'
+              zenUI::GraphicsItem
+                text : 'REVERSE'
+              zenUI::PressAnimationView
+            zenUI::LooperButton
+              zenUI::GraphicsItem
+                image: 'icons/looper/undo.png'
+              zenUI::GraphicsItem
+                text : 'UNDO'
+              zenUI::PressAnimationView
+      zenUI::GraphicsItem
+        zenUI::PushButton
+          zenUI::Button
+            image: 'icons/24/done.png'
+            zenUI::PressAnimationView
+        zenUI::Button
+          zenUI::GraphicsItem
+            zenUI::GraphicsItem
+              image: 'icons/24/presetMenu.png'
+          zenUI::PressAnimationView
+        zenUI::ParameterEditorTitle
+        zenUI::Button
+          zenUI::PressAnimationView
+        zenUI::SceneSelector
+          zenUI::GraphicsItem
+            zenUI::GraphicsItem
+              image: 'icons/24/previous.png'
+          zenUI::GraphicsItem
+            zenUI::GraphicsItem
+              image: 'icons/24/next.png'
+          zenUI::Button
+            zenUI::PressAnimationView
+          zenUI::Button
+            zenUI::SceneIndicator
+              zenUI::GraphicsItem
+                zenUI::GraphicsItem
+                  text : 'A'
+            zenUI::PressAnimationView
+        zenUI::GraphicsItem
+        zenUI::PerformanceButton
+          zenUI::GraphicsItem
+            zenUI::GraphicsItem
+              text : 'Params'
+            zenUI::GraphicsItem
+              image: 'icons/looper/param24.png'
+          zenUI::PressAnimationView

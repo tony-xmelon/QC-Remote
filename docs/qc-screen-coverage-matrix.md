@@ -5,8 +5,8 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 ## Coverage summary
 
 - Canonical device states: **103/103** routed through the shared Windows/Android surface.
-- Full-frame authoritative evidence: **86/103** states.
-- Official-detail-only evidence: **12/103** states.
+- Full-frame authoritative evidence: **87/103** states.
+- Official-detail-only evidence: **11/103** states.
 - Smoke-only evidence gaps: **5/103** states.
 - Exact-size dual-host capture paths: **103/103** states.
 
@@ -17,15 +17,15 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 
 Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` color similarity. A canonical state that references multiple frames reports their mean. Detail evidence is scoped and therefore never promoted into a full-frame score.
 
-Twenty-two captures were added from hardware in the CorOS 4.1.0 session of 2026-09-06:
+Twenty-four captures were added from hardware in the CorOS 4.1.0 session of 2026-09-06:
 
 - Directory — `directory-categories`, `-captures`, `-irs`, `-plugins`, `-favorites`, `-search`, `-search-results`, `-sort`, `-arrange`, `-new-folder`
 - I/O — `io-input`, `io-usb`, `global-eq`
-- Editor — `expression-parameter`, `expression-bypass`
+- Editor — `expression-parameter`, `expression-bypass`, `fixture-editor-pages`, `looper-editor`
 - Grid and browser — `empty-slot`, `plugin-folders`
 - Monitoring and Settings — `cpu-monitor`, `settings-account`, `settings-device`, `settings-midi`, `settings-system`
 
-Full-frame authoritative coverage moved from 79/103 to 86/103 as a result, which the summary counts above reflect.
+Full-frame authoritative coverage moved from 79/103 to 87/103 as a result, which the summary counts above reflect.
 
 Two things below are **not** refreshed for them, because both come from a scored dual-host render pass that has not been run: the score table, and the per-state `Evidence` column, which still reads `official frame` or `official detail` for the promoted states. Their wording has been checked against the device's own scene graph with `npm run verify:qc-screen-text`; their pixels have not been scored.
 
@@ -43,7 +43,7 @@ Two things below are **not** refreshed for them, because both come from a scored
 | I/O | 8 | 8 | 0 | 0 |
 | Routing | 5 | 5 | 0 | 0 |
 | Device browser | 9 | 8 | 1 | 0 |
-| Editor | 9 | 8 | 1 | 0 |
+| Editor | 9 | 9 | 0 | 0 |
 | Assignment | 4 | 2 | 2 | 0 |
 | Virtual Device preset | 2 | 2 | 0 | 0 |
 | Directory | 16 | 14 | 2 | 0 |
@@ -193,7 +193,7 @@ falls into three groups, and only the first is a matter of time.
 | --- | --- | --- |
 | DR-16 | `directory-cloud-upload` | Uploads the owner's presets to Cortex Cloud. Outward-facing and not reversible from here. |
 | ST-06 | `settings-update` | The acquisition plan marks it `do-not-trigger`: reaching update progress means starting a firmware update. |
-| ED-15 | `fixture-warning-dsp` | Needs a deliberately DSP-overloaded preset built on the scratch slot. |
+| ED-15 | `fixture-warning-dsp` | **Attempted and not reproduced.** The scratch preset was loaded up with an amp, a Looper and a second amp until the DSP was full. CorOS does not warn after the fact: it **greys out** every model that no longer fits in the device browser, and tapping a greyed model does nothing at all. So the warning our `fixture-warning-dsp` renderer draws is reached some other way - a preset that became too heavy after a model update is the likeliest - and the fixture is unverified until that path is found. |
 | GL-22 | `gig-official-hybrid` | Needs a Hybrid mode created in Modes Configuration, which is a device-wide setting, then removed again. |
 
 ### A note on the capture guard
