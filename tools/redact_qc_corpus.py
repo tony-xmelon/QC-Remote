@@ -44,6 +44,19 @@ REDACTIONS = {
         ],
         "fields": ["Wi-Fi SSIDs", "access-point MAC addresses", "local IP address"],
     },
+    # The Account page names the Cortex Cloud account the unit is linked to.
+    # As everywhere else here the whole text value becomes '[redacted]', so the
+    # surrounding "Device linked to ..." sentence goes with it; the pixels are
+    # covered only over the address itself.
+    "settings-account": {
+        "boxes": [
+            (431, 76, 660, 106),
+        ],
+        "tree_patterns": [
+            r"(?m)^(\s*text : )'Device linked to \[[^\]']*\]'$",
+        ],
+        "fields": ["Cortex Cloud account address"],
+    },
 }
 
 

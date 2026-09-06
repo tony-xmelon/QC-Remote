@@ -224,6 +224,9 @@
       ],
       "smoke": [
         "cpu-monitor"
+      ],
+      "physical": [
+        "cpu-monitor"
       ]
     },
     {
@@ -918,6 +921,9 @@
       ],
       "smoke": [
         "settings-account"
+      ],
+      "physical": [
+        "settings-account"
       ]
     },
     {
@@ -937,6 +943,9 @@
         "official-settings-device"
       ],
       "smoke": [
+        "settings-device"
+      ],
+      "physical": [
         "settings-device"
       ]
     },
@@ -984,6 +993,9 @@
         "official-midi-settings"
       ],
       "smoke": [
+        "settings-midi"
+      ],
+      "physical": [
         "settings-midi"
       ]
     },

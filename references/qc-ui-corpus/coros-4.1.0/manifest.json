@@ -2607,6 +2607,262 @@
           "seconds": 2.5
         }
       ]
+    },
+    {
+      "id": "cpu-monitor",
+      "label": "CPU Monitor",
+      "screen": "grid",
+      "image": "cpu-monitor.png",
+      "graphicsTree": "cpu-monitor.tree.txt",
+      "sha256": "564fc94f7f0b485699d7e6b2ed532be8f1c7cf3b3b1866a5d4d83ee865a68d1d",
+      "bytes": 17117,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T17:35:35.904823Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 764,
+          "y": 24
+        },
+        {
+          "type": "wait",
+          "seconds": 1.3
+        },
+        {
+          "type": "swipe",
+          "from": [
+            600,
+            420
+          ],
+          "to": [
+            600,
+            120
+          ],
+          "duration": 0.35
+        },
+        {
+          "type": "wait",
+          "seconds": 1.3
+        },
+        {
+          "type": "tap",
+          "x": 600,
+          "y": 346
+        },
+        {
+          "type": "wait",
+          "seconds": 2.2
+        }
+      ]
+    },
+    {
+      "id": "settings-account",
+      "label": "Settings - Account, My Account",
+      "screen": "unknown",
+      "image": "settings-account.png",
+      "graphicsTree": "settings-account.tree.txt",
+      "sha256": "5342b5e7793b2ed72a2fde9732920d8064ad5d7049a2333c41ce4271ce176be8",
+      "bytes": 17838,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T17:38:15.914507Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 764,
+          "y": 24
+        },
+        {
+          "type": "wait",
+          "seconds": 1.3
+        },
+        {
+          "type": "swipe",
+          "from": [
+            600,
+            420
+          ],
+          "to": [
+            600,
+            120
+          ],
+          "duration": 0.35
+        },
+        {
+          "type": "wait",
+          "seconds": 1.3
+        },
+        {
+          "type": "tap",
+          "x": 600,
+          "y": 406
+        },
+        {
+          "type": "wait",
+          "seconds": 2.2
+        }
+      ],
+      "redactions": [
+        "Cortex Cloud account address"
+      ]
+    },
+    {
+      "id": "settings-device",
+      "label": "Settings - Device, Global Bypass",
+      "screen": "unknown",
+      "image": "settings-device.png",
+      "graphicsTree": "settings-device.tree.txt",
+      "sha256": "456ec7b68a1df7430b05f48a7b90712778a1d5163bd615bb03d972bb40563113",
+      "bytes": 45896,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T17:41:32.792588Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 764,
+          "y": 24
+        },
+        {
+          "type": "wait",
+          "seconds": 1.3
+        },
+        {
+          "type": "swipe",
+          "from": [
+            600,
+            420
+          ],
+          "to": [
+            600,
+            120
+          ],
+          "duration": 0.35
+        },
+        {
+          "type": "wait",
+          "seconds": 1.3
+        },
+        {
+          "type": "tap",
+          "x": 600,
+          "y": 406
+        },
+        {
+          "type": "wait",
+          "seconds": 2.2
+        },
+        {
+          "type": "tap",
+          "x": 140,
+          "y": 30
+        },
+        {
+          "type": "wait",
+          "seconds": 1.2
+        },
+        {
+          "type": "tap",
+          "x": 140,
+          "y": 210
+        },
+        {
+          "type": "wait",
+          "seconds": 1.8
+        }
+      ]
+    },
+    {
+      "id": "settings-midi",
+      "label": "Settings - Device, MIDI",
+      "screen": "unknown",
+      "image": "settings-midi.png",
+      "graphicsTree": "settings-midi.tree.txt",
+      "sha256": "545729a95e7c01c38966d5a65f34c41febc8107f43ed4f5d2b1f8cebec3c3751",
+      "bytes": 41608,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T17:42:20.767673Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 764,
+          "y": 24
+        },
+        {
+          "type": "wait",
+          "seconds": 1.3
+        },
+        {
+          "type": "swipe",
+          "from": [
+            600,
+            420
+          ],
+          "to": [
+            600,
+            120
+          ],
+          "duration": 0.35
+        },
+        {
+          "type": "wait",
+          "seconds": 1.3
+        },
+        {
+          "type": "tap",
+          "x": 600,
+          "y": 406
+        },
+        {
+          "type": "wait",
+          "seconds": 2.2
+        },
+        {
+          "type": "tap",
+          "x": 140,
+          "y": 30
+        },
+        {
+          "type": "wait",
+          "seconds": 1.2
+        },
+        {
+          "type": "tap",
+          "x": 140,
+          "y": 210
+        },
+        {
+          "type": "wait",
+          "seconds": 1.8
+        },
+        {
+          "type": "swipe",
+          "from": [
+            140,
+            420
+          ],
+          "to": [
+            140,
+            200
+          ],
+          "duration": 0.35
+        },
+        {
+          "type": "wait",
+          "seconds": 1.5
+        },
+        {
+          "type": "tap",
+          "x": 140,
+          "y": 441
+        },
+        {
+          "type": "wait",
+          "seconds": 1.8
+        }
+      ]
     }
   ]
 }

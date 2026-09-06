@@ -5,8 +5,8 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 ## Coverage summary
 
 - Canonical device states: **103/103** routed through the shared Windows/Android surface.
-- Full-frame authoritative evidence: **83/103** states.
-- Official-detail-only evidence: **15/103** states.
+- Full-frame authoritative evidence: **84/103** states.
+- Official-detail-only evidence: **14/103** states.
 - Smoke-only evidence gaps: **5/103** states.
 - Exact-size dual-host capture paths: **103/103** states.
 
@@ -17,7 +17,9 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 
 Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` color similarity. A canonical state that references multiple frames reports their mean. Detail evidence is scoped and therefore never promoted into a full-frame score.
 
-The nine Directory captures added in the CorOS 4.1.0 session of 2026-09-06 (`directory-categories`, `-captures`, `-irs`, `-plugins`, `-favorites`, `-search`, `-search-results`, `-sort`, `-arrange`) are counted above but are **not yet in the score table**: scoring needs a dual-host render pass over the new ids, which has not been run. Their text has been validated against the device with `npm run verify:qc-screen-text`.
+Thirteen captures were added from hardware in the CorOS 4.1.0 session of 2026-09-06: `directory-categories`, `-captures`, `-irs`, `-plugins`, `-favorites`, `-search`, `-search-results`, `-sort`, `-arrange`, plus `cpu-monitor`, `settings-account`, `settings-device` and `settings-midi`. They moved five states (DR-01, DR-07, DR-09, DR-11, GL-23) from detail-only to full-frame, which the summary counts above reflect.
+
+Two things below are **not** refreshed for them, because both come from a scored dual-host render pass that has not been run: the score table, and the per-state `Evidence` column, which still reads `official detail` for the promoted states. Their wording has been checked against the device's own scene graph with `npm run verify:qc-screen-text`; their pixels have not been scored.
 
 ## Evidence by family
 
@@ -29,7 +31,7 @@ The nine Directory captures added in the CorOS 4.1.0 session of 2026-09-06 (`dir
 | MIDI | 1 | 1 | 0 | 0 |
 | Performance | 5 | 5 | 0 | 0 |
 | Gig View | 4 | 4 | 0 | 0 |
-| Monitoring | 1 | 0 | 1 | 0 |
+| Monitoring | 1 | 1 | 0 | 0 |
 | I/O | 8 | 8 | 0 | 0 |
 | Routing | 5 | 5 | 0 | 0 |
 | Device browser | 9 | 8 | 1 | 0 |
