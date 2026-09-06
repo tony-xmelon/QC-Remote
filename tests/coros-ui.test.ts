@@ -896,6 +896,9 @@ test("the Save action is one normal floppy without a status-dot overlay", () => 
 test("preset bank, slot, and name use natural inline text flow", () => {
   const surfaceSource = readFileSync(new URL("../packages/typescript/qc-ui/src/quad-cortex-surface.tsx", import.meta.url), "utf8");
   assert.match(surfaceSource, /<text x="14" y="75"><tspan[^>]*>\{presetBank\}<\/tspan><tspan[^>]*>\{presetSlot\}<\/tspan><tspan[^>]*dx="16"/);
+  assert.match(surfaceSource, /const presetSlotAccent = leds\[presetSlotIndex\]\.color/);
+  assert.match(surfaceSource, /<tspan fill=\{presetSlotAccent\}[^>]*>\{presetSlot\}<\/tspan>/);
+  assert.doesNotMatch(surfaceSource, /<tspan fill=\{QC_COLORS\.scene\[0\]\}[^>]*>\{presetSlot\}<\/tspan>/);
   assert.doesNotMatch(surfaceSource, /presetLocationExtraWidth|x=\{56 \+|x=\{114 \+/);
 });
 

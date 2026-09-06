@@ -185,8 +185,10 @@ test("PRESET lamps use the device's fixed slot palette, not the active scene", (
 
 test("the Grid header letter carries the same slot colour as its lamp", () => {
   const surface = readFileSync(new URL("../packages/typescript/qc-ui/src/quad-cortex-surface.tsx", import.meta.url), "utf8");
-  assert.match(surface, /const presetSlotColor = QC_COLORS\.presetSlot\[snapshot\.presetPosition % 8\]/);
-  assert.match(surface, /<tspan fill=\{presetSlotColor\} letterSpacing="-1">\{presetSlot\}<\/tspan>/);
+  // One source of truth: the letter reads its colour off the lamp for that
+  // slot, so the measured PRESET palette reaches both without being restated.
+  assert.match(surface, /const presetSlotAccent = leds\[presetSlotIndex\]\.color/);
+  assert.match(surface, /<tspan fill=\{presetSlotAccent\} letterSpacing="-1">\{presetSlot\}<\/tspan>/);
   assert.doesNotMatch(surface, /<tspan fill=\{QC_COLORS\.scene\[0\]\}/, "the letter must not be pinned to the first scene's colour");
 });
 
