@@ -273,6 +273,7 @@ export interface LibraryEntry {
 
 export interface LibraryEntries { entries: LibraryEntry[]; }
 export interface PinnedModels { models: number[]; captures: string[]; }
+export interface GraphicsTree { tree: string; }
 
 export type LaneControl = "inputGate" | "laneOutput";
 
@@ -296,6 +297,7 @@ export interface GatewayTransport {
   setTunerMute(muted: boolean, confirmTunerActivation: boolean): Promise<DeviceActionResult>;
   restoreTunerAudio(confirmPreferenceReset: boolean): Promise<DeviceActionResult>;
   setTunerReference(referenceOffsetHz: number, confirmTunerActivation: boolean): Promise<DeviceActionResult>;
+  setTunerMeter(enabled: boolean, confirmTunerActivation: boolean): Promise<DeviceActionResult>;
   generalSettings(): Promise<GeneralSettings>;
   ioSettings(): Promise<IoSettings>;
   setInputPort(inputPortId: number, levelDb: number | null, impedance: number | null, inputType: number | null, groundLift: number | null): Promise<DeviceActionResult>;
@@ -312,6 +314,7 @@ export interface GatewayTransport {
   globalTempoSettings(): Promise<TempoSettings>;
   setTempoMetronome(ledEnabled: boolean | null, volumeDb: number | null, running: boolean | null, pan: number | null, timeSignature: string | null, subdivision: string | null, sound: string | null, routing: string | null, beats: string[] | null): Promise<DeviceActionResult>;
   setTempoMode(mode: "PRESET" | "GLOBAL"): Promise<DeviceActionResult>;
+  setGlobalTempo(bpm: number, expectedMode: "PRESET" | "GLOBAL", expectedGlobalBpm: number): Promise<DeviceActionResult>;
   looperStatus(): Promise<LooperStatus>;
   controlLooper(command: string, value: number | null): Promise<DeviceActionResult>;
   recents(): Promise<LibraryEntries>;
@@ -335,7 +338,9 @@ export interface GatewayTransport {
   setGlobalBypass(cab: [boolean, boolean, boolean, boolean], ir: [boolean, boolean, boolean, boolean]): Promise<DeviceActionResult>;
   presetScreenshot(folderName: string, position: number, isFactory?: boolean): Promise<DeviceImage>;
   captureScreen(): Promise<DeviceImage>;
+  graphicsTree(): Promise<GraphicsTree>;
   tapScreen(x: number, y: number): Promise<DeviceActionResult>;
+  swipeScreen(x: number, y: number, toX: number, toY: number): Promise<DeviceActionResult>;
   selectScene(scene: number, expectedPresetName: string): Promise<DeviceActionResult>;
   copyScene(fromScene: number, toScene: number, swap: boolean, expectedPresetName: string): Promise<DeviceActionResult>;
   setSceneLabel(scene: number, label: string | null, expectedPresetName: string): Promise<DeviceActionResult>;

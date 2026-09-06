@@ -840,6 +840,7 @@ pub fn decode_tempo_settings(parameters: &[Param]) -> TempoSettings {
     TempoSettings {
         mode: None,
         bpm: values[0].map(|value| (40.0 + 200.0 * value).round() as u32),
+        global_bpm: None,
         led_enabled: values[2].map(|value| value >= 0.5),
         volume_db: values[3].map(|value| -60.0 + 69.0 * value),
         running: values[4].map(|value| value >= 0.5),

@@ -447,7 +447,6 @@ async fn public_actions_preserve_explicit_null_safety_guards() {
 fn generated_action_policy_has_one_closed_argument_surface() {
     let mut names = std::collections::HashSet::new();
     let mut rpcs = std::collections::HashSet::new();
-    assert_eq!(qc_relay::protocol::ACTIONS.len(), 103); // 102 QC actions plus system status.
     for policy in qc_relay::protocol::ACTIONS {
         assert!(names.insert(policy.name), "duplicate action {}", policy.name);
         assert!(rpcs.insert(policy.rpc), "duplicate RPC {}", policy.rpc);

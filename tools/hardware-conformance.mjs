@@ -865,6 +865,16 @@ async function main() {
       });
       tuner = await transport.call("get_tuner_settings", {});
       assert(tuner.muted === false, "restore_tuner_audio did not clear the mute preference.");
+      await call("set_tuner_meter", {
+        enabled: true,
+        confirm_tuner_activation: true,
+        confirm_risky_operation: true
+      });
+      await transport.call("set_tuner_meter", {
+        enabled: false,
+        confirm_tuner_activation: true,
+        confirm_risky_operation: true
+      });
       report.manualActionRequired = "Open and close the tuner once on the physical QC to release the invisible tuner session.";
       if (enabledHazards.has("live")) {
         await transport.call("show_tuner", { shown: true });
@@ -901,6 +911,10 @@ async function main() {
     await call("list_captures", {}, (value) => assert(Array.isArray(value.entries), "Capture library list is invalid."));
     await call("list_irs", { folder: null }, (value) => assert(Array.isArray(value.entries), "IR library list is invalid."));
     const capturedScreen = await call("capture_screen", {}, (value) => assert(pngSignatureIsValid(value, 800, 480), "Live screen PNG is invalid."));
+    await call("get_graphics_tree", {}, (value) => assert(
+      typeof value.tree === "string" && value.tree.includes("zenUI::"),
+      "Graphics tree did not contain the live zenUI structure."
+    ));
     baselineDeviceScreen = capturedScreen;
     if (config.discoveryScreenPath && typeof capturedScreen?.pngBase64 === "string") {
       const screenPath = resolve(root, config.discoveryScreenPath);
@@ -1690,6 +1704,39 @@ async function main() {
       );
       assert(tempoSettings.mode === originalGlobalTempoSettings.mode, "Tempo mode was not restored.");
 
+      assert(Number.isInteger(originalGlobalTempoSettings.globalBpm),
+        "A restorable device-global BPM value is required.");
+      if (tempoSettings.mode !== "GLOBAL") {
+        await transport.call("set_tempo_mode", { mode: "GLOBAL", confirm_persistent_write: true });
+        tempoSettings = await waitForGlobalTempoSettings((value) => value.mode === "GLOBAL");
+      }
+      const originalGlobalBpm = tempoSettings.globalBpm;
+      const testGlobalBpm = originalGlobalBpm >= 240 ? 239 : originalGlobalBpm + 1;
+      await call("set_global_tempo", {
+        bpm: testGlobalBpm,
+        expected_mode: "GLOBAL",
+        expected_global_bpm: originalGlobalBpm,
+        confirm_persistent_write: true
+      });
+      tempoSettings = await waitForGlobalTempoSettings((value) => value.globalBpm === testGlobalBpm);
+      assert(tempoSettings.globalBpm === testGlobalBpm, "Global tempo BPM did not read back.");
+      await transport.call("set_global_tempo", {
+        bpm: originalGlobalBpm,
+        expected_mode: "GLOBAL",
+        expected_global_bpm: testGlobalBpm,
+        confirm_persistent_write: true
+      });
+      tempoSettings = await waitForGlobalTempoSettings((value) => value.globalBpm === originalGlobalBpm);
+      if (originalGlobalTempoSettings.mode !== "GLOBAL") {
+        await transport.call("set_tempo_mode", {
+          mode: originalGlobalTempoSettings.mode,
+          confirm_persistent_write: true
+        });
+        tempoSettings = await waitForGlobalTempoSettings(
+          (value) => value.mode === originalGlobalTempoSettings.mode
+        );
+      }
+
       const originalHold = originalGeneralSettings.holdTimingIndex;
       assert(Number.isInteger(originalHold) && originalHold >= 0 && originalHold <= 5, "A restorable hold timing is required.");
       const testHold = originalHold === 5 ? 4 : originalHold + 1;
@@ -2003,6 +2050,21 @@ async function main() {
     }
 
     if (enabledHazards.has("screen")) {
+      await call("swipe_screen", {
+        x: config.screenTap.x,
+        y: config.screenTap.y,
+        to_x: config.screenTap.restoreX,
+        to_y: config.screenTap.restoreY,
+        confirm_risky_operation: true
+      });
+      const afterSwipe = await transport.call("capture_screen", {});
+      assert(pngSignatureIsValid(afterSwipe, 800, 480), "Screen-swipe follow-up returned an invalid PNG.");
+      const swipeRestore = await transport.call("reload_preset", {
+        expected_preset_name: currentSnapshot.presetName,
+        expected_position: currentSnapshot.presetPosition,
+        confirm_risky_operation: true
+      });
+      currentSnapshot = resultSnapshot(swipeRestore) ?? await snapshot();
       const screenBeforeTap = await transport.call("capture_screen", {});
       assert(pngSignatureIsValid(screenBeforeTap, 800, 480), "Screen-tap baseline returned an invalid PNG.");
       await call("tap_screen", { x: config.screenTap.x, y: config.screenTap.y, confirm_risky_operation: true });
@@ -2109,6 +2171,11 @@ async function main() {
             confirm_preference_reset: true,
             confirm_risky_operation: true
           });
+          await transport.call("set_tuner_meter", {
+            enabled: false,
+            confirm_tuner_activation: true,
+            confirm_risky_operation: true
+          });
         });
       }
       if (enabledHazards.has("persistent") && originalGeneralSettings) {
@@ -2189,6 +2256,24 @@ async function main() {
       }
       if (enabledHazards.has("persistent") && originalGlobalTempoSettings) {
         await restoreAttempt("global-tempo-settings", async () => {
+          let currentTempoSettings = await transport.call("get_global_tempo_settings", {});
+          if (Number.isInteger(originalGlobalTempoSettings.globalBpm)) {
+            if (currentTempoSettings.mode !== "GLOBAL") {
+              await transport.call("set_tempo_mode", {
+                mode: "GLOBAL",
+                confirm_persistent_write: true
+              });
+              currentTempoSettings = await transport.call("get_global_tempo_settings", {});
+            }
+            if (currentTempoSettings.globalBpm !== originalGlobalTempoSettings.globalBpm) {
+              await transport.call("set_global_tempo", {
+                bpm: originalGlobalTempoSettings.globalBpm,
+                expected_mode: "GLOBAL",
+                expected_global_bpm: currentTempoSettings.globalBpm,
+                confirm_persistent_write: true
+              });
+            }
+          }
           await transport.call("set_tempo_metronome", {
             led_enabled: originalGlobalTempoSettings.ledEnabled ?? null,
             volume_db: originalGlobalTempoSettings.volumeDb ?? null,

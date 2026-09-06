@@ -257,6 +257,8 @@ test("Android I/O and Gig View mirror the physical QC screen and live assignment
   assert.match(servicesSource, /swipeScreen\(options:/);
   assert.match(javaSource, /public void swipeScreen\(PluginCall call\)/);
   assert.match(rustCommandsSource, /pub fn screen_drag[\s\S]*remote_control_mouse::Type::Drag/);
+  assert.match(javaSource, /writeMessages\(stateDecoder\.screenSwipeCommands\(x, y, toX, toY\)\)/);
+  assert.match(javaSource, /pacedRemoteGesture[\s\S]*message\.messageType == 72[\s\S]*Thread\.sleep\(20\)/);
   assert.match(appSource, /QcUsbNative\.swipeScreen\(qcRemoteScreen\.openIo\)/);
   assert.match(appSource, /androidGatewayTransport\.showGigView\(true\)/);
   assert.match(corOsScreensSource, /snapshot\.footswitchModes\?\.\[index < 4 \? 0 : 1\]/);

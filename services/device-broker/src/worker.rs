@@ -644,7 +644,7 @@ impl DeviceController {
     }
 
     pub fn send_operation(&self, operation: DeviceOperation) -> Result<(), String> {
-        let sequenced_touch = matches!(operation, DeviceOperation::ScreenTap { .. });
+        let sequenced_touch = operation_requires_paced_sequence(&operation);
         let messages = operation.try_encode().map_err(|error| error.to_string())?;
         if sequenced_touch {
             return self.send_sequence(messages, Duration::ZERO, Duration::from_millis(20));
@@ -769,6 +769,13 @@ impl DeviceController {
     }
 }
 
+fn operation_requires_paced_sequence(operation: &DeviceOperation) -> bool {
+    matches!(
+        operation,
+        DeviceOperation::ScreenTap { .. } | DeviceOperation::ScreenDrag { .. }
+    )
+}
+
 impl Drop for DeviceController {
     fn drop(&mut self) {
         let _ = self.commands.send(Command::Stop);
@@ -847,8 +854,7 @@ impl BackupInProgress {
                         qc_protocol::profile::BACKUP_STREAM_STALL_TIMEOUT_MS,
                         self.deadline,
                     );
-                } else if !was_started
-                    && self.assembler.ignored_prefix_chunks() > previous_ignored
+                } else if !was_started && self.assembler.ignored_prefix_chunks() > previous_ignored
                 {
                     // Traffic from an earlier uncorrelated transfer is still
                     // draining. Do not inject a duplicate CREATE request into it.
@@ -1655,23 +1661,44 @@ mod tests {
 
     fn backup_chunk(json: &str, last: bool) -> Vec<u8> {
         pa::LocalBackupMessage {
-            backup_json: Some(pa::local_backup_message::BackupJson::BackupJson(json.into())),
-            is_last_chunk: last
-                .then_some(pa::local_backup_message::IsLastChunk::IsLastChunk(true)),
+            backup_json: Some(pa::local_backup_message::BackupJson::BackupJson(
+                json.into(),
+            )),
+            is_last_chunk: last.then_some(pa::local_backup_message::IsLastChunk::IsLastChunk(true)),
             ..Default::default()
         }
         .encode_to_vec()
     }
 
-    fn started_backup(timeout: Duration) -> (BackupInProgress, mpsc::Receiver<Result<String, String>>) {
+    fn started_backup(
+        timeout: Duration,
+    ) -> (BackupInProgress, mpsc::Receiver<Result<String, String>>) {
         let (reply, receiver) = mpsc::channel();
         (BackupInProgress::start(timeout, reply), receiver)
     }
 
     #[test]
+    fn every_remote_touch_gesture_uses_the_paced_sequence_lane() {
+        assert!(operation_requires_paced_sequence(
+            &DeviceOperation::ScreenTap { x: 10.0, y: 20.0 }
+        ));
+        assert!(operation_requires_paced_sequence(
+            &DeviceOperation::ScreenDrag {
+                x: 10.0,
+                y: 20.0,
+                to_x: 30.0,
+                to_y: 40.0,
+            }
+        ));
+        assert!(!operation_requires_paced_sequence(&DeviceOperation::Undo));
+    }
+
+    #[test]
     fn backup_streams_on_the_device_loop_without_a_nested_read_loop() {
         let (mut backup, _receiver) = started_backup(Duration::from_secs(60));
-        assert!(backup.absorb(&backup_chunk("{\"type\":\"backup\",", false)).is_none());
+        assert!(backup
+            .absorb(&backup_chunk("{\"type\":\"backup\",", false))
+            .is_none());
         // A partial document keeps the transfer alive rather than blocking.
         assert!(matches!(backup.advance(Instant::now()), BackupStep::Wait));
         let outcome = backup.absorb(&backup_chunk("\"creator\":\"quad\"}", true));
@@ -1684,9 +1711,8 @@ mod tests {
     #[test]
     fn a_silent_device_is_re_requested_then_reported_without_splicing_attempts() {
         let (mut backup, _receiver) = started_backup(Duration::from_secs(600));
-        let overdue = Instant::now() + Duration::from_millis(
-            qc_protocol::profile::BACKUP_FIRST_CHUNK_TIMEOUT_MS + 1,
-        );
+        let overdue = Instant::now()
+            + Duration::from_millis(qc_protocol::profile::BACKUP_FIRST_CHUNK_TIMEOUT_MS + 1);
         // Nothing has started, so the request may safely be repeated.
         assert!(matches!(backup.advance(overdue), BackupStep::Rerequest));
         assert_eq!(backup.attempts, 2);
@@ -1704,7 +1730,9 @@ mod tests {
     #[test]
     fn a_stalled_document_is_terminal_and_is_never_retried() {
         let (mut backup, _receiver) = started_backup(Duration::from_secs(600));
-        assert!(backup.absorb(&backup_chunk("{\"type\":\"backup\",", false)).is_none());
+        assert!(backup
+            .absorb(&backup_chunk("{\"type\":\"backup\",", false))
+            .is_none());
         let stalled = Instant::now()
             + Duration::from_millis(qc_protocol::profile::BACKUP_STREAM_STALL_TIMEOUT_MS + 1);
         match backup.advance(stalled) {
@@ -1768,8 +1796,9 @@ mod tests {
         session.transport_opened(0);
         session.handshake_completed(1, true);
         session.liveness_probe_sent(1);
-        assert!(session
-            .liveness_probe_timed_out(1 + qc_protocol::profile::LIVENESS_REPLY_TIMEOUT_MS));
+        assert!(
+            session.liveness_probe_timed_out(1 + qc_protocol::profile::LIVENESS_REPLY_TIMEOUT_MS)
+        );
 
         // Starting a backup disarms the probe, so the device's silence while it
         // prepares the document cannot end the session.

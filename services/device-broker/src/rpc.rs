@@ -8,7 +8,7 @@ use qc_device_runtime::{
         PlannedWrite, PresetMutationPlan,
     },
 };
-use qc_protocol::responses::{decode_preset_tempo_settings, decode_tempo_clock};
+use qc_protocol::responses::decode_tempo_clock;
 use qc_protocol::{domain, profile};
 use qc_windows_midi::PerformanceMidi;
 use serde::{Deserialize, Serialize};
@@ -153,7 +153,7 @@ fn handle(
             gateway_capture_screen(controller)
         }
         Some(generated_gateway::BrokerDispatch::TapScreen) => {
-            gateway_tap_screen(controller, &request.params)
+            gateway_screen_gesture(controller, &request.method, &request.params)
         }
         Some(generated_gateway::BrokerDispatch::TempoClock) => gateway_tempo_clock(controller),
         Some(generated_gateway::BrokerDispatch::SelectScene) => {
@@ -393,25 +393,9 @@ fn execute_gateway_read(
     // Compose both authoritative reads so callers never compare a preset write
     // with the unrelated device-global metronome values.
     let global = execute_single_gateway_read(controller, method, params)?;
-    let mode = global
-        .get("mode")
-        .cloned()
-        .ok_or_else(|| "The global tempo reply did not include PRESET/GLOBAL mode".to_string())?;
-    let request_id = next_request_id();
-    let reply = request_command(
-        controller,
-        qc_protocol::commands::read_current_preset(request_id),
-        15,
-        Some(request_id),
-        Duration::from_secs(15),
-    )?;
-    let mut preset = serde_json::to_value(
-        decode_preset_tempo_settings(&reply.payload, request_id)
-            .map_err(|error| error.to_string())?,
-    )
-    .map_err(|error| error.to_string())?;
-    preset["mode"] = mode;
-    Ok(preset)
+    let preset =
+        execute_single_gateway_read(controller, "device.presetTempoSettings", &Value::Null)?;
+    runtime_request::compose_global_tempo_settings(&global, &preset)
 }
 
 fn gateway_identity(controller: &DeviceController) -> Result<Value, String> {
@@ -454,9 +438,13 @@ fn gateway_capture_screen(controller: &DeviceController) -> Result<Value, String
     execute_gateway_read(controller, "device.captureScreen", &Value::Null)
 }
 
-fn gateway_tap_screen(controller: &DeviceController, params: &Value) -> Result<Value, String> {
+fn gateway_screen_gesture(
+    controller: &DeviceController,
+    method: &str,
+    params: &Value,
+) -> Result<Value, String> {
     gateway_capture_screen(controller)?;
-    let plan = plan_gateway_write(controller, "device.tapScreen", params)?;
+    let plan = plan_gateway_write(controller, method, params)?;
     execute_gateway_write(controller, &plan)?;
     Ok(accepted_unverified(plan.detail))
 }
@@ -980,6 +968,14 @@ fn gateway_operation(
     params: &Value,
     method: &str,
 ) -> Result<Value, String> {
+    if let Some(read_method) = runtime_request::gateway_write_preflight_method(method) {
+        let response = execute_gateway_read(controller, read_method, &json!({}))?;
+        if !runtime_request::gateway_write_preflight_matches(method, params, &response) {
+            return Err(format!(
+                "{method} was based on stale global state, or the QC is not in GLOBAL tempo mode; refresh and retry"
+            ));
+        }
+    }
     let plan = plan_gateway_write(controller, method, params)?;
     if runtime_request::gateway_write_is_realtime(method) {
         execute_realtime_planned_write(controller, &plan.write)?;
@@ -1724,8 +1720,9 @@ mod tests {
             "device.navigateBank",
             "device.reloadPreset",
         ] {
-            generated_gateway::validate_result(method, &recall)
-                .unwrap_or_else(|error| panic!("{method} result must satisfy its contract: {error}"));
+            generated_gateway::validate_result(method, &recall).unwrap_or_else(|error| {
+                panic!("{method} result must satisfy its contract: {error}")
+            });
         }
 
         // The shape that caused the outage must still be rejected, so this can

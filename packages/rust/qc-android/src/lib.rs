@@ -2,7 +2,8 @@ use jni::objects::{JByteArray, JClass, JString};
 use jni::sys::{jbyteArray, jint, jlong, jstring};
 use jni::JNIEnv;
 use qc_device_runtime::request::{
-    assert_expected_parameter, finalize_device_backup, gateway_write_is_realtime,
+    assert_expected_parameter, compose_global_tempo_settings, finalize_device_backup,
+    gateway_write_is_realtime, gateway_write_preflight_matches, gateway_write_preflight_method,
     gateway_write_readback_method, gateway_write_retryable, merge_expected_state,
     plan_gateway_read, plan_gateway_write, plan_preset_mutation, plan_preset_recall,
     GatewayReadPlan, GatewayResponseProjection, GatewayTransaction, GatewayTransactionState,
@@ -636,6 +637,87 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeGate
             0
         }
     }
+}
+
+#[no_mangle]
+pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeComposeGlobalTempoSettings(
+    mut env: JNIEnv,
+    _class: JClass,
+    global_json: JString,
+    preset_json: JString,
+) -> jstring {
+    let result = (|| {
+        let global: Value = serde_json::from_str(
+            &env.get_string(&global_json)
+                .map_err(|error| error.to_string())?
+                .to_string_lossy(),
+        )
+        .map_err(|error| error.to_string())?;
+        let preset: Value = serde_json::from_str(
+            &env.get_string(&preset_json)
+                .map_err(|error| error.to_string())?
+                .to_string_lossy(),
+        )
+        .map_err(|error| error.to_string())?;
+        serde_json::to_string(&compose_global_tempo_settings(&global, &preset)?)
+            .map_err(|error| error.to_string())
+    })();
+    json_result(&mut env, result)
+}
+
+#[no_mangle]
+pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeGatewayWritePreflightMatches(
+    mut env: JNIEnv,
+    _class: JClass,
+    method: JString,
+    params_json: JString,
+    response_json: JString,
+) -> jint {
+    let result = (|| {
+        let method = env
+            .get_string(&method)
+            .map_err(|error| error.to_string())?
+            .to_string_lossy()
+            .into_owned();
+        let params: Value = serde_json::from_str(
+            &env.get_string(&params_json)
+                .map_err(|error| error.to_string())?
+                .to_string_lossy(),
+        )
+        .map_err(|error| error.to_string())?;
+        let response: Value = serde_json::from_str(
+            &env.get_string(&response_json)
+                .map_err(|error| error.to_string())?
+                .to_string_lossy(),
+        )
+        .map_err(|error| error.to_string())?;
+        Ok::<_, String>(gateway_write_preflight_matches(&method, &params, &response))
+    })();
+    match result {
+        Ok(true) => 1,
+        Ok(false) => 0,
+        Err(error) => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", error);
+            0
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeGatewayWritePreflightMethod(
+    mut env: JNIEnv,
+    _class: JClass,
+    method: JString,
+) -> jstring {
+    let result = env
+        .get_string(&method)
+        .map_err(|error| error.to_string())
+        .map(|method| {
+            gateway_write_preflight_method(&method.to_string_lossy())
+                .unwrap_or("")
+                .to_string()
+        });
+    json_result(&mut env, result)
 }
 
 #[no_mangle]

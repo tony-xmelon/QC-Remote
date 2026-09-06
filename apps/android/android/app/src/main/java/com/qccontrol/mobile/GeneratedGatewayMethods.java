@@ -4,12 +4,14 @@ package com.qccontrol.mobile;
 final class GeneratedGatewayMethods {
     private GeneratedGatewayMethods() {}
 
-    static final int API_VERSION = 18;
+    static final int API_VERSION = 19;
     static final String[] CAPABILITIES = {
         "modelRepoParameterMetadata",
         "nativeStateEvents",
         "nativeDeviceIdentity",
         "nativeRemoteScreen",
+        "nativeGraphicsTree",
+        "nativeScreenGestures",
         "nativeSceneManagement",
         "nativeParameterAssignments",
         "nativeStompMetadata",
@@ -17,6 +19,7 @@ final class GeneratedGatewayMethods {
         "nativeExpressionBypass",
         "nativeTunerSettings",
         "nativeTunerWrites",
+        "nativeTunerMeter",
         "nativeLaneControls",
         "nativeGeneralSettings",
         "nativeIoSettings",
@@ -26,6 +29,7 @@ final class GeneratedGatewayMethods {
         "nativeLibraryManagement",
         "nativeSplitMute",
         "nativeTempoMetronome",
+        "nativeGlobalTempoWrite",
         "nativeGateway",
         "androidUsbRelay"
     };
@@ -49,6 +53,7 @@ final class GeneratedGatewayMethods {
         "device.setTunerMute",
         "device.restoreTunerAudio",
         "device.setTunerReference",
+        "device.setTunerMeter",
         "device.generalSettings",
         "device.ioSettings",
         "device.setInputPort",
@@ -65,6 +70,7 @@ final class GeneratedGatewayMethods {
         "device.globalTempoSettings",
         "device.setTempoMetronome",
         "device.setTempoMode",
+        "device.setGlobalTempo",
         "device.looperStatus",
         "device.controlLooper",
         "device.recents",
@@ -88,7 +94,9 @@ final class GeneratedGatewayMethods {
         "device.setGlobalBypass",
         "device.presetScreenshot",
         "device.captureScreen",
+        "device.graphicsTree",
         "device.tapScreen",
+        "device.swipeScreen",
         "device.selectScene",
         "device.copyScene",
         "device.setSceneLabel",
@@ -161,6 +169,7 @@ final class GeneratedGatewayMethods {
             case "device.setTunerMute": return "PLANNED_WRITE";
             case "device.restoreTunerAudio": return "PLANNED_WRITE";
             case "device.setTunerReference": return "PLANNED_WRITE";
+            case "device.setTunerMeter": return "PLANNED_WRITE";
             case "device.generalSettings": return "CORRELATED_READ";
             case "device.ioSettings": return "CORRELATED_READ";
             case "device.setInputPort": return "PLANNED_WRITE";
@@ -177,6 +186,7 @@ final class GeneratedGatewayMethods {
             case "device.globalTempoSettings": return "CORRELATED_READ";
             case "device.setTempoMetronome": return "PLANNED_WRITE";
             case "device.setTempoMode": return "PLANNED_WRITE";
+            case "device.setGlobalTempo": return "PLANNED_WRITE";
             case "device.looperStatus": return "CORRELATED_READ";
             case "device.controlLooper": return "PLANNED_WRITE";
             case "device.recents": return "CORRELATED_READ";
@@ -200,7 +210,9 @@ final class GeneratedGatewayMethods {
             case "device.setGlobalBypass": return "PLANNED_WRITE";
             case "device.presetScreenshot": return "CORRELATED_READ";
             case "device.captureScreen": return "CORRELATED_READ";
+            case "device.graphicsTree": return "CORRELATED_READ";
             case "device.tapScreen": return "TAP_SCREEN";
+            case "device.swipeScreen": return "TAP_SCREEN";
             case "device.selectScene": return "PLANNED_WRITE";
             case "device.copyScene": return "PLANNED_WRITE";
             case "device.setSceneLabel": return "PLANNED_WRITE";
@@ -270,6 +282,7 @@ final class GeneratedGatewayMethods {
             case "device.setTunerMute": return "DeviceActionResult";
             case "device.restoreTunerAudio": return "DeviceActionResult";
             case "device.setTunerReference": return "DeviceActionResult";
+            case "device.setTunerMeter": return "DeviceActionResult";
             case "device.generalSettings": return "Object";
             case "device.ioSettings": return "Object";
             case "device.setInputPort": return "DeviceActionResult";
@@ -286,6 +299,7 @@ final class GeneratedGatewayMethods {
             case "device.globalTempoSettings": return "Object";
             case "device.setTempoMetronome": return "DeviceActionResult";
             case "device.setTempoMode": return "DeviceActionResult";
+            case "device.setGlobalTempo": return "DeviceActionResult";
             case "device.looperStatus": return "Object";
             case "device.controlLooper": return "DeviceActionResult";
             case "device.recents": return "Object";
@@ -309,7 +323,9 @@ final class GeneratedGatewayMethods {
             case "device.setGlobalBypass": return "DeviceActionResult";
             case "device.presetScreenshot": return "Object";
             case "device.captureScreen": return "Object";
+            case "device.graphicsTree": return "Object";
             case "device.tapScreen": return "DeviceActionResult";
+            case "device.swipeScreen": return "DeviceActionResult";
             case "device.selectScene": return "DeviceActionResult";
             case "device.copyScene": return "DeviceActionResult";
             case "device.setSceneLabel": return "DeviceActionResult";
@@ -401,6 +417,7 @@ final class GeneratedGatewayMethods {
             case "device.setTunerMute": allowed = new String[] { "muted", "confirmTunerActivation" }; required = new String[] { "muted", "confirmTunerActivation" }; break;
             case "device.restoreTunerAudio": allowed = new String[] { "confirmPreferenceReset" }; required = new String[] { "confirmPreferenceReset" }; break;
             case "device.setTunerReference": allowed = new String[] { "referenceOffsetHz", "confirmTunerActivation" }; required = new String[] { "referenceOffsetHz", "confirmTunerActivation" }; break;
+            case "device.setTunerMeter": allowed = new String[] { "enabled", "confirmTunerActivation" }; required = new String[] { "enabled", "confirmTunerActivation" }; break;
             case "device.generalSettings": allowed = new String[] {  }; required = new String[] {  }; break;
             case "device.ioSettings": allowed = new String[] {  }; required = new String[] {  }; break;
             case "device.setInputPort": allowed = new String[] { "inputPortId", "levelDb", "impedance", "inputType", "groundLift" }; required = new String[] { "inputPortId", "levelDb", "impedance", "inputType", "groundLift" }; break;
@@ -417,6 +434,7 @@ final class GeneratedGatewayMethods {
             case "device.globalTempoSettings": allowed = new String[] {  }; required = new String[] {  }; break;
             case "device.setTempoMetronome": allowed = new String[] { "ledEnabled", "volumeDb", "running", "pan", "timeSignature", "subdivision", "sound", "routing", "beats" }; required = new String[] { "ledEnabled", "volumeDb", "running", "pan", "timeSignature", "subdivision", "sound", "routing", "beats" }; break;
             case "device.setTempoMode": allowed = new String[] { "mode" }; required = new String[] { "mode" }; break;
+            case "device.setGlobalTempo": allowed = new String[] { "bpm", "expectedMode", "expectedGlobalBpm" }; required = new String[] { "bpm", "expectedMode", "expectedGlobalBpm" }; break;
             case "device.looperStatus": allowed = new String[] {  }; required = new String[] {  }; break;
             case "device.controlLooper": allowed = new String[] { "command", "value" }; required = new String[] { "command", "value" }; break;
             case "device.recents": allowed = new String[] {  }; required = new String[] {  }; break;
@@ -440,7 +458,9 @@ final class GeneratedGatewayMethods {
             case "device.setGlobalBypass": allowed = new String[] { "cab", "ir" }; required = new String[] { "cab", "ir" }; break;
             case "device.presetScreenshot": allowed = new String[] { "folderName", "position", "isFactory" }; required = new String[] { "folderName", "position" }; break;
             case "device.captureScreen": allowed = new String[] {  }; required = new String[] {  }; break;
+            case "device.graphicsTree": allowed = new String[] {  }; required = new String[] {  }; break;
             case "device.tapScreen": allowed = new String[] { "x", "y" }; required = new String[] { "x", "y" }; break;
+            case "device.swipeScreen": allowed = new String[] { "x", "y", "toX", "toY" }; required = new String[] { "x", "y", "toX", "toY" }; break;
             case "device.selectScene": allowed = new String[] { "scene", "expectedPresetName" }; required = new String[] { "scene" }; break;
             case "device.copyScene": allowed = new String[] { "fromScene", "toScene", "swap", "expectedPresetName" }; required = new String[] { "fromScene", "toScene" }; break;
             case "device.setSceneLabel": allowed = new String[] { "scene", "label", "expectedPresetName" }; required = new String[] { "scene", "label" }; break;
@@ -518,6 +538,7 @@ final class GeneratedGatewayMethods {
             case "device.setTunerMute": kinds = new String[][] { { "muted", "boolean" }, { "confirmTunerActivation", "boolean" } }; break;
             case "device.restoreTunerAudio": kinds = new String[][] { { "confirmPreferenceReset", "boolean" } }; break;
             case "device.setTunerReference": kinds = new String[][] { { "referenceOffsetHz", "number" }, { "confirmTunerActivation", "boolean" } }; break;
+            case "device.setTunerMeter": kinds = new String[][] { { "enabled", "boolean" }, { "confirmTunerActivation", "boolean" } }; break;
             case "device.generalSettings": kinds = new String[][] {  }; break;
             case "device.ioSettings": kinds = new String[][] {  }; break;
             case "device.setInputPort": kinds = new String[][] { { "inputPortId", "integer" }, { "levelDb", "nullable-number" }, { "impedance", "nullable-number" }, { "inputType", "nullable-number" }, { "groundLift", "nullable-number" } }; break;
@@ -534,6 +555,7 @@ final class GeneratedGatewayMethods {
             case "device.globalTempoSettings": kinds = new String[][] {  }; break;
             case "device.setTempoMetronome": kinds = new String[][] { { "ledEnabled", "nullable-boolean" }, { "volumeDb", "nullable-number" }, { "running", "nullable-boolean" }, { "pan", "nullable-number" }, { "timeSignature", "nullable-string" }, { "subdivision", "nullable-string" }, { "sound", "nullable-string" }, { "routing", "nullable-string" }, { "beats", "nullable-array" } }; break;
             case "device.setTempoMode": kinds = new String[][] { { "mode", "string" } }; break;
+            case "device.setGlobalTempo": kinds = new String[][] { { "bpm", "integer" }, { "expectedMode", "string" }, { "expectedGlobalBpm", "integer" } }; break;
             case "device.looperStatus": kinds = new String[][] {  }; break;
             case "device.controlLooper": kinds = new String[][] { { "command", "string" }, { "value", "nullable-integer" } }; break;
             case "device.recents": kinds = new String[][] {  }; break;
@@ -557,7 +579,9 @@ final class GeneratedGatewayMethods {
             case "device.setGlobalBypass": kinds = new String[][] { { "cab", "array" }, { "ir", "array" } }; break;
             case "device.presetScreenshot": kinds = new String[][] { { "folderName", "string" }, { "position", "integer" }, { "isFactory", "boolean" } }; break;
             case "device.captureScreen": kinds = new String[][] {  }; break;
+            case "device.graphicsTree": kinds = new String[][] {  }; break;
             case "device.tapScreen": kinds = new String[][] { { "x", "integer" }, { "y", "integer" } }; break;
+            case "device.swipeScreen": kinds = new String[][] { { "x", "integer" }, { "y", "integer" }, { "toX", "integer" }, { "toY", "integer" } }; break;
             case "device.selectScene": kinds = new String[][] { { "scene", "integer" }, { "expectedPresetName", "string" } }; break;
             case "device.copyScene": kinds = new String[][] { { "fromScene", "integer" }, { "toScene", "integer" }, { "swap", "boolean" }, { "expectedPresetName", "string" } }; break;
             case "device.setSceneLabel": kinds = new String[][] { { "scene", "integer" }, { "label", "nullable-string" }, { "expectedPresetName", "string" } }; break;

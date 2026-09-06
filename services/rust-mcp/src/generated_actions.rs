@@ -277,6 +277,23 @@ pub static ACTIONS: &[ActionSpec] = &[
         gateway_true_arguments: &[],
     },
     ActionSpec {
+        name: "set_tuner_meter",
+        rpc: "device.setTunerMeter",
+        classification: Classification::RiskyWrite,
+        description: "Enable or disable live tuner-meter reports. This invisibly engages the tuner and must be explicitly confirmed.",
+        properties: &[
+            p!("enabled", Kind::Boolean),
+            p!("confirm_tuner_activation", Kind::Boolean),
+            p!("confirm_risky_operation", Kind::Boolean),
+        ],
+        distinct_arguments: &[],
+        gateway_arguments: &[
+            ("enabled", "enabled"),
+            ("confirm_tuner_activation", "confirmTunerActivation"),
+        ],
+        gateway_true_arguments: &[],
+    },
+    ActionSpec {
         name: "get_preset_screenshot",
         rpc: "device.presetScreenshot",
         classification: Classification::Read,
@@ -299,6 +316,16 @@ pub static ACTIONS: &[ActionSpec] = &[
         rpc: "device.captureScreen",
         classification: Classification::Read,
         description: "Capture the current Quad Cortex touchscreen as a PNG image.",
+        properties: &[],
+        distinct_arguments: &[],
+        gateway_arguments: &[],
+        gateway_true_arguments: &[],
+    },
+    ActionSpec {
+        name: "get_graphics_tree",
+        rpc: "device.graphicsTree",
+        classification: Classification::Read,
+        description: "Read the live Quad Cortex zenUI widget tree for structural screen inspection.",
         properties: &[],
         distinct_arguments: &[],
         gateway_arguments: &[],
@@ -472,6 +499,46 @@ pub static ACTIONS: &[ActionSpec] = &[
         ],
         distinct_arguments: &[],
         gateway_arguments: &[("x", "x"), ("y", "y")],
+        gateway_true_arguments: &[],
+    },
+    ActionSpec {
+        name: "swipe_screen",
+        rpc: "device.swipeScreen",
+        classification: Classification::RiskyWrite,
+        description: "Swipe between exact touchscreen pixels after reviewing a fresh screen capture and explicitly confirming the action.",
+        properties: &[
+            p!(
+                "x",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(799)
+                }
+            ),
+            p!(
+                "y",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(479)
+                }
+            ),
+            p!(
+                "to_x",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(799)
+                }
+            ),
+            p!(
+                "to_y",
+                Kind::Integer {
+                    min: 0,
+                    max: Some(479)
+                }
+            ),
+            p!("confirm_risky_operation", Kind::Boolean),
+        ],
+        distinct_arguments: &[],
+        gateway_arguments: &[("x", "x"), ("y", "y"), ("to_x", "toX"), ("to_y", "toY")],
         gateway_true_arguments: &[],
     },
     ActionSpec {
@@ -1942,6 +2009,37 @@ pub static ACTIONS: &[ActionSpec] = &[
         ],
         distinct_arguments: &[],
         gateway_arguments: &[("mode", "mode")],
+        gateway_true_arguments: &[],
+    },
+    ActionSpec {
+        name: "set_global_tempo",
+        rpc: "device.setGlobalTempo",
+        classification: Classification::PersistentWrite,
+        description: "Set device-global tempo after proving the QC is in GLOBAL mode and the previously read global value is still current.",
+        properties: &[
+            p!(
+                "bpm",
+                Kind::Integer {
+                    min: 40,
+                    max: Some(240)
+                }
+            ),
+            p!("expected_mode", Kind::StringEnum(&["PRESET", "GLOBAL"])),
+            p!(
+                "expected_global_bpm",
+                Kind::Integer {
+                    min: 40,
+                    max: Some(240)
+                }
+            ),
+            p!("confirm_persistent_write", Kind::Boolean),
+        ],
+        distinct_arguments: &[],
+        gateway_arguments: &[
+            ("bpm", "bpm"),
+            ("expected_mode", "expectedMode"),
+            ("expected_global_bpm", "expectedGlobalBpm"),
+        ],
         gateway_true_arguments: &[],
     },
     ActionSpec {

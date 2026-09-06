@@ -140,6 +140,9 @@ pub enum DeviceOperation {
         enabled: bool,
     },
     ListPresetFolders,
+    ReadCurrentPreset {
+        request_id: u64,
+    },
     SavePreset {
         setlist_key: String,
         position: u32,
@@ -150,6 +153,7 @@ pub enum DeviceOperation {
     ReadTuner,
     SetTunerInput(i32),
     SetTunerMute(bool),
+    SetTunerMeter(bool),
     SetTunerReference(f32),
     ReadGeneralSettings,
     SetGeneralInteger {
@@ -178,6 +182,7 @@ pub enum DeviceOperation {
     ReadModeCycle,
     SetModeCycle(Vec<u32>),
     ReadGlobalTempo,
+    SetGlobalTempo(u32),
     SetTempoParameters(Vec<(u32, f32)>),
     SetTempoMode(bool),
     ReadLooperStatus,
@@ -266,9 +271,16 @@ pub enum DeviceOperation {
         request_id: u64,
     },
     CaptureScreen,
+    ReadGraphicsTree,
     ScreenTap {
         x: f32,
         y: f32,
+    },
+    ScreenDrag {
+        x: f32,
+        y: f32,
+        to_x: f32,
+        to_y: f32,
     },
     CopyScene {
         from_index: u32,
@@ -483,6 +495,7 @@ impl DeviceOperation {
                 enabled,
             )],
             Self::ListPresetFolders => vec![read(4)],
+            Self::ReadCurrentPreset { request_id } => vec![read_current_preset(request_id)],
             Self::ReadGeneralSettings => vec![read(9)],
             Self::SetGeneralInteger { setting, value } => {
                 vec![set_general_integer(&setting, value)]
@@ -512,6 +525,7 @@ impl DeviceOperation {
             Self::ReadTuner => vec![read_tuner()],
             Self::SetTunerInput(input_port_id) => vec![set_tuner_input(input_port_id)],
             Self::SetTunerMute(muted) => vec![set_tuner_mute(muted)],
+            Self::SetTunerMeter(enabled) => vec![set_tuner_meter(enabled)],
             Self::SetTunerReference(offset_hz) => vec![set_tuner_reference(offset_hz)],
             Self::ReadIoSettings => vec![read(3)],
             Self::ReadGlobalEq => vec![read_global_eq()],
@@ -520,6 +534,7 @@ impl DeviceOperation {
             Self::ReadModeCycle => vec![read_mode_cycle()],
             Self::SetModeCycle(slots) => vec![set_mode_cycle(&slots)],
             Self::ReadGlobalTempo => vec![read(profile::MESSAGE_TYPE_GLOBAL_TEMPO)],
+            Self::SetGlobalTempo(bpm) => vec![set_global_tempo(bpm)],
             Self::SetTempoParameters(parameters) => set_tempo_parameters(parameters),
             Self::SetTempoMode(global) => vec![set_tempo_mode(global)],
             Self::ReadLooperStatus => vec![read_looper_status()],
@@ -627,7 +642,9 @@ impl DeviceOperation {
                 request_id,
             )],
             Self::CaptureScreen => vec![capture_screen()],
+            Self::ReadGraphicsTree => vec![read_graphics_tree()],
             Self::ScreenTap { x, y } => screen_tap(x, y).to_vec(),
+            Self::ScreenDrag { x, y, to_x, to_y } => screen_drag(x, y, to_x, to_y).to_vec(),
             Self::CopyScene {
                 from_index,
                 to_index,

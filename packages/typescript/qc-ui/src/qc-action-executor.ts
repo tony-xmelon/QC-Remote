@@ -290,6 +290,10 @@ export async function executeQcAction(call: AssistantToolCall, context: QcAction
   if (call.name === "get_global_tempo_settings") {
     return { detail: "Read the device-global Quad Cortex tempo and metronome settings.", data: await gateway.globalTempoSettings() };
   }
+  if (call.name === "get_graphics_tree") {
+    const data = await gateway.graphicsTree();
+    return { detail: "Read the live Quad Cortex zenUI widget tree.", data };
+  }
   if (call.name === "get_preset_screenshot" || call.name === "capture_screen") {
     const image = call.name === "capture_screen"
       ? await gateway.captureScreen()
@@ -474,6 +478,24 @@ export async function executeQcAction(call: AssistantToolCall, context: QcAction
     confirmation(call, "confirm_persistent_write");
     return actionResult(await gateway.setTempoMode(stringArgument(call, "mode") as "PRESET" | "GLOBAL"));
   }
+  if (call.name === "set_global_tempo") {
+    confirmation(call, "confirm_persistent_write");
+    const settings = await gateway.globalTempoSettings();
+    const expectedMode = stringArgument(call, "expected_mode") as "PRESET" | "GLOBAL";
+    if (settings.mode !== expectedMode) {
+      throw new Error("The Quad Cortex tempo mode changed. Refresh and retry.");
+    }
+    if (settings.mode !== "GLOBAL") {
+      throw new Error("Global tempo can only be changed while the Quad Cortex is in GLOBAL tempo mode.");
+    }
+    if (settings.globalBpm === undefined) {
+      throw new Error("The Quad Cortex global tempo value is not synchronized. Refresh and retry.");
+    }
+    assertExpectedNumber(call, "expected_global_bpm", settings.globalBpm);
+    return actionResult(await gateway.setGlobalTempo(
+      integerArgument(call, "bpm"), expectedMode, settings.globalBpm
+    ));
+  }
   if (call.name === "undo_device" || call.name === "redo_device") {
     confirmation(call, "confirm_risky_operation");
     return actionResult(call.name === "undo_device" ? await gateway.undo() : await gateway.redo());
@@ -481,6 +503,15 @@ export async function executeQcAction(call: AssistantToolCall, context: QcAction
   if (call.name === "tap_screen") {
     confirmation(call, "confirm_risky_operation");
     return actionResult(await gateway.tapScreen(integerArgument(call, "x"), integerArgument(call, "y")));
+  }
+  if (call.name === "swipe_screen") {
+    confirmation(call, "confirm_risky_operation");
+    const x = integerArgument(call, "x");
+    const y = integerArgument(call, "y");
+    const toX = integerArgument(call, "to_x");
+    const toY = integerArgument(call, "to_y");
+    if (x === toX && y === toY) throw new Error("A screen swipe must end at a different pixel.");
+    return actionResult(await gateway.swipeScreen(x, y, toX, toY));
   }
   if (call.name === "show_tuner") return actionResult(await gateway.showTuner(booleanArgument(call, "shown")));
   if (call.name === "show_gig_view") return actionResult(await gateway.showGigView(booleanArgument(call, "shown")));
@@ -503,6 +534,11 @@ export async function executeQcAction(call: AssistantToolCall, context: QcAction
     confirmation(call, "confirm_risky_operation");
     confirmation(call, "confirm_tuner_activation");
     return actionResult(await gateway.setTunerReference(numberArgument(call, "reference_offset_hz"), true));
+  }
+  if (call.name === "set_tuner_meter") {
+    confirmation(call, "confirm_risky_operation");
+    confirmation(call, "confirm_tuner_activation");
+    return actionResult(await gateway.setTunerMeter(booleanArgument(call, "enabled"), true));
   }
   if (call.name === "set_master_volume") {
     confirmation(call, "confirm_risky_operation");

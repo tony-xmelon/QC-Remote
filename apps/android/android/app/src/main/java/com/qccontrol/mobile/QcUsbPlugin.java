@@ -532,7 +532,7 @@ public class QcUsbPlugin extends Plugin {
                         ? stateDecoder.laneControlDetails(params.getInt("row"), params.getString("control"))
                         : stateDecoder.blockDetails(params.getInt("row"), params.getInt("column")));
                 case "SET_DEVICE_NAME": return relaySetDeviceName(params);
-                case "TAP_SCREEN": return relayTapScreen(params);
+                case "TAP_SCREEN": return relayScreenGesture(method, params);
                 case "BACKUP": return relayCreateBackup(params);
                 case "PREVIEW_PARAMETER": return relayPreviewParameter(method, params);
                 case "PLANNED_WRITE": return relayPlannedGatewayWriteWithReadback(
@@ -556,7 +556,21 @@ public class QcUsbPlugin extends Plugin {
         String method, org.json.JSONObject params, long timeoutMs
     ) throws Exception {
         String readMethod = stateDecoder.gatewayWriteReadbackMethod(method);
-        CompletableFuture<org.json.JSONObject> write = relayPlannedGatewayWrite(method, params, timeoutMs);
+        String preflightMethod = stateDecoder.gatewayWritePreflightMethod(method);
+        CompletableFuture<Void> preflight = CompletableFuture.completedFuture(null);
+        if (preflightMethod != null) {
+            preflight = relayGatewayRead(preflightMethod, new org.json.JSONObject()).thenApply(response -> {
+                if (!stateDecoder.gatewayWritePreflightMatches(method, params, response)) {
+                    throw new java.util.concurrent.CompletionException(new RelayException(
+                        "STALE_STATE", "The write was based on stale global state, or the QC is not in GLOBAL tempo mode."));
+                }
+                return null;
+            });
+        }
+        CompletableFuture<org.json.JSONObject> write = preflight.thenCompose(ignored -> {
+            try { return relayPlannedGatewayWrite(method, params, timeoutMs); }
+            catch (Exception error) { return QcUsbPlugin.<org.json.JSONObject>failedFuture(error); }
+        });
         if (readMethod == null) return write;
         return write.thenCompose(ignored -> {
             try { return relayGatewayRead(readMethod, new org.json.JSONObject()); }
@@ -607,7 +621,7 @@ public class QcUsbPlugin extends Plugin {
             try {
                 if (!isReady()) throw new RelayException("NOT_CONNECTED", "Quad Cortex USB disconnected before the write.");
                 org.json.JSONObject verification = new org.json.JSONObject(plan.verificationJson);
-                for (QcNativeStateDecoder.EncodedMessage message : plan.messages) writeMessage(message);
+                writeMessages(plan.messages);
                 if (plan.realtime || "none".equals(verification.optString("kind"))) {
                     result.complete(new org.json.JSONObject().put("accepted", true).put("verified", false)
                         .put("detail", plan.detail).put("verification", "accepted_unverified"));
@@ -668,6 +682,21 @@ public class QcUsbPlugin extends Plugin {
     private CompletableFuture<org.json.JSONObject> relayGatewayRead(
         String method, org.json.JSONObject params
     ) throws Exception {
+        if ("device.globalTempoSettings".equals(method)) {
+            return relayGatewayReadWithRecovery(method, params)
+                .thenCompose(global -> {
+                    try {
+                        return relayGatewayReadWithRecovery(
+                            "device.presetTempoSettings", new org.json.JSONObject())
+                            .thenApply(preset -> {
+                                try { return stateDecoder.composeGlobalTempoSettings(global, preset); }
+                                catch (Exception error) { throw new CompletionException(error); }
+                            });
+                    } catch (Exception error) {
+                        return QcUsbPlugin.<org.json.JSONObject>failedFuture(error);
+                    }
+                });
+        }
         if ("device.captureScreen".equals(method) || "device.presetScreenshot".equals(method)
             || "device.captures".equals(method) || "device.irs".equals(method)) {
             org.json.JSONObject readParams = new org.json.JSONObject(params.toString());
@@ -680,6 +709,12 @@ public class QcUsbPlugin extends Plugin {
             });
         }
         org.json.JSONObject readParams = new org.json.JSONObject(params.toString());
+        return relayGatewayReadWithRecovery(method, readParams);
+    }
+
+    private CompletableFuture<org.json.JSONObject> relayGatewayReadWithRecovery(
+        String method, org.json.JSONObject readParams
+    ) throws Exception {
         return relayGatewayReadOnCurrentSession(method, readParams).handle((value, error) -> {
             if (error == null) return CompletableFuture.completedFuture(value);
             Throwable cause = unwrapCompletion(error);
@@ -757,12 +792,34 @@ public class QcUsbPlugin extends Plugin {
                 : failedRelay("READBACK_MISMATCH", "The Quad Cortex did not confirm the requested device name."));
     }
 
-    private CompletableFuture<org.json.JSONObject> relayTapScreen(org.json.JSONObject params) throws Exception {
+    private CompletableFuture<org.json.JSONObject> relayScreenGesture(
+        String method, org.json.JSONObject params
+    ) throws Exception {
+        return "device.tapScreen".equals(method)
+            ? relayTapScreen(params)
+            : relaySwipeScreen(params);
+    }
+
+    private CompletableFuture<org.json.JSONObject> relayTapScreen(
+        org.json.JSONObject params
+    ) throws Exception {
+        return relayCapturedScreenGesture("device.tapScreen", params);
+    }
+
+    private CompletableFuture<org.json.JSONObject> relaySwipeScreen(
+        org.json.JSONObject params
+    ) throws Exception {
+        return relayCapturedScreenGesture("device.swipeScreen", params);
+    }
+
+    private CompletableFuture<org.json.JSONObject> relayCapturedScreenGesture(
+        String method, org.json.JSONObject params
+    ) throws Exception {
         return relayGatewayRead("device.captureScreen", new org.json.JSONObject())
             .thenCompose(ignored -> {
                 try {
                     return relayPlannedGatewayWrite(
-                        "device.tapScreen", params, QcUsbProfile.COMMAND_CONFIRMATION_TIMEOUT_MS);
+                        method, params, QcUsbProfile.COMMAND_CONFIRMATION_TIMEOUT_MS);
                 }
                 catch (Exception error) { return failedRelay("DEVICE_ERROR", error.getMessage()); }
             });
@@ -989,7 +1046,7 @@ public class QcUsbPlugin extends Plugin {
         }
         commandIo.execute(() -> {
             try {
-                writeMessage(stateDecoder.screenSwipeCommand(x, y, toX, toY));
+                writeMessages(stateDecoder.screenSwipeCommands(x, y, toX, toY));
                 call.resolve(new JSObject().put("accepted", true));
             } catch (Exception error) {
                 call.reject(error.getMessage() == null ? "The QC screen swipe failed." : error.getMessage(), "DEVICE_ERROR", error);
@@ -1011,10 +1068,8 @@ public class QcUsbPlugin extends Plugin {
         }
         commandIo.execute(() -> {
             try {
-                for (QcNativeStateDecoder.EncodedMessage message : stateDecoder.gatewayCommands(
-                    "device.tapScreen", new JSObject().put("x", x).put("y", y))) {
-                    writeMessage(message);
-                }
+                writeMessages(stateDecoder.gatewayCommands(
+                    "device.tapScreen", new JSObject().put("x", x).put("y", y)));
                 call.resolve(new JSObject().put("accepted", true));
             } catch (Exception error) {
                 call.reject(error.getMessage() == null ? "The QC screen tap failed." : error.getMessage(), "DEVICE_ERROR", error);
@@ -1284,6 +1339,22 @@ public class QcUsbPlugin extends Plugin {
             if (!isReady() || !pendingOperations.isEmpty()) return;
             try { writeMessage(stateDecoder.readCommand(QcUsbProfile.MESSAGE_TYPE_VERSION)); } catch (Exception ignored) {}
         }), MAINTENANCE_POLL_MS, TimeUnit.MILLISECONDS);
+    }
+
+    private void writeMessages(java.util.List<QcNativeStateDecoder.EncodedMessage> messages) {
+        boolean pacedRemoteGesture = messages.size() > 1
+            && messages.stream().allMatch(message -> message.messageType == 72);
+        for (int index = 0; index < messages.size(); index++) {
+            writeMessage(messages.get(index));
+            if (pacedRemoteGesture && index + 1 < messages.size()) {
+                try {
+                    Thread.sleep(20);
+                } catch (InterruptedException error) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException("The QC screen gesture was interrupted.", error);
+                }
+            }
+        }
     }
 
     private synchronized void writeMessage(QcNativeStateDecoder.EncodedMessage message) {

@@ -758,7 +758,9 @@ test("Android confirmation deadlines come from the shared native USB profile", (
   assert.match(android, /case "PLANNED_WRITE":[\s\S]{0,160}QcUsbProfile\.COMMAND_CONFIRMATION_TIMEOUT_MS/);
   assert.match(android, /case "PRESET_WRITE":[\s\S]{0,160}QcUsbProfile\.PRESET_SYNC_TIMEOUT_MS/);
   assert.match(android, /"device\.setDeviceName", params, QcUsbProfile\.COMMAND_CONFIRMATION_TIMEOUT_MS/);
-  assert.match(android, /"device\.tapScreen", params, QcUsbProfile\.COMMAND_CONFIRMATION_TIMEOUT_MS/);
+  assert.match(android, /relayCapturedScreenGesture\("device\.tapScreen", params\)/);
+  assert.match(android, /relayCapturedScreenGesture\("device\.swipeScreen", params\)/);
+  assert.match(android, /relayPlannedGatewayWrite\(\s*method, params, QcUsbProfile\.COMMAND_CONFIRMATION_TIMEOUT_MS/);
   assert.doesNotMatch(android, /relayPlannedGatewayWrite\([^\n]+,\s*(?:2500|10000|15000)\)/);
   assert.doesNotMatch(android, /includeReportId \? 129 : 128/);
 });
