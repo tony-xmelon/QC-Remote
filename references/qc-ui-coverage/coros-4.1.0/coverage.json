@@ -260,6 +260,9 @@
       ],
       "smoke": [
         "io-input"
+      ],
+      "physical": [
+        "io-input"
       ]
     },
     {
@@ -290,6 +293,9 @@
       ],
       "smoke": [
         "io-usb"
+      ],
+      "physical": [
+        "io-usb"
       ]
     },
     {
@@ -309,6 +315,9 @@
         "official-global-eq"
       ],
       "smoke": [
+        "global-eq"
+      ],
+      "physical": [
         "global-eq"
       ]
     },
@@ -376,6 +385,9 @@
       ],
       "smoke": [
         "empty-slot"
+      ],
+      "physical": [
+        "empty-slot"
       ]
     },
     {
@@ -439,6 +451,9 @@
         "official-plugin-folders"
       ],
       "smoke": [
+        "plugin-folders"
+      ],
+      "physical": [
         "plugin-folders"
       ]
     },
@@ -592,6 +607,9 @@
       ],
       "smoke": [
         "expression-parameter"
+      ],
+      "physical": [
+        "expression-parameter"
       ]
     },
     {
@@ -601,6 +619,9 @@
         "official-expression-bypass"
       ],
       "smoke": [
+        "expression-bypass"
+      ],
+      "physical": [
         "expression-bypass"
       ]
     },
@@ -933,6 +954,9 @@
         "official-settings-system"
       ],
       "smoke": [
+        "settings-system"
+      ],
+      "physical": [
         "settings-system"
       ]
     },
