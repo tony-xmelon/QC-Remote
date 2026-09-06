@@ -197,7 +197,7 @@ test("official System brightness values remain right-aligned", () => {
 });
 
 test("vendored block sprite remains byte-identical to the verified Neural DSP SVG", () => {
-  const canonical = readFileSync("apps/windows/public/qc-block-samples.svg", "utf8").replaceAll("\r\n", "\n");
+  const canonical = readFileSync("packages/typescript/qc-theme/assets/qc-block-samples.svg", "utf8").replaceAll("\r\n", "\n");
   assert.equal(createHash("sha256").update(canonical).digest("hex"), "aa32a2304e05fc62a783df4ed94c31780c18ff7c1e5f34a73aa1371f748919fc");
 });
 

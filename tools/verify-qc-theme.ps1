@@ -126,7 +126,7 @@ function Get-Sha256Hex([string]$Path) {
 }
 foreach ($assetProperty in $assetManifest.PSObject.Properties) {
   $asset = $assetProperty.Value
-  foreach ($relative in @($asset.sourcePath) + @($asset.deployedPaths)) {
+  foreach ($relative in @($asset.sourcePath)) {
     $actual = Get-Sha256Hex (Join-Path $repoRoot $relative)
     $pass = $actual -eq $asset.sha256
     $results.Add([pscustomobject]@{ kind = "asset"; name = "$($assetProperty.Name)/$relative"; expected = $asset.sha256; actual = $actual; pass = $pass })

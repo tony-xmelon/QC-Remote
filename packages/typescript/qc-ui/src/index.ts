@@ -5,13 +5,14 @@ export type { CorOsContextAction, CorOsScreenView, HardwareAction, PresetDirecto
 export { footswitchLeds, optimisticallyPressFootswitch } from "@ndsp-qc/core";
 export type { FootswitchLed } from "@ndsp-qc/core";
 export { blockUsesActiveFill, officialBlockVisual, pluginBadge, OFFICIAL_BLOCK_CATEGORIES, OFFICIAL_BLOCK_VISUALS, PUBLISHED_PLUGIN_BADGES } from "./block-visuals";
+export { QcDeviceGlyph } from "./device-glyph";
 export type { OfficialBlockCategory, OfficialBlockVisual, OfficialBlockVisualKey, PublishedPluginBadge } from "./block-visuals";
 export { PARAMETER_ENCODER_ROLES, parameterControlKind, parameterDisplay, parameterEditorAccent, parameterEditorControlSlots, parameterEditorPageSize, parameterEditorTabs, parameterNormalizedValue, parameterRealValue, parameterStep } from "./parameter-model";
 export type { CorOsParameterEditorProps } from "./parameter-editor";
 export { parameterContextMenuItems } from "./parameter-menu";
 export type { ParameterContextMenuItem, ParameterEditorContextAction } from "./parameter-menu";
 export { COROS_CONTEXT_ACTION_LABELS, DIRECTORY_PRESET_CONTEXT_MENU, GRID_CONTEXT_MENU, GRID_ROUTE_BOUNDARIES, corOsUnavailableContextActionMessage, mixAnchorX, routedPortIsPlugged, rowHasVisibleSignalRail, splitAnchorX } from "./coros-ui";
-export { MicrophoneIcon, QcDirectoryIcon, QcEditorIcon, QcLibraryIcon, QcModeGlyph, QcRouteGlyph, QcUiIcon } from "./theme-icons";
+export { QcDirectoryIcon, QcEditorIcon, QcLibraryIcon, QcModeGlyph, QcPresetStackIcon, QcRouteGlyph, QcUiIcon } from "./theme-icons";
 export type { QcDirectoryIconName, QcEditorIconName, QcLibraryIconName, QcUiIconName } from "./theme-icons";
 export { RoutingEditor } from "./routing-editor";
 export type { RoutingEditorProps } from "./routing-editor";
