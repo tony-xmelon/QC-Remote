@@ -74,6 +74,11 @@ impl From<GatewayRequestFailure> for GatewayUiError {
 // longest single RPC (three minutes). The desktop host still needs a hard
 // upper bound so a wedged child cannot hold the gateway mutex forever.
 const GATEWAY_RESPONSE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5 * 60);
+/// Reported when a broker answer does not satisfy its generated result contract.
+/// Distinct from a transport fault so the session is not torn down for it.
+const GATEWAY_CONTRACT_ERROR_CODE: i64 = -32020;
+/// Cap on the retained broker stderr log so a restart loop cannot fill the disk.
+const BROKER_STDERR_MAX_BYTES: u64 = 4 * 1024 * 1024;
 
 impl Drop for GatewayProcess {
     fn drop(&mut self) {
@@ -108,10 +113,13 @@ impl GatewayProcess {
         if auto_connect {
             command.arg("--auto-connect");
         }
+        // Keep the broker's own diagnostics. Discarding them meant a panic, an
+        // abort, or any startup complaint left no trace anywhere on the system,
+        // so a broker that died was indistinguishable from one the host killed.
         let mut child = command
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::null())
+            .stderr(broker_stderr_sink())
             .spawn()
             .map_err(|error| format!("Could not start device gateway: {error}"))?;
         let stdin = child.stdin.take().ok_or("Gateway stdin was not created")?;
@@ -287,8 +295,18 @@ impl GatewayProcess {
     }
 }
 
+/// A result that does not satisfy its contract is a protocol fault in a broker
+/// that is otherwise alive, answering, and correctly framed. Reporting it as a
+/// transport failure made the host kill and respawn a healthy process on every
+/// occurrence, turning one malformed field into a dropped device session.
 fn validate_gateway_result(method: &str, result: &Value) -> Result<(), GatewayRequestFailure> {
-    generated_gateway::validate_result(method, result).map_err(GatewayRequestFailure::Transport)
+    generated_gateway::validate_result(method, result).map_err(|message| {
+        GatewayRequestFailure::Remote {
+            code: GATEWAY_CONTRACT_ERROR_CODE,
+            message,
+            retryable: false,
+        }
+    })
 }
 
 fn locate_native_broker(executable_directory: Option<&Path>) -> Option<PathBuf> {
@@ -444,14 +462,17 @@ impl Gateway {
                 )
             })?
             .request(method, params);
-        let (output, status) = match result {
+        // The reason a call failed is the single most useful thing to keep: the
+        // health record previously stored only a status, so a failure left
+        // nothing on disk saying what went wrong.
+        let (output, status, detail) = match result {
             Ok(value) => {
                 if method == rpc::DISCONNECT {
                     self.connected = false;
                 } else if method.starts_with("device.") {
                     self.connected = true;
                 }
-                (Ok(value), "ok")
+                (Ok(value), "ok", None)
             }
             Err(GatewayRequestFailure::Remote {
                 code,
@@ -461,6 +482,7 @@ impl Gateway {
                 if message.contains("No Quad Cortex session") {
                     self.connected = false;
                 }
+                let detail = format!("[{code}] {message}");
                 (
                     Err(GatewayRequestFailure::Remote {
                         code,
@@ -468,20 +490,23 @@ impl Gateway {
                         retryable,
                     }),
                     "remote-error",
+                    Some(detail),
                 )
             }
             Err(GatewayRequestFailure::Transport(message)) => {
                 self.process = None;
                 self.connected = false;
+                let detail = message.clone();
                 (
                     Err(GatewayRequestFailure::Transport(format!(
                         "{message}. The failed command was not replayed; the communication session was cleared for a safe reconnect."
                     ))),
                     "transport-error",
+                    Some(detail),
                 )
             }
         };
-        write_runtime_health(self, method, status);
+        write_runtime_health(self, method, status, detail.as_deref());
         output
     }
 
@@ -499,6 +524,30 @@ impl Gateway {
     }
 }
 
+/// Where the broker's stderr is kept, beside the runtime health record.
+fn broker_stderr_path() -> PathBuf {
+    runtime_health_path().with_file_name("broker-stderr.log")
+}
+
+/// Append-only stderr sink for the broker, falling back to discarding output
+/// only when the log cannot be opened at all.
+fn broker_stderr_sink() -> Stdio {
+    let path = broker_stderr_path();
+    if let Some(directory) = path.parent() {
+        let _ = fs::create_dir_all(directory);
+    }
+    // A broker restart loop must not grow this without bound.
+    if fs::metadata(&path).is_ok_and(|meta| meta.len() > BROKER_STDERR_MAX_BYTES) {
+        let _ = fs::remove_file(&path);
+    }
+    fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&path)
+        .map(Stdio::from)
+        .unwrap_or_else(|_| Stdio::null())
+}
+
 fn runtime_health_path() -> PathBuf {
     std::env::var_os("LOCALAPPDATA")
         .map(PathBuf::from)
@@ -507,7 +556,12 @@ fn runtime_health_path() -> PathBuf {
         .join("runtime-health.json")
 }
 
-fn runtime_health_document(gateway: &Gateway, method: &str, status: &str) -> Value {
+fn runtime_health_document(
+    gateway: &Gateway,
+    method: &str,
+    status: &str,
+    detail: Option<&str>,
+) -> Value {
     json!({
         "version": env!("CARGO_PKG_VERSION"),
         "appPid": std::process::id(),
@@ -515,6 +569,8 @@ fn runtime_health_document(gateway: &Gateway, method: &str, status: &str) -> Val
         "connected": gateway.connected,
         "lastMethod": method,
         "lastStatus": status,
+        "lastDetail": detail,
+        "brokerStderrLog": broker_stderr_path().to_string_lossy(),
         "voiceRecognitionAvailable": gateway.voice_recognition_available,
         "voiceLastEvent": gateway.voice_last_event.as_deref(),
         "voiceEventAtUnix": gateway.voice_event_at_unix,
@@ -525,7 +581,7 @@ fn runtime_health_document(gateway: &Gateway, method: &str, status: &str) -> Val
     })
 }
 
-fn write_runtime_health(gateway: &Gateway, method: &str, status: &str) {
+fn write_runtime_health(gateway: &Gateway, method: &str, status: &str, detail: Option<&str>) {
     let path = runtime_health_path();
     let Some(directory) = path.parent() else {
         return;
@@ -533,7 +589,8 @@ fn write_runtime_health(gateway: &Gateway, method: &str, status: &str) {
     if fs::create_dir_all(directory).is_err() {
         return;
     }
-    if let Ok(bytes) = serde_json::to_vec_pretty(&runtime_health_document(gateway, method, status))
+    if let Ok(bytes) =
+        serde_json::to_vec_pretty(&runtime_health_document(gateway, method, status, detail))
     {
         let _ = fs::write(path, bytes);
     }
@@ -547,7 +604,7 @@ async fn report_voice_capability(app: AppHandle, available: bool) -> Result<(), 
             .lock()
             .map_err(|_| "Gateway session lock was poisoned".to_string())?;
         gateway.voice_recognition_available = Some(available);
-        write_runtime_health(&gateway, "voice.capability", "ok");
+        write_runtime_health(&gateway, "voice.capability", "ok", None);
         Ok(())
     })
     .await
@@ -569,7 +626,7 @@ async fn report_voice_event(app: AppHandle, event: String) -> Result<(), String>
                 .unwrap_or_default()
                 .as_secs(),
         );
-        write_runtime_health(&gateway, "voice.event", "ok");
+        write_runtime_health(&gateway, "voice.event", "ok", None);
         Ok(())
     })
     .await
@@ -1515,6 +1572,36 @@ mod tests {
     }
 
     #[test]
+    fn a_contract_violation_is_reported_without_dropping_the_session() {
+        // Regression: this was classified as a transport fault, so the host
+        // killed and respawned a broker that was alive, answering, and framing
+        // correctly - turning one malformed field into a dropped QC session on
+        // every preset change. Only the transport arm may clear the process.
+        let malformed = json!({ "detail": "Preset recalled", "snapshot": {} });
+        let failure = validate_gateway_result("device.recallPreset", &malformed)
+            .expect_err("a result without verification semantics must be rejected");
+        match failure {
+            GatewayRequestFailure::Remote { code, retryable, .. } => {
+                assert_eq!(code, GATEWAY_CONTRACT_ERROR_CODE);
+                assert!(!retryable, "replaying a contract violation cannot help");
+            }
+            GatewayRequestFailure::Transport(message) => {
+                panic!("a contract violation must not be a transport fault: {message}")
+            }
+        }
+
+        // A conforming result still passes.
+        let valid = json!({
+            "accepted": true,
+            "verified": true,
+            "verification": "authoritative_readback",
+            "detail": "Preset recalled and verified",
+            "snapshot": {"presetName": "Test", "blocks": []}
+        });
+        assert!(validate_gateway_result("device.recallPreset", &valid).is_ok());
+    }
+
+    #[test]
     fn runtime_health_contains_only_operational_metadata() {
         let gateway = Gateway {
             process: None,
@@ -1525,7 +1612,7 @@ mod tests {
             voice_event_at_unix: Some(1),
             event_tx: None,
         };
-        let health = runtime_health_document(&gateway, "device.snapshot", "ok");
+        let health = runtime_health_document(&gateway, "device.snapshot", "ok", None);
         let keys = health
             .as_object()
             .expect("health object")
