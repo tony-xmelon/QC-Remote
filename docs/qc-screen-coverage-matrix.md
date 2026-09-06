@@ -5,8 +5,8 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 ## Coverage summary
 
 - Canonical device states: **103/103** routed through the shared Windows/Android surface.
-- Full-frame authoritative evidence: **89/103** states.
-- Official-detail-only evidence: **9/103** states.
+- Full-frame authoritative evidence: **90/103** states.
+- Official-detail-only evidence: **8/103** states.
 - Smoke-only evidence gaps: **5/103** states.
 - Exact-size dual-host capture paths: **103/103** states.
 
@@ -17,17 +17,17 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 
 Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` color similarity. A canonical state that references multiple frames reports their mean. Detail evidence is scoped and therefore never promoted into a full-frame score.
 
-Thirty-one captures were added from hardware in the CorOS 4.1.0 session of 2026-09-06:
+Thirty-three captures were added from hardware in the CorOS 4.1.0 session of 2026-09-06:
 
 - Directory — `directory-categories`, `-captures`, `-irs`, `-plugins`, `-favorites`, `-search`, `-search-results`, `-sort`, `-arrange`, `-new-folder`, `-nested`, `-filter`
 - I/O — `io-input`, `io-usb`, `global-eq`
-- Editor — `expression-parameter`, `expression-bypass`, `fixture-editor-pages`, `looper-editor`
+- Editor — `expression-parameter`, `expression-bypass`, `fixture-editor-pages`, `looper-editor`, `stomp-assignment`
 - Grid and browser — `empty-slot`, `plugin-folders`, `plugin-refresh`
 - Monitoring and Settings — `cpu-monitor`, `settings-account`, `settings-device`, `settings-midi`, `settings-system`
 - Cortex Cloud — `directory-cloud-upload`, `cloud-upload-overwrite`
 - Gig View — `gig-view-hybrid`
 
-Full-frame authoritative coverage moved from 79/103 to 89/103 as a result, which the summary counts above reflect.
+Full-frame authoritative coverage moved from 79/103 to 90/103 as a result, which the summary counts above reflect.
 
 Two things below are **not** refreshed for them, because both come from a scored dual-host render pass that has not been run: the score table, and the per-state `Evidence` column, which still reads `official frame` or `official detail` for the promoted states. Their wording has been checked against the device's own scene graph with `npm run verify:qc-screen-text`; their pixels have not been scored.
 
@@ -46,7 +46,7 @@ Two things below are **not** refreshed for them, because both come from a scored
 | Routing | 5 | 5 | 0 | 0 |
 | Device browser | 9 | 9 | 0 | 0 |
 | Editor | 9 | 9 | 0 | 0 |
-| Assignment | 4 | 2 | 2 | 0 |
+| Assignment | 4 | 3 | 1 | 0 |
 | Virtual Device preset | 2 | 2 | 0 | 0 |
 | Directory | 16 | 16 | 0 | 0 |
 | Capture V1 | 7 | 4 | 2 | 1 |
@@ -174,7 +174,7 @@ falls into three groups, and only the first is a matter of time.
 | DR-12 | `directory-copy` | **Not reached, and the fixture is suspect.** Selection does work - screenshot first, tap the checkbox column at x=426 and the row ticks, the count badge moves to 1, the toolbar comes alive - and Copy stages the item, shown by a badge on the next icon. Pressing that badged icon then closes the Directory and creates nothing: tried in the source bank and, at the owner's suggestion, in a blank bank 8, with the preset count unchanged at 74 both times. The "Copy N items to... / CANCEL / COPY HERE" destination dialog our fixture draws was never seen, and may not exist; the clipboard also clears when Multi Select exits. |
 | ED-02 | `fixture-editor-pages` | Needs a block with more than one parameter page. The scratch preset carries a single-parameter Adaptive Gate, so a multi-page block has to be added first - a preset edit, revertible by reloading the slot. |
 | ED-06 | `looper-editor` | Same: a Looper block has to be added to the preset first. |
-| ED-09, ED-10 | `stomp-assignment`, `scene-assignment` | No on-screen path was found. Both look like footswitch gestures - hold a switch in STOMP or SCENE mode - which the RemoteControl mouse cannot express. |
+| ED-10 | `scene-assignment` | Not yet captured. Like ED-09 it is an editor fragment rather than a screen: our fixture draws the block editor with one parameter carrying a per-scene badge, so it needs a parameter that has actually been scene-assigned. |
 
 A caution about the rows above, learned the hard way. Several of them were first written off as protocol limitations, and most of those conclusions were wrong: the Multi Select checkboxes do respond, the filter menu does exist, and the mode-tile merge is expressible. Each was a coordinate or a stale-screen problem. Screenshot before every gesture and confirm the screen; a tap aimed at a dialog that had already closed once landed on the Grid and edited a preset that was not the scratch one. What remains genuinely unlanded is the mode-tile merge, which the owner performed by hand.
 

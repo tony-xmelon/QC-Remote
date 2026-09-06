@@ -3568,6 +3568,38 @@
           "seconds": 2.0
         }
       ]
+    },
+    {
+      "id": "stomp-assignment",
+      "label": "Editor - Assign footswitch dialog",
+      "screen": "neural-capture-editor",
+      "image": "stomp-assignment.png",
+      "graphicsTree": "stomp-assignment.tree.txt",
+      "sha256": "af1d8ec5ad11fc2a6de8d5006545ee042121e04d9b62db9b6ebfa4f034aebd5e",
+      "bytes": 31828,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T19:34:27.770389Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 187,
+          "y": 147
+        },
+        {
+          "type": "wait",
+          "seconds": 2.4
+        },
+        {
+          "type": "tap",
+          "x": 462,
+          "y": 226
+        },
+        {
+          "type": "wait",
+          "seconds": 2.2
+        }
+      ]
     }
   ]
 }
