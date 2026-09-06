@@ -46,11 +46,18 @@ const invoke = (method, params = {}) => page.evaluate(
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const steps = [];
 
-/** The app's Grid screen and the device's own screen, taken back to back. */
-async function captureParity(name) {
+/**
+ * The app's Grid screen and the device's own screen, taken back to back.
+ *
+ * `comparable` is false where the two are deliberately showing different
+ * things - the app's Directory over the device's Grid, or the device's Gig
+ * View over the app's Grid - so the report keeps the evidence without scoring
+ * a difference that is not a defect.
+ */
+async function captureParity(name, comparable = true) {
   const appPath = join(outputDirectory, `${name}-app.png`);
   const devicePath = join(outputDirectory, `${name}-device.png`);
-  const evidence = { app: appPath, device: devicePath };
+  const evidence = { app: appPath, device: devicePath, comparable };
   try {
     await page.locator(".coros-vector-screen").first().screenshot({ path: appPath });
   } catch (error) { evidence.appError = String(error?.message ?? error); }
@@ -148,7 +155,7 @@ await step("03-preset-library-populates", async (record) => {
     if (!listing.loading && (listing.folders ?? []).length > 0 && rendered.banks > 0 && rendered.presets > 0) break;
     await sleep(500);
   }
-  record.facts.parity = await captureParity("03-preset-library");
+  record.facts.parity = await captureParity("03-preset-library", false);
   expect((listing.folders ?? []).length > 0, "the device reported no preset folders");
   expect(!listing.loading, "the preset folder listing never finished loading");
   expect(rendered.banks > 0, `the Directory rendered no banks (${rendered.loadingText ?? "no loading text"})`);
@@ -235,7 +242,7 @@ await step("06-preset-mode-footswitch-leds", async (record) => {
   try {
     await invoke("device.showGigView", { shown: true });
     await sleep(1200);
-    gigView = await captureParity("06b-gig-view-device-leds");
+    gigView = await captureParity("06b-gig-view-device-leds", false);
     gigView.appGig = join(outputDirectory, "06b-gig-view-app.png");
     await page.screenshot({ path: gigView.appGig });
   } catch (error) {

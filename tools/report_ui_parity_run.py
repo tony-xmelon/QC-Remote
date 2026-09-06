@@ -46,6 +46,14 @@ def main() -> int:
         ):
             app_path = Path(candidate.get("app", ""))
             device_path = Path(candidate.get("device", ""))
+            if candidate.get("comparable") is False:
+                comparisons.append({
+                    "step": entry["name"],
+                    "app": str(app_path),
+                    "device": str(device_path),
+                    "skipped": "the app and the device are deliberately showing different screens",
+                })
+                continue
             if not app_path.is_file() or not device_path.is_file():
                 comparisons.append({
                     "step": entry["name"],
