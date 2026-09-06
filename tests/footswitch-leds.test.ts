@@ -183,6 +183,13 @@ test("PRESET lamps use the device's fixed slot palette, not the active scene", (
   assert.deepEqual(otherScene.map((led) => led.color), preset.map((led) => led.color));
 });
 
+test("the Grid header letter carries the same slot colour as its lamp", () => {
+  const surface = readFileSync(new URL("../packages/typescript/qc-ui/src/quad-cortex-surface.tsx", import.meta.url), "utf8");
+  assert.match(surface, /const presetSlotColor = QC_COLORS\.presetSlot\[snapshot\.presetPosition % 8\]/);
+  assert.match(surface, /<tspan fill=\{presetSlotColor\} letterSpacing="-1">\{presetSlot\}<\/tspan>/);
+  assert.doesNotMatch(surface, /<tspan fill=\{QC_COLORS\.scene\[0\]\}/, "the letter must not be pinned to the first scene's colour");
+});
+
 test("the TEMPO pulse animates only the colored fill and preserves the shared LED housing", () => {
   const pulseCss = readFileSync(new URL("../packages/typescript/qc-ui/src/live-surface.css", import.meta.url), "utf8");
   const chassisCss = readFileSync(new URL("../packages/typescript/qc-ui/src/surface-shell.css", import.meta.url), "utf8");

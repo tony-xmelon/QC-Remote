@@ -317,6 +317,9 @@ function CorOsGrid({ snapshot, selectedBlockId, onAction, onOpenPreset, onUndo, 
   const sceneLetter = sceneLabel(snapshot.activeScene);
   const presetBank = snapshot.presetLocation.slice(0, -1);
   const presetSlot = snapshot.presetLocation.slice(-1);
+  // The device paints the slot letter in that slot's own colour, not in the
+  // first scene's: 3F reads violet on the QC and used to read red here.
+  const presetSlotColor = QC_COLORS.presetSlot[snapshot.presetPosition % 8] ?? QC_COLORS.scene[0];
   const presetLocation = `${presetBank}${presetSlot}`;
   const titlePresentation = presetTitlePresentation(snapshot.presetName, snapshot.dirty);
   const presetTitle = titlePresentation.text;
@@ -439,7 +442,7 @@ function CorOsGrid({ snapshot, selectedBlockId, onAction, onOpenPreset, onUndo, 
   return <div className="qc-screen coros-vector-screen" aria-label="CorOS Grid">
     <svg className="coros-vector-canvas" viewBox="0 0 800 480" preserveAspectRatio="none" role="img" aria-label={`${snapshot.presetLocation} ${snapshot.presetName}, ${snapshot.mode} mode`}>
       <rect width="800" height="480" fill={QC_COLORS.captured.screen} />
-      <g transform="matrix(.96 0 0 1 -4 0)" fontFamily={QC_TYPOGRAPHY.devicePlain} fontWeight="800" fontSize="68"><text x="14" y="75"><tspan fill={QC_COLORS.hardware.whiteLed} letterSpacing="-1">{presetBank}</tspan><tspan fill={QC_COLORS.scene[0]} letterSpacing="-1">{presetSlot}</tspan><tspan className={`preset-title${snapshot.dirty ? " is-dirty" : ""}${titlePresentation.dimmed ? " is-unsaved" : ""}`} dx="16" dy={presetTitleBaseline - 75} fill={titlePresentation.dimmed ? QC_COLORS.captured.unsaved : QC_COLORS.hardware.whiteLed} fontSize={presetTitleFontSize} fontStyle={titlePresentation.italic ? "italic" : "normal"} textLength={squeezePresetTitle ? presetTitleMaxWidth : undefined} lengthAdjust={squeezePresetTitle ? "spacingAndGlyphs" : undefined}>{presetTitle}</tspan></text></g>
+      <g transform="matrix(.96 0 0 1 -4 0)" fontFamily={QC_TYPOGRAPHY.devicePlain} fontWeight="800" fontSize="68"><text x="14" y="75"><tspan fill={QC_COLORS.hardware.whiteLed} letterSpacing="-1">{presetBank}</tspan><tspan fill={presetSlotColor} letterSpacing="-1">{presetSlot}</tspan><tspan className={`preset-title${snapshot.dirty ? " is-dirty" : ""}${titlePresentation.dimmed ? " is-unsaved" : ""}`} dx="16" dy={presetTitleBaseline - 75} fill={titlePresentation.dimmed ? QC_COLORS.captured.unsaved : QC_COLORS.hardware.whiteLed} fontSize={presetTitleFontSize} fontStyle={titlePresentation.italic ? "italic" : "normal"} textLength={squeezePresetTitle ? presetTitleMaxWidth : undefined} lengthAdjust={squeezePresetTitle ? "spacingAndGlyphs" : undefined}>{presetTitle}</tspan></text></g>
       <QcScreenHeaderGlyph kind="undo" />
       <QcScreenHeaderGlyph kind="save" />
       <rect x="656" y="12" width="25" height="25" rx="3" fill={QC_COLORS.captured.sceneBadge} /><text x="668.5" y="33" textAnchor="middle" fill={QC_COLORS.device.panel} fontFamily={QC_TYPOGRAPHY.devicePlain} fontWeight="800" fontSize="22">{sceneLetter}</text>
