@@ -17,6 +17,40 @@ test("visual fixture query state is identical for every host", () => {
   assert.equal(ordinary.initialSnapshot, demoSnapshot);
 });
 
+test("physical search fixtures own deterministic typography without inheriting the Grid layout", () => {
+  const fixtureSource = readFileSync(new URL("../packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", import.meta.url), "utf8");
+  const fixtureStyles = readFileSync(new URL("../packages/typescript/qc-ui/src/remaining-fixtures-fixes.css", import.meta.url), "utf8");
+  assert.match(fixtureSource, /className="capture-search-keyboard"/);
+  assert.doesNotMatch(fixtureSource, /className="qc-screen capture-search-keyboard"/);
+  assert.match(fixtureStyles, /\.capture-search-keyboard,.qc-screen\.capture-search-results\{position:absolute;inset:0;overflow:hidden;background:#101310;color:#ecefec;container-type:inline-size\}/);
+  assert.match(fixtureSource, /<h1 className=\{query \? "is-query" : ""\}>/);
+  assert.match(fixtureStyles, /\.capture-search-keyboard>h1\.is-query\{color:#2df36a\}/);
+});
+
+test("typography references render the captured state instead of a generic substitute", () => {
+  const fixtureStyles = readFileSync(new URL("../packages/typescript/qc-ui/src/remaining-fixtures-fixes.css", import.meta.url), "utf8");
+  const surfaceSource = readFileSync(new URL("../packages/typescript/qc-ui/src/quad-cortex-surface.tsx", import.meta.url), "utf8");
+  const windowsCapture = readFileSync(new URL("../tools/capture_windows_ui.mjs", import.meta.url), "utf8");
+  const androidCapture = readFileSync(new URL("../tools/capture_android_ui.mjs", import.meta.url), "utf8");
+  assert.match(fixtureStyles, /\.qc-screen\.capture-editor-physical\{position:absolute;inset:0;display:block;/);
+  assert.match(windowsCapture, /gridState\("capture-type", undefined, \{ variant: "capture-type" \}\)/);
+  assert.match(androidCapture, /gridState\("capture-type", undefined, \{ variant: "capture-type" \}\)/);
+  assert.match(windowsCapture, /variant: "reference-modal"/);
+  assert.match(windowsCapture, /variant: "reference-browser"/);
+  assert.match(androidCapture, /variant: "reference-modal"/);
+  assert.match(androidCapture, /variant: "reference-browser"/);
+  assert.match(surfaceSource, /document\.fonts\.load\(`800 68px \$\{QC_TYPOGRAPHY\.devicePlain\}`/);
+  assert.match(surfaceSource, /1\/2 \+ 3\/4 \+ USB 3\/4/);
+
+  const modal = corosFixtureConfiguration("?fixture=coros410&variant=reference-modal", demoSnapshot).initialSnapshot;
+  assert.equal(modal.presetLocation, "5C");
+  assert.equal(modal.presetName, "Ilia");
+  assert.equal(modal.routes[0].outputId, 19);
+  const browser = corosFixtureConfiguration("?fixture=coros410&variant=reference-browser", demoSnapshot).initialSnapshot;
+  assert.equal(browser.presetLocation, "2F");
+  assert.equal(browser.presetName, "QC MCP TEST");
+});
+
 test("native frame ordering, timestamps, and tempo clocks are host-independent", () => {
   const sequence = { current: 0 };
   let snapshot = { ...demoSnapshot };
@@ -205,6 +239,9 @@ test("long preset names retain a hard gutter before Undo for every bank width", 
   const ordinary = presetTitleLayout(75, 260);
   assert.equal(ordinary.fontSize, 68, "short reference-style names remain at the native QC size");
   assert.equal(ordinary.squeeze, false);
+  assert.equal(ordinary.start, 113, "a one-digit bank uses the device's tighter 24px bank/slot gutter");
+  assert.equal(ordinary.gutter, 24);
+  assert.equal(presetTitleLayout(110, 260).gutter, 38, "a two-digit bank keeps the wider physical gutter");
 });
 
 test("splitter and mixer circles are selectable parameter targets", () => {
@@ -267,7 +304,7 @@ test("both visual benchmark drivers isolate the raw 800x480 framebuffer", () => 
     assert.match(source, /\.qc-screen-bezel::after[^}]*display: none !important/s);
     assert.match(source, /page\.mouse\.move\(viewport\.width - 1, viewport\.height - 1\)/);
     assert.match(source, /const shouldCapture = \(id\) => !requestedIds\.size \|\| requestedIds\.has\(id\)/);
-    assert.match(source, /async function gridState\(id, action\) \{\s+if \(!shouldCapture\(id\)\) return;/);
+    assert.match(source, /async function gridState\(id, action, extra = \{\}\) \{\s+if \(!shouldCapture\(id\)\) return;/);
     assert.match(source, /for \(const \[id,[^\n]+\) \{\s+if \(!shouldCapture\(id\)\) continue;/);
   }
   assert.match(androidCapture, /\.mobile-screen \.qc-screen \{ border-radius: 0 !important; box-shadow: none !important; \}/);
@@ -825,7 +862,7 @@ test("the Save action is one normal floppy without a status-dot overlay", () => 
 
 test("preset bank, slot, and name use natural inline text flow", () => {
   const surfaceSource = readFileSync(new URL("../packages/typescript/qc-ui/src/quad-cortex-surface.tsx", import.meta.url), "utf8");
-  assert.match(surfaceSource, /<text x="14" y="75"><tspan[^>]*>\{presetBank\}<\/tspan><tspan[^>]*>\{presetSlot\}<\/tspan><tspan[^>]*dx="16"/);
+  assert.match(surfaceSource, /<text x="14" y="75"><tspan[^>]*>\{presetBank\}<\/tspan><tspan[^>]*>\{presetSlot\}<\/tspan><tspan[^>]*dx=\{presetTitleGutter\}/);
   assert.match(surfaceSource, /const presetSlotAccent = leds\[presetSlotIndex\]\.color/);
   assert.match(surfaceSource, /<tspan fill=\{presetSlotAccent\}[^>]*>\{presetSlot\}<\/tspan>/);
   assert.doesNotMatch(surfaceSource, /<tspan fill=\{QC_COLORS\.scene\[0\]\}[^>]*>\{presetSlot\}<\/tspan>/);

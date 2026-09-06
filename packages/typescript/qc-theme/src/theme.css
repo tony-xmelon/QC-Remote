@@ -1,3 +1,8 @@
+@import "@fontsource-variable/arimo";
+@import "@fontsource-variable/arimo/wght-italic.css";
+@import "@fontsource-variable/roboto";
+@import "@fontsource-variable/roboto/wght-italic.css";
+
 :root {
   --qc-transparent: transparent;
   color-scheme: dark;
@@ -44,6 +49,7 @@
   --qc-header-menu: #ffffff;
   --qc-mode-join: #707c70;
   --qc-scene-badge: #ffd331;
+  --qc-preset-brown: #9b613c;
   --qc-white-led: #f4f4f4;
   --qc-idle-led: #626367;
   --qc-device-panel: #121212;
@@ -87,10 +93,10 @@
   --qc-app-warning: #e8b957;
   --qc-app-danger: #f26d6d;
 
-  --qc-font-device: "Arial Narrow", "Roboto Condensed", Arial, Helvetica, sans-serif;
-  --qc-font-device-plain: Arial, Helvetica, sans-serif;
-  --qc-font-device-route: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --qc-font-control: "IBM Plex Sans", Arial, sans-serif;
+  --qc-font-device: "Arimo Variable", Arial, Helvetica, sans-serif;
+  --qc-font-device-plain: "Arimo Variable", Arial, Helvetica, sans-serif;
+  --qc-font-device-route: "Arimo Variable", Arial, Helvetica, sans-serif;
+  --qc-font-control: "Arimo Variable", Arial, sans-serif;
   --qc-font-app: Inter, "Segoe UI Variable", "Segoe UI", sans-serif;
   --qc-font-mono: "DM Mono", "Cascadia Mono", Consolas, monospace;
   --qc-screen-aspect: 1.6666667;

@@ -12,6 +12,7 @@ import { DIRECTORY_PRESET_CONTEXT_MENU, GRID_CONTEXT_MENU, gridBlocksByRow, mixA
 import "./surface-shell.css";
 import "./live-surface.css";
 import "./reference-parameter-editor.css";
+import "./qc-device-typography.css";
 
 const CorOsScreenFixture = lazy(() => import("./coros-screen-fixtures").then((module) => ({ default: module.CorOsScreenFixture })));
 
@@ -286,6 +287,16 @@ function CorOsGrid({ snapshot, presetSlotAccent, selectedBlockId, onAction, onOp
   const [sceneMenuOpen, setSceneMenuOpen] = useState(false);
   const [screenMenuOpen, setScreenMenuOpen] = useState(false);
   const [modeMenuOpen, setModeMenuOpen] = useState(false);
+  const [, setDeviceFontReady] = useState(false);
+  useEffect(() => {
+    let active = true;
+    if (typeof document === "undefined" || !document.fonts) return undefined;
+    void Promise.all([
+      document.fonts.load(`800 68px ${QC_TYPOGRAPHY.devicePlain}`, snapshot.presetLocation),
+      document.fonts.load(`800 68px ${QC_TYPOGRAPHY.devicePlain}`, snapshot.presetName)
+    ]).then(() => { if (active) setDeviceFontReady(true); });
+    return () => { active = false; };
+  }, [snapshot.presetLocation, snapshot.presetName]);
   const routePickerGroups = routingPicker ? (routingPicker.side === "input" ? ["MONO", "STEREO", ""] : ["STEREO", "MONO", "OTHER"]).map((name) => ({
     name,
     options: routingPicker.options.filter(([value]) => routePickerGroup(routingPicker.side, value) === name)
@@ -319,6 +330,7 @@ function CorOsGrid({ snapshot, presetSlotAccent, selectedBlockId, onAction, onOp
   const presetTitleWidthAtFullSize = measureHeaderText(presetTitle, snapshot.dirty);
   const {
     start: presetTitleStart,
+    gutter: presetTitleGutter,
     maxWidth: presetTitleMaxWidth,
     fontSize: presetTitleFontSize,
     squeeze: squeezePresetTitle,
@@ -415,7 +427,7 @@ function CorOsGrid({ snapshot, presetSlotAccent, selectedBlockId, onAction, onOp
   return <div className="qc-screen coros-vector-screen" aria-label="CorOS Grid">
     <svg className="coros-vector-canvas" viewBox="0 0 800 480" preserveAspectRatio="none" role="img" aria-label={`${snapshot.presetLocation} ${snapshot.presetName}, ${snapshot.mode} mode`}>
       <rect width="800" height="480" fill={QC_COLORS.captured.screen} />
-      <g transform="matrix(.96 0 0 1 -4 0)" fontFamily={QC_TYPOGRAPHY.devicePlain} fontWeight="800" fontSize="68"><text x="14" y="75"><tspan fill={QC_COLORS.hardware.whiteLed} letterSpacing="-1">{presetBank}</tspan><tspan fill={presetSlotAccent} letterSpacing="-1">{presetSlot}</tspan><tspan className={`preset-title${snapshot.dirty ? " is-dirty" : ""}${titlePresentation.dimmed ? " is-unsaved" : ""}`} dx="16" dy={presetTitleBaseline - 75} fill={titlePresentation.dimmed ? QC_COLORS.captured.unsaved : QC_COLORS.hardware.whiteLed} fontSize={presetTitleFontSize} fontStyle={titlePresentation.italic ? "italic" : "normal"} textLength={squeezePresetTitle ? presetTitleMaxWidth : undefined} lengthAdjust={squeezePresetTitle ? "spacingAndGlyphs" : undefined}>{presetTitle}</tspan></text></g>
+      <g transform="matrix(.96 0 0 1 -4 0)" fontFamily={QC_TYPOGRAPHY.devicePlain} fontWeight="800" fontSize="68"><text x="14" y="75"><tspan fill={QC_COLORS.hardware.whiteLed} letterSpacing="-1">{presetBank}</tspan><tspan fill={presetSlotAccent} letterSpacing="-1">{presetSlot}</tspan><tspan className={`preset-title${snapshot.dirty ? " is-dirty" : ""}${titlePresentation.dimmed ? " is-unsaved" : ""}`} dx={presetTitleGutter} dy={presetTitleBaseline - 75} fill={titlePresentation.dimmed ? QC_COLORS.captured.unsaved : QC_COLORS.hardware.whiteLed} fontSize={presetTitleFontSize} fontStyle={titlePresentation.italic ? "italic" : "normal"} textLength={squeezePresetTitle ? presetTitleMaxWidth : undefined} lengthAdjust={squeezePresetTitle ? "spacingAndGlyphs" : undefined}>{presetTitle}</tspan></text></g>
       <QcScreenHeaderGlyph kind="undo" />
       <QcScreenHeaderGlyph kind="save" />
       <rect x="656" y="12" width="25" height="25" rx="3" fill={QC_COLORS.captured.sceneBadge} /><text x="668.5" y="33" textAnchor="middle" fill={QC_COLORS.device.panel} fontFamily={QC_TYPOGRAPHY.devicePlain} fontWeight="800" fontSize="22">{sceneLetter}</text>
@@ -466,7 +478,7 @@ function CorOsGrid({ snapshot, presetSlotAccent, selectedBlockId, onAction, onOp
         <div className="coros-route-options" role="listbox" aria-label={`${routingPicker.side === "input" ? "Input" : "Output"} routes`}>
           {routePickerGroups.map((group) => <div className="coros-route-group" role="group" aria-label={group.name || "Unassigned"} key={group.name || "unassigned"}>
             {group.name && <strong>{group.name}</strong>}
-            {group.options.map(([value, label]) => <button key={value} role="option" aria-selected={value === routingPicker.value} disabled={routingPicker.disabled} onClick={() => routingPicker.onSelect(value)}><QcRouteGlyph side={routingPicker.side} label={label} /><span>{routePickerLabel(routingPicker.side, label)}</span></button>)}
+            {group.options.map(([value, label]) => <button key={value} role="option" aria-selected={value === routingPicker.value} disabled={routingPicker.disabled} onClick={() => routingPicker.onSelect(value)}><QcRouteGlyph side={routingPicker.side} label={label} /><span>{routePickerLabel(routingPicker.side, label)}{routingPicker.side === "output" && value === 19 && <small>1/2 + 3/4 + USB 3/4</small>}</span></button>)}
           </div>)}
         </div>
       </section>

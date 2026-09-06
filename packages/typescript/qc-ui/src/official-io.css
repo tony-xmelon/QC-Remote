@@ -2,6 +2,11 @@
 .qc-screen.coros-io-settings { background: #101010; }
 .coros-io-settings > header .io-global-eq { background: #181c18; }
 .coros-io-settings > header { padding-left: 1.25cqw; background: #101010; font-size: 2.25cqw; }
+.coros-io-settings > header .io-heading { display: flex; align-items: center; gap: 1cqw; }
+.coros-io-settings > header .io-heading > i { width: 5.5cqw; height: 5.5cqw; display: grid; place-items: center; border-radius: 1cqw; background: #282c28; color: #9a9e9a; font-size: 1.4cqw; font-style: normal; }
+.coros-io-settings > header .io-heading > span { display: grid; line-height: 1.05; }
+.coros-io-settings > header .io-heading small { color: #a8aaa8; font-size: 1.75cqw; font-weight: 400; }
+.coros-io-settings > header .io-heading strong { color: #25ef59; font-size: 2.5cqw; font-weight: 400; }
 .coros-io-settings.is-input > header > span { transform: scaleX(1.14); transform-origin: left center; }
 .coros-io-settings > header .io-global-eq { font-size: 1.75cqw; }
 .coros-io-settings.is-input > header .io-global-eq { width: 13.625cqw; height: 5.5cqw; border-radius: 1cqw; }
@@ -56,6 +61,17 @@
 .io-ports button:nth-child(10), .io-ports button:nth-child(11) { transform: translateX(-2.375cqw); }
 .io-ports button:nth-child(12) { transform: translateX(-1.875cqw); }
 .coros-io-settings .io-editor { transform: translateY(-.25cqw); }
+.io-editor.is-headphones { position: absolute; left: 1%; right: 1%; top: 28.125cqw; height: 31cqw; display: grid; grid-template-columns: 19.5cqw 19.875cqw 1fr; grid-template-rows: 17.5cqw 13.5cqw; transform: none; }
+.io-editor.is-headphones > section { position: relative; border-right: 1px solid #171918; }
+.io-editor.is-headphones > section > span,.io-headphone-meter > span { position: absolute; left: 1cqw; top: 1.125cqw; color: #e9ebe9; font-size: 2cqw; }
+.io-editor.is-headphones .io-dial-wrap { inset: 4.875cqw 1cqw auto; height: 8cqw; }
+.io-editor.is-headphones .io-dial { width: 8.125cqw; height: 8.125cqw; }
+.io-editor.is-headphones .io-dial-wrap > strong { bottom: 1.525cqw; font-size: 1.75cqw; }
+.io-editor.is-headphones > section:nth-child(2) .io-dial { right: -.625cqw; }
+.io-headphone-meter { position: relative; grid-row: 2; border-top: 3px solid #101010; border-right: 1px solid #171918; }
+.io-headphone-meter small { position: absolute; left: 1cqw; right: 1cqw; top: 5.125cqw; color: #c5c8c5; font-size: 1.75cqw; white-space: nowrap; }
+.io-headphone-meter i { position: absolute; left: 1cqw; right: 1.5cqw; top: 8.125cqw; height: 2cqw; background: linear-gradient(90deg,#151716 88%,#0b0c0c 88%); }
+.io-headphone-meter i + i { top: 10.5cqw; height: 1.75cqw; }
 .io-editor.is-analog { grid-template-columns: 19.5cqw 19.875cqw 19.375cqw 19.5cqw 19.75cqw; }
 .io-editor section > span, .io-level-meter > span { font-size: 2cqw; }
 .io-editor .io-dial-wrap { inset: 4.875cqw 1cqw auto; height: 8cqw; }
