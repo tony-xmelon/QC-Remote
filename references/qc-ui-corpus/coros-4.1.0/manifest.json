@@ -2138,8 +2138,14 @@
       "actions": [
         {
           "type": "swipe",
-          "from": [700, 300],
-          "to": [700, 310],
+          "from": [
+            700,
+            300
+          ],
+          "to": [
+            700,
+            310
+          ],
           "duration": 0.1
         }
       ]
@@ -2158,8 +2164,14 @@
       "actions": [
         {
           "type": "swipe",
-          "from": [300, 390],
-          "to": [300, 300],
+          "from": [
+            300,
+            390
+          ],
+          "to": [
+            300,
+            300
+          ],
           "duration": 0.2
         }
       ]
@@ -2175,7 +2187,13 @@
       "width": 800,
       "height": 480,
       "capturedAt": "2026-09-06T00:41:07.106904Z",
-      "actions": [{ "type": "tap", "x": 30, "y": 145 }]
+      "actions": [
+        {
+          "type": "tap",
+          "x": 30,
+          "y": 145
+        }
+      ]
     },
     {
       "id": "output-route-selector-top",
@@ -2188,7 +2206,13 @@
       "width": 800,
       "height": 480,
       "capturedAt": "2026-09-06T00:41:27.105049Z",
-      "actions": [{ "type": "tap", "x": 770, "y": 145 }]
+      "actions": [
+        {
+          "type": "tap",
+          "x": 770,
+          "y": 145
+        }
+      ]
     },
     {
       "id": "overlay-busy",
@@ -2211,7 +2235,7 @@
     },
     {
       "id": "device-browser-middle-deep",
-      "label": "Device browser middle categories — Compressor through Filter",
+      "label": "Device browser middle categories \u2014 Compressor through Filter",
       "screen": "device-browser",
       "image": "device-browser-middle-deep.png",
       "graphicsTree": "device-browser-middle-deep.tree.txt",
@@ -2223,16 +2247,25 @@
       "actions": [
         {
           "type": "swipe",
-          "from": [600, 300],
-          "to": [600, 250],
+          "from": [
+            600,
+            300
+          ],
+          "to": [
+            600,
+            250
+          ],
           "duration": 0.05
         },
-        { "type": "wait", "seconds": 0.9 }
+        {
+          "type": "wait",
+          "seconds": 0.9
+        }
       ]
     },
     {
       "id": "device-browser-middle-reverb",
-      "label": "Device browser middle categories — Reverb overlap",
+      "label": "Device browser middle categories \u2014 Reverb overlap",
       "screen": "device-browser",
       "image": "device-browser-middle-reverb.png",
       "graphicsTree": "device-browser-middle-reverb.tree.txt",
@@ -2244,11 +2277,335 @@
       "actions": [
         {
           "type": "swipe",
-          "from": [600, 250],
-          "to": [600, 280],
+          "from": [
+            600,
+            250
+          ],
+          "to": [
+            600,
+            280
+          ],
           "duration": 0.03
         },
-        { "type": "wait", "seconds": 0.9 }
+        {
+          "type": "wait",
+          "seconds": 0.9
+        }
+      ]
+    },
+    {
+      "id": "directory-categories",
+      "label": "Directory - category selector",
+      "screen": "directory",
+      "image": "directory-categories.png",
+      "graphicsTree": "directory-categories.tree.txt",
+      "sha256": "9c24dd2ec6f2581b721eee97f8293c1eddd33edda68a3a57b3d5ae428ee9ddb2",
+      "bytes": 32651,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T17:25:08.125335Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 300,
+          "y": 40
+        },
+        {
+          "type": "wait",
+          "seconds": 1.5
+        },
+        {
+          "type": "tap",
+          "x": 140,
+          "y": 30
+        },
+        {
+          "type": "wait",
+          "seconds": 1.2
+        }
+      ]
+    },
+    {
+      "id": "directory-captures",
+      "label": "Directory - Neural Captures",
+      "screen": "directory",
+      "image": "directory-captures.png",
+      "graphicsTree": "directory-captures.tree.txt",
+      "sha256": "01749326bf8ad75cc7c1228ee974eb6fb264119eb4354522307d208502767b00",
+      "bytes": 40439,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T17:25:12.503637Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 140,
+          "y": 210
+        },
+        {
+          "type": "wait",
+          "seconds": 2.0
+        }
+      ]
+    },
+    {
+      "id": "directory-irs",
+      "label": "Directory - Impulse Responses",
+      "screen": "directory",
+      "image": "directory-irs.png",
+      "graphicsTree": "directory-irs.tree.txt",
+      "sha256": "9b0558c0ec6dfa984793422659830080a1cd37491f9c32f15b7378826602aa2a",
+      "bytes": 14481,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T17:25:17.758119Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 140,
+          "y": 30
+        },
+        {
+          "type": "wait",
+          "seconds": 1.2
+        },
+        {
+          "type": "tap",
+          "x": 140,
+          "y": 270
+        },
+        {
+          "type": "wait",
+          "seconds": 2.0
+        }
+      ]
+    },
+    {
+      "id": "directory-plugins",
+      "label": "Directory - Plugin Presets",
+      "screen": "directory",
+      "image": "directory-plugins.png",
+      "graphicsTree": "directory-plugins.tree.txt",
+      "sha256": "e698ea98fd63b83a3ba217effca4bc8be7dc30a1b57eb19845695190957f2cb7",
+      "bytes": 20868,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T17:25:23.123803Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 140,
+          "y": 30
+        },
+        {
+          "type": "wait",
+          "seconds": 1.2
+        },
+        {
+          "type": "tap",
+          "x": 140,
+          "y": 330
+        },
+        {
+          "type": "wait",
+          "seconds": 2.0
+        }
+      ]
+    },
+    {
+      "id": "directory-favorites",
+      "label": "Directory - Favorites and Recent",
+      "screen": "directory",
+      "image": "directory-favorites.png",
+      "graphicsTree": "directory-favorites.tree.txt",
+      "sha256": "857779db4a0dbbe1c4b5b441f049c0ca9b983e8a2379f568c665ee1d523cac8d",
+      "bytes": 15724,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T17:25:28.422828Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 140,
+          "y": 30
+        },
+        {
+          "type": "wait",
+          "seconds": 1.2
+        },
+        {
+          "type": "tap",
+          "x": 140,
+          "y": 90
+        },
+        {
+          "type": "wait",
+          "seconds": 2.0
+        }
+      ]
+    },
+    {
+      "id": "directory-arrange",
+      "label": "Directory - Multi Select mode",
+      "screen": "directory",
+      "image": "directory-arrange.png",
+      "graphicsTree": "directory-arrange.tree.txt",
+      "sha256": "487bc59172aca0bcda12f1e801fd3e29a6366761ba0d3d326cbfe2f34c76e380",
+      "bytes": 38838,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T17:27:06.492556Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 300,
+          "y": 40
+        },
+        {
+          "type": "wait",
+          "seconds": 1.5
+        },
+        {
+          "type": "tap",
+          "x": 495,
+          "y": 30
+        },
+        {
+          "type": "wait",
+          "seconds": 1.6
+        }
+      ]
+    },
+    {
+      "id": "directory-sort",
+      "label": "Directory - Sort By menu",
+      "screen": "directory",
+      "image": "directory-sort.png",
+      "graphicsTree": "directory-sort.tree.txt",
+      "sha256": "a597422f7fef0177a0fe365dd332a67cafd305238d6d2011e19ed264ef1ed5fb",
+      "bytes": 27103,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T17:27:11.901188Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 742,
+          "y": 30
+        },
+        {
+          "type": "wait",
+          "seconds": 1.6
+        },
+        {
+          "type": "tap",
+          "x": 568,
+          "y": 30
+        },
+        {
+          "type": "wait",
+          "seconds": 1.5
+        }
+      ]
+    },
+    {
+      "id": "directory-search",
+      "label": "Directory - search entry with keyboard",
+      "screen": "device-search-entry",
+      "image": "directory-search.png",
+      "graphicsTree": "directory-search.tree.txt",
+      "sha256": "5004098e27640d83792fd1f7638d10e8c4dc52ad7fb014a048460b0eeee34615",
+      "bytes": 23493,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T17:27:17.550891Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 568,
+          "y": 30
+        },
+        {
+          "type": "wait",
+          "seconds": 1.3
+        },
+        {
+          "type": "tap",
+          "x": 643,
+          "y": 30
+        },
+        {
+          "type": "wait",
+          "seconds": 2.0
+        }
+      ]
+    },
+    {
+      "id": "directory-search-results",
+      "label": "Directory - search results for a query",
+      "screen": "device-search-results",
+      "image": "directory-search-results.png",
+      "graphicsTree": "directory-search-results.tree.txt",
+      "sha256": "a5dc07cfde769a8ed6e33b6b8c083e0a12fa96d9f04b25b466e32482a644d3ed",
+      "bytes": 29000,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T17:28:01.008260Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 300,
+          "y": 40
+        },
+        {
+          "type": "wait",
+          "seconds": 1.5
+        },
+        {
+          "type": "tap",
+          "x": 643,
+          "y": 30
+        },
+        {
+          "type": "wait",
+          "seconds": 2.0
+        },
+        {
+          "type": "tap",
+          "x": 83,
+          "y": 316
+        },
+        {
+          "type": "wait",
+          "seconds": 0.5
+        },
+        {
+          "type": "tap",
+          "x": 636,
+          "y": 380
+        },
+        {
+          "type": "wait",
+          "seconds": 0.5
+        },
+        {
+          "type": "tap",
+          "x": 753,
+          "y": 254
+        },
+        {
+          "type": "wait",
+          "seconds": 0.8
+        },
+        {
+          "type": "tap",
+          "x": 736,
+          "y": 444
+        },
+        {
+          "type": "wait",
+          "seconds": 2.5
+        }
       ]
     }
   ]

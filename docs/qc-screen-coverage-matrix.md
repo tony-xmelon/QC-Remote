@@ -5,8 +5,8 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 ## Coverage summary
 
 - Canonical device states: **103/103** routed through the shared Windows/Android surface.
-- Full-frame authoritative evidence: **79/103** states.
-- Official-detail-only evidence: **19/103** states.
+- Full-frame authoritative evidence: **83/103** states.
+- Official-detail-only evidence: **15/103** states.
 - Smoke-only evidence gaps: **5/103** states.
 - Exact-size dual-host capture paths: **103/103** states.
 
@@ -16,6 +16,8 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 | Official manual | 92.74% | 97.27% | 92.74% | 97.27% |
 
 Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` color similarity. A canonical state that references multiple frames reports their mean. Detail evidence is scoped and therefore never promoted into a full-frame score.
+
+The nine Directory captures added in the CorOS 4.1.0 session of 2026-09-06 (`directory-categories`, `-captures`, `-irs`, `-plugins`, `-favorites`, `-search`, `-search-results`, `-sort`, `-arrange`) are counted above but are **not yet in the score table**: scoring needs a dual-host render pass over the new ids, which has not been run. Their text has been validated against the device with `npm run verify:qc-screen-text`.
 
 ## Evidence by family
 
@@ -34,7 +36,7 @@ Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` col
 | Editor | 9 | 8 | 1 | 0 |
 | Assignment | 4 | 1 | 3 | 0 |
 | Virtual Device preset | 2 | 2 | 0 | 0 |
-| Directory | 16 | 9 | 7 | 0 |
+| Directory | 16 | 13 | 3 | 0 |
 | Capture V1 | 7 | 4 | 2 | 1 |
 | Settings | 10 | 9 | 0 | 1 |
 | Recovery | 2 | 0 | 1 | 1 |

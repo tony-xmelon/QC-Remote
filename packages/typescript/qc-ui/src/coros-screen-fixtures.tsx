@@ -120,9 +120,18 @@ function CorOsDirectoryFixture({ view, physicalContext = false }: { view: Direct
     </main>
     {view === "directory-categories" && <aside className="directory-category-menu">{categoryItems.map(([label, glyph]) => <button key={label}><span>{glyph}</span>{label}<b>›</b></button>)}</aside>}
     {view === "directory-favorites" && <aside className="directory-favorites-panel"><header><button className="is-active">FAVORITES</button><button>RECENT</button></header>{names.slice(0, 5).map((name) => <button key={name}><span>★</span>{name}<b>⋮</b></button>)}</aside>}
-    {view === "directory-sort" && <aside className="directory-tool-menu"><strong>SORT BY</strong>{["Position", "Name A–Z", "Name Z–A", "Date created", "Recently used"].map((label, index) => <button key={label} className={index === 0 ? "is-active" : ""}>{label}<b>{index === 0 ? "✓" : ""}</b></button>)}</aside>}
+    {/* Title, options and active-item styling taken from the device: the
+        CorOS tree for `directory-sort` reads "Sort By" over Banks, Name,
+        Date Added, Author, Preferred Instrument, and marks the active row in
+        green rather than with a tick. */}
+    {view === "directory-sort" && <aside className="directory-tool-menu"><strong>Sort By</strong>{["Banks", "Name", "Date Added", "Author", "Preferred Instrument"].map((label, index) => <button key={label} className={index === 0 ? "is-active" : ""}>{label}</button>)}</aside>}
     {view === "directory-filter" && <aside className="directory-tool-menu is-filter"><strong>FILTER</strong>{["All items", "Favorites", "Downloaded", "My items", "Factory"].map((label, index) => <button key={label} className={index === 0 ? "is-active" : ""}>{label}<b>{index === 0 ? "✓" : ""}</b></button>)}</aside>}
-    {view === "directory-arrange" && <div className="directory-mode-bar"><strong>ARRANGE</strong><span>Drag items to reorder them</span><button>CANCEL</button><button>DONE</button></div>}
+    {/* The device calls this Multi Select, not Arrange, and draws it as a top
+        header: a select-all box, the green title, then trash / rename / copy /
+        upload / favourite and a done tick. The previous bar - "ARRANGE",
+        "Drag items to reorder them", CANCEL and DONE along the bottom - came
+        from the manual rather than from the unit. */}
+    {view === "directory-arrange" && <div className="directory-mode-bar is-multiselect"><b className="multiselect-all" /><strong>Multi Select</strong><span /><button><DirectoryIcon kind="trash" /></button><button><QcUiIcon kind="edit" /></button><button><QcEditorIcon kind="copy" /></button><button><DirectoryIcon kind="cloud-upload" /></button><button><QcLibraryIcon kind="heart" /></button><button className="is-done"><DirectoryIcon kind="done" /></button></div>}
     {view === "directory-copy" && <aside className="directory-copy-dialog"><header>Copy 3 items to…</header>{["My Presets", "ALI Live", "Festival", "Studio"].map((label, index) => <button key={label} className={index === 2 ? "is-active" : ""}>▰　{label}<b>›</b></button>)}<footer><button>CANCEL</button><button>COPY HERE</button></footer></aside>}
     {view === "directory-new-folder" && <aside className="directory-name-dialog"><header>New Setlist</header><label>NAME<input readOnly value="New Setlist" /></label><footer><button>CANCEL</button><button>CREATE</button></footer></aside>}
     {view === "directory-item-context" && <><i className="directory-context-scrim" /><aside className="directory-item-menu">{["Edit", "Copy", "Cut", "Delete"].map(label => <button key={label}>{label}</button>)}</aside></>}

@@ -1,0 +1,36 @@
+zenUI::RootGraphicsItem
+  zenUI::DirectoryDialog
+    zenUI::GraphicsItem
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/24/done.png'
+          zenUI::PressAnimationView
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/24/search.png'
+          zenUI::PressAnimationView
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/24/multiselect.png'
+          zenUI::PressAnimationView
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/24/sorting_order.png'
+          zenUI::PressAnimationView
+      zenUI::TabBar
+      zenUI::ComboBoxWithSelector
+        text : 'Favorites and Recent'
+        image: 'icons/custom/down_triangle.png'
+        zenUI::GraphicsItem
+          image: 'icons/24/favorite.png'
+        zenUI::PressAnimationView
+    zenUI::GraphicsItem
+    zenUI::FolderDirTable
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+    zenUI::RecentFavTable
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
