@@ -3432,6 +3432,28 @@
           "seconds": 3.0
         }
       ]
+    },
+    {
+      "id": "gig-view-hybrid",
+      "label": "Gig View - HYBRID mode",
+      "screen": "gig-view",
+      "image": "gig-view-hybrid.png",
+      "graphicsTree": "gig-view-hybrid.tree.txt",
+      "sha256": "b89d75669bf8c72472b2d4cbc18cccda7a369f151cd15c06323e085f9935d0a1",
+      "bytes": 39659,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T18:50:50.654704Z",
+      "actions": [
+        {
+          "type": "showGigView",
+          "shown": true
+        },
+        {
+          "type": "wait",
+          "seconds": 2.5
+        }
+      ]
     }
   ]
 }

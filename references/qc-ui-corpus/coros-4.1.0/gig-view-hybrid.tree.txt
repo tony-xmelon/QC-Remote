@@ -1,0 +1,89 @@
+zenUI::RootGraphicsItem
+  zenUI::GigView
+    zenUI::GraphicsItem
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/24/check.png'
+          zenUI::PressAnimationView
+      zenUI::SceneIndicator
+        zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            text : 'F'
+        zenUI::Button
+          zenUI::PressAnimationView
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+        text : '7B Top 3 Acoustic Sims'
+    zenUI::PushButton
+      zenUI::Button
+        zenUI::PressAnimationView
+      zenUI::ModeButton
+        image: 'icons/navigationBar/modes/preset.png'
+        zenUI::GraphicsItem
+          image: 'icons/24/plus.png'
+        zenUI::GraphicsItem
+          image: 'icons/navigationBar/modes/scene.png'
+        zenUI::PressAnimationView
+    zenUI::PresetGigView
+      zenUI::PresetGigViewButton
+        text : 'Acoustic sim-_1'
+        zenUI::PressAnimationView
+      zenUI::PresetGigViewButton
+        text : 'Top 3 Acoustic Sims'
+        zenUI::PressAnimationView
+      zenUI::PresetGigViewButton
+        text : 'XUSH 12string Bass'
+        zenUI::PressAnimationView
+      zenUI::PresetGigViewButton
+        text : 'QC-MCP-TEST-mtniwb_1'
+        zenUI::PressAnimationView
+    zenUI::SceneGigView
+      zenUI::SceneGigViewButton
+        text : 'mono'
+        zenUI::Button
+          image: 'icons/custom/edit_light.png'
+          zenUI::PressAnimationView
+        zenUI::Button
+          image: 'icons/custom/swap_light.png'
+          zenUI::PressAnimationView
+        zenUI::Button
+          image: 'icons/custom/copy_light.png'
+          zenUI::PressAnimationView
+        zenUI::PressAnimationView
+      zenUI::SceneGigViewButton
+        text : 'stereo'
+        zenUI::Button
+          image: 'icons/custom/edit_dark.png'
+          zenUI::PressAnimationView
+        zenUI::Button
+          image: 'icons/custom/swap_dark.png'
+          zenUI::PressAnimationView
+        zenUI::Button
+          image: 'icons/custom/copy_dark.png'
+          zenUI::PressAnimationView
+        zenUI::PressAnimationView
+      zenUI::SceneGigViewButton
+        text : 'chor'
+        zenUI::Button
+          image: 'icons/custom/edit_light.png'
+          zenUI::PressAnimationView
+        zenUI::Button
+          image: 'icons/custom/swap_light.png'
+          zenUI::PressAnimationView
+        zenUI::Button
+          image: 'icons/custom/copy_light.png'
+          zenUI::PressAnimationView
+        zenUI::PressAnimationView
+      zenUI::SceneGigViewButton
+        text : 'fx'
+        zenUI::Button
+          image: 'icons/custom/edit_light.png'
+          zenUI::PressAnimationView
+        zenUI::Button
+          image: 'icons/custom/swap_light.png'
+          zenUI::PressAnimationView
+        zenUI::Button
+          image: 'icons/custom/copy_light.png'
+          zenUI::PressAnimationView
+        zenUI::PressAnimationView

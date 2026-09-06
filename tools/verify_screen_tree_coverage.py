@@ -50,6 +50,8 @@ DATA_CELLS = {
     "zenUI::PluginModelListCell",
     "zenUI::ModelPresetListCell",
     "zenUI::WifiTableCell",
+    # Gig View tiles are filled with the owner's own preset names.
+    "zenUI::PresetGigViewButton",
 }
 
 # Values on the device information screen that differ per unit or per capture.
@@ -61,6 +63,8 @@ PER_UNIT_VALUE = re.compile(
       | Linux\ buildroot\ .*             # kernel banner
       | U-Boot\ [0-9].*                  # bootloader banner
       | .*\.\.\.\ /\ \d+[A-H]            # a truncated "folder / slot" label
+      | \d{1,2}[A-H]\ .+                 # a Gig View title: slot address plus
+                                         # the loaded preset's own name
     )$""",
     re.VERBOSE,
 )

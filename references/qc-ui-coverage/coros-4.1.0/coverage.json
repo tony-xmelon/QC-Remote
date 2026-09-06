@@ -214,6 +214,9 @@
       "renderer": "gig-official-hybrid",
       "official": [
         "official-gig-view-hybrid"
+      ],
+      "physical": [
+        "gig-view-hybrid"
       ]
     },
     {

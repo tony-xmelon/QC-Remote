@@ -17,7 +17,7 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 
 Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` color similarity. A canonical state that references multiple frames reports their mean. Detail evidence is scoped and therefore never promoted into a full-frame score.
 
-Twenty-six captures were added from hardware in the CorOS 4.1.0 session of 2026-09-06:
+Twenty-seven captures were added from hardware in the CorOS 4.1.0 session of 2026-09-06:
 
 - Directory — `directory-categories`, `-captures`, `-irs`, `-plugins`, `-favorites`, `-search`, `-search-results`, `-sort`, `-arrange`, `-new-folder`
 - I/O — `io-input`, `io-usb`, `global-eq`
@@ -25,6 +25,7 @@ Twenty-six captures were added from hardware in the CorOS 4.1.0 session of 2026-
 - Grid and browser — `empty-slot`, `plugin-folders`
 - Monitoring and Settings — `cpu-monitor`, `settings-account`, `settings-device`, `settings-midi`, `settings-system`
 - Cortex Cloud — `directory-cloud-upload`, `cloud-upload-overwrite`
+- Gig View — `gig-view-hybrid`
 
 Full-frame authoritative coverage moved from 79/103 to 87/103 as a result, which the summary counts above reflect.
 
@@ -197,7 +198,7 @@ Several of the rows above share a symptom rather than a proven cause. `RemoteCon
 | DR-16 | `directory-cloud-upload` | **Captured with the owner's explicit approval**, who nominated preset 4B "Top 3 Acoustic Sims" and authorised overwriting. Pressing a row's upload button raised a *Preset already exists / CANCEL / OVERWRITE* dialog, captured separately as `cloud-upload-overwrite` and attached to OV-02, which shares the overlay. Only 4B left the unit. |
 | ST-06 | `settings-update` | The acquisition plan marks it `do-not-trigger`: reaching update progress means starting a firmware update. |
 | ED-15 | `fixture-warning-dsp` | **Attempted and not reproduced.** The scratch preset was loaded up with an amp, a Looper and a second amp until the DSP was full. CorOS does not warn after the fact: it **greys out** every model that no longer fits in the device browser, and tapping a greyed model does nothing at all. So the warning our `fixture-warning-dsp` renderer draws is reached some other way - a preset that became too heavy after a model update is the likeliest - and the fixture is unverified until that path is found. |
-| GL-22 | `gig-official-hybrid` | **Attempted with the owner's approval; the merge gesture was not reproduced over RemoteControl.** Two forms were tried. The atomic DRAG message picks the tile up - the tile lifts and a red delete target replaces the tick - but the drop never merges. A composed PRESS, hold, repeated MOVE, RELEASE does not pick the tile up at all. Modes Configuration was confirmed unchanged after each attempt against a before capture (1 pixel over a delta of 60, max channel delta 25), and no drop was ever made on the delete target. An earlier revision of this row claimed the protocol cannot express the gesture; that was wrong - RemoteControlMouse has PRESS, RELEASE and MOVE as distinct types, so the gesture is expressible and simply was not landed. |
+| GL-22 | `gig-official-hybrid` | **Captured, with the owner performing the merge gesture on the unit.** Two remote forms were tried first and neither landed: the atomic DRAG picks the tile up - it lifts and a red delete target replaces the tick - but never drops, and a composed PRESS, hold, repeated MOVE, RELEASE does not pick it up at all. An earlier revision of this row claimed the protocol cannot express the gesture; that was wrong, since RemoteControlMouse has PRESS, RELEASE and MOVE as distinct types. What is unproven is the timing CorOS expects. Once the owner merged Preset and Scene by hand, Gig View in HYBRID captured normally as `gig-view-hybrid`. |
 
 ### A note on the capture guard
 
