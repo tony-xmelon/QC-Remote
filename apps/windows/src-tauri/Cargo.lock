@@ -3148,7 +3148,7 @@ dependencies = [
 
 [[package]]
 name = "qc-voice-control"
-version = "0.1.96"
+version = "0.1.97"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
