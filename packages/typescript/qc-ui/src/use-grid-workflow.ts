@@ -195,11 +195,14 @@ export function useGridWorkflow(options: GridWorkflowOptions) {
     finally { setPending(false); }
   }, [connected, editor, fail, gateway, notice, onClosePanel, pending, prompts, reconcile, recordHistory, selectedBlockId, setPending, setSelectedBlockId, snapshot.activeScene, snapshot.blocks, snapshot.presetName]);
 
-  const openAdd = useCallback(async () => {
+  /** `target` is the Grid cell the user pointed at; without one the first empty cell wins. */
+  const openAdd = useCallback(async (target?: { row: number; column: number }) => {
     if (!connected || pending) { notice(!connected ? "Connect the Quad Cortex before adding a block." : "A device command is already in progress."); return; }
-    const firstEmpty = Array.from({ length: 32 }, (_, index) => `${Math.floor(index / 8)}:${index % 8}`).find((cell) => {
+    const isEmpty = (row: number, column: number) => !snapshot.blocks.some((block) => block.row === row && block.column === column);
+    const requested = target && isEmpty(target.row, target.column) ? `${target.row}:${target.column}` : undefined;
+    const firstEmpty = requested ?? Array.from({ length: 32 }, (_, index) => `${Math.floor(index / 8)}:${index % 8}`).find((cell) => {
       const [row, column] = cell.split(":").map(Number);
-      return !snapshot.blocks.some((block) => block.row === row && block.column === column);
+      return isEmpty(row, column);
     });
     if (!firstEmpty) { notice("The Grid has no empty block cells."); return; }
     setAddCell(firstEmpty);

@@ -40,6 +40,7 @@ export function useQcSurfaceActions(options: QcSurfaceActionOptions) {
         }
       },
       openRoutingNode,
+      openAddBlock: (row, column) => void grid.openAdd({ row, column }),
       selectModeSlot: (slot) => void performance.selectModeSlot(slot),
       rotate
     })) return;

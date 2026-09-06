@@ -612,6 +612,7 @@
 .vector-action-hit,
 .vector-route-hit,
 .coros-vector-block-hit,
+.coros-vector-add-hit,
 .coros-vector-route-node-hit {
   position: absolute;
   z-index: 6;
@@ -634,9 +635,19 @@
 .output-route-hit { right: 1%; }
 .coros-vector-block-hit { width: 8.7%; height: 14.6%; transform: translate(-50%, -50%); border-radius: 12%; }
 .coros-vector-route-node-hit { z-index: 9; width: 5.2%; height: 8.7%; transform: translate(-50%, -50%); border-radius: 50%; }
+/* Empty Grid cells stay invisible so the screen matches the device, and reveal
+   their insertion plus only while the user is pointing at or tabbed onto them. */
+.coros-vector-add-hit { z-index: 5; width: 8.7%; height: 14.6%; display: grid; place-items: center; transform: translate(-50%, -50%); border-radius: 12%; }
+.coros-vector-add-hit > span { position: relative; width: 34%; height: 34%; opacity: 0; transition: opacity .12s ease; }
+.coros-vector-add-hit > span::before, .coros-vector-add-hit > span::after { position: absolute; background: var(--qc-palette-ffffff80); content: ""; }
+.coros-vector-add-hit > span::before { left: 0; right: 0; top: calc(50% - 1px); height: 2px; }
+.coros-vector-add-hit > span::after { top: 0; bottom: 0; left: calc(50% - 1px); width: 2px; }
+.coros-vector-add-hit:hover > span, .coros-vector-add-hit:focus-visible > span { opacity: 1; }
+.coros-vector-add-hit:hover { box-shadow: inset 0 0 0 1px var(--qc-palette-ffffff55); }
 .vector-action-hit:focus-visible,
 .vector-route-hit:focus-visible,
 .coros-vector-block-hit:focus-visible,
+.coros-vector-add-hit:focus-visible,
 .coros-vector-route-node-hit:focus-visible { outline: 2px solid var(--qc-palette-69cbf3); outline-offset: 1px; }
 .vector-action-hit:hover, .vector-route-hit:hover { box-shadow: inset 0 0 0 1px var(--qc-palette-ffffff70); }
 .coros-vector-block-hit:hover { box-shadow: inset 0 0 0 1px var(--qc-palette-ffffff80); }

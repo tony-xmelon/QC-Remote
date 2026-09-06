@@ -120,6 +120,26 @@ test("QC READY panel owns connection controls without a standalone Connection me
   assert.match(appSource, /onOpenDeviceInfo=\{\(\) => setDialog\("device-info"\)\}/);
 });
 
+test("every empty Grid cell is an insertion point for a new block", () => {
+  const surface = readFileSync(new URL("../packages/typescript/qc-ui/src/quad-cortex-surface.tsx", import.meta.url), "utf8");
+  const actions = readFileSync(new URL("../packages/typescript/qc-core/src/surface-actions.ts", import.meta.url), "utf8");
+  const dispatch = readFileSync(new URL("../packages/typescript/qc-ui/src/use-qc-surface-actions.ts", import.meta.url), "utf8");
+  const grid = readFileSync(new URL("../packages/typescript/qc-ui/src/use-grid-workflow.ts", import.meta.url), "utf8");
+  const styles = readFileSync(new URL("../packages/typescript/qc-ui/src/surface-shell.css", import.meta.url), "utf8");
+  // Adding a block used to be reachable only from the Grid menu's Add Device.
+  assert.match(surface, /if \(tabBlocksByRow\[row\]\.some\(\(block\) => block\.column === column\)\) continue;/, "occupied cells keep their block hit");
+  assert.match(surface, /className="coros-vector-add-hit"/);
+  assert.match(surface, /onAction\(\{ kind: "add-block-cell", row, column \}\)/);
+  assert.match(actions, /\| \{ kind: "add-block-cell"; row: number; column: number \}/);
+  assert.match(actions, /command\.kind === "open-add-block" && handlers\.openAddBlock/);
+  assert.match(dispatch, /openAddBlock: \(row, column\) => void grid\.openAdd\(\{ row, column \}\)/);
+  assert.match(grid, /const requested = target && isEmpty\(target\.row, target\.column\)/, "the pointed-at cell wins over the first empty one");
+  assert.match(grid, /const firstEmpty = requested \?\?/, "an unspecified target still falls back to the first empty cell");
+  // Parity: the insertion plus is revealed on hover or focus, never painted over the idle screen.
+  assert.match(styles, /\.coros-vector-add-hit > span \{[^}]*opacity: 0;/);
+  assert.match(styles, /\.coros-vector-add-hit:hover > span, \.coros-vector-add-hit:focus-visible > span \{ opacity: 1; \}/);
+});
+
 test("an unassigned empty row does not connect its two plus endpoints", () => {
   assert.equal(rowHasVisibleSignalRail(0, { input: "Internal", output: "Internal" }), false);
   assert.equal(rowHasVisibleSignalRail(0), false);

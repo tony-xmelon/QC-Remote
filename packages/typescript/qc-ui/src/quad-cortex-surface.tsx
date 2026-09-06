@@ -410,6 +410,15 @@ function CorOsGrid({ snapshot, selectedBlockId, onAction, onOpenPreset, onUndo, 
         });
       }
     }
+    for (const column of columns.keys()) {
+      if (tabBlocksByRow[row].some((block) => block.column === column)) continue;
+      const cellId = `add-${row}-${column}`;
+      stops.push({
+        key: cellId,
+        x: columns[column],
+        element: <button key={cellId} className="coros-vector-add-hit" style={{ left: `${columns[column] / 8}%`, top: `${rowY[row] / 4.8}%` }} title={`Add a block at row ${row + 1}, column ${column + 1}`} aria-label={`Add a block at row ${row + 1}, column ${column + 1}`} onClick={() => onAction({ kind: "add-block-cell", row, column })}><span aria-hidden="true" /></button>
+      });
+    }
     return stops.sort((left, right) => left.x - right.x).map((stop) => stop.element);
   };
   return <div className="qc-screen coros-vector-screen" aria-label="CorOS Grid">
