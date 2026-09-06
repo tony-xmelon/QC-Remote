@@ -174,6 +174,12 @@ test("every empty Grid cell is an insertion point for a new block", () => {
   assert.match(styles, /\.coros-vector-add-hit:hover > span, \.coros-vector-add-hit:focus-visible > span \{ opacity: 1; \}/);
 });
 
+test("device chrome remains positioned by the chassis after stylesheet extraction", () => {
+  const styles = readFileSync(new URL("../packages/typescript/qc-ui/src/surface-shell.css", import.meta.url), "utf8");
+  const productionGeometry = styles.slice(styles.indexOf("/* Orthographic top panel"), styles.indexOf(".qc-chassis::before", styles.indexOf("/* Orthographic top panel")));
+  assert.match(productionGeometry, /\.qc-chassis \{[\s\S]*position: relative;/, "absolute screen and hardware children must never rebase to the workspace");
+});
+
 test("an unassigned empty row does not connect its two plus endpoints", () => {
   assert.equal(rowHasVisibleSignalRail(0, { input: "Internal", output: "Internal" }), false);
   assert.equal(rowHasVisibleSignalRail(0), false);
