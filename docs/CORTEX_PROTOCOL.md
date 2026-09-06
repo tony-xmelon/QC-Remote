@@ -171,9 +171,51 @@ then discarded: the import runs to `finished` and the library stays empty. So
 `ir_payload` is not simply the contents of a `.wav` file. Gzipping it and
 sending bare sample data without a container behave the same way.
 
+### What Cortex Control's own symbols say
+
+The binary keeps MSVC RTTI names for lambdas, and each builder's lambda names the
+method that encloses it, so the senders' signatures survive demangling:
+
+```cpp
+void FileMessageSender::addLocalImpulseResponse(
+    const juce::String&, const juce::String&, const juce::String&, bool) const;
+
+void FileMessageSender::addPluginPreset(
+    const juce::String&, const juce::String&, const juce::String&, bool,
+    BinaryPreset*) const;
+
+void FileMessageSender::addUserFile(
+    int, const juce::String&,
+    const std::optional<neural::cortex::usb::FileData>&) const;
+```
+
+All three build a `cortex_protobuf_v2::FileMessage` - their lambdas are
+`std::function<void(FileMessage&)>`. The contrast between them is the useful
+part:
+
+- `addPluginPreset` takes the same three strings and bool **plus a
+  `BinaryPreset*`**, which is `preset_payload`.
+- `addUserFile` takes a `usb::FileData`, which is how file bytes travel.
+- **`addLocalImpulseResponse` takes neither.** It receives only strings, so it
+  is not handed decoded audio or a byte buffer; the bytes must be read inside
+  from a path one of those strings carries.
+
+That rules out one theory worth stating because the class list suggests it:
+Cortex Control does carry JUCE's `WavAudioFormatReader`, `WavAudioFormatWriter`,
+`AiffAudioFormatReader`, `ResamplingAudioSource` and `MemoryOutputStream`, which
+looks like a decode-and-re-encode pipeline. The signature says that pipeline is
+not on this path - nothing decoded is passed in.
+
+What remains unknown is the *value* of those three strings and the bool. The
+probes above already cover the obvious readings - name, key, folder key, a
+destination path, with and without extensions - and none of them import.
+
 Closing this needs ground truth rather than more guesses: capture Cortex Control
 performing an IR import with `tools/capture_cortex_device_writes.py` and read
-the bytes it puts in the field.
+the bytes it puts in the field. Cortex Control also logs with source file and
+line (`{parseState: UpdaterMessageReceiver.cpp,135}`) to
+`%APPDATA%\Neural DSP\Cortex Control\logs`, so the import's own log lines will
+name the functions it ran even without a HID capture.
 
 > One caution from the probing. A 32-bit-float WAV payload knocked the QC's HID
 > interface off the USB bus. It re-enumerated on its own after about 15 seconds
