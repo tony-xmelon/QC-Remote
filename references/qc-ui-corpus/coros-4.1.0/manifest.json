@@ -3613,6 +3613,19 @@
       "height": 480,
       "capturedAt": "2026-09-06T19:50:32.000060Z",
       "actions": []
+    },
+    {
+      "id": "scene-assignment",
+      "label": "Editor - parameter with scene assignment badge",
+      "screen": "parameter-editor",
+      "image": "scene-assignment.png",
+      "graphicsTree": "scene-assignment.tree.txt",
+      "sha256": "6e853b8d5bb8285bc352ea29a8873c1575ddca0b997a70c5ff2ed52c9eb35563",
+      "bytes": 24713,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T20:06:41.240793Z",
+      "actions": []
     }
   ]
 }

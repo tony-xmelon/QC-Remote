@@ -612,6 +612,9 @@
       ],
       "smoke": [
         "scene-assignment"
+      ],
+      "physical": [
+        "scene-assignment"
       ]
     },
     {
