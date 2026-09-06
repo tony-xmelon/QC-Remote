@@ -1577,9 +1577,13 @@ pub fn save_preset(
 }
 
 pub fn show_tuner(show: bool) -> OutboundMessage {
-    // Preserve the explicit false field used by Cortex Control. Proto3 would
-    // otherwise omit it, which makes a hide command indistinguishable from a
-    // message whose sender never supplied the `show` field.
+    // Write `show` explicitly in both directions, so a hide command is never
+    // indistinguishable from a message whose sender omitted the field. Cortex
+    // Control itself relies on proto3 omission for hide - a HID capture of its
+    // tuner button sends a 4-byte `{action, request_id}` and no `show` - but
+    // the device reads both as false, and being explicit keeps our own traces
+    // readable. Cortex Control also pairs this with `TunerMessage.enable_meter`
+    // on type 6; that half is not implemented here.
     OutboundMessage {
         message_type: 27,
         payload: vec![0x08, 0x01, 0x18, u8::from(show)],

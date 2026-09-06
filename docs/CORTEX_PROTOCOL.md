@@ -72,7 +72,10 @@ hardware conformance run.
 - **32 types observed on the wire** in one complete conformance pass.
 - **45 of 72 implemented or observed.**
 - **27 never touched**, and they fall into coherent groups:
-  - factory and production test: 65-71
+  - factory and production test: 65-70
+  - 71 ModelPreset — *not* production test despite sitting in that range;
+    Cortex Control sends it during ordinary block editing (see the wire
+    section below), and `pyquadcortex`'s enum does not know the type exists
   - Cloud forwarding and account: 18, 29, 30, 31, 41, 45, 46
   - telemetry, meters and logs: 5, 7, 26, 37, 44
   - updater and calibration: 61, 62
@@ -114,7 +117,7 @@ path despite its label:
 
 Every IR Loader has two slots, each with its own pair.
 
-### Writing — probed on hardware
+### Writing — captured from Cortex Control, then replayed
 
 `FileMessage` carries the upload field:
 
@@ -130,122 +133,231 @@ message FileMessage {
    8  BinaryPreset preset_payload
    9  int32  total_bulk_create_count
   10  bool   delete_from_library
-  11  bool   omit_factory_content
-  12  int32  user_content_estimate
 }
 ```
 
-Probed against a unit with an empty IR library. **The envelope is proven.**
+This was settled by breakpointing `kernel32!WriteFile` in Cortex Control 4.1.0
+and reading the bytes it hands the HID device during a real import
+(`tools/capture_cortex_hid_writes.py`). The import is **one message, 34 reports,
+with no keepalive interleaved**, and decodes to exactly this:
 
 ```
-FileMessage{action: CREATE, type: 1, total_bulk_create_count: 1,
-            folder: FolderInfo{key, files: [ProductData{name}]},
-            ir_payload: <bytes>}                              on message type 4
+FileMessage{
+  request_id: 10,
+  type: 1,                                   // RecentFavoriteType.IR
+  folder: FolderInfo{ key: "local_ir_root",
+                      is_factory: false,
+                      files: [ ProductData{ name: "QC-MCP-TEST-IR2",
+                                            date: "2026-09-06T17:53:06Z" } ] },
+  ir_payload: <4154 bytes>
+}                                                        on message type 4
 ```
 
-sent this way makes the device run a real import and answer on type 57, echoing
-the request's `request_id`:
+Note what is **not** there: no `action` (so `CREATE`, the proto3 default), no
+`total_bulk_create_count`, no key on the file entry, and no path anywhere. The
+whole envelope is a folder key, a display name, a date, and the bytes.
 
-```
-BulkOperation finished=false progress=0.00  "Importing IRs, please wait."
-BulkOperation finished=false progress=1.00  ""
-BulkOperation finished=true  progress=0.00  ""
-```
+#### The payload is re-encoded to 32-bit float
 
-What the probes settled:
+The fixture on disk is a 21 ms, 24-bit, 48 kHz mono WAV of 3116 bytes. What
+Cortex Control puts on the wire is 4154 bytes and a different format:
 
-- **`total_bulk_create_count` is required.** Without it the device is completely
-  silent and no import is attempted. With it, the flow above runs every time.
-- **The folder key does not matter.** `2_q`, `local_ir_root`, `/media/p4/CustomIRs`
-  and `/media/p4/CustomIRs/Impulse Responses/` all behave identically, as does
-  omitting the folder. Nor does the file metadata: a `.wav` suffix on the name,
-  an explicit `key`, and a bare name are indistinguishable.
-- **User IRs live at `/media/p4/CustomIRs/Impulse Responses/`** on the device.
-  That path and the literal `CustomIR` sit together in the Cortex Control binary
-  at `0x0310e8a8`, next to `irImportFinished` and the import file filter
-  `*.wav;*.aiff`.
+| | on disk | on the wire |
+| --- | --- | --- |
+| `fmt ` chunk | 16 bytes | 18 bytes |
+| format | PCM | IEEE_FLOAT |
+| bits | 24 | 32 |
+| `fact` chunk | absent | present, 1024 samples |
+| `data` | 3072 bytes | 4096 bytes |
 
-**The WAV was never the problem.** Cortex Control imported the very same
-`tools/generate-hardware-test-ir.mjs` fixture - a 21 ms, 24-bit, 48 kHz mono
-WAV - without complaint: "ADDING 1 AUDIO FILE", full progress, `1 used / 2047
-available`. So the device accepts that file happily, and the probes above fail
-for a reason in how the message is built, not in what it carries. An earlier
-version of this note concluded the opposite from the probes alone; the import
-disproves it.
+So Cortex Control does decode and re-encode before sending. An earlier revision
+of this note ruled that out because `addLocalImpulseResponse` takes no buffer -
+the signature reading is still right, but the conversion simply happens
+elsewhere, and the wire bytes outrank the inference.
 
-What the device stored, read back over USB afterwards:
+One quirk to copy deliberately or not at all: the emitted RIFF size field says
+4192, which describes a 4200-byte file, while only 4154 bytes are sent. The
+device accepts the mismatch.
 
-```
-key   = "CIR_cd2f33341295a482cf3eea966fbc94e"      # CIR_ + 31 hex, device-generated
-name  = "QC-MCP-TEST-IR"                            # the file name, extension stripped
-is_readonly = false
-date_ms_since_epoch = 1788715934000
-```
+#### Replayed from this stack, which settles the rest
 
-The key is **generated by the device**, not supplied by the host - which is why
-supplying one changed nothing. Cortex Control's own preset converter mentions
-"IR hash calculation", and the key's shape matches that.
+The captured envelope was rebuilt and sent through `pyquadcortex` with two
+different payloads and everything else held equal:
 
-Reading the IR library also shows the two folders it lives between:
-`local_ir_root` and `2_q` ("My IRs") hold user IRs, while the 690 entries under
+| payload | result |
+| --- | --- |
+| the 32-bit float bytes Cortex Control sent | **stored** |
+| the original 24-bit PCM file | **silently ignored** |
+
+That answers the question this document carried for three revisions. The file on
+disk was never the problem and the envelope was never the problem; **the wire
+payload must be a 32-bit IEEE-float WAV**. A host that reads a user's `.wav` and
+forwards its bytes unchanged will fail on anything else, with no error at all.
+
+Two further facts fell out of the replay:
+
+- **The key is a content hash.** Importing identical audio under a new name
+  yields the same `CIR_…` key and *replaces* the existing entry instead of
+  adding one; halving every sample yields a different key and a second entry.
+  That is why supplying a key from the host never changed anything.
+
+  ```
+  QC-MCP-TEST-IR3   key=CIR_cd2f33341295a482cf3eea966fbc94e   # the captured audio
+  QC-MCP-TEST-IR5   key=CIR_cdc892a018ccda5f4c9ffa4d2de0a2fe   # same audio, halved
+  ```
+
+- **`total_bulk_create_count` controls progress reporting, not the import.**
+  Omitted, as Cortex Control omits it, the import runs and the device says
+  nothing. Set to 1, the same import runs *and* answers on type 57:
+
+  ```
+  BulkOperation finished=false progress=0.00  "Importing IRs, please wait."
+  BulkOperation finished=false progress=1.00  ""
+  BulkOperation finished=true  progress=0.00  ""
+  ```
+
+  An earlier revision called the field *required*, because omitting it produced
+  silence. The silence was the missing progress channel, not a missing import;
+  the imports in those probes failed for the payload-format reason above.
+
+- **The folder key does not matter.** `2_q`, `local_ir_root`,
+  `/media/p4/CustomIRs` and omitting the folder all behave identically. User IRs
+  live at `/media/p4/CustomIRs/Impulse Responses/` on the device; that path and
+  the literal `CustomIR` sit together in the Cortex Control binary at
+  `0x0310e8a8`, next to `irImportFinished` and the file filter `*.wav;*.aiff`.
+
+Reading the library back shows the folders user IRs live between:
+`local_ir_root` and `2_q` ("My IRs"), while the 690 entries under
 `/opt/neuraldsp/impulse_responses` are plugin assets that expose a name and no
 key, and the unit cannot load them.
 
-The remaining gap is narrow and specific: which of `addLocalImpulseResponse`'s
-three strings and its bool produce a `FileMessage` the device acts on. Capturing
-the bytes with `tools/capture_cortex_device_writes.py` during an import would
-close it; the import path itself is now proven to work end to end.
+> One caution. During the probing, before the format was understood, a malformed
+> 32-bit-float payload knocked the QC's HID interface off the USB bus. It
+> re-enumerated on its own after about 15 seconds with all 74 presets intact,
+> but it is a real crash. Well-formed float payloads are handled cleanly.
 
-### What Cortex Control's own symbols say
+## What the rest of the protocol looks like on the wire
 
-The binary keeps MSVC RTTI names for lambdas, and each builder's lambda names the
-method that encloses it, so the senders' signatures survive demangling:
+The same capture technique applied to ordinary UI actions. Every block below is
+bytes Cortex Control 4.1.0 actually sent, decoded through this stack's own
+registry, so it doubles as a conformance check on our encoders.
 
-```cpp
-void FileMessageSender::addLocalImpulseResponse(
-    const juce::String&, const juce::String&, const juce::String&, bool) const;
+**KeepAlive (32)** — once per second while idle, not every five:
 
-void FileMessageSender::addPluginPreset(
-    const juce::String&, const juce::String&, const juce::String&, bool,
-    BinaryPreset*) const;
-
-void FileMessageSender::addUserFile(
-    int, const juce::String&,
-    const std::optional<neural::cortex::usb::FileData>&) const;
+```
+KeepAlive{action: UPDATE, request_id, is_online: true}          6 bytes
 ```
 
-All three build a `cortex_protobuf_v2::FileMessage` - their lambdas are
-`std::function<void(FileMessage&)>`. The contrast between them is the useful
-part:
+**Scene change (13)** — `selected_scene` is 0-based, A=0:
 
-- `addPluginPreset` takes the same three strings and bool **plus a
-  `BinaryPreset*`**, which is `preset_payload`.
-- `addUserFile` takes a `usb::FileData`, which is how file bytes travel.
-- **`addLocalImpulseResponse` takes neither.** It receives only strings, so it
-  is not handed decoded audio or a byte buffer; the bytes must be read inside
-  from a path one of those strings carries.
+```
+Scene{action: UPDATE, request_id: 16, selected_scene: 1}        6 bytes
+```
 
-That rules out one theory worth stating because the class list suggests it:
-Cortex Control does carry JUCE's `WavAudioFormatReader`, `WavAudioFormatWriter`,
-`AiffAudioFormatReader`, `ResamplingAudioSource` and `MemoryOutputStream`, which
-looks like a decode-and-re-encode pipeline. The signature says that pipeline is
-not on this path - nothing decoded is passed in.
+**Preset navigation (2)** — the full setlist path every time, 0-based position,
+and `is_factory` written explicitly even when false:
 
-What remains unknown is the *value* of those three strings and the bool. The
-probes above already cover the obvious readings - name, key, folder key, a
-destination path, with and without extensions - and none of them import.
+```
+SetlistPosition{action: UPDATE, request_id: 19,
+                folder_key: "/media/p4/Presets/My Presets",
+                position: 29, is_factory: false}               38 bytes
+```
 
-Closing this needs ground truth rather than more guesses: capture Cortex Control
-performing an IR import with `tools/capture_cortex_device_writes.py` and read
-the bytes it puts in the field. Cortex Control also logs with source file and
-line (`{parseState: UpdaterMessageReceiver.cpp,135}`) to
-`%APPDATA%\Neural DSP\Cortex Control\logs`, so the import's own log lines will
-name the functions it ran even without a HID capture.
+**Parameter write (1)** — one sparse `Grid` message per pointer move, no
+coalescing, the model addressed by grid position rather than by hash:
 
-> One caution from the probing. A 32-bit-float WAV payload knocked the QC's HID
-> interface off the USB bus. It re-enumerated on its own after about 15 seconds
-> with all 74 presets intact and nothing lost, but it is a real crash and worth
-> avoiding: send integer PCM while experimenting.
+```
+Grid{action: UPDATE, request_id: 25,
+     preset: {chains: [{row: 0,
+              models: [{column: 0,
+                        params: [{index: 0,
+                                  param_values: [{float_value: 0.44207263}]}]}]}]}}
+```
+
+Dragging one knob across its range produced 26 of these. The value is plainly
+normalized: the last one sent was `0.17337024` and the editor then read
+`17.3 %`.
+
+**Preset save (4)** — positional, and carries no payload at all. The device
+writes its own edit buffer into the addressed slot:
+
+```
+File{request_id: 39, type: 0,                                  // 0 = PRESET
+     folder: {key: "/media/p4/Presets/My Presets", is_factory: false,
+              files: [{index: 28, instrument: 0}]}}            44 bytes
+```
+
+**Tuner (27 + 6)** — showing the tuner is *two* messages, and the second is the
+one this stack is missing:
+
+```
+ShowTuner{action: UPDATE, request_id: 8, show: true}            6 bytes
+Tuner{action: UPDATE, request_id: 9, enable_meter: true}        6 bytes
+Tuner{action: READ}                                             2 bytes
+```
+
+Hiding it sends `ShowTuner{action: UPDATE, request_id: 10}` with `show`
+**omitted**, then `Tuner{enable_meter: false}`. Our `show_tuner` writes an
+explicit `18 00` for hide and its comment claims Cortex Control does the same;
+the capture shows Cortex Control relies on proto3 omission instead. Both reach
+the device as false, so the encoder is fine and only the comment is wrong.
+
+**Tap tempo (33)** — writes `GlobalTempo` parameter **0**, normalized:
+
+```
+GlobalTempo{action: UPDATE, params: [{index: 0,
+                                      param_values: [{float_value: 0.175}]}]}
+```
+
+The footer read `75BPM` at that moment, and `(75 - 40) / (240 - 40) = 0.175`
+exactly — an independent confirmation of `MINIMUM_TEMPO_BPM = 40` and
+`MAXIMUM_TEMPO_BPM = 240` in `qc-protocol::domain`.
+
+**ModelPreset (71)** — a type `pyquadcortex`'s enum does not have at all: its
+table stops at 70 and names 71 as the `NumberOfMessageTypes` sentinel, whereas
+CorOS 4.1.0 has 72 real types. Sent either side of a save:
+
+```
+ModelPreset{action: DELETE, request_id: 40, loaded_row: 0, loaded_column: 0}
+GridModelMeter{action: DELETE, request_id: 41, row: 0, column: 0}
+ModelPreset{action: CREATE, request_id: 42, loaded_row: 0, loaded_column: 0}
+```
+
+Read as teardown and re-subscription of the edited block's feeds; the exact
+contract is not established, only the bytes.
+
+### What this leaves open in our implementation
+
+Two concrete gaps, both evidenced above rather than guessed:
+
+- **No `enable_meter` writer and no `meter` decode.** `TunerMessage` has
+  `enable_meter` (6) and `meter` (7); `commands.rs` writes `input_port_id`,
+  `frequency` and `mute` only, and `decode_tuner_settings` ignores both meter
+  fields. Showing the tuner without enabling the meter gets the device screen
+  but no live pitch data.
+- **No writer for `GlobalTempo` parameter 0.** `set_tempo_mode` writes
+  parameter 1 (the PRESET/GLOBAL switch) and `set_tempo` writes the *preset*
+  TempoControl model. Nothing writes the device-global tempo value that Cortex
+  Control's TAP sets.
+
+### How to reproduce a capture
+
+```
+python tools/capture_cortex_hid_writes.py --seconds 90 --out artifacts/cortex-hid/trace.bin
+python tools/analyze_cortex_hid_trace.py artifacts/cortex-hid/trace.bin
+```
+
+Cortex Control has no `hid.dll` imports: its Windows HID backend writes output
+reports straight through `kernel32!WriteFile` on the device handle, so
+breakpointing that one export and keeping 129-byte buffers whose first byte is
+`0x02` yields its wire traffic and nothing else.
+
+Two things that will otherwise waste time. Cortex Control's footer bar sits
+*underneath* the Windows taskbar when the window is maximized, so clicks aimed
+at TUNER or TAP hit the taskbar and the capture comes back empty — un-maximize
+first. And JUCE ignores UI Automation's `InvokePattern` here: invoking a scene
+button changes its highlight and sends nothing, so drive it with real mouse
+input and judge the result from the trace, never from the button's appearance.
 
 ## Long host-to-device messages need pacing
 
