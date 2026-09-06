@@ -177,6 +177,8 @@ falls into three groups, and only the first is a matter of time.
 | ED-06 | `looper-editor` | Same: a Looper block has to be added to the preset first. |
 | ED-09, ED-10 | `stomp-assignment`, `scene-assignment` | No on-screen path was found. Both look like footswitch gestures - hold a switch in STOMP or SCENE mode - which the RemoteControl mouse cannot express. |
 
+Three of the rows above share one cause. `RemoteControlMouse` offers PRESS, RELEASE, MOVE, TAP and DRAG, and DRAG carries only a start and an end point. Anything CorOS gates behind press-and-hold-then-move - the Multi Select checkboxes, a mode tile merge, a footswitch assignment - cannot be driven through it, however the coordinates are chosen. Reaching those states needs a hand on the unit, or a protocol path other than the touchscreen.
+
 ### Physically impossible without the unit's owner
 
 | state | renderer | what it needs |
@@ -194,7 +196,7 @@ falls into three groups, and only the first is a matter of time.
 | DR-16 | `directory-cloud-upload` | Uploads the owner's presets to Cortex Cloud. Outward-facing and not reversible from here. |
 | ST-06 | `settings-update` | The acquisition plan marks it `do-not-trigger`: reaching update progress means starting a firmware update. |
 | ED-15 | `fixture-warning-dsp` | **Attempted and not reproduced.** The scratch preset was loaded up with an amp, a Looper and a second amp until the DSP was full. CorOS does not warn after the fact: it **greys out** every model that no longer fits in the device browser, and tapping a greyed model does nothing at all. So the warning our `fixture-warning-dsp` renderer draws is reached some other way - a preset that became too heavy after a model update is the likeliest - and the fixture is unverified until that path is found. |
-| GL-22 | `gig-official-hybrid` | Needs a Hybrid mode created in Modes Configuration, which is a device-wide setting, then removed again. |
+| GL-22 | `gig-official-hybrid` | **Attempted with the owner's approval and not reproduced.** Dragging Scene onto Preset in Modes Configuration puts the dialog into drag mode - the tile lifts and a red delete target replaces the tick - but never merges. `RemoteControlMouse` DRAG carries only two endpoints, and the dialog appears to want press, hold, move, release. The drag was cancelled onto empty space rather than onto the delete target, and the dialog was confirmed pixel-identical to a before capture (max channel difference 17, no pixel over 60). Same protocol limitation as DR-12 and ED-09/ED-10. |
 
 ### A note on the capture guard
 
