@@ -147,13 +147,28 @@ export function QcHardwareSwitch({ role, label, ariaLabel, active, assigned = fa
     rotate(event.deltaY < 0 ? 1 : -1);
   };
   const tempoPeriodMs = pulseBpm ? 60_000 / pulseBpm : undefined;
-  const tempoPhaseMs = useMemo(() => tempoPeriodMs && pulseEpochMs !== undefined
-    ? ((Date.now() - pulseEpochMs) % tempoPeriodMs + tempoPeriodMs) % tempoPeriodMs
-    : undefined, [tempoPeriodMs, pulseEpochMs]);
+  const led = useRef<HTMLSpanElement>(null);
+  // `animation-delay` is measured from the animation's own start time, not from
+  // the moment the style lands, so a delay computed against the device's beat
+  // origin drifts by however long the lamp had already been animating - the
+  // lamp then ran at the right BPM but off the device's beat. Anchoring the
+  // animation's `startTime` to that origin puts iteration zero on the device's
+  // beat and keeps every later beat locked to it.
+  useEffect(() => {
+    const node = led.current;
+    if (!node || tempoPeriodMs === undefined || pulseEpochMs === undefined) return;
+    if (typeof node.getAnimations !== "function") return;
+    const originMs = pulseEpochMs - performance.timeOrigin;
+    for (const animation of node.getAnimations({ subtree: true })) {
+      if ((animation as CSSAnimation).animationName !== "qc-tempo-led-pulse") continue;
+      if (animation.startTime === originMs) continue;
+      try { animation.startTime = originMs; } catch { /* A finished animation cannot be re-anchored. */ }
+    }
+  }, [active, pulseEpochMs, tempoPeriodMs]);
   const accessibleLabel = ariaLabel ?? (typeof label === "string" ? label : role);
   return <button
     className={`hardware-switch${active ? " is-active" : ""}${pressed ? " is-pressed" : ""}${assigned ? " is-assigned" : ""}${compact ? " is-compact" : ""}${pulseBpm ? " is-tempo-pulse" : ""}`}
-    style={{ "--switch-accent": accent ?? "var(--accent)", "--tempo-period": tempoPeriodMs ? `${tempoPeriodMs}ms` : undefined, "--tempo-phase-delay": tempoPhaseMs !== undefined ? `${-tempoPhaseMs}ms` : undefined } as CSSProperties}
+    style={{ "--switch-accent": accent ?? "var(--accent)", "--tempo-period": tempoPeriodMs ? `${tempoPeriodMs}ms` : undefined } as CSSProperties}
     aria-label={`${accessibleLabel} encoder footswitch; encoder ${encoderValue} percent`} aria-pressed={Boolean(active || pressed)}
     title={`${accessibleLabel}: tap to press; drag vertically, use the mouse wheel, or press arrow keys to rotate`}
     onPointerDown={(event) => { event.currentTarget.setPointerCapture?.(event.pointerId); drag.current = { pointerId: event.pointerId, lastY: event.clientY, rotated: false }; setPressed(true); }}
@@ -168,7 +183,7 @@ export function QcHardwareSwitch({ role, label, ariaLabel, active, assigned = fa
     }}
     onPointerUp={(event) => release(event)} onPointerCancel={(event) => release(event, true)} onKeyDown={keyboard} onKeyUp={(event) => { if (event.key === "Enter" || event.key === " ") setPressed(false); }} onBlur={() => setPressed(false)} onWheel={wheel}
   >
-    <span className="switch-led" aria-hidden="true" />
+    <span ref={led} className="switch-led" aria-hidden="true" />
     <span className="switch-ring" aria-hidden="true"><span className="switch-cap" /><span className={`rotation-readout${showValue ? " is-visible" : ""}`}>{encoderValue}</span></span>
     <span className="switch-label">{label}</span>
   </button>;

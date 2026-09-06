@@ -722,7 +722,15 @@ test("tempo writes preserve the original guard and the lamp follows the QC clock
   assert.match(nativeFrameSource, /frame\.tempoClock/);
   assert.match(nativeFrameSource, /synchronizeTempoPulseEpoch\([\s\S]*?current\.tempoPulseEpochMs,\s*frame\.observedAt, tick, current\.tempo/);
   assert.match(uiSource, /pulseEpochMs=\{!parameterLeds \? snapshot\.tempoPulseEpochMs/);
-  assert.match(uiSource, /useMemo\(\(\) => tempoPeriodMs[\s\S]*\[tempoPeriodMs, pulseEpochMs\]\)/);
+  // The lamp must sit on the device's beat, not merely run at its BPM: an
+  // animation-delay is measured from the animation's own start, so the phase
+  // is set through the animation's startTime against the shared epoch.
+  assert.match(uiSource, /const originMs = pulseEpochMs - performance\.timeOrigin;/);
+  assert.match(uiSource, /animation\.startTime = originMs;/);
+  assert.match(uiSource, /animationName !== "qc-tempo-led-pulse"/);
+  assert.match(uiSource, /\}, \[active, pulseEpochMs, tempoPeriodMs\]\);/, "the anchor must be re-applied whenever the lamp or the device clock changes");
+  assert.doesNotMatch(uiSource, /--tempo-phase-delay/);
+  assert.doesNotMatch(cssSource, /animation-delay: var\(--tempo-phase-delay/);
   assert.match(cssSource, /15\.9%[\s\S]*16%/);
   assert.match(runtimeSource, /"device\.setTempo" \| "device\.command\.tempo"[\s\S]*GatewayVerification::Tempo/);
 });
