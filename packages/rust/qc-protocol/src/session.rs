@@ -146,23 +146,38 @@ impl SessionMachine {
     }
 
     pub fn state_observed(&mut self, now_ms: u64, preset_synchronized: bool) {
+        let _ = now_ms;
         self.consecutive_read_errors = 0;
         self.liveness_probe_sent_at_ms = None;
         if preset_synchronized && self.is_connected() {
             self.synchronized = true;
             self.phase = SessionPhase::Ready;
         }
+        // Deliberately does not defer the keepalive: see `keepalive_due`.
+    }
+
+    /// Records that a keepalive was just sent, rearming its fixed cadence.
+    pub fn keepalive_sent(&mut self, now_ms: u64) {
         self.next_keepalive_at_ms = now_ms.saturating_add(profile::KEEPALIVE_INTERVAL_MS);
     }
 
     pub fn outbound(&mut self, now_ms: u64) {
-        self.next_keepalive_at_ms = now_ms.saturating_add(profile::KEEPALIVE_INTERVAL_MS);
+        let _ = now_ms;
+        // Ordinary traffic is not a substitute for the device's KeepAlive.
     }
 
+    /// The QC needs its dedicated KeepAlive on a fixed cadence for the whole
+    /// session, exactly as Cortex Control and the reference client send it.
+    ///
+    /// This deliberately ignores inbound traffic. Treating device pushes as
+    /// proof the session was healthy meant a busy link never sent one at all:
+    /// the device kept answering a Version READ, so the link looked alive,
+    /// while it quietly stopped pushing state and stopped serving requests
+    /// after about a minute. A File READ issued after that point was never
+    /// answered, which is why the preset library never populated in a real
+    /// session.
     pub fn keepalive_due(&self, now_ms: u64) -> bool {
-        self.is_connected()
-            && self.liveness_probe_sent_at_ms.is_none()
-            && now_ms >= self.next_keepalive_at_ms
+        self.is_connected() && now_ms >= self.next_keepalive_at_ms
     }
 
     /// Records the side-effect-free Version READ sent only after the pushed
@@ -322,27 +337,56 @@ mod tests {
     }
 
     #[test]
-    fn session_policy_keeps_only_idle_ready_links_alive() {
+    fn the_device_keepalive_runs_on_a_fixed_cadence_through_busy_traffic() {
+        // Regression: the keepalive was deferred by any inbound message, and the
+        // QC pushes state twice a second, so a live session sent none at all.
+        // The device answered the Version READ - so the link looked healthy -
+        // while it stopped pushing state and stopped answering File READs after
+        // about a minute, leaving the preset library permanently empty.
+        let mut session = SessionMachine::new(0);
+        session.transport_opened(0);
+        session.handshake_completed(10, true);
+        session.keepalive_sent(10);
+
+        let interval = profile::KEEPALIVE_INTERVAL_MS;
+        // Device chatter throughout must not push the deadline out.
+        for tick in (0..interval).step_by(250) {
+            session.state_observed(10 + tick, true);
+        }
+        assert!(
+            session.keepalive_due(10 + interval),
+            "device pushes must never substitute for the KeepAlive"
+        );
+        // Nor does our own outbound traffic.
+        session.outbound(10 + interval);
+        assert!(session.keepalive_due(10 + interval));
+        // Sending one rearms it, and only for one interval.
+        session.keepalive_sent(10 + interval);
+        assert!(!session.keepalive_due(10 + interval + 1));
+        assert!(session.keepalive_due(10 + interval * 2));
+    }
+
+    #[test]
+    fn session_policy_reaches_ready_and_keeps_the_link_alive() {
         let mut session = SessionMachine::new(0);
         session.transport_opened(0);
         session.handshake_completed(100, false);
         assert_eq!(session.phase(), SessionPhase::Syncing);
         session.state_observed(200, true);
         assert_eq!(session.phase(), SessionPhase::Ready);
+
+        // Only a disconnected session skips the keepalive; a connected one owes
+        // the device one every interval regardless of what it has been sending
+        // or receiving. This previously required an idle link, which meant a
+        // busy session never sent one.
+        session.keepalive_sent(200);
         assert!(!session.keepalive_due(200 + profile::KEEPALIVE_INTERVAL_MS - 1));
         assert!(session.keepalive_due(200 + profile::KEEPALIVE_INTERVAL_MS));
-        session.liveness_probe_sent(200 + profile::KEEPALIVE_INTERVAL_MS);
+        session.keepalive_sent(200 + profile::KEEPALIVE_INTERVAL_MS);
         assert!(!session.keepalive_due(200 + profile::KEEPALIVE_INTERVAL_MS + 1));
-        assert!(!session.liveness_probe_timed_out(
-            200 + profile::KEEPALIVE_INTERVAL_MS + profile::LIVENESS_REPLY_TIMEOUT_MS - 1
-        ));
-        assert!(session.liveness_probe_timed_out(
-            200 + profile::KEEPALIVE_INTERVAL_MS + profile::LIVENESS_REPLY_TIMEOUT_MS
-        ));
-        session.state_observed(3000, true);
-        assert!(!session.liveness_probe_timed_out(u64::MAX));
-        session.outbound(3000);
-        assert!(!session.keepalive_due(3001));
+
+        session.disconnect(4000, true);
+        assert!(!session.keepalive_due(u64::MAX), "a closed link owes nothing");
     }
 
     #[test]

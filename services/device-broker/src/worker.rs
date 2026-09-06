@@ -1425,28 +1425,24 @@ fn run(
                 Some(BackupStep::Wait) | None => {}
             }
             let now_ms = session_clock.elapsed().as_millis() as u64;
-            // A backup legitimately silences the device for many seconds, so the
-            // idle-probe teardown must stand down for its duration.
-            if backup.is_none() && session.liveness_probe_timed_out(now_ms) {
-                const DETAIL: &str = "USB link stopped answering the idle Version probe";
-                set_phase(&state, "searching", DETAIL, false, false);
-                fail_pending(&mut pending_requests, DETAIL);
-                fail_backup(&mut backup, DETAIL);
-                session.disconnect(now_ms, true);
-                connection = None;
-                continue;
-            }
+            // Device loss is detected by read errors, as in the reference
+            // client: a write carries no information because every QC write
+            // stalls its status stage. The old Version-probe teardown is gone
+            // with the probe itself - the session is now held open by the
+            // dedicated KeepAlive below rather than proven by a correlated read.
             // A running backup owns the keepalive on its own unconditional clock,
             // so the idle probe stands down for the whole transfer.
             if backup.is_none() && session.keepalive_due(now_ms) {
-                // Pushed QC state remains authoritative. Only after five fully
-                // idle seconds issue one side-effect-free correlated read so
-                // an open-but-silent HID handle cannot remain falsely Ready.
-                connected
-                    .usb
-                    .send_command(commands::read(qc_protocol::profile::MESSAGE_TYPE_VERSION));
+                // The QC needs its dedicated KeepAlive on a fixed cadence, the
+                // same message Cortex Control and the reference client send
+                // every five seconds. A Version READ is answered, so the link
+                // looks alive, but it does not hold the session open: the
+                // device stops pushing state and stops answering File READs
+                // after about a minute, which is why the preset library never
+                // populated once a session had been running for a while.
+                connected.usb.send_command(commands::keepalive());
                 update_usb_telemetry(&state, connected);
-                session.liveness_probe_sent(now_ms);
+                session.keepalive_sent(now_ms);
             }
         } else {
             thread::sleep(Duration::from_millis(100));
