@@ -1863,8 +1863,8 @@
       "screen": "device-search-entry",
       "image": "device-search-entry.png",
       "graphicsTree": "device-search-entry.tree.txt",
-      "sha256": "323a6db459443c6f7035a23cdd71a85f0f3bdd6af305b75b6f99aa5f50e21d2d",
-      "bytes": 23554,
+      "sha256": "881c28fe33504712ca12b41221669ff5b4fb27a2c8fdf7d971507ad0f2e7daf0",
+      "bytes": 19961,
       "width": 800,
       "height": 480,
       "capturedAt": "2026-09-05T19:41:42.377461Z",
@@ -1878,6 +1878,9 @@
           "type": "wait",
           "seconds": 1.0
         }
+      ],
+      "redactions": [
+        "recent search history"
       ]
     },
     {
@@ -1971,8 +1974,8 @@
       "screen": "device-search-results",
       "image": "overlay-error.png",
       "graphicsTree": "overlay-error.tree.txt",
-      "sha256": "313f256d1214a71f600e989e40a9cd432f051a80200aca7177a4eec13fb6252a",
-      "bytes": 15515,
+      "sha256": "f5fbfcb2410a03e5a3e2d7da22fe6cba9393f9066aafe3199b5a0f820d91d36c",
+      "bytes": 13649,
       "width": 800,
       "height": 480,
       "capturedAt": "2026-09-05T19:50:30.335665Z",
@@ -2038,6 +2041,9 @@
           "type": "wait",
           "seconds": 2.0
         }
+      ],
+      "redactions": [
+        "search query"
       ]
     },
     {
@@ -2046,12 +2052,15 @@
       "screen": "device-search-results",
       "image": "device-search-results.png",
       "graphicsTree": "device-search-results.tree.txt",
-      "sha256": "313f256d1214a71f600e989e40a9cd432f051a80200aca7177a4eec13fb6252a",
-      "bytes": 15515,
+      "sha256": "f5fbfcb2410a03e5a3e2d7da22fe6cba9393f9066aafe3199b5a0f820d91d36c",
+      "bytes": 13649,
       "width": 800,
       "height": 480,
       "capturedAt": "2026-09-05T19:51:05.613721Z",
-      "actions": []
+      "actions": [],
+      "redactions": [
+        "search query"
+      ]
     },
     {
       "id": "fixture-editor-capture",
@@ -2514,8 +2523,8 @@
       "screen": "device-search-entry",
       "image": "directory-search.png",
       "graphicsTree": "directory-search.tree.txt",
-      "sha256": "5004098e27640d83792fd1f7638d10e8c4dc52ad7fb014a048460b0eeee34615",
-      "bytes": 23493,
+      "sha256": "754e7b5079130f443f010f94079b238a0eeb439eded962cc4e560fc10219db60",
+      "bytes": 19888,
       "width": 800,
       "height": 480,
       "capturedAt": "2026-09-06T17:27:17.550891Z",
@@ -2538,6 +2547,9 @@
           "type": "wait",
           "seconds": 2.0
         }
+      ],
+      "redactions": [
+        "recent search history"
       ]
     },
     {

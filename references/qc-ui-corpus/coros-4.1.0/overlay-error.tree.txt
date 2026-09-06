@@ -20,7 +20,7 @@ zenUI::RootGraphicsItem
       zenUI::GraphicsItem
     zenUI::PushButton
       zenUI::Button
-        text : 'gary'
+        text : '[redacted]'
         image: 'icons/24/search.png'
         zenUI::PressAnimationView
     zenUI::TabBar

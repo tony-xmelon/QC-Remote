@@ -57,7 +57,80 @@ REDACTIONS = {
         ],
         "fields": ["Cortex Cloud account address"],
     },
+    # The search screens carry what this unit's owner has searched for. The
+    # chips live under RecentInputBox and the query under the search PushButton,
+    # so both are removed structurally - a regex naming the terms would have to
+    # write them into this file to strip them from the corpus.
+    "device-search-entry": {
+        "boxes": [(12, 176, 218, 210)],
+        "tree_widgets": ["zenUI::RecentInputBox"],
+        "fields": ["recent search history"],
+    },
+    "directory-search": {
+        "boxes": [(12, 176, 218, 210)],
+        "tree_widgets": ["zenUI::RecentInputBox"],
+        "fields": ["recent search history"],
+    },
+    "device-search-results": {
+        "boxes": [(38, 12, 196, 48)],
+        "tree_widgets": ["zenUI::PushButton"],
+        "fields": ["search query"],
+    },
+    "overlay-error": {
+        "boxes": [(38, 12, 196, 48)],
+        "tree_widgets": ["zenUI::PushButton"],
+        "fields": ["search query"],
+    },
 }
+
+
+CLASS_LINE = re.compile(r"^(\s*)(zenUI::\w+)\s*$")
+TEXT_LINE = re.compile(r"^(\s*)(text\s*:\s*)'(.*)$")
+
+
+def redact_tree_widgets(tree: str, widgets: set[str]) -> str:
+    """Replace every text value drawn beneath one of `widgets`.
+
+    Keyed on the scene graph rather than on the strings themselves, which
+    matters for search history: a regex listing the user's own past queries
+    would put those queries into this file to get them out of the corpus.
+    """
+    lines = tree.splitlines(keepends=True)
+    output: list[str] = []
+    stack: list[tuple[int, str]] = []
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        index += 1
+
+        match = CLASS_LINE.match(line.rstrip("\n"))
+        if match:
+            indent = len(match.group(1))
+            while stack and stack[-1][0] >= indent:
+                stack.pop()
+            stack.append((indent, match.group(2)))
+            output.append(line)
+            continue
+
+        match = TEXT_LINE.match(line.rstrip("\n"))
+        if match:
+            indent, prefix, body = len(match.group(1)), match.group(2), match.group(3)
+            consumed = [line]
+            while not body.rstrip("\n").endswith("'") and index < len(lines):
+                consumed.append(lines[index])
+                body = lines[index]
+                index += 1
+            covered = any(
+                widget in widgets for depth, widget in stack if depth < indent
+            )
+            if covered:
+                output.append(f"{' ' * indent}{prefix}'[redacted]'\n")
+            else:
+                output.extend(consumed)
+            continue
+
+        output.append(line)
+    return "".join(output)
 
 
 def redact(corpus: Path, capture_id: str) -> None:
@@ -81,8 +154,10 @@ def redact(corpus: Path, capture_id: str) -> None:
 
     tree_path = corpus / entry["graphicsTree"]
     tree = tree_path.read_text(encoding="utf-8")
-    for pattern in profile["tree_patterns"]:
+    for pattern in profile.get("tree_patterns", ()):
         tree = re.sub(pattern, r"\1'[redacted]'", tree, flags=re.IGNORECASE)
+    if profile.get("tree_widgets"):
+        tree = redact_tree_widgets(tree, set(profile["tree_widgets"]))
     tree_path.write_text(tree, encoding="utf-8")
 
     payload = image_path.read_bytes()
