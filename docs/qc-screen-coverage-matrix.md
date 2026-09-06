@@ -171,12 +171,12 @@ falls into three groups, and only the first is a matter of time.
 
 | state | renderer | what happened |
 | --- | --- | --- |
-| DR-12 | `directory-copy` | Multi Select's per-row checkboxes do not respond to a synthetic RemoteControl tap. Rows, checkbox glyphs and the select-all box were all tried; the selection count never moved off zero, so the copy destination dialog cannot be reached this way. |
+| DR-12 | `directory-copy` | **Selection works after all.** An earlier attempt concluded Multi Select's checkboxes ignore synthetic taps; taking a screenshot first and tapping the checkbox column at x=426 ticks the row, the count badge moves to 1 and the toolbar icons come alive. Copy then stages the item, shown by a badge on the paste icon. What was not reached is the destination dialog our fixture draws ("Copy N items to...", CANCEL / COPY HERE): pasting back into the source folder does nothing and creates nothing, and pasting into another setlist would put a preset into the owner's own data, which was not done. |
 | ED-02 | `fixture-editor-pages` | Needs a block with more than one parameter page. The scratch preset carries a single-parameter Adaptive Gate, so a multi-page block has to be added first - a preset edit, revertible by reloading the slot. |
 | ED-06 | `looper-editor` | Same: a Looper block has to be added to the preset first. |
 | ED-09, ED-10 | `stomp-assignment`, `scene-assignment` | No on-screen path was found. Both look like footswitch gestures - hold a switch in STOMP or SCENE mode - which the RemoteControl mouse cannot express. |
 
-Several of the rows above share a symptom rather than a proven cause. `RemoteControlMouse` offers PRESS, RELEASE, MOVE, TAP and DRAG, so a press-hold-move-release gesture *is* expressible; what is unproven is how CorOS wants it timed. Neither the atomic DRAG nor a composed press-hold-move-release lands the Multi Select checkboxes or a mode-tile merge. Until that timing is worked out these states need a hand on the unit.
+A caution about the rows above, learned the hard way. Several of them were first written off as protocol limitations, and most of those conclusions were wrong: the Multi Select checkboxes do respond, the filter menu does exist, and the mode-tile merge is expressible. Each was a coordinate or a stale-screen problem. Screenshot before every gesture and confirm the screen; a tap aimed at a dialog that had already closed once landed on the Grid and edited a preset that was not the scratch one. What remains genuinely unlanded is the mode-tile merge, which the owner performed by hand.
 
 The `directory-filter` fixture had invented its contents. CorOS does have a
 filter, but only in the Neural Captures directory, and it lists capture types -
