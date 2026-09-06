@@ -337,7 +337,11 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeEnco
                     .ok_or_else(|| "requestId must be a non-negative integer".to_string())?,
                 text_arg(&args, "sessionId")?,
             )],
-            "initialize" => commands::initialization(),
+            "initialize" => commands::initialization(
+                args.get("nowMs")
+                    .and_then(Value::as_u64)
+                    .ok_or_else(|| "nowMs must be a non-negative integer".to_string())?,
+            ),
             "read" => vec![commands::read(
                 u16::try_from(unsigned(&args, "messageType")?)
                     .map_err(|_| "messageType is out of range".to_string())?,

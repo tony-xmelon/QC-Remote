@@ -992,14 +992,53 @@ pub fn connection(connected: bool) -> OutboundMessage {
     )
 }
 
+/// Tell the QC what time it is, as Cortex Control does once per connection.
+///
+/// A HID capture of Cortex Control 4.1.0's handshake sends this after its
+/// subscriptions: `SystemTimeSync{action: UPDATE, request_id: 7,
+/// ms_since_epoch}`. We send it to match, and because a host that knows the
+/// time should hand it over.
+///
+/// **What the device does with it is not established.** Type 43 answers no
+/// READ, so the clock cannot be read back, and two attempts to observe an
+/// effect both failed:
+///
+/// - IR dates come from the host. An IR imported with the `date` field omitted
+///   came back with no date at all, whatever the clock said - so
+///   `date_ms_since_epoch` on an IR is the host's string, not the device's clock.
+/// - Preset dates ignored it. With the clock set to 2020-01-02, a preset saved
+///   seconds later was still stamped with the true wall time, with and without
+///   a `request_id` on the sync.
+///
+/// So do not rely on this to control any timestamp. It is sent for handshake
+/// fidelity; the honest summary is that the unit has a time source of its own
+/// that this does not appear to override.
+pub fn sync_system_time(ms_since_epoch: u64) -> OutboundMessage {
+    OutboundMessage::encoded(
+        profile::MESSAGE_TYPE_SYSTEM_TIME_SYNC,
+        pa::SystemTimeSyncMessage {
+            action: pa::message_action::Enum::Update as i32,
+            ms_since_epoch,
+            ..Default::default()
+        },
+    )
+}
+
 /// Messages sent after the correlated reset reply, in the exact order expected
 /// by the QC. Directory/file enumeration is intentionally excluded.
-pub fn initialization() -> Vec<OutboundMessage> {
-    let mut messages = Vec::with_capacity(profile::LIVE_SUBSCRIPTIONS.len() + 3);
+///
+/// `now_ms` is Unix milliseconds for the clock the device is told to adopt;
+/// the crate takes the time as a parameter everywhere rather than reading it,
+/// so the plan stays pure and testable.
+pub fn initialization(now_ms: u64) -> Vec<OutboundMessage> {
+    let mut messages = Vec::with_capacity(profile::LIVE_SUBSCRIPTIONS.len() + 4);
     messages.push(version_hello());
     messages.push(read(profile::MESSAGE_TYPE_MODEL_REPO));
     messages.push(connection(true));
     messages.extend(profile::LIVE_SUBSCRIPTIONS.iter().copied().map(read));
+    // Cortex Control sends this near the end of its own handshake, after the
+    // subscriptions and before it starts forwarding cloud traffic.
+    messages.push(sync_system_time(now_ms));
     messages
 }
 
@@ -2333,17 +2372,37 @@ mod tests {
 
     #[test]
     fn initialization_order_and_subscriptions_have_one_source() {
-        let messages = initialization();
+        let now_ms = 1_788_711_237_617;
+        let messages = initialization(now_ms);
         assert_eq!(messages[0].message_type, 10);
         assert_eq!(messages[1], read(51));
         assert_eq!(messages[2], connection(true));
+        let (subscriptions, tail) = messages[3..].split_at(profile::LIVE_SUBSCRIPTIONS.len());
         assert_eq!(
-            messages[3..]
+            subscriptions
                 .iter()
                 .map(|message| message.message_type)
                 .collect::<Vec<_>>(),
             profile::LIVE_SUBSCRIPTIONS
         );
+        // Cortex Control sends the clock after its subscriptions; so do we.
+        assert_eq!(tail, [sync_system_time(now_ms)]);
+    }
+
+    /// The QC dates everything it saves from whatever the host last told it.
+    #[test]
+    fn system_time_sync_carries_unix_milliseconds() {
+        let now_ms = 1_788_711_237_617;
+        let outbound = sync_system_time(now_ms);
+        assert_eq!(outbound.message_type, 43);
+        let decoded = pa::SystemTimeSyncMessage::decode(outbound.payload.as_slice()).unwrap();
+        assert_eq!(decoded.action, pa::message_action::Enum::Update as i32);
+        assert_eq!(decoded.ms_since_epoch, now_ms);
+        // Cortex Control does put a request_id on this message; we omit it, as
+        // we do for every other message in `initialization`. The device sends
+        // no reply to correlate, and a back-dated sync behaved identically with
+        // and without one on hardware.
+        assert!(decoded.request_id.is_none());
     }
 
     #[test]
