@@ -192,6 +192,16 @@ full preset and a nearly empty one. Selecting *New Neural Capture* returns to th
 Grid in every case, so NC-01 to NC-03 need the capture rig connected; this is not
 a navigation failure.
 
+`expression-bypass` (ED-12) is captured but **not** confirmed to be the screen
+our fixture draws, and the text check cannot tell the difference. The device
+frame is the expression parameter screen with BYPASS showing `ASSIGNED`; the
+fixture draws an expression *switch* settings page with SWITCH ON, INVERT RANGE,
+SWITCH DELAY and LATCH EMULATION. None of those words appear in the device tree,
+and the checker only reports strings the device shows and we lack, never chrome
+we invented. Either the fixture depicts a screen reached another way - an
+expression switch rather than a pedal - or it is invented like the other four.
+Worth resolving before the capture is treated as evidence for that renderer.
+
 ### Physically impossible without the unit's owner
 
 | state | renderer | what it needs |
