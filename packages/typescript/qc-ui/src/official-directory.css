@@ -1,8 +1,23 @@
 @scope (.qc-screen-fixture-root) {
 .directory-official, .directory-official * { box-sizing: border-box; font-family: Arial, sans-serif; }
-.qc-screen.directory-official { position: absolute; inset: 0; display: block; overflow: hidden; background: #101010; color: #eee; container-type: inline-size; }
+.qc-screen.directory-official { position: absolute; inset: 0; display: block; overflow: hidden; background: #101010; color: var(--qc-icon-primary); container-type: inline-size; }
 .directory-official button { border: 0; color: inherit; font: inherit; }
 .directory-official svg { width: 3cqw; height: 3cqw; fill: currentColor; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.directory-official .qc-directory-icon-grid { stroke: none; translate: 1px 0; }
+.directory-official .folder-number { fill: #202421; stroke: none; }
+.directory-official > header .qc-directory-icon-sort,
+.directory-official > header .qc-directory-icon-arrange,
+.directory-official > header .qc-directory-icon-upload,
+.directory-official > header .qc-directory-icon-search { translate: 2px 4px; }
+.directory-official > header .qc-directory-icon-done { translate: 1px 5px; }
+.directory-official > header .qc-directory-icon-filter { translate: 4px 4px; }
+.directory-official > header .qc-directory-icon-cloud-upload { translate: 2px 3px; }
+.directory-official > header .qc-directory-icon-cloud-upload .cloud-upload-arrow { stroke: #181c18; }
+.directory-official nav .qc-directory-icon-download { translate: 0 2px; }
+.directory-official nav .qc-directory-icon-cloud { translate: 1px 1px; }
+.directory-official nav .qc-directory-icon-folder { translate: 0 2px; }
+.directory-official nav .qc-directory-icon-new-folder { translate: 1px 2px; }
+.directory-official .qc-directory-icon-trash { translate: 1px -1px; }
 .directory-official > header { height: 7.5cqw; display: flex; align-items: center; gap: 1cqw; padding: 0 1cqw; }
 .directory-official > header button { width: 8.25cqw; height: 5.5cqw; border-radius: 1cqw; background: #282c28; font-size: 3cqw; }
 .directory-official > header .directory-official-category { width: 32cqw; display: flex; align-items: center; gap: 1.5cqw; padding: 0 2cqw; text-align: left; font-size: 2cqw; }
@@ -13,8 +28,9 @@
 .directory-official nav, .directory-official-list { overflow: hidden; border-radius: 1cqw; background: #282c28; }
 .directory-official nav button { width: 100%; height: 7.5cqw; display: grid; grid-template-columns: 5cqw 1fr 4cqw; align-items: center; padding: 0 2cqw; background: transparent; text-align: left; font-size: 2cqw; }
 .directory-official nav button.is-active { background: #181c18; color: #2df36a; }
+.directory-captures-official nav button.is-active .qc-library-icon-capture-library { color: var(--qc-icon-primary); }
 .directory-official nav button.is-child { width: calc(100% - 2cqw); margin-left: 2cqw; }
-.directory-official nav button.is-muted { color: #929692; }
+.directory-official nav button.is-muted { color: var(--qc-icon-muted); }
 .directory-official nav button b { font-size: 3cqw; font-weight: 400; }
 .directory-official nav button small { color: #929692; font-size: 1.75cqw; }
 .directory-presets-official nav button,
@@ -27,16 +43,19 @@
 .directory-official-list > button > i { display: flex; gap: .75cqw; font-style: normal; }
 .directory-official-list > button > i b { width: 8.25cqw; height: 5.5cqw; display: grid; place-items: center; border-radius: 1cqw; background: #181c18; font-size: 3cqw; }
 .directory-favorites-official > header .favorite-tab { width: 10.5cqw; font-size: 3cqw; }
+.directory-favorites-official > header .favorite-tab .qc-library-icon { translate: 1px 3px; }
 .directory-favorites-official > header .favorite-tab + .favorite-tab { margin-left: -.5cqw; }
 .directory-favorites-official > header .favorite-sort { margin-left: 1.25cqw; }
 .directory-favorites-official > header button:last-child { margin-left: 1.25cqw; }
 .directory-favorites-official .directory-official-list { position: relative; }
 .directory-favorites-official .directory-official-list > button { grid-template-columns: 1fr 17.25cqw 3.75cqw; }
 .directory-favorites-official .directory-official-list > button > i b svg { width: 3.5cqw; height: 3.5cqw; fill: none; }
-.directory-favorites-official .directory-official-list > button > i b:last-child svg { fill: #eee; }
+.directory-favorites-official .directory-official-list > button > i b:last-child svg { fill: var(--qc-icon-primary); }
+.directory-favorites-official .directory-official-list .qc-library-icon-binoculars { translate: 0 -3px; }
 .directory-irs-official .directory-official-list > button { grid-template-columns: 1fr 17.25cqw; padding-right: 1cqw; }
 .directory-irs-official .directory-official-list > button > i > b:first-child > span { width: 3cqw; height: 3cqw; display: grid; place-items: center; border-radius: 50%; background: #2df36a; color: #071008; font-size: 2cqw; }
-.directory-irs-official .directory-official-list > button > i > b svg { width: 3cqw; height: 3cqw; fill: none; color: #d8dcda; }
+.directory-irs-official .directory-official-list > button > i > b svg { width: 3cqw; height: 3cqw; fill: none; color: var(--qc-icon-primary); }
+.directory-irs-official .directory-official-list .qc-directory-icon-trash { translate: 1px -2px; }
 .directory-favorites-official .directory-favorite-index { position: absolute; right: 0; top: 0; bottom: 0; width: 4.625cqw; display: flex; flex-direction: column; align-items: center; justify-content: space-around; border-left: 1px solid #171918; color: #929692; font-size: 1cqw; }
 .directory-captures-official .directory-official-list { position: relative; }
 .directory-captures-official > header .directory-primary-action,
@@ -91,23 +110,24 @@
 .directory-search-official .directory-official-list > button { grid-template-columns: 1fr 5cqw; }
 .directory-upload-official > header .directory-official-category { color: #344037; }
 .directory-upload-official > header .is-cloud { border: 1px solid #2df36a; color: #2df36a; }
-.directory-upload-official > header .is-cloud svg { color: #eee; }
+.directory-upload-official > header .is-cloud svg { color: var(--qc-icon-primary); }
 .directory-upload-official > main { grid-template-columns: 32cqw 14.125cqw 49.875cqw; }
 .directory-upload-official .directory-upload-banks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 6.625cqw; gap: .875cqw; background: transparent; }
 .directory-upload-official .directory-upload-banks button { border-radius: 1cqw; background: #282c28; font-size: 2cqw; }
 .directory-upload-official .directory-upload-banks button:first-child { color: #2df36a; }
 .directory-upload-official .directory-official-list > button { grid-template-columns: 1fr 8.25cqw; }
-.directory-upload-official .directory-official-list > button b { width: 8.25cqw; height: 4.75cqw; display: grid; place-items: center; border-radius: 1cqw; background: #181c18; color: #eee; font-size: 3cqw; }
+.directory-upload-official .directory-official-list > button b { width: 8.25cqw; height: 4.75cqw; display: grid; place-items: center; border-radius: 1cqw; background: #181c18; color: var(--qc-icon-primary); font-size: 3cqw; }
 .directory-upload-official .directory-official-list > button b svg { width: 3.25cqw; height: 3.25cqw; }
-.directory-upload-official nav button.is-active b { color: #eee; }
+.directory-upload-official nav button.is-active b { color: var(--qc-icon-primary); }
 .directory-upload-official nav button.is-active .folder-number { fill: #202421; }
 .directory-upload-official .directory-official-list .cloud-upload-arrow { stroke: #181c18; }
+.directory-upload-official .directory-official-list .qc-directory-icon-cloud-upload { translate: 1px -2px; }
 .directory-presets-official > main { grid-template-columns: 32cqw 14cqw 50cqw; }
 .directory-presets-official .directory-preset-banks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 6.625cqw; gap: .875cqw; background: transparent; }
 .directory-presets-official .directory-preset-banks button { border-radius: 1cqw; background: #282c28; font-size: 2cqw; }
 .directory-presets-official .directory-preset-banks button:first-child { color: #2df36a; }
 .directory-presets-official > header > button:not(.directory-official-category):not(:last-child) { transform: translateX(-1.25cqw); }
-.directory-presets-official nav button.is-active b { color: #eee; }
+.directory-presets-official nav button.is-active b { color: var(--qc-icon-primary); }
 .directory-presets-official nav button.is-active .folder-number { fill: #202421 !important; stroke: none; }
 .directory-upload-official nav button.is-active .folder-number { fill: #202421 !important; stroke: none; }
 .directory-official-list > button > span,

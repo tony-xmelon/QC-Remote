@@ -214,8 +214,11 @@ test("parameter scene navigation uses the QC reference double chevrons", () => {
   const iconSource = readFileSync(new URL("../packages/typescript/qc-ui/src/theme-icons.tsx", import.meta.url), "utf8");
   assert.match(editorSource, /QcEditorIcon kind="scene-previous"/);
   assert.match(editorSource, /QcEditorIcon kind="scene-next"/);
-  assert.match(iconSource, /M11 4 3 12l8 8zM21 4l-8 8 8 8z/);
-  assert.match(iconSource, /m13 4 8 8-8 8zM3 4l8 8-8 8z/);
+  assert.match(iconSource, /M11 4 3 12l8 8Z/);
+  assert.match(iconSource, /M21 4l-8 8 8 8Z/);
+  assert.match(iconSource, /QC_COLORS\.captured\.sceneControlMuted/);
+  assert.match(iconSource, /m13 4 8 8-8 8Z/);
+  assert.match(iconSource, /M3 4l8 8-8 8Z/);
   assert.doesNotMatch(iconSource, /M15\.8 3\.8 7\.6 12/);
   assert.doesNotMatch(iconSource, /m8\.2 3\.8 8\.2 8\.2/);
 });
@@ -264,7 +267,7 @@ test("parameter contextual menus follow the CorOS device order and special cases
   const amp = parameterContextMenuItems({ modelId: 10, name: "Brit 2203", category: "Amp" }, 10);
   assert.deepEqual(amp.map((item) => item.label), [
     "Save Current Parameters As…", "Change device", "Copy device", "Paste device",
-    "Reset to defaults", "Set parameters as defaults", "Assign Expression Pedal",
+    "Reset to defaults", "Assign Expression Pedal",
     "Remove block from the grid"
   ]);
   assert.equal(amp.find((item) => item.action === "paste-device")?.disabled, false);

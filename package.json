@@ -55,6 +55,9 @@
     "test:ui": "playwright test",
     "verify:qc-corpora": "node tools/verify-qc-ui-corpora.mjs",
     "verify:qc-coverage": "node tools/verify_qc_screen_coverage.mjs && node tools/verify_qc_physical_capture_plan.mjs",
+    "verify:qc-iconography": "node tools/verify-qc-iconography.mjs",
+    "verify:qc-iconography:complete": "node tools/verify-qc-iconography.mjs --require-complete-coverage",
+    "compare:qc-iconography": "python tools/compare_qc_iconography.py --require-exact-colors",
     "report:qc-coverage": "node tools/report_qc_screen_coverage.mjs",
     "security:audit": "npm audit --omit=dev --audit-level=moderate && npm audit --audit-level=high",
     "typecheck": "npm run typecheck --workspaces --if-present"

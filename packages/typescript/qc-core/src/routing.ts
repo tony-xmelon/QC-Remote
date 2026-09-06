@@ -39,9 +39,11 @@ export function routePickerLabel(side: RouteSide, label: string): string {
   if (side === "output" && label === "Multi Out") return "Multiple Outputs";
   if (side === "input") {
     if (/^In /.test(label)) return label.replace(/^In /, "Input ");
+    if (/^USB input /i.test(label)) return label.replace(/^USB input /i, "USB input ");
     if (/^USB /.test(label)) return label.replace(/^USB /, "USB Input ");
   } else {
     if (/^Out /.test(label)) return label.replace(/^Out /, "Output ");
+    if (/^USB output /i.test(label)) return label.replace(/^USB output /i, "USB Output ");
     if (/^USB /.test(label)) return label.replace(/^USB /, "USB Output ");
   }
   return label;

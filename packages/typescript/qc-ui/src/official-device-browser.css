@@ -14,6 +14,11 @@
 .device-browser-official.is-plugins nav button { color: #f8fcf8; }
 .device-browser-official nav svg { width: 60%; height: 60%; }
 .device-browser-official:not(.is-plugins) nav button:nth-child(2) svg { transform: scale(1.07, 1.23); }
+.device-browser-official:not(.is-plugins) nav button:nth-child(1) svg { transform: none; }
+.device-browser-official:not(.is-plugins) nav button:nth-child(3) svg { transform: none; }
+.device-browser-official:not(.is-plugins) nav button:nth-child(4) svg { transform: translate(-1px, -1px); }
+.device-browser-official:not(.is-plugins) nav button:nth-child(5) svg { transform: translate(1px, -2px); }
+.device-browser-official:not(.is-plugins) nav button:nth-child(6) svg { transform: none; }
 .device-browser-official.is-plugins nav button:nth-child(1) svg { transform: scaleX(1.2); }
 .device-browser-official.is-plugins nav button:nth-child(3) svg { transform: scale(1.23); }
 .device-browser-official.is-plugins nav button:nth-child(4) svg { transform: scale(1.04); }
@@ -29,6 +34,7 @@
 .device-browser-list header b { padding-left: 2cqw; font-weight: 400; }
 .device-browser-list header i { width: 8.25cqw; height: 5.5cqw; margin-left: auto; margin-right: 1cqw; display: grid; place-items: center; border-radius: 1cqw; background: #171b18; color: #eee; font-size: 3cqw; font-style: normal; }
 .device-browser-list header i svg { width: 3cqw; height: 3cqw; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.device-browser-list header i .qc-ui-icon-refresh { fill: currentColor; stroke: none; transform: translate(1px, -2px); }
 .device-browser-list > button { width: 100%; height: 7.5cqw; padding: 0 2cqw; border: 0; background: transparent; color: #eee; text-align: left; font: 2cqw Arial, sans-serif; }
 .device-browser-official:not(.is-plugins) .device-browser-list > button { padding-left: 2.125cqw; font-family: Roboto, Arial, sans-serif; font-size: 2cqw; }
 .device-browser-list > button b { color: #f4d224; }

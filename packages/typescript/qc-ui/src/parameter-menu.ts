@@ -2,13 +2,13 @@ import type { BlockDetails } from "@ndsp-qc/client";
 
 export type ParameterEditorContextAction =
   | "save-device-preset" | "change-device" | "copy-device" | "paste-device"
-  | "reset-defaults" | "set-parameters-defaults" | "expression"
+  | "reset-defaults" | "expression"
   | "assign-looper-actions" | "mute-bypass" | "remove";
 
 export interface ParameterContextMenuItem {
   action: ParameterEditorContextAction;
   label: string;
-  icon: "save" | "change" | "copy" | "paste" | "reset" | "defaults" | "expression" | "looper" | "mute" | "remove";
+  icon: "save" | "change" | "copy" | "paste" | "reset" | "expression" | "looper" | "mute" | "remove";
   disabled?: boolean;
   separatorBefore?: boolean;
 }
@@ -24,7 +24,6 @@ export function parameterContextMenuItems(details: Pick<BlockDetails, "name" | "
     { action: "copy-device", label: "Copy device", icon: "copy" },
     { action: "paste-device", label: "Paste device", icon: "paste", disabled: clipboardModelId !== details.modelId },
     { action: "reset-defaults", label: "Reset to defaults", icon: "reset" },
-    { action: "set-parameters-defaults", label: "Set parameters as defaults", icon: "defaults" },
     { action: "expression", label: "Assign Expression Pedal", icon: "expression" },
     ...(looper ? [{ action: "assign-looper-actions", label: "Assign Looper X Actions", icon: "looper" } as const] : []),
     ...(fxLoop ? [{ action: "mute-bypass", label: "Mute/Bypass", icon: "mute" } as const] : []),

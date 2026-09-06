@@ -232,7 +232,8 @@ test("IN and OUT taps use the in-screen CorOS route picker instead of a modal", 
   assert.match(surfaceSource, /className=\{`coros-route-picker is-\$\{routingPicker\.side\}`\}/);
   assert.match(surfaceSource, /role="listbox"/);
   assert.match(surfaceSource, /aria-selected=\{value === routingPicker\.value\}/);
-  assert.match(surfaceSource, /routePickerLabel\(routingPicker\.side, selectedRoute/);
+  assert.doesNotMatch(surfaceSource, /routePickerLabel\(routingPicker\.side, selectedRoute/, "the physical picker has no duplicate selected-route header");
+  assert.match(surfaceSource, /routePickerLabel\(routingPicker\.side, label\)/, "each physical route row retains its canonical label");
   assert.match(surfaceSource, /routePickerGroups\.map/);
   assert.match(surfaceSource, /className="coros-route-focus-layer"/);
   assert.match(surfaceSource, /fill=\{QC_COLORS\.device\.focusOverlay\} fillOpacity="\.27"/);

@@ -13,6 +13,19 @@
 .coros-vector-screen .coros-screen-menu button { height: 14.3%; gap: 7%; padding: 0 3%; font: 400 2.25cqw Roboto, Arial, sans-serif; }
 .coros-vector-screen .coros-screen-menu .context-menu-icon { flex: 0 0 13%; }
 .coros-vector-screen .coros-screen-menu .context-menu-icon svg { width: 3cqw; height: 3cqw; transform: none; }
+.coros-vector-screen .coros-screen-menu .context-menu-icon .qc-ui-icon-add { transform: translate(-1px, 2px); }
+.coros-vector-screen .coros-screen-menu .context-menu-icon .qc-ui-icon-save-as { transform: translate(-1px, 1px); }
+.coros-vector-screen .coros-screen-menu .context-menu-icon .qc-ui-icon-edit { transform: translate(-1px, -2px); }
+.coros-vector-screen .coros-screen-menu .context-menu-icon .qc-ui-icon-file { transform: translate(-1px, 2px); }
+.coros-vector-screen .coros-screen-menu .context-menu-icon .qc-ui-icon-next { transform: translate(-1px, 2px); }
+.coros-vector-screen .coros-screen-menu .context-menu-icon .qc-ui-icon-midi { transform: translate(-1px, 2px); }
+.coros-vector-screen .coros-screen-menu .context-menu-icon .qc-ui-icon-favorite { transform: translate(-3px, -10px); }
+.coros-vector-screen .coros-screen-menu .context-menu-icon .qc-ui-icon-delete { transform: translate(-1px, -10px); }
+.coros-vector-screen .coros-screen-menu .context-menu-icon .qc-ui-icon-capture { transform: translate(-2px, 2px); }
+.coros-vector-screen .coros-screen-menu .context-menu-icon .qc-ui-icon-modes { transform: translate(-1px, 3px); }
+.coros-vector-screen .coros-screen-menu .context-menu-icon .qc-ui-icon-tempo { transform: translate(-1px, 3px); }
+.coros-vector-screen .coros-screen-menu .context-menu-icon .qc-ui-icon-cpu,
+.coros-vector-screen .coros-screen-menu .context-menu-icon .qc-ui-icon-settings { transform: translate(-1px, 2px); }
 .coros-vector-screen .context-menu-section { margin: 2% 0 1%; padding: 5% 3%; border-top: 1px solid #333; border-bottom: 1px solid #333; background: #090a09; color: #aaa; font: 500 1.55cqw Arial, sans-serif; letter-spacing: .04em; }
 .coros-directory { font-family: Roboto, Arial, sans-serif; }
 .coros-directory-header { justify-content: flex-start; gap: 1%; }
@@ -47,15 +60,16 @@
 .coros-route-picker.is-output { right: 7.25%; border-radius: 10px 0 0 10px; }
 .coros-route-picker > header { height: 16%; display: flex; box-sizing: border-box; align-items: center; gap: 7.4%; padding: 0 8%; border-bottom: 1px solid #343636; color: #f4f4f4; font: 400 2.5cqw Roboto, Arial, sans-serif; }
 .coros-route-picker > header > svg { width: 4cqw; height: 4cqw; flex: 0 0 auto; }
-.coros-route-picker .coros-route-options { height: 84%; box-sizing: border-box; overflow-y: auto; padding: 5% 5% 6%; scrollbar-color: #3a3c3b transparent; scrollbar-width: thin; }
-.coros-route-picker .coros-route-group > strong { position: sticky; z-index: 1; top: 0; display: block; margin: 0 3% 4%; padding: .5cqw 0; background: #0d0e0e; color: #dedede; font: 400 1.5cqw Roboto, Arial, sans-serif; letter-spacing: 0; }
+.coros-route-picker .coros-route-options { height: 84%; box-sizing: border-box; overflow-y: auto; padding: 7% 5% 6%; scrollbar-color: #3a3c3b transparent; scrollbar-width: thin; }
+.coros-route-picker.is-input .coros-route-options { height: 100%; }
+.coros-route-picker.is-input .coros-route-group:nth-child(2) > strong { margin-top: 17px; }
+.coros-route-picker .coros-route-group > strong { display: block; margin: 0 3% 9%; padding: .5cqw 0; background: #0d0e0e; color: #dedede; font: 400 1.5cqw Roboto, Arial, sans-serif; letter-spacing: 0; }
 .coros-route-picker .coros-route-options button { width: 100%; min-height: 7.5cqw; display: flex; align-items: center; gap: 7%; padding: 0 3%; border: 0; background: transparent; color: #f4f4f4; font: 400 2.5cqw Roboto, Arial, sans-serif; }
 .coros-route-picker .coros-route-options button > svg { width: 4cqw; height: 4cqw; flex: 0 0 auto; }
 .coros-route-picker.is-input::after { content: ""; position: absolute; right: 15px; top: 224px; bottom: 11px; width: 2px; background: #313431; pointer-events: none; }
 .coros-route-picker.is-output > header { display: none; }
 .coros-route-picker.is-output .coros-route-options { position: relative; top: 1.25cqw; height: calc(100% - 1.25cqw); padding-top: 0; padding-left: 2.5%; }
-.coros-route-picker.is-output .coros-route-group:first-child > strong { display: none; }
-.coros-route-picker.is-output .coros-route-group:nth-child(-n+2) > strong { display: none; }
+.coros-route-picker.is-output .coros-route-group:nth-child(2) > strong { display: none; }
 .coros-route-picker.is-output .coros-route-group:nth-child(3) { margin-top: 3.75cqw; }
 .coros-route-picker.is-output .coros-route-group:nth-child(3) > strong { transform: translateY(-1.25cqw); }
 .coros-route-picker.is-output .coros-route-options button { padding-left: 6%; font-size: 2.25cqw; }
@@ -160,6 +174,10 @@
 .coros-reference-parameter-editor .cab-mic { display: flex; align-items: center; justify-content: space-between; padding: 0 7%; }
 .coros-reference-parameter-editor .cab-mic strong { font-weight: 400; }
 .coros-reference-parameter-editor .cab-mic svg { width: 1.6cqw; fill: none; stroke: currentColor; stroke-width: 2; }
+.coros-reference-parameter-editor .cab-mic .qc-ui-icon-previous,
+.coros-reference-parameter-editor .cab-mic .qc-ui-icon-next { width: 24px; height: 24px; flex: none; }
+.coros-reference-parameter-editor .cab-mic .qc-ui-icon-previous { transform: translateX(-6px); }
+.coros-reference-parameter-editor .cab-mic .qc-ui-icon-next { transform: translateX(6px); }
 .coros-reference-parameter-editor .cab-enable { display: grid; place-items: center; }
 .coros-reference-parameter-editor .cab-enable i { width: 2.8cqw; height: 1.5cqw; border-radius: 1cqw; background: #f3f3f3; }
 .coros-reference-parameter-editor .cab-enable i::after { content: ""; display: block; width: 1.2cqw; height: 1.2cqw; margin: .15cqw; border-radius: 50%; background: #333; }
@@ -197,6 +215,8 @@
 .coros-reference-parameter-editor .eq-control-dial.is-frequency { transform: rotate(-98deg); }
 .coros-reference-parameter-editor .eq-control-dial.is-q { transform: rotate(-124deg); }
 .coros-reference-parameter-editor .eq-values .eq-bypass-value strong { position: absolute; left: 7%; bottom: 13%; width: 43%; height: 42%; display: grid; place-items: center; border-radius: 6px; background: #171b18; font-size: 2.8cqw; }
+.coros-reference-parameter-editor .eq-values .eq-bypass-value strong svg { width: 24px; height: 24px; }
+.coros-reference-parameter-editor .eq-values .eq-bypass-value strong svg[data-official-raster="true"] { transform: translate(-3px, -4px); }
 
 /* The paged Flanger header has fixed CorOS slots; an even control matrix keeps
    both encoder rows aligned with the physical 800x480 framebuffer. */
@@ -227,6 +247,7 @@
 .coros-reference-parameter-editor:not(.coros-special-editor) .editor-title strong { font-size: 2.5cqw; transform: translate(1px, 3px); }
 .coros-reference-parameter-editor .editor-stomp { grid-template-columns: 65% 35%; }
 .coros-reference-parameter-editor .editor-stomp svg { transform: translate(4px, -3px) scale(2.2, 1.3); }
+.coros-reference-parameter-editor .editor-stomp svg[data-official-raster="true"] { width: 24px; height: 24px; transform: translate(2px, 2px); }
 .coros-reference-parameter-editor .editor-scene > button:first-child svg { transform: translateX(4px); }
 .coros-reference-parameter-editor .editor-scene > button:last-child svg { transform: translateX(-4px); }
 .editor-digital-flanger .coros-parameter-controls label:nth-child(-n+5) .coros-dial { transform: translateY(8px); }
