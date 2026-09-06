@@ -261,7 +261,7 @@ function CorOsDirectory({ snapshot, directory }: { snapshot: PresetSnapshot; dir
 
   return <section className="coros-directory" aria-label="Preset Directory">
     <header className="coros-directory-header">
-      <button className="directory-category" aria-label="Preset categories"><span className="directory-grid-icon"><QcDirectoryIcon kind="grid" /></span><strong>Presets</strong><span className="directory-chevron"><QcUiIcon kind="down" officialRaster /></span></button>
+      <button className="directory-category" aria-label="Preset categories"><span className="directory-grid-icon"><QcDirectoryIcon kind="grid" /></span><strong>Presets</strong><span className="directory-chevron"><QcUiIcon kind="down" /></span></button>
       <button className={`directory-cloud${uploadMode ? " is-active" : ""}`} aria-label="Upload to Cloud" aria-pressed={uploadMode} onClick={() => { setPresetMenuPosition(undefined); setUploadMode((active) => !active); }}><QcDirectoryIcon kind="cloud" /></button>
       <span className="directory-header-spacer" />
       <div className="directory-tools" aria-label="Directory tools">
@@ -487,9 +487,9 @@ function CorOsGrid({ snapshot, presetSlotAccent, selectedBlockId, onAction, onOp
     {modeMenuOpen && <div className="scene-dropdown vector-mode-dropdown" role="menu" aria-label="Modes">{(snapshot.modeSlots ?? (["PRESET", "SCENE", "STOMP"] as const).map((mode, slot) => ({ slot: slot as 0 | 1 | 2, label: mode, mode }))).map((entry) => <button key={`${entry.slot}-${entry.label}`} role="menuitem" className={snapshot.mode === entry.mode ? "is-active" : ""} onClick={() => { setModeMenuOpen(false); onAction({ kind: "select-mode-slot", slot: entry.slot }); }}>{entry.label}</button>)}</div>}
     {screenMenuOpen && <><div className="coros-screen-dimmer" onClick={() => setScreenMenuOpen(false)} /><div className="coros-screen-menu" role="menu" aria-label="Grid contextual menu">
       <div className="context-menu-heading">FILE</div>
-      {GRID_CONTEXT_MENU.slice(0, 8).map((item) => <button key={item.label} role="menuitem" className={"danger" in item && item.danger ? "context-danger" : ""} onClick={() => runGridMenuAction(item.action)}><span className="context-menu-icon"><QcUiIcon kind={item.icon} officialRaster /></span>{item.label}</button>)}
+      {GRID_CONTEXT_MENU.slice(0, 8).map((item) => <button key={item.label} role="menuitem" className={"danger" in item && item.danger ? "context-danger" : ""} onClick={() => runGridMenuAction(item.action)}><span className="context-menu-icon"><QcUiIcon kind={item.icon} /></span>{item.label}</button>)}
       <div className="context-menu-section">QUAD CORTEX</div>
-      {GRID_CONTEXT_MENU.slice(8).map((item) => <button key={item.label} role="menuitem" onClick={() => runGridMenuAction(item.action)}><span className="context-menu-icon"><QcUiIcon kind={item.icon} officialRaster /></span>{item.label}</button>)}
+      {GRID_CONTEXT_MENU.slice(8).map((item) => <button key={item.label} role="menuitem" onClick={() => runGridMenuAction(item.action)}><span className="context-menu-icon"><QcUiIcon kind={item.icon} /></span>{item.label}</button>)}
     </div></>}
     {routingPicker && <>
       <button className="coros-route-picker-dismiss" aria-label="Close route selection" onClick={routingPicker.onClose} />

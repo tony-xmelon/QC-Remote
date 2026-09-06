@@ -116,6 +116,20 @@ test("shared glyph registry covers hardware, routing, directory, editing, and co
   assert.match(fixtures, /return <QcDirectoryIcon kind=\{kind\} number=\{number\} \/>/, "fixture Directory icons must delegate to the shared glyph registry");
 });
 
+test("production and comparison screens cannot select alternate icon artwork", () => {
+  const sourceFiles = execFileSync("git", ["ls-files", "--", "apps", "packages", "tests"], { encoding: "utf8" })
+    .trim().split(/\r?\n/).filter((file) => /\.(?:ts|tsx)$/.test(file));
+  const fixtureOnlyVariant = new RegExp(["official", "Raster"].join(""));
+  for (const file of sourceFiles) {
+    assert.doesNotMatch(read(file), fixtureOnlyVariant, `${file} must use the same canonical artwork in production and comparisons`);
+  }
+
+  const icons = read("packages/typescript/qc-ui/src/theme-icons.tsx");
+  assert.match(icons, /export function QcScreenHeaderGlyph\(\{\s*kind,?\s*\}: \{\s*kind: QcScreenHeaderGlyphName;?\s*\}\)/s);
+  assert.match(icons, /if \(kind === "save"\) return <path shapeRendering="crispEdges" fill=\{QC_COLORS\.captured\.primaryText\}/);
+  assert.match(icons, /\| "cab-previous"\s*\| "cab-next"/s, "genuinely distinct contextual artwork must have semantic names");
+});
+
 test("official Directory toolbar glyphs retain exact CorOS vector colors and geometry", () => {
   const colors = JSON.parse(read("packages/typescript/qc-theme/src/colors.json"));
   assert.equal(colors.captured.iconPrimary, "#f8fcf8");

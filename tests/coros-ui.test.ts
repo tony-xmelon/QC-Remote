@@ -951,9 +951,10 @@ test("device and chat footers share one readable font size", () => {
 test("the Save action is one normal floppy without a status-dot overlay", () => {
   const surfaceSource = readFileSync(new URL("../packages/typescript/qc-ui/src/quad-cortex-surface.tsx", import.meta.url), "utf8");
   const iconSource = readFileSync(new URL("../packages/typescript/qc-ui/src/theme-icons.tsx", import.meta.url), "utf8");
-  const saveIcon = iconSource.slice(iconSource.indexOf('kind === "save"'), iconSource.indexOf('return <g fill={QC_COLORS.hardware.whiteLed}>'));
+  const headerIcons = iconSource.slice(iconSource.indexOf("export function QcScreenHeaderGlyph"), iconSource.indexOf("const ROUTE_ANALOG_INPUT_RASTER"));
+  const saveIcon = headerIcons.slice(headerIcons.indexOf('kind === "save"'), headerIcons.indexOf('fill={QC_COLORS.captured.headerMenu}'));
   assert.match(surfaceSource, /<QcScreenHeaderGlyph kind="save" \/>/);
-  assert.match(saveIcon, /fill=\{QC_COLORS\.hardware\.whiteLed\}/);
+  assert.match(saveIcon, /fill=\{QC_COLORS\.captured\.primaryText\}/);
   assert.doesNotMatch(saveIcon, /#45f862|snapshot\.dirty|<circle/);
 });
 

@@ -219,7 +219,7 @@
 .coros-reference-parameter-editor .eq-control-dial.is-q { transform: rotate(-124deg); }
 .coros-reference-parameter-editor .eq-values .eq-bypass-value strong { position: absolute; left: 7%; bottom: 13%; width: 43%; height: 42%; display: grid; place-items: center; border-radius: 6px; background: #171b18; font-size: 2.8cqw; }
 .coros-reference-parameter-editor .eq-values .eq-bypass-value strong svg { width: 24px; height: 24px; }
-.coros-reference-parameter-editor .eq-values .eq-bypass-value strong svg[data-official-raster="true"] { transform: translate(-3px, -4px); }
+.coros-reference-parameter-editor .eq-values .eq-bypass-value strong svg[data-qc-icon="band-power"] { transform: translate(-3px, -4px); }
 
 /* The paged Flanger header has fixed CorOS slots; an even control matrix keeps
    both encoder rows aligned with the physical 800x480 framebuffer. */
@@ -250,7 +250,7 @@
 .coros-reference-parameter-editor:not(.coros-special-editor) .editor-title strong { font-size: 2.5cqw; transform: translate(1px, 3px); }
 .coros-reference-parameter-editor .editor-stomp { grid-template-columns: 65% 35%; }
 .coros-reference-parameter-editor .editor-stomp svg { transform: translate(4px, -3px) scale(2.2, 1.3); }
-.coros-reference-parameter-editor .editor-stomp svg[data-official-raster="true"] { width: 24px; height: 24px; transform: translate(2px, 2px); }
+.coros-reference-parameter-editor .editor-stomp svg[data-qc-icon="footswitch"] { width: 24px; height: 24px; transform: translate(2px, 2px); }
 .coros-reference-parameter-editor .editor-scene > button:first-child svg { transform: translateX(4px); }
 .coros-reference-parameter-editor .editor-scene > button:last-child svg { transform: translateX(-4px); }
 .editor-digital-flanger .coros-parameter-controls label:nth-child(-n+5) .coros-dial { transform: translateY(8px); }

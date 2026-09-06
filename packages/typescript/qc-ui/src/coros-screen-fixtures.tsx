@@ -180,9 +180,9 @@ const KEYBOARD_ROWS = [
 function CorOsKeyboardScreen() {
   const shifted = ["", "", "", "", "", "", "'", "(", ")"];
   return <section className="qc-screen coros-physical-keyboard" aria-label="On-screen keyboard">
-    <header><button><QcUiIcon kind="close" officialRaster /></button><button className="keyboard-default-mark">○</button><span>Save as default User Preset</span><b>⌗</b><button className="keyboard-save-mark">▣</button></header>
+    <header><button><QcUiIcon kind="close" /></button><button className="keyboard-default-mark">○</button><span>Save as default User Preset</span><b>⌗</b><button className="keyboard-save-mark">▣</button></header>
     <h1>Name your Virtual Device Preset</h1>
-    <div className="physical-keyboard-rows">{KEYBOARD_ROWS.map((row, rowIndex) => <div key={rowIndex}>{row.map((key, keyIndex) => <button key={key} className={key === "Space" ? "is-space" : key === "⇧" ? "is-shift" : key === "⌫" ? "is-backspace" : key === "Done" ? "is-done" : key === "123" ? "is-numeric" : ""}>{rowIndex < 2 && <small>{rowIndex === 0 ? (keyIndex + 1) % 10 : shifted[keyIndex]}</small>}{key === "⌫" ? <QcUiIcon kind="backspace" officialRaster /> : key}</button>)}</div>)}</div>
+    <div className="physical-keyboard-rows">{KEYBOARD_ROWS.map((row, rowIndex) => <div key={rowIndex}>{row.map((key, keyIndex) => <button key={key} className={key === "Space" ? "is-space" : key === "⇧" ? "is-shift" : key === "⌫" ? "is-backspace" : key === "Done" ? "is-done" : key === "123" ? "is-numeric" : ""}>{rowIndex < 2 && <small>{rowIndex === 0 ? (keyIndex + 1) % 10 : shifted[keyIndex]}</small>}{key === "⌫" ? <QcUiIcon kind="backspace" /> : key}</button>)}</div>)}</div>
   </section>;
 }
 
@@ -512,7 +512,7 @@ function CorOsPowerOverlay({ onClose }: { onClose: () => void }) {
 function CorOsModesConfiguration({ onClose }: { onClose: () => void }) {
   const modes = ["PRESET", "SCENE", "STOMP"] as const;
   return <section className="coros-modes-configuration" aria-label="Modes Configuration">
-    <header><span>Modes configuration</span><div><button aria-label="Modes Configuration information"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M12 10v7M12 7h.01" /></svg></button><button aria-label="Close Modes Configuration" onClick={onClose}><QcUiIcon kind="check" officialRaster /></button></div></header>
+    <header><span>Modes configuration</span><div><button aria-label="Modes Configuration information"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M12 10v7M12 7h.01" /></svg></button><button aria-label="Close Modes Configuration" onClick={onClose}><QcUiIcon kind="check" /></button></div></header>
     <p>Drag a Mode on top of another to create a Hybrid<br />Mode. Use a long press to break a Hybrid Mode apart.</p>
     <div className="modes-cycle"><span>CYCLE</span><i /><i /><div>{modes.map((mode) => <button key={mode}><b><svg viewBox="0 0 24 24" aria-hidden="true"><ModeGlyph mode={mode} /></svg></b>{mode[0] + mode.slice(1).toLowerCase()}</button>)}</div></div>
   </section>;
@@ -720,7 +720,7 @@ function CorOsDeviceBrowserFixture({ view }: { view: "device-search" | "device-f
 
 function CorOsLooperEditor() {
   const actions = [["DUPLICATE", "×1", "A"], ["ONE SHOT", "↻", "B"], ["HALF SPEED", "1/2", "C"], ["PUNCH IN", "▰", "D"], ["RECORD", "●", "E"], ["PLAY", "▶", "F"], ["REVERSE", "◀◀", "G"], ["UNDO", "↶", "H"]];
-  return <section className="qc-screen coros-looper" aria-label="Looper X editor"><header><button aria-label="Open Looper menu"><QcUiIcon kind="more" /></button><span><small>LOOPER</small><strong>Looper X</strong></span><i /><button className="looper-params"><QcEditorIcon kind="looper" officialRaster />Params</button><button className="looper-scene"><QcEditorIcon kind="scene-previous" /><b>A</b><QcEditorIcon kind="scene-next" /></button><button aria-label="Confirm"><QcEditorIcon kind="confirm" /></button></header><div className="looper-timeline"><span>USE <b>●</b> TO START RECORDING</span><span>USE <b className="looper-close-caret">⌃</b> TO CLOSE THE LOOPER VIEW</span><em>AVAILABLE 4:38</em></div><div className="looper-actions">{actions.map(([label, glyph, key]) => <button key={label}><small>{label}</small><strong>{glyph}</strong><b>{key}</b></button>)}</div></section>;
+  return <section className="qc-screen coros-looper" aria-label="Looper X editor"><header><button aria-label="Open Looper menu"><QcUiIcon kind="more" /></button><span><small>LOOPER</small><strong>Looper X</strong></span><i /><button className="looper-params"><QcEditorIcon kind="looper" />Params</button><button className="looper-scene"><QcEditorIcon kind="scene-previous" /><b>A</b><QcEditorIcon kind="scene-next" /></button><button aria-label="Confirm"><QcEditorIcon kind="confirm" /></button></header><div className="looper-timeline"><span>USE <b>●</b> TO START RECORDING</span><span>USE <b className="looper-close-caret">⌃</b> TO CLOSE THE LOOPER VIEW</span><em>AVAILABLE 4:38</em></div><div className="looper-actions">{actions.map(([label, glyph, key]) => <button key={label}><small>{label}</small><strong>{glyph}</strong><b>{key}</b></button>)}</div></section>;
 }
 
 type CaptureLibraryView = "device-favorites" | "device-recents" | "device-search" | "device-search-entry" | "device-search-suggestions" | "device-search-results";
@@ -776,7 +776,7 @@ function CorOsAssignmentScreen({ view }: { view: "stomp-assignment" | "scene-ass
 }
 
 function BlockContextIcon({ kind }: { kind: "change" | "copy" | "paste" | "reset" | "save" | "expression" | "bypass" | "model-update" | "model-downgrade" | "remove" }) {
-  return <QcEditorIcon kind={kind === "bypass" ? "mute" : kind} officialRaster />;
+  return <QcEditorIcon kind={kind === "bypass" ? "mute" : kind} />;
 }
 
 function CorOsBlockContext() {
@@ -882,10 +882,10 @@ function CorOsOfficialGrid({ snapshot, children, browserChrome = false }: { snap
     <svg className="coros-vector-canvas" viewBox="0 0 800 480" preserveAspectRatio="none" role="img" aria-label={`${snapshot.presetLocation} ${snapshot.presetName}, ${snapshot.mode} mode`}>
       <rect width="800" height="480" fill="#020202" />
       <text x="14" y="76" fill="#f4f4f4" fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="64"><tspan letterSpacing="-2">{snapshot.presetLocation.slice(0, -1)}</tspan><tspan fill={browserChrome ? "#d63b3e" : "#2df36a"} letterSpacing="-2">{snapshot.presetLocation.slice(-1)}</tspan><tspan dx={16} dy={browserChrome ? -11 : 0} fill="#f4f4f4" fontSize={browserChrome ? 40 : 64} letterSpacing={browserChrome ? 0 : -2} textLength={browserChrome ? undefined : 313} lengthAdjust={browserChrome ? undefined : "spacingAndGlyphs"}>{snapshot.presetName}</tspan></text>
-      <QcScreenHeaderGlyph kind="undo" officialRaster />
-      <QcScreenHeaderGlyph kind="save" officialRaster />
+      <QcScreenHeaderGlyph kind="undo" />
+      <QcScreenHeaderGlyph kind="export" />
       <g className="grid-scene-badge"><rect x="656" y="12" width="25" height="25" rx="3" fill="#f2cf32" /><text x="668.5" y="33" textAnchor="middle" fill="#141414" fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="22">A</text></g>
-      <QcScreenHeaderGlyph kind="menu" officialRaster />
+      <QcScreenHeaderGlyph kind="menu" />
       <g transform="translate(657 55)"><ModeGlyph mode={snapshot.mode} /></g><text x="693" y="78" fill="#f0f0f0" fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="21.5">{snapshot.mode}</text>
       <g fill="#171719" stroke="#050505" strokeWidth="1.5" fontFamily="Helvetica Neue, Helvetica, Arial, sans-serif" textAnchor="middle">
         {rowY.flatMap((y, row) => [<rect key={`in-${row}`} x="8" y={y - 39} width="44" height="78" rx="15" />, <rect key={`out-${row}`} x="748" y={y - 39} width="44" height="78" rx="15" />])}
@@ -922,6 +922,7 @@ function IconographyAuditFixture() {
       {ui.map((kind) => <figure key={kind} data-icon={kind}><QcUiIcon kind={kind} /><figcaption>{kind}</figcaption></figure>)}
       {editor.map((kind) => <figure key={kind} data-icon={kind}><QcEditorIcon kind={kind} /><figcaption>{kind}</figcaption></figure>)}
       {hardware.map((kind) => <figure key={kind} data-icon={kind}><QcHardwareIcon kind={kind} /><figcaption>{kind}</figcaption></figure>)}
+      <figure data-icon="previous"><QcUiIcon kind="previous" /><figcaption>previous</figcaption></figure>
     </main>
   </section>;
 }

@@ -6,7 +6,7 @@
   "families": [
     {
       "type": "QcUiIconName",
-      "variants": ["add", "subtract", "previous", "next", "up", "down", "more", "check", "close", "refresh", "backspace", "microphone", "attachment", "file", "send", "stop", "save-as", "edit", "midi", "favorite", "delete", "capture", "modes", "tempo", "cpu", "settings"],
+      "variants": ["add", "subtract", "previous", "next", "cab-previous", "cab-next", "up", "down", "more", "check", "close", "refresh", "backspace", "microphone", "attachment", "file", "send", "stop", "save-as", "edit", "midi", "favorite", "delete", "capture", "modes", "tempo", "cpu", "settings"],
       "evidence": "screen-frame",
       "sources": ["grid-base", "grid-context-menu", "onscreen-keyboard", "preset-midi-out", "tempo-metronome", "settings-support", "overlay-busy", "iconography-audit"],
       "paletteTokens": ["captured.primaryText"]
@@ -41,7 +41,7 @@
     },
     {
       "type": "QcScreenHeaderGlyphName",
-      "variants": ["undo", "save", "menu"],
+      "variants": ["undo", "save", "export", "menu"],
       "evidence": "screen-frame",
       "sources": ["grid-base", "fixture-editor-capture"],
       "paletteTokens": ["captured.headerUndo", "captured.headerSave", "captured.headerMenu"]
@@ -107,7 +107,8 @@
     { "icon": "library.capture-header", "variant": "capture-header", "screen": "official-directory-captures", "crop": [24, 18, 24, 24], "referenceBackground": "#282c28", "rendererBackground": "#282c28", "expectedColors": ["#283028", "#404040", "#505050", "#586058", "#c0c0c0", "#c8c8c8", "#f8fcf8"], "paletteTokens": ["captured.captureStripeLow", "captured.captureStripeShadow", "captured.captureStripeDark", "captured.captureStripeMuted", "captured.captureStripeSoft", "captured.captureStripeLight", "captured.iconPrimary"] },
     { "icon": "library.capture-library", "variant": "capture-library", "screen": "official-directory-captures", "crop": [24, 198, 24, 24], "referenceBackground": "#181c18", "rendererBackground": "#181c18", "expectedColors": ["#f8fcf8"], "paletteTokens": ["captured.iconPrimary"] },
     { "icon": "screen-header.undo", "variant": "undo", "screen": "official-grid-brit-2203", "crop": [604, 8, 32, 32], "referenceBackground": "#000000", "rendererBackground": "#020202", "expectedColors": ["#f6f8f6"], "paletteTokens": ["captured.headerUndo"] },
-    { "icon": "screen-header.save", "variant": "save", "screen": "official-grid-brit-2203", "crop": [704, 10, 36, 28], "referenceBackground": "#000000", "rendererBackground": "#020202", "expectedColors": ["#eceeec"], "paletteTokens": ["captured.headerSave"] },
+    { "icon": "screen-header.save", "variant": "save", "screen": "grid-base", "sourceSet": "corpus", "crop": [700, 8, 40, 32], "referenceBackground": "#000000", "rendererBackground": "#000000", "expectedColors": ["#ffffff"], "paletteTokens": ["captured.primaryText"] },
+    { "icon": "screen-header.export", "variant": "export", "screen": "official-grid-brit-2203", "crop": [704, 10, 36, 28], "referenceBackground": "#000000", "rendererBackground": "#020202", "expectedColors": ["#eceeec"], "paletteTokens": ["captured.headerSave"] },
     { "icon": "screen-header.menu", "variant": "menu", "screen": "official-grid-brit-2203", "crop": [758, 10, 16, 28], "referenceBackground": "#000000", "rendererBackground": "#020202", "expectedColors": ["#ffffff"], "paletteTokens": ["captured.headerMenu"] },
     { "icon": "mode.preset", "variant": "PRESET", "screen": "official-gig-view-preset", "crop": [588, 17, 26, 26], "referenceBackground": "#181c18", "rendererBackground": "#171b18", "expectedColors": ["#f8fcf8"], "paletteTokens": ["captured.iconPrimary"] },
     { "icon": "mode.scene", "variant": "SCENE", "screen": "official-gig-view-scene", "crop": [588, 17, 26, 26], "referenceBackground": "#181c18", "rendererBackground": "#171b18", "expectedColors": ["#f8fcf8"], "paletteTokens": ["captured.iconPrimary"] },
@@ -200,9 +201,10 @@
     { "icon": "editor.waveform", "variant": "waveform", "screen": "iconography-audit", "sourceSet": "app-golden", "crop": [340, 172, 80, 32], "referenceBackground": "#181c18", "rendererBackground": "#181c18", "expectedColors": ["#ffffff"], "paletteTokens": ["captured.primaryText"] },
     { "icon": "hardware.power", "variant": "power", "screen": "iconography-audit", "sourceSet": "app-golden", "crop": [504, 172, 32, 32], "referenceBackground": "#181c18", "rendererBackground": "#181c18", "expectedColors": ["#f4f4f4"], "paletteTokens": ["hardware.whiteLed"] },
     { "icon": "hardware.brand-pulse", "variant": "brand-pulse", "screen": "iconography-audit", "sourceSet": "app-golden", "crop": [644, 172, 32, 32], "referenceBackground": "#181c18", "rendererBackground": "#181c18", "expectedColors": ["#f4f4f4"], "paletteTokens": ["hardware.whiteLed"] },
+    { "icon": "interface.previous", "variant": "previous", "screen": "iconography-audit", "sourceSet": "app-golden", "crop": [84, 272, 32, 32], "referenceBackground": "#181c18", "rendererBackground": "#181c18", "expectedColors": ["#ffffff"], "paletteTokens": ["captured.primaryText"] },
     { "icon": "interface.check", "variant": "check", "screen": "modes-configuration", "sourceSet": "corpus", "crop": [731, 18, 24, 24], "referenceBackground": "#292c29", "rendererBackground": "#292c29", "expectedColors": ["#ffffff"], "paletteTokens": ["captured.primaryText"] },
-    { "icon": "interface.previous-cab", "variant": "previous", "screen": "editor-ukc30-cab", "sourceSet": "corpus", "crop": [100, 431, 24, 24], "referenceBackground": "#181c18", "rendererBackground": "#181c18", "expectedColors": ["#848684", "#9c9e9c"], "paletteTokens": ["captured.cabArrowDark", "captured.cabArrowLight"] },
-    { "icon": "interface.next-cab", "variant": "next", "screen": "editor-ukc30-cab", "sourceSet": "corpus", "crop": [282, 431, 24, 24], "referenceBackground": "#181c18", "rendererBackground": "#181c18", "expectedColors": ["#848684", "#9c9e9c"], "paletteTokens": ["captured.cabArrowDark", "captured.cabArrowLight"] },
+    { "icon": "interface.previous-cab", "variant": "cab-previous", "screen": "editor-ukc30-cab", "sourceSet": "corpus", "crop": [100, 431, 24, 24], "referenceBackground": "#181c18", "rendererBackground": "#181c18", "expectedColors": ["#848684", "#9c9e9c"], "paletteTokens": ["captured.cabArrowDark", "captured.cabArrowLight"] },
+    { "icon": "interface.next-cab", "variant": "cab-next", "screen": "editor-ukc30-cab", "sourceSet": "corpus", "crop": [282, 431, 24, 24], "referenceBackground": "#181c18", "rendererBackground": "#181c18", "expectedColors": ["#848684", "#9c9e9c"], "paletteTokens": ["captured.cabArrowDark", "captured.cabArrowLight"] },
     { "icon": "editor.band-power", "variant": "band-power", "screen": "editor-parametric-8", "sourceSet": "corpus", "crop": [665, 420, 24, 24], "referenceBackground": "#181c18", "rendererBackground": "#171b18", "expectedColors": ["#ffffff"], "paletteTokens": ["captured.primaryText"] },
     { "icon": "editor.model-update", "variant": "model-update", "screen": "block-context-bottom", "sourceSet": "corpus", "crop": [48, 288, 24, 24], "referenceBackground": "#101010", "rendererBackground": "#101010", "expectedColors": ["#101410", "#080c08", "#081008", "#081010"], "paletteTokens": ["captured.editorDisabled", "captured.editorDisabledShadow", "captured.editorDisabledAccent", "captured.editorDisabledEdge"] },
     { "icon": "editor.model-downgrade", "variant": "model-downgrade", "screen": "block-context-bottom", "sourceSet": "corpus", "crop": [48, 348, 24, 24], "referenceBackground": "#101010", "rendererBackground": "#101010", "expectedColors": ["#101410"], "paletteTokens": ["captured.editorDisabled"] },

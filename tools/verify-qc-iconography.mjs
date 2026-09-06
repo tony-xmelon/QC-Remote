@@ -14,7 +14,7 @@ const appGolden = JSON.parse(readFileSync(join(appGoldenRoot, "manifest.json"), 
 const failures = [];
 const requireCompleteCoverage = process.argv.includes("--require-complete-coverage");
 const union = (name) => {
-  const match = iconsSource.match(new RegExp(`export type ${name} = ([^;]+);`));
+  const match = iconsSource.match(new RegExp(`export type ${name} =\\s*([^;]+);`));
   if (!match) return failures.push(`missing exported union ${name}`), [];
   return [...match[1].matchAll(/"([^"]+)"/g)].map((entry) => entry[1]);
 };
