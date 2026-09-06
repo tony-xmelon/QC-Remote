@@ -32,6 +32,13 @@ type VolumeQueue = {
   expected?: number;
   target?: number;
   desired?: number;
+  /**
+   * The last value handed to the device. Master Volume is acknowledged on
+   * transport acceptance and only later echoed by the QC, so the observed
+   * snapshot lags every write; this is what tells the accumulator whether the
+   * device has caught up yet.
+   */
+  written?: number;
 };
 
 type LatestValueQueue = {
@@ -143,7 +150,10 @@ export function useContinuousControlWorkflow(options: ContinuousControlWorkflowO
       // by the QC's pushed type-17 echo. Always guard against the latest
       // authoritative snapshot; an optimistic UI value must never become the
       // expected device value for the next encoder step.
-      write: (target) => gateway.setMasterVolume(target, controller.snapshotRef.current.masterVolume),
+      write: (target, _expected, current) => {
+        current.written = target;
+        return gateway.setMasterVolume(target, controller.snapshotRef.current.masterVolume);
+      },
       accept: (result, target, current) => {
         current.expected = result.snapshot?.masterVolume ?? controller.snapshotRef.current.masterVolume;
         if (result.snapshot) reconcile(result.snapshot);
@@ -160,8 +170,16 @@ export function useContinuousControlWorkflow(options: ContinuousControlWorkflowO
   const adjustMasterVolume = useCallback((delta: number) => {
     const queue = volume.current;
     const observed = controller.snapshotRef.current.masterVolume;
-    if (!queue.running && queue.target === undefined && queue.expected === undefined && queue.desired !== observed) {
+    // Re-seed the accumulator from the device only once the device has caught
+    // up with what it was last told. Re-seeding while an echo is still in
+    // flight silently discards every step taken since that write: a six-step
+    // encoder sweep landed three steps short, and the lamp sat on "awaiting
+    // device echo" because the value it was waiting for had been dropped.
+    const deviceHasCaughtUp = queue.written === undefined || observed === queue.written;
+    const idle = !queue.running && queue.target === undefined && queue.expected === undefined;
+    if (idle && deviceHasCaughtUp && queue.desired !== observed) {
       queue.desired = observed;
+      queue.written = undefined;
     }
     const value = Math.max(0, Math.min(100, Math.round((queue.desired ?? observed) + delta)));
     queue.desired = value;
@@ -185,6 +203,7 @@ export function useContinuousControlWorkflow(options: ContinuousControlWorkflowO
     tempo.current.target = undefined;
     volume.current.timer = undefined;
     volume.current.target = undefined;
+    volume.current.written = undefined;
   }, []);
 
   useEffect(() => cancel, [cancel]);

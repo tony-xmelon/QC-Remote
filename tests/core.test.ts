@@ -16,6 +16,11 @@ test("tempo pulse phase remains stable across the QC's 24 clock ticks", () => {
   assert.equal(synchronizeTempoPulseEpoch(epoch, 10_000 + 12 * 500 / 24, 12, 120), epoch);
   assert.equal(synchronizeTempoPulseEpoch(epoch, 10_500, 0, 120), epoch);
   assert.equal(synchronizeTempoPulseEpoch(epoch, 10_570, 0, 120), 10_070);
+  // The tolerance sits just above the jitter measured on hardware (about 4ms
+  // at 120 BPM). Anything it does not correct is drift the lamp keeps, and a
+  // lamp 37ms behind the device is the desync this was reported for.
+  assert.equal(synchronizeTempoPulseEpoch(epoch, 10_504, 0, 120), epoch, "4ms of jitter must not move the lamp");
+  assert.equal(synchronizeTempoPulseEpoch(epoch, 10_537, 0, 120), 10_037, "37ms of drift must be corrected");
 });
 import { QcCommandCoordinator } from "../packages/typescript/qc-core/src/command-coordinator.ts";
 import { inputRouteOptions, routeOptionValue, routeOptionsForRow, routePickerGroup, routePickerLabel } from "../packages/typescript/qc-core/src/routing.ts";

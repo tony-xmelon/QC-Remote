@@ -707,6 +707,27 @@ test("preset navigation waits on QC state events and reads only as recovery", ()
   assert.doesNotMatch(recallFlow, /thread::sleep/);
 });
 
+test("a fast encoder sweep keeps every step instead of dropping the ones in flight", () => {
+  const controls = readFileSync(new URL("../packages/typescript/qc-ui/src/use-continuous-control-workflow.ts", import.meta.url), "utf8");
+  // Master Volume is acknowledged on transport acceptance and echoed later, so
+  // the observed snapshot lags each write. Re-seeding the accumulator from that
+  // lagging value threw away every step taken since: six steps landed three
+  // short on hardware, and the notice stuck on the value that was discarded.
+  assert.match(controls, /const deviceHasCaughtUp = queue\.written === undefined \|\| observed === queue\.written;/);
+  assert.match(controls, /if \(idle && deviceHasCaughtUp && queue\.desired !== observed\) \{/);
+  assert.match(controls, /current\.written = target;/, "the queue records what it last told the device");
+  assert.match(controls, /volume\.current\.written = undefined;/, "a cancelled queue forgets its outstanding write");
+  assert.doesNotMatch(controls, /if \(!queue\.running && queue\.target === undefined && queue\.expected === undefined && queue\.desired !== observed\)/,
+    "the unconditional re-seed is what dropped the steps");
+});
+
+test("the tempo lamp re-anchors on drift the eye can see, not only on gross drift", () => {
+  const tempoSource = readFileSync(new URL("../packages/typescript/qc-core/src/tempo.ts", import.meta.url), "utf8");
+  assert.match(tempoSource, /const clockJitterTolerance = Math\.max\(8, period \/ 50\);/);
+  assert.doesNotMatch(tempoSource, /Math\.min\(50, Math\.max\(12, period \/ 10\)\)/,
+    "the old allowance let the lamp keep 37ms of drift against a clock that jitters by 4ms");
+});
+
 test("tempo writes preserve the original guard and the lamp follows the QC clock", () => {
   const appSource = readFileSync(new URL("../apps/windows/src/App.tsx", import.meta.url), "utf8");
   const controlsSource = readFileSync(new URL("../packages/typescript/qc-ui/src/use-continuous-control-workflow.ts", import.meta.url), "utf8");

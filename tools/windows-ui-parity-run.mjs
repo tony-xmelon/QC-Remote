@@ -95,10 +95,14 @@ async function step(name, body) {
     record.result = "failed";
     record.error = String(error?.message ?? error);
   }
+  // A step that could not run has verified nothing. Reporting it as a pass is
+  // how a gap hides in a green run.
+  if (record.result === "passed" && record.facts.skipped) record.result = "skipped";
   record.durationMs = Date.now() - startedAt;
   steps.push(record);
-  const marker = record.result === "passed" ? "PASS" : "FAIL";
-  console.log(`${marker}  ${name}${record.error ? ` - ${record.error}` : ""}`);
+  const marker = { passed: "PASS", failed: "FAIL", skipped: "SKIP" }[record.result];
+  const tail = record.error ?? (record.result === "skipped" ? record.facts.skipped : "");
+  console.log(`${marker}  ${name}${tail ? ` - ${tail}` : ""}`);
   return record;
 }
 
@@ -112,6 +116,40 @@ async function waitFor(condition, message, budgetMs = timeoutMs) {
     await sleep(250);
   }
   throw new Error(message);
+}
+
+/** Put the device back on the preset this run found loaded. */
+async function returnToStartingPreset() {
+  if (!startingPreset) return { returned: false };
+  const now = await invoke("device.snapshot");
+  if (now.presetPosition === startingPreset.presetPosition
+    && now.setlistKey === startingPreset.setlistKey) return { returned: false, at: now.presetLocation };
+  if (now.dirty) await revertOwnEdits("returning to the starting preset");
+  const settled = await invoke("device.snapshot");
+  await invoke("device.recallPreset", {
+    setlistKey: startingPreset.setlistKey, position: startingPreset.presetPosition,
+    expectedPresetName: settled.presetName ?? "", expectedPosition: settled.presetPosition,
+    expectedSetlistKey: settled.setlistKey
+  });
+  await waitFor(async () => (await invoke("device.snapshot")).presetPosition === startingPreset.presetPosition,
+    "the run could not return the device to the preset it started on", 30_000);
+  return { returned: true, at: startingPreset.presetLocation };
+}
+
+/**
+ * Revert the live grid to the stored preset. Editing steps leave the preset
+ * dirty even after they restore every value, and a dirty preset blocks preset
+ * navigation by design - so a run that edits must also clean up after itself.
+ * Only ever called for dirt this run created.
+ */
+async function revertOwnEdits(why) {
+  const snapshot = await invoke("device.snapshot");
+  if (!snapshot.dirty) return { reverted: false };
+  await invoke("device.reloadPreset", {
+    expectedPresetName: snapshot.presetName ?? "", expectedPosition: snapshot.presetPosition
+  });
+  await waitFor(async () => !(await invoke("device.snapshot")).dirty, `the preset stayed dirty after ${why}`, 20_000);
+  return { reverted: true, why };
 }
 
 /** The pid of the broker the host currently owns, or null when none runs. */
@@ -130,7 +168,35 @@ const readLamps = () => page.evaluate(() => [...document.querySelectorAll(".foot
     assigned: node.classList.contains("is-assigned")
   })));
 
+/**
+ * Put the app back on the Grid before anything is measured. The run must not
+ * depend on which screen the previous session happened to leave open.
+ */
+async function returnToTheGrid() {
+  for (const closer of ["Return to Grid", "Close route selection"]) {
+    const button = page.getByRole("button", { name: closer });
+    if (await button.count()) await button.first().click().catch(() => undefined);
+  }
+  if (await page.locator(".dialog-backdrop").count()) await page.keyboard.press("Escape").catch(() => undefined);
+  await sleep(400);
+  return page.evaluate(() => ({
+    directory: Boolean(document.querySelector(".coros-directory")),
+    dialog: Boolean(document.querySelector(".dialog-backdrop")),
+    grid: Boolean(document.querySelector(".coros-vector-canvas"))
+  }));
+}
+
 // ---------------------------------------------------------------- connection
+
+let startingPreset;
+
+await step("00-app-starts-on-the-grid", async () => {
+  const state = await returnToTheGrid();
+  startingPreset = await invoke("device.snapshot");
+  expect(state.grid && !state.directory && !state.dialog,
+    `the app is not on the Grid: ${JSON.stringify(state)}`);
+  return { ...state, startedOn: `${startingPreset.presetLocation} ${startingPreset.presetName}`, dirty: startingPreset.dirty };
+});
 
 await step("01-connection-ready", async (record) => {
   await page.getByRole("button", { name: /QC READY; open connection details/ }).waitFor({ timeout: timeoutMs });
@@ -175,6 +241,7 @@ await step("02-window-fits-the-screen", async () => {
 // -------------------------------------------------------------- preset library
 
 await step("03-preset-library-populates", async (record) => {
+  await returnToTheGrid();
   await page.locator(".preset-title-hit").click();
   await page.locator(".coros-directory").waitFor({ timeout: timeoutMs });
   // The library is populated when the device's own listing has landed AND the
@@ -216,6 +283,9 @@ await step("04-preset-library-returns-to-the-grid", async () => {
 
 await step("05-preset-navigation-updates-name-and-number", async (record) => {
   const before = await invoke("device.snapshot");
+  // The QC refuses to leave a preset with unsaved edits, and so does the app.
+  // That is the contract, not a failure: say so rather than destroying work.
+  if (before.dirty) return { skipped: `${before.presetLocation} has unsaved changes; navigation is blocked by design` };
   const uiBefore = await readPresetFromUi();
   await page.getByRole("button", { name: /BANK DOWN/i }).first().click();
   const deadline = Date.now() + timeoutMs;
@@ -341,10 +411,16 @@ await step("07-tempo-lamp-tracks-the-device-beat", async () => {
 
 await step("08-master-volume-round-trips-without-losing-sync", async (record) => {
   const slider = page.getByRole("slider", { name: "Master volume knob" });
-  const observed = () => page.evaluate(async () => ({
-    gateway: (await window.__TAURI_INTERNALS__.invoke("gateway_invoke", { method: "device.masterVolume", params: {} })).value,
-    ui: Number(document.querySelector('[aria-label="Master volume knob"]')?.getAttribute("aria-valuenow"))
-  }));
+  const uiVolume = () => page.evaluate(() =>
+    Number(document.querySelector('[aria-label="Master volume knob"]')?.getAttribute("aria-valuenow")));
+  const observed = async () => ({
+    gateway: (await invoke("device.masterVolume")).value,
+    ui: await uiVolume()
+  });
+  const waitForVolume = (value) => waitFor(async () => {
+    const now = await observed();
+    return now.gateway === value && now.ui === value;
+  }, `Master Volume never settled on ${value}`, timeoutMs);
   const initial = await observed();
   expect(initial.gateway === initial.ui, `volume disagrees at rest: gateway ${initial.gateway}, UI ${initial.ui}`);
   const increase = initial.gateway < 100;
@@ -352,19 +428,11 @@ await step("08-master-volume-round-trips-without-losing-sync", async (record) =>
   await slider.focus();
   const changeStarted = Date.now();
   await slider.press(increase ? "ArrowUp" : "ArrowDown");
-  await page.waitForFunction(async (value) => {
-    const ui = Number(document.querySelector('[aria-label="Master volume knob"]')?.getAttribute("aria-valuenow"));
-    const gateway = (await window.__TAURI_INTERNALS__.invoke("gateway_invoke", { method: "device.masterVolume", params: {} })).value;
-    return ui === value && gateway === value;
-  }, target, { timeout: timeoutMs, polling: 25 });
+  await waitForVolume(target);
   const changeMs = Date.now() - changeStarted;
   const restoreStarted = Date.now();
   await slider.press(increase ? "ArrowDown" : "ArrowUp");
-  await page.waitForFunction(async (value) => {
-    const ui = Number(document.querySelector('[aria-label="Master volume knob"]')?.getAttribute("aria-valuenow"));
-    const gateway = (await window.__TAURI_INTERNALS__.invoke("gateway_invoke", { method: "device.masterVolume", params: {} })).value;
-    return ui === value && gateway === value;
-  }, initial.gateway, { timeout: timeoutMs, polling: 25 });
+  await waitForVolume(initial.gateway);
   const restoreMs = Date.now() - restoreStarted;
   // A single step is the easy case. A real encoder turn coalesces many steps
   // while the device's echo is still in flight, which is where the write guard
@@ -383,11 +451,7 @@ await step("08-master-volume-round-trips-without-losing-sync", async (record) =>
   try {
     const sweepStarted = Date.now();
     for (let index = 0; index < sweepSteps; index += 1) await slider.press(sweepKey);
-    await page.waitForFunction(async (value) => {
-      const ui = Number(document.querySelector('[aria-label="Master volume knob"]')?.getAttribute("aria-valuenow"));
-      const gateway = (await window.__TAURI_INTERNALS__.invoke("gateway_invoke", { method: "device.masterVolume", params: {} })).value;
-      return ui === value && gateway === value;
-    }, sweepTarget, { timeout: timeoutMs, polling: 25 });
+    await waitForVolume(sweepTarget);
     sweep = { steps: sweepSteps, target: sweepTarget, convergedMs: Date.now() - sweepStarted, converged: true };
   } catch (error) {
     const observedNow = await observed();
@@ -513,8 +577,10 @@ await step("13-scene-mode-lamps-and-selection", async (record) => {
     const now = await invoke("device.snapshot").catch(() => inScene);
     await invoke("device.selectScene", { scene: start.activeScene, expectedPresetName: now.presetName ?? "" }).catch(() => undefined);
     await invoke("device.selectModeSlot", { slot: startSlot, expectedPresetName: now.presetName ?? "" }).catch(() => undefined);
-    await waitFor(async () => (await invoke("device.snapshot")).mode === start.mode,
-      "the device did not return to its starting mode").catch(() => undefined);
+    await waitFor(async () => {
+      const settled = await invoke("device.snapshot");
+      return settled.mode === start.mode && settled.activeScene === start.activeScene;
+    }, "the device did not return to its starting mode and scene").catch(() => undefined);
     record.facts.restoredMode = (await invoke("device.snapshot").catch(() => ({}))).mode;
   }
   return undefined;
@@ -523,14 +589,20 @@ await step("13-scene-mode-lamps-and-selection", async (record) => {
 // --------------------------------------------------------------- block edits
 
 await step("14-block-bypass-round-trips-through-the-grid", async (record) => {
+  // The navigation steps leave the device elsewhere; the editing steps need the
+  // preset this run started on, which is the one the user actually had loaded.
+  record.facts.returned = await returnToStartingPreset();
   const start = await invoke("device.snapshot");
   const block = start.blocks.find((candidate) => candidate.column >= 0 && candidate.modelId !== undefined)
     ?? start.blocks[0];
   if (!block) return { skipped: "the loaded preset has no blocks" };
   const original = Boolean(block.bypassed);
+  // Read the scene immediately before the write: the guard compares against the
+  // device's live scene, and an earlier step may still be settling.
+  const atWrite = await invoke("device.snapshot");
   await invoke("device.toggleBypass", {
-    row: block.row, column: block.column, expectedScene: start.activeScene,
-    expectedBypassed: original, desiredBypassed: !original, expectedPresetName: start.presetName ?? ""
+    row: block.row, column: block.column, expectedScene: atWrite.activeScene,
+    expectedBypassed: original, desiredBypassed: !original, expectedPresetName: atWrite.presetName ?? ""
   });
   await waitFor(async () => {
     const now = await invoke("device.snapshot");
@@ -551,7 +623,8 @@ await step("14-block-bypass-round-trips-through-the-grid", async (record) => {
     const now = await invoke("device.snapshot");
     return Boolean(now.blocks.find((c) => c.row === block.row && c.column === block.column)?.bypassed) === original;
   }, "the block's bypass was not restored");
-  return { block: { row: block.row, column: block.column, name: block.name }, original, toggledInUi };
+  const reverted = await revertOwnEdits("the bypass round trip");
+  return { block: { row: block.row, column: block.column, name: block.name }, original, toggledInUi, reverted };
 });
 
 await step("15-parameter-edit-reads-back-and-restores", async () => {
@@ -582,7 +655,8 @@ await step("15-parameter-edit-reads-back-and-restores", async () => {
     const value = (now.parameters ?? []).find((candidate) => candidate.index === parameter.index)?.normalizedValue;
     return typeof value === "number" && Math.abs(value - original) < 0.02;
   }, "the parameter was not restored");
-  return { block: block.name, parameter: parameter.name ?? parameter.index, original, target, readBack };
+  const reverted = await revertOwnEdits("the parameter round trip");
+  return { block: block.name, parameter: parameter.name ?? parameter.index, original, target, readBack, reverted };
 });
 
 // ---------------------------------------------------------------- tempo write
@@ -635,6 +709,8 @@ await step("17-tuner-opens-and-closes-on-the-device", async (record) => {
 
 await step("18-directory-recall-converges", async (record) => {
   const start = await invoke("device.snapshot");
+  if (start.dirty) return { skipped: `${start.presetLocation} has unsaved changes; recall is blocked by design` };
+  await returnToTheGrid();
   await page.locator(".preset-title-hit").click();
   await page.locator(".coros-directory").waitFor({ timeout: timeoutMs });
   await waitFor(async () => (await page.locator(".directory-preset-row").count()) > 0, "the Directory never listed presets");
@@ -779,6 +855,7 @@ await step("21b-ui-follows-the-device-after-a-broker-swap", async (record) => {
 // ------------------------------------------------------------------- teardown
 
 await step("22-session-survives-the-run", async (record) => {
+  record.facts.returned = await returnToStartingPreset().catch((error) => ({ error: String(error?.message ?? error) }));
   const status = await invoke("system.status");
   expect(status.usbDiagnostics?.connected && status.usbDiagnostics?.synchronized,
     `the session ended ${status.usbDiagnostics?.phase}: ${status.usbDiagnostics?.detail}`);
@@ -792,8 +869,9 @@ const summary = {
   endpoint,
   passed: steps.filter((entry) => entry.result === "passed").length,
   failed: steps.filter((entry) => entry.result === "failed").length,
+  skipped: steps.filter((entry) => entry.result === "skipped").length,
   steps
 };
 await writeFile(join(outputDirectory, "ui-parity-run.json"), `${JSON.stringify(summary, null, 2)}\n`, "utf8");
-console.log(`\n${summary.passed} passed, ${summary.failed} failed -> ${join(outputDirectory, "ui-parity-run.json")}`);
+console.log(`\n${summary.passed} passed, ${summary.failed} failed, ${summary.skipped} skipped -> ${join(outputDirectory, "ui-parity-run.json")}`);
 process.exit(summary.failed === 0 ? 0 : 1);

@@ -8,8 +8,14 @@ export interface TapTempoResult {
 
 /**
  * Keep the visual beat origin stable while CorOS reports its 24 clock ticks.
- * Replacing the epoch on every tick restarts the browser animation and makes
- * the TEMPO lamp appear to flash at the MIDI-clock rate instead of once/beat.
+ * Replacing the epoch on every tick makes the TEMPO lamp appear to flash at
+ * the MIDI-clock rate instead of once a beat, so small movements are ignored.
+ *
+ * The tolerance has to sit just above the real jitter and no higher: anything
+ * larger is drift the lamp keeps rather than corrects. Measured on hardware at
+ * 120 BPM, the clock arrives within +/-4ms, while the old 50ms allowance let
+ * the lamp settle 37ms off the beat - visibly late against the device, which
+ * is the "same BPM, blinks not in sync" the lamp was reported for.
  */
 export function synchronizeTempoPulseEpoch(
   currentEpoch: number | undefined,
@@ -25,7 +31,7 @@ export function synchronizeTempoPulseEpoch(
 
   const rawDelta = candidate - currentEpoch;
   const phaseDelta = ((rawDelta + period / 2) % period + period) % period - period / 2;
-  const clockJitterTolerance = Math.min(50, Math.max(12, period / 10));
+  const clockJitterTolerance = Math.max(8, period / 50);
   return Math.abs(phaseDelta) <= clockJitterTolerance ? currentEpoch : currentEpoch + phaseDelta;
 }
 
