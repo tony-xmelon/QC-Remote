@@ -114,7 +114,7 @@ path despite its label:
 
 Every IR Loader has two slots, each with its own pair.
 
-### Writing — the shape, and what is still unproven
+### Writing — probed on hardware
 
 `FileMessage` carries the upload field:
 
@@ -135,28 +135,75 @@ message FileMessage {
 }
 ```
 
-So an import is `FileMessage{action: CREATE, type: 1, folder: FolderInfo{key:
-"local_ir_root", files: [ProductData{name}]}, ir_payload: <bytes>}` on type 4,
-most likely paired with a `BulkOperation` (type 57) progress envelope, given
-`total_bulk_create_count` and the fact that BulkOperation carries
-`source_folder`/`destination_folder` and a `progress` float.
+Probed against a unit with an empty IR library. **The envelope is proven.**
 
-**This has not been verified on hardware, and three things remain unknown:**
+```
+FileMessage{action: CREATE, type: 1, total_bulk_create_count: 1,
+            folder: FolderInfo{key, files: [ProductData{name}]},
+            ir_payload: <bytes>}                              on message type 4
+```
 
-1. whether `ir_payload` is a raw WAV or a converted/wrapped form;
-2. whether one message carries a whole IR or the transfer is chunked; and
-3. whether the device requires the `BulkOperation` wrapper around it.
+sent this way makes the device run a real import and answer on type 57, echoing
+the request's `request_id`:
 
-Neither this stack nor the pyquadcortex reference implements IR upload, so there
-is no prior art to copy. The rigorous way to close it is to capture Cortex
-Control performing an IR import with `tools/capture_cortex_device_writes.py`,
-rather than guessing at a persistent write to someone's device.
+```
+BulkOperation finished=false progress=0.00  "Importing IRs, please wait."
+BulkOperation finished=false progress=1.00  ""
+BulkOperation finished=true  progress=0.00  ""
+```
 
-`tools/generate-hardware-test-ir.mjs` produces a disposable 24-bit/48 kHz WAV
-suitable for that capture, and an IR present on the unit is the one fixture the
-hardware conformance suite still cannot supply for itself (`load_ir`).
+What the probes settled:
+
+- **`total_bulk_create_count` is required.** Without it the device is completely
+  silent and no import is attempted. With it, the flow above runs every time.
+- **The folder key does not matter.** `2_q`, `local_ir_root`, `/media/p4/CustomIRs`
+  and `/media/p4/CustomIRs/Impulse Responses/` all behave identically, as does
+  omitting the folder. Nor does the file metadata: a `.wav` suffix on the name,
+  an explicit `key`, and a bare name are indistinguishable.
+- **User IRs live at `/media/p4/CustomIRs/Impulse Responses/`** on the device.
+  That path and the literal `CustomIR` sit together in the Cortex Control binary
+  at `0x0310e8a8`, next to `irImportFinished` and the import file filter
+  `*.wav;*.aiff`.
+
+**The payload encoding is still unresolved.** Structurally valid mono 48 kHz
+WAVs - 16-bit and 24-bit, at 21 ms, 100 ms and 500 ms - are all accepted and
+then discarded: the import runs to `finished` and the library stays empty. So
+`ir_payload` is not simply the contents of a `.wav` file. Gzipping it and
+sending bare sample data without a container behave the same way.
+
+Closing this needs ground truth rather than more guesses: capture Cortex Control
+performing an IR import with `tools/capture_cortex_device_writes.py` and read
+the bytes it puts in the field.
+
+> One caution from the probing. A 32-bit-float WAV payload knocked the QC's HID
+> interface off the USB bus. It re-enumerated on its own after about 15 seconds
+> with all 74 presets intact and nothing lost, but it is a real crash and worth
+> avoiding: send integer PCM while experimenting.
+
+## Long host-to-device messages need pacing
+
+This is not IR-specific and it matters for anything large.
+
+A 72 KB message frames into 572 HID reports. Written back to back as fast as the
+host can issue them - 0.19 s for the whole message - the device answers **0 times
+out of 3**. The same payload with a 0.5 ms gap after each report takes 0.6 s and
+is answered **3 times out of 3**; at 1 ms, 3 out of 3 again.
+
+This looked at first like a size ceiling, and a coarse sweep supported that: 48 KB
+answered, 72 KB and 96 KB silent. Bracketing it disproved the idea outright -
+66.0 KB silent, 66.5 KB answered, 67.0 KB answered, 67.5 KB silent, 69.0 KB
+answered. Loss that comes and goes across a 3 KB span is not a limit. There is
+no ceiling in the framing either: reports carry 126 payload bytes each with no
+cap on how many.
+
+So the constraint is delivery. Every QC write STALLs its status stage by design,
+so a long burst has nothing pacing it and the device drops reports silently -
+the message never reassembles and no error is ever reported. Any host sending a
+multi-hundred-report message should space its reports; roughly half a millisecond
+was enough here.
 
 ## Related notes
+
 
 - `docs/NDSP_FILE_FORMATS.md` — preset `.pb`, backup JSON wrapper, Cloud packaging
 - `docs/HARDWARE_CONFORMANCE.md` — how the physical suite is run
