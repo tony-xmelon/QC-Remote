@@ -32,15 +32,6 @@ export const QC_GEOMETRY = {
 
 export const QC_VISUAL_ASSETS = visualAssets;
 
-export const QC_GLYPH_FAMILIES = {
-  hardware: ["power", "undo", "redo", "save", "menu", "mode", "scenePrevious", "sceneNext", "bypass", "confirm"] as const,
-  routing: ["input", "output", "internal", "usb", "return", "multiOut", "send", "xlr", "row"] as const,
-  directory: ["grid", "download", "cloud", "cloudUpload", "folder", "newFolder", "sort", "filter", "arrange", "upload", "search", "trash", "done"] as const,
-  editing: ["save", "change", "copy", "paste", "reset", "expression", "looper", "mute", "modelUpdate", "modelDowngrade", "remove"] as const,
-  communication: ["microphone", "attachment", "file", "send", "stop", "expand"] as const,
-  interface: ["add", "subtract", "previous", "next", "up", "down", "more", "check", "close", "refresh", "backspace", "saveAs", "edit", "midi", "favorite", "delete", "capture", "tempo", "cpu", "settings"] as const
-} as const;
-
 export const QC_NATIVE_THEME = nativeTheme;
 export const QC_BRAND = brand;
 
@@ -51,7 +42,6 @@ export const QC_THEME = {
   typography: QC_TYPOGRAPHY,
   geometry: QC_GEOMETRY,
   assets: QC_VISUAL_ASSETS,
-  glyphs: QC_GLYPH_FAMILIES,
   native: QC_NATIVE_THEME,
   brand: QC_BRAND
 } as const;

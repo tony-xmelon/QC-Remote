@@ -8,6 +8,10 @@ export type QcLibraryIconName = "capture-library" | "capture-header" | "heart" |
 export type QcScreenHeaderGlyphName = "undo" | "save" | "export" | "menu";
 export type QcUiIconName = "add" | "subtract" | "previous" | "next" | "cab-previous" | "cab-next" | "up" | "down" | "more" | "check" | "close" | "refresh" | "backspace" | "microphone" | "attachment" | "file" | "send" | "stop" | "save-as" | "edit" | "midi" | "favorite" | "delete" | "capture" | "modes" | "tempo" | "cpu" | "settings";
 
+export function QcPresetStackIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 4-8 4-8-4 8-4Zm8 8-8 4-8-4m16 4-8 4-8-4" /></svg>;
+}
+
 /** Shared app/CorOS glyph vocabulary. Text characters must not be used as icons. */
 export function QcUiIcon({ kind, className }: { kind: QcUiIconName; className?: string }) {
   const classes = `qc-ui-icon qc-ui-icon-${kind}${className ? ` ${className}` : ""}`;
@@ -192,10 +196,6 @@ export function QcUiIcon({ kind, className }: { kind: QcUiIconName; className?: 
       </svg>
     );
   return null;
-}
-
-export function MicrophoneIcon({ className }: { className?: string }) {
-  return <QcUiIcon kind="microphone" className={className} />;
 }
 
 export function QcHardwareIcon({ kind, className }: { kind: QcHardwareIconName; className?: string }) {
@@ -459,6 +459,7 @@ export function QcDirectoryIcon({ kind, number }: { kind: QcDirectoryIconName; n
 
 export function QcLibraryIcon({ kind, className }: { kind: QcLibraryIconName; className?: string }) {
   const classes = `qc-library-icon qc-library-icon-${kind}${className ? ` ${className}` : ""}`;
+  const heartPath = "M12 21 4.4 13.7C.5 9.8 3 4 7.4 4c2.1 0 3.4 1.2 4.6 2.7C13.2 5.2 14.5 4 16.6 4 21 4 23.5 9.8 19.6 13.7Z";
   if (kind === "capture-library")
     return (
       <svg className={classes} viewBox="0 0 24 24" aria-hidden="true">
@@ -495,13 +496,13 @@ export function QcLibraryIcon({ kind, className }: { kind: QcLibraryIconName; cl
   if (kind === "broken-heart")
     return (
       <svg className={classes} viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 21 4.4 13.7C.5 9.8 3 4 7.4 4c2.1 0 3.4 1.2 4.6 2.7C13.2 5.2 14.5 4 16.6 4 21 4 23.5 9.8 19.6 13.7Z" />
+        <path d={heartPath} />
         <path d="m13 6-3 5h3l-2 5" fill="none" stroke={QC_COLORS.device.panelRaised} strokeWidth="2" />
       </svg>
     );
   return (
     <svg className={classes} viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 21 4.4 13.7C.5 9.8 3 4 7.4 4c2.1 0 3.4 1.2 4.6 2.7C13.2 5.2 14.5 4 16.6 4 21 4 23.5 9.8 19.6 13.7Z" fill="none" />
+      <path d={heartPath} fill="none" />
     </svg>
   );
 }

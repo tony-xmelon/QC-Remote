@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import test from "node:test";
-import { QC_BRAND, QC_COLORS, QC_GEOMETRY, QC_GLYPH_FAMILIES, QC_NATIVE_THEME, QC_TYPOGRAPHY, QC_VISUAL_ASSETS } from "../packages/typescript/qc-theme/src/index.ts";
+import { QC_BRAND, QC_COLORS, QC_GEOMETRY, QC_NATIVE_THEME, QC_TYPOGRAPHY, QC_VISUAL_ASSETS } from "../packages/typescript/qc-theme/src/index.ts";
 
 const read = (path: string) => readFileSync(path, "utf8");
 const sha256 = (path: string) => createHash("sha256").update(path.endsWith(".svg")
@@ -104,10 +104,8 @@ test("core behavior and UI artwork consume one category palette", () => {
 });
 
 test("shared glyph registry covers hardware, routing, directory, editing, and communication", () => {
-  assert.deepEqual(Object.keys(QC_GLYPH_FAMILIES), ["hardware", "routing", "directory", "editing", "communication", "interface"]);
-  for (const family of Object.values(QC_GLYPH_FAMILIES)) assert.ok(family.length >= 4);
   const icons = read("packages/typescript/qc-ui/src/theme-icons.tsx");
-  for (const component of ["QcRouteGlyph", "QcModeGlyph", "QcDirectoryIcon", "QcEditorIcon", "QcUiIcon", "MicrophoneIcon"]) assert.ok(icons.includes("export function " + component));
+  for (const component of ["QcRouteGlyph", "QcModeGlyph", "QcDirectoryIcon", "QcEditorIcon", "QcUiIcon"]) assert.ok(icons.includes("export function " + component));
   assert.equal(readdirSync("packages/typescript/qc-ui/src").filter((entry) => /icon/i.test(entry)).join(","), "theme-icons.tsx");
   assert.doesNotMatch(read("packages/typescript/qc-ui/src/quad-cortex-surface.tsx"), /function (?:RoutePickerGlyph|DirectoryIcon|ModeGlyph)/);
   assert.doesNotMatch(read("packages/typescript/qc-ui/src/parameter-editor.tsx"), /function ParameterMenuIcon/);
@@ -144,9 +142,9 @@ test("official Directory toolbar glyphs retain exact CorOS vector colors and geo
   assert.doesNotMatch(icons, /fill=["']#(?:fff|ffffff|616161)["']/i, "official colors must come from the shared measured palette");
 });
 
-test("all deployed visual assets match the theme's canonical fingerprints", () => {
+test("all canonical visual assets match the theme fingerprints", () => {
   for (const [name, asset] of Object.entries(QC_VISUAL_ASSETS)) {
-    for (const file of [asset.sourcePath, ...asset.deployedPaths]) assert.equal(sha256(file), asset.sha256, `${name}: ${file}`);
+    assert.equal(sha256(asset.sourcePath), asset.sha256, `${name}: ${asset.sourcePath}`);
   }
 });
 
@@ -157,10 +155,51 @@ test("every tracked visual, font, audio, or video asset is owned by the theme ma
   const prefixes: string[] = [];
   for (const asset of Object.values(QC_VISUAL_ASSETS)) {
     exact.add(asset.sourcePath);
-    for (const file of asset.deployedPaths) exact.add(file);
     if ("derivedPathPrefixes" in asset) prefixes.push(...asset.derivedPathPrefixes);
   }
   for (const file of visualFiles) assert.ok(file.startsWith("references/") || exact.has(file) || prefixes.some((prefix) => file.startsWith(prefix)), `${file} is not owned by qc-theme/src/assets.json`);
+});
+
+test("product visual assets have no byte-for-byte duplicates", () => {
+  const visualFiles = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "--", "*.png", "*.svg", "*.ico", "*.webp", "*.jpg", "*.jpeg", "*.gif", "*.avif", "*.woff", "*.woff2", "*.ttf", "*.otf", "*.mp3", "*.wav", "*.ogg", "*.mp4", "*.webm"], { encoding: "utf8" })
+    .trim().split(/\r?\n/).filter(Boolean).map((file) => file.replaceAll("\\", "/"))
+    .filter((file) => !file.startsWith("references/"));
+  const owners = new Map<string, string>();
+  for (const file of visualFiles) {
+    const fingerprint = sha256(file);
+    assert.ok(!owners.has(fingerprint), `${file} duplicates canonical asset ${owners.get(fingerprint)}`);
+    owners.set(fingerprint, file);
+  }
+});
+
+test("authored vector geometry has one owner", () => {
+  const sourceFiles = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "--", "apps/**/*.tsx", "packages/**/*.tsx"], { encoding: "utf8" })
+    .trim().split(/\r?\n/).filter(Boolean);
+  const owners = new Map<string, string>();
+  for (const file of sourceFiles) {
+    for (const match of read(file).matchAll(/\bd="([^"]{8,})"/g)) {
+      const location = `${file}:${read(file).slice(0, match.index).split("\n").length}`;
+      assert.ok(!owners.has(match[1]), `${location} duplicates vector geometry owned by ${owners.get(match[1])}`);
+      owners.set(match[1], location);
+    }
+  }
+  const components = sourceFiles.flatMap((file) => [...read(file).matchAll(/function\s+(?:Qc)?DeviceGlyph\b/g)].map(() => file));
+  assert.deepEqual(components, ["packages/typescript/qc-ui/src/device-glyph.tsx"]);
+});
+
+test("every declared icon is wired outside its registry and audit gallery", () => {
+  const iconFile = "packages/typescript/qc-ui/src/theme-icons.tsx";
+  const iconSource = read(iconFile);
+  const fixtureFile = "packages/typescript/qc-ui/src/coros-screen-fixtures.tsx";
+  const fixtureSource = read(fixtureFile).split("function IconographyAuditFixture")[0];
+  const authoredSource = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "--", "apps/**/*.ts", "apps/**/*.tsx", "packages/**/*.ts", "packages/**/*.tsx"], { encoding: "utf8" })
+    .trim().split(/\r?\n/).filter((file) => file !== iconFile && file !== fixtureFile && !file.endsWith(".test.ts") && !file.endsWith(".test.tsx"))
+    .map(read).concat(fixtureSource).join("\n");
+  for (const union of iconSource.matchAll(/export type \w+(?:IconName|GlyphName)\s*=\s*([^;]+);/g)) {
+    for (const variant of union[1].matchAll(/"([^"]+)"/g)) {
+      assert.match(authoredSource, new RegExp(`["']${variant[1].replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}["']`), `${variant[1]} is declared but not wired`);
+    }
+  }
 });
 
 test("product branding has one shared owner across web and native hosts", () => {
@@ -217,7 +256,7 @@ test("authored app and device sources cannot bypass the shared visual contract",
     if (file.endsWith(".css")) assert.doesNotMatch(source.replaceAll("--qc-transparent", ""), /\btransparent\b/i, `${file} must use the shared transparent token`);
     if (/\.tsx?$/.test(file) && !file.endsWith("theme-icons.tsx")) assert.doesNotMatch(source, iconCharacter, `${file} must reference a shared vector glyph instead of an icon character literal`);
   }
-  assert.match(read("scripts/sync-theme-assets.mjs"), /assets\.json/);
+  assert.doesNotMatch(read("scripts/sync-theme-assets.mjs"), /copyFile|assetCopies|deployedPaths/);
   assert.match(read("scripts/generate-qc-domain.mjs"), /colors\.json/);
 });
 

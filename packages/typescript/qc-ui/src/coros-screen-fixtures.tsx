@@ -1,8 +1,9 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
 import type { GridBlock, PresetList, PresetSnapshot } from "@ndsp-qc/client";
-import { QC_COLORS, QC_VISUAL_ASSETS, REFERENCE_BLOCK_ICONS } from "@ndsp-qc/theme";
+import { QC_COLORS } from "@ndsp-qc/theme";
 import { officialBlockVisual } from "./block-visuals";
 import { openSplitPath } from "./coros-ui";
+import { QcDeviceGlyph } from "./device-glyph";
 import { QcDirectoryIcon, QcEditorIcon, QcHardwareIcon, QcLibraryIcon, QcModeGlyph, QcScreenHeaderGlyph, QcUiIcon } from "./theme-icons";
 import "./fixture-live-surface.css";
 import "./remaining-fixtures.css";
@@ -21,7 +22,6 @@ import "./official-settings-device.css";
 import "./official-tuner.css";
 import "./qc-device-typography.css";
 
-const officialBlockSprite = QC_VISUAL_ASSETS.blockSprite.url;
 type OfficialGigMode = "preset" | "scene" | "stomp" | "hybrid";
 
 function GigStompGlyph({ index }: { index: number }) {
@@ -50,17 +50,6 @@ function CorOsOfficialGig({ mode }: { mode: OfficialGigMode }) {
 
 export type { CorOsScreenView } from "./coros-screen-fixture-data";
 import type { CorOsScreenView } from "./coros-screen-fixture-data";
-function DeviceGlyph({ block, x, y, size = 64, selected = false }: { block: GridBlock; x: number; y: number; size?: number; selected?: boolean }) {
-  const visual = officialBlockVisual(block);
-  const [tileX, tileY] = visual.tile;
-  if (visual.referenceAsset) return <image className="official-block-tile" x={x - size / 2} y={y - size / 2} width={size} height={size} href={REFERENCE_BLOCK_ICONS[visual.referenceAsset]} preserveAspectRatio="xMidYMid meet" aria-hidden="true" />;
-  return <svg className="official-block-tile" x={x - size / 2} y={y - size / 2} width={size} height={size} viewBox={`${tileX} ${tileY} 70 70`} preserveAspectRatio="xMidYMid meet" overflow="hidden" aria-hidden="true">
-    <image href={officialBlockSprite} x="0" y="0" width="710" height="152" />
-    <rect x={tileX + 3} y={tileY + 3} width="64" height="64" rx="14" fill="none" stroke="#000" strokeWidth="5" />
-    <rect x={tileX + 3} y={tileY + 3} width="64" height="64" rx="14" fill="none" stroke={visual.color} strokeWidth={selected ? 5.5 : 2.4} />
-  </svg>;
-}
-
 function ModeGlyph({ mode }: { mode: PresetSnapshot["mode"] }) {
   return <QcModeGlyph mode={mode} />;
 }
@@ -220,9 +209,11 @@ function CaptureKindGlyph({ index }: { index: number }) {
   return <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="12" y="8" width="24" height="33" rx="3" /><circle cx="18" cy="15" r="2" /><circle cx="30" cy="15" r="2" /><circle cx="24" cy="27" r="5" /></svg>;
 }
 
+const SETTINGS_CLOUD_PATH = "M8 25h16a6 6 0 0 0 1-11.9A9 9 0 0 0 8 11a7 7 0 0 0 0 14Z";
+
 function CorOsOfficialCapture({ view }: { view: "capture-calibration" | "capture-progress" | "capture-result" | "capture-save" }) {
   if (view === "capture-progress") return <section className="qc-screen capture-official capture-official-progress"><header><span>Neural Capture</span><button>×</button></header><main><nav>{[["✓", "Calibration"], ["✓", "Recording Signals"], ["✓", "Sanity Check"], ["➜", "Training"]].map(([icon, label]) => <div key={label}><b>{icon}</b>{label}</div>)}</nav><section><h1>Neural Capture in progress</h1><p>The core of Neural Capture. Training a neural network to<br />emulate the sound of your favorite device.</p><strong>30%</strong><i className="capture-official-progress-bar"><b /></i><em>◔</em></section></main></section>;
-  if (view === "capture-save") return <section className="qc-screen capture-official capture-official-save"><header><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg></button><button className="capture-folder"><DirectoryIcon kind="folder" /><span>My Captures</span></button><button>Name</button><button className="capture-note"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7Z" /><path d="M14 3v5h5M10 12h5m-5 3h5m-5 3h5" /></svg></button><button className="capture-save-now"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h12l3 3v15H4V3Z" /><path d="M8 3v6h8V3M8 21v-7h8v7" /></svg></button></header><main><small>TYPE OF CAPTURE</small><h1>Amp</h1><div className="capture-kinds">{Array.from({ length: 6 }, (_, index) => <button key={index} className={index === 1 ? "is-active" : ""}><CaptureKindGlyph index={index} />{index > 0 && <i />}</button>)}</div><small>PREFERRED INSTRUMENT</small><div className="capture-instruments">{["Guitar", "Bass", "Synth", "Vocal", "Other"].map((label, index) => <button key={label} className={index === 0 ? "is-active" : ""}>{label}</button>)}</div></main></section>;
+  if (view === "capture-save") return <section className="qc-screen capture-official capture-official-save"><header><button><QcUiIcon kind="close" /></button><button className="capture-folder"><DirectoryIcon kind="folder" /><span>My Captures</span></button><button>Name</button><button className="capture-note"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7Z" /><path d="M14 3v5h5M10 12h5m-5 3h5m-5 3h5" /></svg></button><button className="capture-save-now"><QcEditorIcon kind="save" /></button></header><main><small>TYPE OF CAPTURE</small><h1>Amp</h1><div className="capture-kinds">{Array.from({ length: 6 }, (_, index) => <button key={index} className={index === 1 ? "is-active" : ""}><CaptureKindGlyph index={index} />{index > 0 && <i />}</button>)}</div><small>PREFERRED INSTRUMENT</small><div className="capture-instruments">{["Guitar", "Bass", "Synth", "Vocal", "Other"].map((label, index) => <button key={label} className={index === 0 ? "is-active" : ""}>{label}</button>)}</div></main></section>;
   if (view === "capture-result") return <section className="qc-screen capture-official capture-official-result"><header><span>Neural Capture</span><button>×</button></header><p>Your Neural Capture is ready. Switch between the reference and Quad Cortex using<br />the buttons below.</p><div className="capture-result-actions"><button>BACK TO CALIBRATION</button><button>SAVE</button><CaptureTargetIcon /></div><main><section><button>CORTEX</button><label><span className="capture-level-label"><IoHeadphonesGlyph />LEVEL</span><b className="capture-level-dial" /><small>0.0 dB</small></label></section><section><button>REFERENCE</button></section></main></section>;
   return <section className="qc-screen capture-official capture-official-settings"><header><span>Neural Capture</span><button>×</button></header><ul><li>Please verify your Quad Cortex is properly connected to the target device.</li><li>Reduce levels if any of the meters detect clipping.</li><li>The IN 2 GROUND LIFT can mitigate noise caused by ground loops between Quad<br />Cortex and the target device.</li></ul><div className="capture-setting-actions"><button>CONNECTION DIAGRAM</button><button>START CAPTURE</button><CaptureTargetIcon /><nav><button className="is-active">1</button><button>2</button></nav></div><main><section><span>IN 1 LEVEL</span><em className="capture-info">i</em><small>INST</small><b>0.0 dB</b><i className="capture-level-dial" /></section><section><span>IN 2 LEVEL</span><em className="capture-info">i</em><small>DEVICE</small><b>0.0 dB</b><i className="capture-level-dial" /></section><section className="capture-input-type"><span>IN 1 TYPE</span><label><i /><small>Mic</small><b>Instrument</b></label></section><section className="capture-input-type"><span>IN 2 TYPE</span><label><i /><small>Mic</small><b>Instrument</b></label></section><section><span>IN 1 LEVEL</span><b>-40.0 <small>dB</small></b><i className="capture-meter" /></section><section><span>IN 2 LEVEL</span><b>-40.0 <small>dB</small></b><i className="capture-meter" /></section><section><span>♧ LEVEL</span><i className="capture-level-dial" /><b>0.0 <small>dB</small></b></section></main></section>;
 }
@@ -247,8 +238,8 @@ type SettingsFixtureView = "settings-account" | "settings-system" | "settings-de
 
 function SettingsAccountGlyph({ kind }: { kind: "cloud" | "user" | "backup" }) {
   if (kind === "user") return <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="9" r="5" /><path d="M7 29v-7a9 9 0 0 1 18 0v7" /></svg>;
-  if (kind === "backup") return <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 25h16a6 6 0 0 0 1-11.9A9 9 0 0 0 8 11a7 7 0 0 0 0 14Z" /><path d="m11 16-3 3 3 3m10-6 3 3-3 3M8 19h5m11 0h-5" /></svg>;
-  return <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 25h16a6 6 0 0 0 1-11.9A9 9 0 0 0 8 11a7 7 0 0 0 0 14Z" /></svg>;
+  if (kind === "backup") return <svg viewBox="0 0 32 32" aria-hidden="true"><path d={SETTINGS_CLOUD_PATH} /><path d="m11 16-3 3 3 3m10-6 3 3-3 3M8 19h5m11 0h-5" /></svg>;
+  return <svg viewBox="0 0 32 32" aria-hidden="true"><path d={SETTINGS_CLOUD_PATH} /></svg>;
 }
 
 function SettingsPowerIcon() {
@@ -343,7 +334,7 @@ function CorOsSettingsFixture({ view }: { view: SettingsFixtureView }) {
 
 function SceneTileTools() {
   return <span className="gig-scene-tools" aria-hidden="true">
-    <svg viewBox="0 0 24 24"><path d="M4 9v11h11M8 16 19 5l-3-3L5 13l-1 5 5-1Z" /></svg>
+    <QcUiIcon kind="edit" />
     <svg viewBox="0 0 24 24"><path d="M3 8h16m0 0-4-4m4 4-4 4M21 16H5m0 0 4-4m-4 4 4 4" /></svg>
     <svg viewBox="0 0 24 24"><rect x="3" y="7" width="14" height="14" rx="2" /><path d="M7 7V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-2" /></svg>
   </span>;
@@ -371,8 +362,8 @@ function CorOsGigView({ snapshot, presetList, onClose, liveTuner = false }: { sn
     const block = assigned ?? gridBlocks[index];
     const color = !block ? "#292c29" : block.bypassed ? "#101c21" : block.name === "Simple Gate" ? "#949694" : block.name === "Chief DS1" ? "#ff7100" : block.name === "UK C30 TopBoost" ? "#ff2421" : block.name === "212 UK C30 65 (M)" ? "#6b55ff" : block.name === "Parametric-8" ? "#0875e7" : block.name === "Ambience" ? "#00ffde" : officialBlockVisual(block).color;
     return <button key={index} className={!block ? "is-empty" : ""} style={{ "--gig-color": color } as CSSProperties} aria-label={`Footswitch ${String.fromCharCode(65 + index)}${block ? `, ${block.name}` : ", empty"}`}>
-      {block && <span className="gig-device-icon"><DeviceGlyph block={block} x={43} y={43} size={70} /></span>}
-      {block && <span className="gig-edit" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 9v11h11M8 16 19 5l-3-3L5 13l-1 5 5-1Z" /></svg></span>}<b>{String.fromCharCode(65 + index)}</b>{block && <strong className={block.name === "Parametric-8" ? "is-compact" : ""}>{block.name}</strong>}
+      {block && <span className="gig-device-icon"><QcDeviceGlyph block={block} x={43} y={43} size={70} /></span>}
+      {block && <span className="gig-edit" aria-hidden="true"><QcUiIcon kind="edit" /></span>}<b>{String.fromCharCode(65 + index)}</b>{block && <strong className={block.name === "Parametric-8" ? "is-compact" : ""}>{block.name}</strong>}
     </button>;
   });
   const tileForMode = (mode: "PRESET" | "SCENE" | "STOMP", index: number) => mode === "PRESET" ? presetTiles[index] : mode === "SCENE" ? sceneTiles[index] : stompTiles[index];
@@ -436,7 +427,7 @@ function CorOsCpuMonitor({ snapshot, onClose }: { snapshot: PresetSnapshot; onCl
       const row = Math.floor(index / 8), column = index % 8;
       const block = snapshot.blocks.find((candidate) => candidate.row === row && candidate.column === column);
       const load = block ? loads[index % loads.length] : 0;
-      return <div key={index} className={block ? "has-block" : ""}>{block && <><span className="cpu-block-icon"><DeviceGlyph block={block} x={30} y={30} size={56} /></span><strong>{load}%</strong><small>{block.name}</small></>}</div>;
+      return <div key={index} className={block ? "has-block" : ""}>{block && <><span className="cpu-block-icon"><QcDeviceGlyph block={block} x={30} y={30} size={56} /></span><strong>{load}%</strong><small>{block.name}</small></>}</div>;
     })}</div>
     <footer><span><i className="cpu-legend-active" /> ACTIVE</span><span><i className="cpu-legend-bypassed" /> BYPASSED</span><span>GLOBAL EQ <b>ON</b></span><span>INPUT GATES <b>ON</b></span></footer>
   </section>;
@@ -509,10 +500,14 @@ function CorOsPowerOverlay({ onClose }: { onClose: () => void }) {
   </section>;
 }
 
+function InformationGlyph() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M12 10v7M12 7h.01" /></svg>;
+}
+
 function CorOsModesConfiguration({ onClose }: { onClose: () => void }) {
   const modes = ["PRESET", "SCENE", "STOMP"] as const;
   return <section className="coros-modes-configuration" aria-label="Modes Configuration">
-    <header><span>Modes configuration</span><div><button aria-label="Modes Configuration information"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M12 10v7M12 7h.01" /></svg></button><button aria-label="Close Modes Configuration" onClick={onClose}><QcUiIcon kind="check" /></button></div></header>
+    <header><span>Modes configuration</span><div><button aria-label="Modes Configuration information"><InformationGlyph /></button><button aria-label="Close Modes Configuration" onClick={onClose}><QcUiIcon kind="check" /></button></div></header>
     <p>Drag a Mode on top of another to create a Hybrid<br />Mode. Use a long press to break a Hybrid Mode apart.</p>
     <div className="modes-cycle"><span>CYCLE</span><i /><i /><div>{modes.map((mode) => <button key={mode}><b><svg viewBox="0 0 24 24" aria-hidden="true"><ModeGlyph mode={mode} /></svg></b>{mode[0] + mode.slice(1).toLowerCase()}</button>)}</div></div>
   </section>;
@@ -520,7 +515,7 @@ function CorOsModesConfiguration({ onClose }: { onClose: () => void }) {
 
 function CorOsOfficialModes({ onClose }: { onClose: () => void }) {
   return <section className="coros-modes-configuration modes-official" aria-label="Modes Configuration">
-    <header><span>Modes configuration</span><div><button aria-label="Modes Configuration information"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M12 10v7M12 7h.01" /></svg></button><button aria-label="Close Modes Configuration" onClick={onClose}>✓</button></div></header>
+    <header><span>Modes configuration</span><div><button aria-label="Modes Configuration information"><InformationGlyph /></button><button aria-label="Close Modes Configuration" onClick={onClose}>✓</button></div></header>
     <p>Drag a Mode on top of another to create a Hybrid<br />Mode. Use a long press to break a Hybrid Mode apart.</p>
     <div className="modes-cycle"><span>CYCLE</span><i /><div><button><b><svg viewBox="0 0 24 24" aria-hidden="true"><ModeGlyph mode="PRESET" /></svg></b>Preset</button><button className="hybrid-mode"><b><svg viewBox="0 0 24 24" aria-hidden="true"><ModeGlyph mode="SCENE" /></svg><svg viewBox="0 0 24 24" aria-hidden="true"><ModeGlyph mode="STOMP" /></svg></b><span>Scene<br />Stomp</span><em><i />↕<i /></em></button></div></div>
     <svg className="modes-device" viewBox="0 0 240 152" aria-hidden="true"><path d="M7 12 Q5 76 7 140 Q7 150 18 150 H222 Q233 150 233 140 Q235 76 233 12 Q233 2 222 2 H18 Q7 2 7 12 Z"/><rect x="67" y="10" width="106" height="62" rx="3"/><circle cx="38" cy="42" r="11"/><circle cx="203" cy="42" r="7"/>{[38,79,120,162,203].map((x)=><circle key={`a${x}`} cx={x} cy="98" r="6" className={x===203?"off":"yellow"}/>)}{[38,79,120,162,203].map((x)=><circle key={`b${x}`} cx={x} cy="132" r="6" className={x===203?"off":"purple"}/>)}</svg>
@@ -605,13 +600,21 @@ function PhysicalRoutingGrid({ snapshot, selected }: { snapshot: PresetSnapshot;
     {snapshot.blocks.filter((block) => block.row === 0).map((block) => {
       const x = [101, 187, 273, 357, 443, 529, 615, 701][block.column] ?? 101;
       return <g key={block.id} opacity={block.bypassed ? .48 : 1}>
-        <DeviceGlyph block={block} x={x} y={41} />
+        <QcDeviceGlyph block={block} x={x} y={41} />
         {block.bypassed && <path d={`M${x - 32} 41H${x + 32}`} fill="none" stroke="#c9c9ca" strokeWidth="2" opacity=".9" />}
       </g>;
     })}
     <circle cx="60" cy="135" r="18" fill={mixerSelected ? "#020202" : "#087cea"} stroke={mixerSelected ? "#087cea" : "none"} strokeWidth="2" /><text x="60" y="141" textAnchor="middle" fill={mixerSelected ? "#087cea" : "#fff"} fontFamily="Arial" fontSize="18">S</text>
     <circle cx="740" cy="135" r="18" fill={mixerSelected ? "#f00063" : "#020202"} stroke={mixerSelected ? "none" : "#f00063"} strokeWidth="2" /><text x="740" y="141" textAnchor="middle" fill={mixerSelected ? "#fff" : "#f00063"} fontFamily="Arial" fontSize="18">M</text>
   </svg>;
+}
+
+function RoutingEditorHeaderControls() {
+  return <>
+    <svg viewBox="0 0 230 44" aria-hidden="true"><circle cx="18" cy="12" r="6" fill="#087cea"/><path d="M18 18v12h87v-12M105 30v-12" fill="none" stroke="#eee" strokeWidth="2"/><circle cx="105" cy="30" r="6" fill="#f00063"/><circle cx="140" cy="12" r="6" fill="#087cea"/><path d="M140 18v12h87v-12M227 30v-12" fill="none" stroke="#eee" strokeWidth="2"/><circle cx="227" cy="12" r="6" fill="#f00063"/></svg>
+    <b className="splitter-scene"><span><QcEditorIcon kind="scene-previous" /></span><i>A</i><span><QcEditorIcon kind="scene-next" /></span></b>
+    <em><svg viewBox="0 0 66 43" aria-hidden="true"><rect x="23" y="11" width="20" height="20" rx="3"/><path d="M27 27V15l6 7 6-7v12"/></svg></em>
+  </>;
 }
 
 function CorOsRoutingScreen({ view, snapshot }: { view: "splitter-placement" | "splitter-editor" | "mixer-editor" | "empty-slot"; snapshot: PresetSnapshot }) {
@@ -621,7 +624,7 @@ function CorOsRoutingScreen({ view, snapshot }: { view: "splitter-placement" | "
   if (splitter) return <section className="qc-screen coros-splitter-physical" aria-label={placement ? "Splitter and Mixer placement handles" : "Splitter parameter editor"}>
     <PhysicalRoutingGrid snapshot={snapshot} selected="S" />
     <section className="splitter-panel">
-      <header><button>⋮</button><span><strong>Splitter</strong></span><svg viewBox="0 0 230 44" aria-hidden="true"><circle cx="18" cy="12" r="6" fill="#087cea"/><path d="M18 18v12h87v-12M105 30v-12" fill="none" stroke="#eee" strokeWidth="2"/><circle cx="105" cy="30" r="6" fill="#f00063"/><circle cx="140" cy="12" r="6" fill="#087cea"/><path d="M140 18v12h87v-12M227 30v-12" fill="none" stroke="#eee" strokeWidth="2"/><circle cx="227" cy="12" r="6" fill="#f00063"/></svg><b className="splitter-scene"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4 3 12l8 8zM21 4l-8 8 8 8z" /></svg></span><i>A</i><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m13 4 8 8-8 8zM3 4l8 8-8 8z" /></svg></span></b><em><svg viewBox="0 0 66 43" aria-hidden="true"><rect x="23" y="11" width="20" height="20" rx="3"/><path d="M27 27V15l6 7 6-7v12"/></svg></em><button>✓</button></header>
+      <header><button>⋮</button><span><strong>Splitter</strong></span><RoutingEditorHeaderControls /><button>✓</button></header>
       <div className="splitter-controls">
         <label><strong>TYPE</strong><span className="splitter-toggle"><i/><b>Crossover<br/>A/B<br/><em>Balance</em></b></span></label>
         <label><strong>STEREO</strong><span className="splitter-toggle"><i/><b>Split<br/><em>Normal</em></b></span></label>
@@ -637,7 +640,7 @@ function CorOsRoutingScreen({ view, snapshot }: { view: "splitter-placement" | "
   return <section className="qc-screen coros-splitter-physical coros-mixer-physical" aria-label="Mixer parameter editor">
     <PhysicalRoutingGrid snapshot={snapshot} selected="M" />
     <section className="splitter-panel mixer-panel">
-      <header><button>⋮</button><span><strong>Mixer</strong></span><svg viewBox="0 0 230 44" aria-hidden="true"><circle cx="18" cy="12" r="6" fill="#087cea"/><path d="M18 18v12h87v-12M105 30v-12" fill="none" stroke="#eee" strokeWidth="2"/><circle cx="105" cy="30" r="6" fill="#f00063"/><circle cx="140" cy="12" r="6" fill="#087cea"/><path d="M140 18v12h87v-12M227 30v-12" fill="none" stroke="#eee" strokeWidth="2"/><circle cx="227" cy="12" r="6" fill="#f00063"/></svg><b className="splitter-scene"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4 3 12l8 8zM21 4l-8 8 8 8z" /></svg></span><i>A</i><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m13 4 8 8-8 8zM3 4l8 8-8 8z" /></svg></span></b><em><svg viewBox="0 0 66 43" aria-hidden="true"><rect x="23" y="11" width="20" height="20" rx="3"/><path d="M27 27V15l6 7 6-7v12"/></svg></em><button>✓</button></header>
+      <header><button>⋮</button><span><strong>Mixer</strong></span><RoutingEditorHeaderControls /><button>✓</button></header>
       <div className="splitter-controls mixer-controls">
         <label><strong>LEVEL A</strong><span className="splitter-knob mixer-knob level-a"/><small>0.0 <em>dB</em></small></label>
         <label><strong>PAN A</strong><span className="splitter-knob mixer-knob pan"/><small>C</small></label>
@@ -689,7 +692,7 @@ function PluginModelGlyph({ name, kind }: { name: string; kind: "amp" | "cab" | 
   const category = kind === "cab" ? "CAB" : kind === "drive" ? "OVERDRIVE" : "AMP";
   const blockKind = kind === "drive" ? "utility" : kind;
   const block: GridBlock = { id: `plugin-${name}`, name, kind: blockKind, category, row: 0, column: 0, bypassed: false };
-  return <svg viewBox="0 0 70 70" aria-hidden="true"><DeviceGlyph block={block} x={35} y={35} size={70} /></svg>;
+  return <svg viewBox="0 0 70 70" aria-hidden="true"><QcDeviceGlyph block={block} x={35} y={35} size={70} /></svg>;
 }
 
 function CorOsDeviceBrowserFixture({ view }: { view: "device-search" | "device-favorites" | "plugin-folders" | "plugin-list" | "plugin-models" | "plugin-locked" | "plugin-refresh" }) {
@@ -762,7 +765,7 @@ function ExpressionLinkIcon() {
 }
 
 function CorOsAssignmentScreen({ view }: { view: "stomp-assignment" | "scene-assignment" | "expression-parameter" | "expression-bypass" }) {
-  if (view === "expression-bypass") return <section className="qc-screen expression-bypass-official" aria-label="Expression bypass assignment"><header><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg></button><button>Expression 1</button><button>Expression 2</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h12l3 3v15H4V3Z" /><path d="M8 3v6h8V3M8 21v-7h8v7" /></svg></button></header><p>Please choose which parameters you wish to control.<br />You can assign multiple at once.</p><main className="expression-switch-panel"><section><button><ExpressionPowerIcon /></button></section><section><span>SWITCH ON</span><label><i /><b>Heel-Toe</b><small>Switch<br />Stop</small></label></section><section><span>INVERT RANGE</span><label><i /><b>On</b><small>Off</small></label></section><section className="switch-delay"><span>SWITCH DELAY</span><b>600 ms</b><i className="capture-level-dial" /></section><section className="switch-latch"><span>LATCH EMULATION</span><label><i /><b>On</b><small>Off</small></label></section></main><div className="expression-parameter-grid">{["GAIN", "BASS", "MID", "TREBLE", "LEVEL", "BYPASS"].map(label => <section key={label}><span>{label}<b><ExpressionLinkIcon /></b></span><button>ASSIGN</button></section>)}</div></section>;
+  if (view === "expression-bypass") return <section className="qc-screen expression-bypass-official" aria-label="Expression bypass assignment"><header><button><QcUiIcon kind="close" /></button><button>Expression 1</button><button>Expression 2</button><button><QcEditorIcon kind="save" /></button></header><p>Please choose which parameters you wish to control.<br />You can assign multiple at once.</p><main className="expression-switch-panel"><section><button><ExpressionPowerIcon /></button></section><section><span>SWITCH ON</span><label><i /><b>Heel-Toe</b><small>Switch<br />Stop</small></label></section><section><span>INVERT RANGE</span><label><i /><b>On</b><small>Off</small></label></section><section className="switch-delay"><span>SWITCH DELAY</span><b>600 ms</b><i className="capture-level-dial" /></section><section className="switch-latch"><span>LATCH EMULATION</span><label><i /><b>On</b><small>Off</small></label></section></main><div className="expression-parameter-grid">{["GAIN", "BASS", "MID", "TREBLE", "LEVEL", "BYPASS"].map(label => <section key={label}><span>{label}<b><ExpressionLinkIcon /></b></span><button>ASSIGN</button></section>)}</div></section>;
   const stomp = view === "stomp-assignment";
   const scene = view === "scene-assignment";
   if (stomp || scene) return <section className={`qc-screen coros-assignment is-${stomp ? "stomp" : "scene"}`} aria-label={view.replaceAll("-", " ")}>
@@ -895,7 +898,7 @@ function CorOsOfficialGrid({ snapshot, children, browserChrome = false }: { snap
       {!browserChrome && <g aria-hidden="true">
         {[[53, 147, false], [587, 147, false], [159, 335, true]].map(([x, y, dimmed]) => <g key={`${x}-${y}`} transform={`translate(${x} ${y})`} opacity={dimmed ? .42 : 1}><rect x="-8" y="-7" width="16" height="14" rx="5" fill="#f1f2f1" /><circle cx="-3" cy="0" r="2" fill="#171917" /><path d="M0-3 5 0 0 3Z" fill="#171917" /></g>)}
       </g>}
-      <g>{screenBlocks.map((block) => { const cx = columns[block.column]; const cy = rowY[block.row]; return <g key={block.id} opacity={block.bypassed ? .48 : 1}><DeviceGlyph block={block} x={cx} y={cy} />{block.bypassed && <path d={`M${cx - 32} ${cy}H${cx + 32}`} fill="none" stroke="#c9c9ca" strokeWidth="2" opacity=".9" />}</g>; })}</g>
+      <g>{screenBlocks.map((block) => { const cx = columns[block.column]; const cy = rowY[block.row]; return <g key={block.id} opacity={block.bypassed ? .48 : 1}><QcDeviceGlyph block={block} x={cx} y={cy} />{block.bypassed && <path d={`M${cx - 32} ${cy}H${cx + 32}`} fill="none" stroke="#c9c9ca" strokeWidth="2" opacity=".9" />}</g>; })}</g>
     </svg>{children}
   </div>;
 }

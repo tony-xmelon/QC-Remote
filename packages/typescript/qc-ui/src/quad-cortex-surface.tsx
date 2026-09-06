@@ -2,10 +2,11 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSPropertie
 import { QC_GRID_COLUMNS, QC_GRID_ROWS, type GridBlock, type PresetEntry, type PresetList, type PresetSnapshot } from "@ndsp-qc/client";
 import { footswitchLeds, routePickerGroup, routePickerLabel, sceneLetter as sceneLabel, type QcSurfaceAction } from "@ndsp-qc/core";
 import type { FormFactorManifest, HardwareControl, SkinManifest } from "@ndsp-qc/form-factors";
-import { QC_BRAND, QC_COLORS, QC_TYPOGRAPHY, QC_VISUAL_ASSETS, REFERENCE_BLOCK_ICONS } from "@ndsp-qc/theme";
-import { blockUsesActiveFill, officialBlockVisual, pluginBadge } from "./block-visuals";
+import { QC_BRAND, QC_COLORS, QC_TYPOGRAPHY } from "@ndsp-qc/theme";
+import { officialBlockVisual } from "./block-visuals";
 import { CorOsParameterEditor, type CorOsParameterEditorProps } from "./parameter-editor";
 import { fixtureSnapshot, type CorOsScreenView } from "./coros-screen-fixture-data";
+import { QcDeviceGlyph } from "./device-glyph";
 import { parameterEditorAccent, parameterEditorControlSlots, parameterEditorPageSize } from "./parameter-model";
 import { QcDirectoryIcon, QcHardwareIcon, QcModeGlyph, QcRouteGlyph, QcScreenHeaderGlyph, QcUiIcon } from "./theme-icons";
 import { DIRECTORY_PRESET_CONTEXT_MENU, GRID_CONTEXT_MENU, gridBlocksByRow, mixAnchorX, openSplitPath, presetTitleLayout, presetTitlePresentation, rejoinSplitPath, routedPortIsPlugged, rowHasVisibleSignalRail, splitAnchorX, type CorOsContextAction } from "./coros-ui";
@@ -73,37 +74,6 @@ interface QuadCortexSurfaceProps {
   onContextAction?: (action: CorOsContextAction) => void;
   screenView?: CorOsScreenView;
   onCloseScreen?: () => void;
-}
-
-const officialBlockSprite = QC_VISUAL_ASSETS.blockSprite.url;
-
-function DeviceGlyph({ block, x, y, size = 64, selected = false }: { block: GridBlock; x: number; y: number; size?: number; selected?: boolean }) {
-  const visual = officialBlockVisual(block);
-  const [tileX, tileY] = visual.tile;
-  const badge = pluginBadge(block);
-  const fill = blockUsesActiveFill(block) ? <rect
-    className="official-block-active-fill"
-    x={x - size / 2}
-    y={y - size / 2}
-    width={size}
-    height={size}
-    rx={size * .2}
-    fill={visual.color}
-    fillOpacity=".3"
-    style={{ mixBlendMode: "screen" }}
-    pointerEvents="none"
-    aria-hidden="true"
-  /> : null;
-  const pluginLabel = badge ? <g className="official-plugin-badge" aria-hidden="true">
-    <rect x={x - size * .225} y={y - size * .565} width={size * .45} height={size * .205} rx={size * .065} fill={visual.color} />
-    <text x={x} y={y - size * .405} textAnchor="middle" fill={QC_COLORS.device.blockLabel} stroke="none" fontFamily={QC_TYPOGRAPHY.devicePlain} fontWeight="900" fontSize={size * .145}>{badge}</text>
-  </g> : null;
-  if (visual.referenceAsset) return <g><image className="official-block-tile" x={x - size / 2} y={y - size / 2} width={size} height={size} href={REFERENCE_BLOCK_ICONS[visual.referenceAsset]} preserveAspectRatio="xMidYMid meet" aria-hidden="true" />{fill}{pluginLabel}</g>;
-  return <g><svg className="official-block-tile" x={x - size / 2} y={y - size / 2} width={size} height={size} viewBox={`${tileX} ${tileY} 70 70`} preserveAspectRatio="xMidYMid meet" overflow="hidden" aria-hidden="true">
-    <image href={officialBlockSprite} x="0" y="0" width="710" height="152" />
-    <rect x={tileX + 3} y={tileY + 3} width="64" height="64" rx="14" fill="none" stroke={QC_COLORS.captured.screen} strokeWidth="5" />
-    <rect x={tileX + 3} y={tileY + 3} width="64" height="64" rx="14" fill="none" stroke={visual.color} strokeWidth={selected ? 5.5 : 2.4} />
-  </svg>{fill}{pluginLabel}</g>;
 }
 
 export function QcHardwareSwitch({ role, label, ariaLabel, active, assigned = false, accent, compact = false, pulseBpm, pulseEpochMs, onAction }: {
@@ -408,7 +378,7 @@ function CorOsGrid({ snapshot, presetSlotAccent, selectedBlockId, onAction, onOp
     const cy = rowY[block.row];
     const selected = selectedBlockId === block.id;
     return <g key={block.id} opacity={block.bypassed ? .48 : 1}>
-      <DeviceGlyph block={block} x={cx} y={cy} selected={selected} />
+      <QcDeviceGlyph block={block} x={cx} y={cy} selected={selected} />
       {block.bypassed && <path d={`M${cx - 32} ${cy}H${cx + 32}`} fill="none" stroke={QC_COLORS.device.bypassPath} strokeWidth="2" opacity=".9" />}
     </g>;
   };
