@@ -282,7 +282,7 @@ function CorOsDirectory({ snapshot, directory }: { snapshot: PresetSnapshot; dir
   </section>;
 }
 
-function CorOsGrid({ snapshot, selectedBlockId, onAction, onOpenPreset, onUndo, canUndo, undoLabel, onSave, onOpenRouting, onRefresh, presetDirectory, routingPicker, savePreset, onContextAction }: Pick<QuadCortexSurfaceProps, "snapshot" | "selectedBlockId" | "onAction" | "onOpenPreset" | "onUndo" | "canUndo" | "undoLabel" | "onSave" | "onOpenRouting" | "onRefresh" | "presetDirectory" | "routingPicker" | "savePreset" | "onContextAction">) {
+function CorOsGrid({ snapshot, presetSlotAccent, selectedBlockId, onAction, onOpenPreset, onUndo, canUndo, undoLabel, onSave, onOpenRouting, onRefresh, presetDirectory, routingPicker, savePreset, onContextAction }: Pick<QuadCortexSurfaceProps, "snapshot" | "selectedBlockId" | "onAction" | "onOpenPreset" | "onUndo" | "canUndo" | "undoLabel" | "onSave" | "onOpenRouting" | "onRefresh" | "presetDirectory" | "routingPicker" | "savePreset" | "onContextAction"> & { presetSlotAccent: string }) {
   const [sceneMenuOpen, setSceneMenuOpen] = useState(false);
   const [screenMenuOpen, setScreenMenuOpen] = useState(false);
   const [modeMenuOpen, setModeMenuOpen] = useState(false);
@@ -415,7 +415,7 @@ function CorOsGrid({ snapshot, selectedBlockId, onAction, onOpenPreset, onUndo, 
   return <div className="qc-screen coros-vector-screen" aria-label="CorOS Grid">
     <svg className="coros-vector-canvas" viewBox="0 0 800 480" preserveAspectRatio="none" role="img" aria-label={`${snapshot.presetLocation} ${snapshot.presetName}, ${snapshot.mode} mode`}>
       <rect width="800" height="480" fill={QC_COLORS.captured.screen} />
-      <g transform="matrix(.96 0 0 1 -4 0)" fontFamily={QC_TYPOGRAPHY.devicePlain} fontWeight="800" fontSize="68"><text x="14" y="75"><tspan fill={QC_COLORS.hardware.whiteLed} letterSpacing="-1">{presetBank}</tspan><tspan fill={QC_COLORS.scene[0]} letterSpacing="-1">{presetSlot}</tspan><tspan className={`preset-title${snapshot.dirty ? " is-dirty" : ""}${titlePresentation.dimmed ? " is-unsaved" : ""}`} dx="16" dy={presetTitleBaseline - 75} fill={titlePresentation.dimmed ? QC_COLORS.captured.unsaved : QC_COLORS.hardware.whiteLed} fontSize={presetTitleFontSize} fontStyle={titlePresentation.italic ? "italic" : "normal"} textLength={squeezePresetTitle ? presetTitleMaxWidth : undefined} lengthAdjust={squeezePresetTitle ? "spacingAndGlyphs" : undefined}>{presetTitle}</tspan></text></g>
+      <g transform="matrix(.96 0 0 1 -4 0)" fontFamily={QC_TYPOGRAPHY.devicePlain} fontWeight="800" fontSize="68"><text x="14" y="75"><tspan fill={QC_COLORS.hardware.whiteLed} letterSpacing="-1">{presetBank}</tspan><tspan fill={presetSlotAccent} letterSpacing="-1">{presetSlot}</tspan><tspan className={`preset-title${snapshot.dirty ? " is-dirty" : ""}${titlePresentation.dimmed ? " is-unsaved" : ""}`} dx="16" dy={presetTitleBaseline - 75} fill={titlePresentation.dimmed ? QC_COLORS.captured.unsaved : QC_COLORS.hardware.whiteLed} fontSize={presetTitleFontSize} fontStyle={titlePresentation.italic ? "italic" : "normal"} textLength={squeezePresetTitle ? presetTitleMaxWidth : undefined} lengthAdjust={squeezePresetTitle ? "spacingAndGlyphs" : undefined}>{presetTitle}</tspan></text></g>
       <QcScreenHeaderGlyph kind="undo" />
       <QcScreenHeaderGlyph kind="save" />
       <rect x="656" y="12" width="25" height="25" rx="3" fill={QC_COLORS.captured.sceneBadge} /><text x="668.5" y="33" textAnchor="middle" fill={QC_COLORS.device.panel} fontFamily={QC_TYPOGRAPHY.devicePlain} fontWeight="800" fontSize="22">{sceneLetter}</text>
@@ -492,6 +492,8 @@ export function QuadCortexSurface({ formFactor, snapshot, selectedBlockId, skin,
   const bankDown = controlByRole(formFactor.controls, "bank:down")!;
   const tempo = controlByRole(formFactor.controls, "tempo")!;
   const leds = footswitchLeds(snapshot);
+  const presetSlotIndex = ((snapshot.presetPosition % leds.length) + leds.length) % leds.length;
+  const presetSlotAccent = leds[presetSlotIndex].color;
   const parameterLeds = parameterEditor ? (() => {
     const editorAccent = parameterEditorAccent(parameterEditor.details.name, parameterEditor.accent);
     const size = parameterEditorPageSize(parameterEditor.details.category, parameterEditor.details.parameters);
@@ -527,7 +529,7 @@ export function QuadCortexSurface({ formFactor, snapshot, selectedBlockId, skin,
     <div className="device-plate"><QcHardwareIcon kind="brand-pulse" className="pulse-mark" /><span>{QC_BRAND.deviceWordmark}</span><small>{QC_BRAND.surfaceCaption}</small></div>
     <div className="qc-screen-bezel">{fixtureOnly
       ? <div className="qc-screen-fixture-root"><Suspense fallback={null}><CorOsScreenFixture view={screenView} snapshot={displaySnapshot} gigPresetList={gigPresetList} onClose={onCloseScreen} /></Suspense></div>
-      : <div className="qc-screen-fixture-root is-live-grid"><CorOsGrid snapshot={displaySnapshot} selectedBlockId={selectedBlockId} onAction={onAction} onOpenPreset={onOpenPreset} onUndo={onUndo} canUndo={canUndo} undoLabel={undoLabel} onSave={onSave} onOpenRouting={onOpenRouting} onRefresh={onRefresh} presetDirectory={presetDirectory} routingPicker={routingPicker} savePreset={savePreset} onContextAction={onContextAction} />{parameterEditor && <CorOsParameterEditor {...parameterEditor} />}</div>}
+      : <div className="qc-screen-fixture-root is-live-grid"><CorOsGrid snapshot={displaySnapshot} presetSlotAccent={presetSlotAccent} selectedBlockId={selectedBlockId} onAction={onAction} onOpenPreset={onOpenPreset} onUndo={onUndo} canUndo={canUndo} undoLabel={undoLabel} onSave={onSave} onOpenRouting={onOpenRouting} onRefresh={onRefresh} presetDirectory={presetDirectory} routingPicker={routingPicker} savePreset={savePreset} onContextAction={onContextAction} />{parameterEditor && <CorOsParameterEditor {...parameterEditor} />}</div>}
     </div>
     <div className="screen-nav-control"><span className="nav-arrow nav-arrow-up" /><QcHardwareSwitch role={bankUp.role} label="BANK UP" compact active={Boolean(parameterEditor)} assigned={Boolean(parameterEditor)} accent={navigationLedColor} onAction={onAction} /><span className="nav-arrow nav-arrow-down" /></div>
     <div className="footswitch-deck">
