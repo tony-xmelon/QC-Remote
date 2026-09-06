@@ -372,6 +372,115 @@ Worth recording separately: `show_tuner` (type 27) is built and unit-tested in
 `request.rs` as MIDI CC 45 (`profile::TUNER_CONTROLLER`), and
 `DeviceCommand::ShowTuner` is constructed nowhere outside tests.
 
+## The connection handshake, captured from launch
+
+`tools/capture_cortex_hid_writes.py --wait-for-launch 60` polls for the process
+so the attach lands before the USB handshake, which an attach to an
+already-running instance can never show. Cortex Control 4.1.0 opens a session
+with 35 distinct message types, in this order:
+
+```
+52 ResetCommsBuffers  {request_id: 1, session_id: "5538f3285b154317bb1cbfedc210c2f1"}
+10 Version            READ
+10 Version            UPDATE {cortex_control_version: "4.1.0"}
+26 CPULoad            DELETE {request_id: 3}
+49 Connection         {connected: false}
+49 Connection         {connected: true}
+51 ModelRepo          READ
+35 ModuleStats        READ
+26 CPULoad            {request_id: 1}
+58 License · 21 UndoRedo · 3 IOSettings · 9 GeneralSettings · 24 ShowGigView
+14 Mode · 38 GlobalEQ · 17 MasterVolume · 4 File · 71 ModelPreset
+46 CloudProduct · 20 RecentsFavorites (x6) · 42 CompilerInhibitedModules
+15 RecallPreset · 50 NewModels · 54 PinnedModels · 19 DefaultParameters
+33 GlobalTempo · 2 SetlistPosition · 34 PresetDirty · 13 Scene
+57 BulkOperation · 60 Updater                                       all READ
+37 GridModelMeter     {row: 0..3, column: -1}                       x4
+ 5 IOMeter            {request_id: 6}
+43 SystemTimeSync     UPDATE {ms_since_epoch: 1788711237617}
+18 CloudLogin         (non-protobuf body)
+61 UpdaterForward     UPDATE {updater_request_id, response: {...}}
+```
+
+Two shapes are worth copying. `Connection` is sent **false then true**, not just
+true. And a `GridModelMeter` subscription uses `column: -1` to mean "every
+column in this row", which is why four messages cover the whole grid.
+
+### What Cortex Control uses here that this stack does not
+
+`profile::LIVE_SUBSCRIPTIONS` covers 21 types plus `version_hello`, `ModelRepo`
+and `Connection`. Set against the capture, these are the gaps — all confirmed
+absent from our Rust by search, not assumed:
+
+| type | what it is | why it might matter |
+| --- | --- | --- |
+| 5 IOMeter | input/output level meters | live metering on our device surface |
+| 37 GridModelMeter | per-block meters, `column: -1` per row | gain reduction and block activity |
+| 43 SystemTimeSync | host sets the device clock | the QC has no clock of its own to trust |
+| 26 CPULoad | live DSP load | our CPU readout exists only as a screen fixture |
+| 61 UpdaterForward | host relays the firmware update check | see below |
+| 46 CloudProduct, 18 CloudLogin | Cortex Cloud plumbing | account features we do not implement |
+| 71 ModelPreset | read at connect and around edits | contract not established |
+
+**`SystemTimeSync` is the one with a user-visible consequence.** The host tells
+the device what time it is — `ms_since_epoch` — and the device stamps what it
+saves with it. The IR imported earlier came back with
+`date_ms_since_epoch = 1788715934000`, which is only correct because Cortex
+Control had set the clock. Nothing in this stack ever sends type 43, so a unit
+driven only by our app has whatever clock it last received, and content it saves
+is dated accordingly.
+
+**The host is the device's internet connection.** `UpdaterForward` (61) carries
+a plain-JSON body the host fetched on the device's behalf:
+
+```json
+{"message":"There is no new version available.","requestId":"835eafb3-…"}
+```
+
+`ProductForward` (29), `BackupsForward` (30), `LogsForward` (31) and
+`CloudProduct` (46) are the same pattern. The QC does not reach the network
+itself for these; it asks whichever host is attached. That also explains
+`GeneralSettings.disableInternetConnectionCheck`.
+
+### One more thing the host announces
+
+`version_hello` tells the device which Cortex Control it is talking to. Ours
+says `4.0.1` (`profile::CORTEX_CONTROL_VERSION`); the shipping app now says
+`4.1.0`. Nothing observed depends on it, but it is a version gate the firmware
+could use, and it is worth knowing that we currently identify as an older build.
+
+### The device will hand over its screen and its widget tree
+
+`RemoteControlMessage` (72) has three payloads. This stack already used `mouse`
+for tap and drag, and `screenshot` is wired all the way out as
+`device.captureScreen`. The third, `graphics_tree`, was unused; asking for it
+returns the live `zenUI` scene graph as indented text, with each node's class,
+its text and the icon it draws:
+
+```
+zenUI::RootGraphicsItem
+  zenUI::GraphicsItem
+    zenUI::Grid
+      zenUI::Chain
+        zenUI::InputPortItem
+          zenUI::GraphicsItem
+            text : 'In
+1'
+        zenUI::ChainItemContainer
+          zenUI::SlotItem
+          zenUI::ModelItem
+```
+
+A real reply on the Grid screen was 5230 characters over 171 lines, and named
+`SceneIndicator`, `NavigationBar`, `NavMenuBlock`, `ModeButton`,
+`SplitCableHelper` and `PressAnimationView` among others. `commands::read_graphics_tree`
+and `responses::decode_graphics_tree` now expose it.
+
+This is the structural counterpart to the screenshot for the reconstruction work
+in `docs/qc-screen-coverage-matrix.md`: the PNG says what the device drew, and
+the tree says which widgets it thinks it drew and what text they hold - which a
+pixel diff cannot report.
+
 ### How to reproduce a capture
 
 ```

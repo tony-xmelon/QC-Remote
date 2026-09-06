@@ -79,7 +79,7 @@ class DEBUG_EVENT(ctypes.Structure):
     ]
 
 
-def cortex_pid() -> int:
+def find_cortex_pid() -> int | None:
     result = subprocess.run(
         ["tasklist", "/FI", "IMAGENAME eq Cortex Control.exe", "/FO", "CSV", "/NH"],
         check=True, capture_output=True, text=True, encoding="utf-8", errors="replace",
@@ -87,7 +87,24 @@ def cortex_pid() -> int:
     for line in result.stdout.splitlines():
         if line.startswith('"Cortex Control.exe"'):
             return int(line.split(",")[1].strip('"'))
-    raise RuntimeError("Cortex Control is not running")
+    return None
+
+
+def cortex_pid(wait_seconds: float = 0.0) -> int:
+    """Resolve the target pid, optionally waiting for the app to be launched.
+
+    Waiting matters for one capture in particular: the USB handshake happens a
+    few seconds after Cortex Control starts, so attaching to an already-running
+    instance can never show it. Polling hard from before launch does.
+    """
+    deadline = time.monotonic() + wait_seconds
+    while True:
+        pid = find_cortex_pid()
+        if pid is not None:
+            return pid
+        if time.monotonic() >= deadline:
+            raise RuntimeError("Cortex Control is not running")
+        time.sleep(0.05)
 
 
 def write_file_address() -> int:
@@ -153,9 +170,12 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--seconds", type=float, default=120.0)
     parser.add_argument("--out", type=Path, default=Path("artifacts/cortex-hid/trace.bin"))
+    parser.add_argument("--wait-for-launch", type=float, default=0.0,
+                        help="poll this many seconds for Cortex Control to start, "
+                             "so its connection handshake can be caught")
     args = parser.parse_args()
 
-    pid = cortex_pid()
+    pid = cortex_pid(args.wait_for_launch)
     target = write_file_address()
     print(f"Cortex Control pid {pid}; breakpointing WriteFile at 0x{target:x}")
 

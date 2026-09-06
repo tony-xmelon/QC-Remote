@@ -2068,6 +2068,40 @@ pub fn capture_screen() -> OutboundMessage {
     )
 }
 
+/// Ask the QC for the structure of what is currently on its screen.
+///
+/// `RemoteControlMessage` carries a third payload alongside `mouse` and
+/// `screenshot` that nothing here used: the device's live scene graph, as
+/// indented text. The unit answers with its `zenUI` widget tree, including
+/// each node's class, its text, and the icon each image node draws:
+///
+/// ```text
+/// zenUI::RootGraphicsItem
+///   zenUI::GraphicsItem
+///     zenUI::Grid
+///       zenUI::Chain
+///         zenUI::InputPortItem
+///           zenUI::GraphicsItem
+///             text : 'In\n1'
+///           zenUI::GraphicsItem
+///             image: 'icons/24/plus.png'
+/// ```
+///
+/// This is a structural oracle for the screen reconstructions in
+/// `docs/qc-screen-coverage-matrix.md`: [`capture_screen`] says what the device
+/// drew, and this says what it believes it drew and with which widgets, which
+/// is what a pixel diff cannot tell you.
+pub fn read_graphics_tree() -> OutboundMessage {
+    OutboundMessage::encoded(
+        72,
+        pa::RemoteControlMessage {
+            action: pa::message_action::Enum::Read as i32,
+            graphics_tree: Some(pa::RemoteControlGraphicsTree::default()),
+            ..Default::default()
+        },
+    )
+}
+
 pub fn screen_tap(x: f32, y: f32) -> [OutboundMessage; 2] {
     let mouse = |r#type| pa::RemoteControlMessage {
         action: pa::message_action::Enum::Update as i32,

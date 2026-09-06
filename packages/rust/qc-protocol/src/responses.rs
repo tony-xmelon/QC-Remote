@@ -1002,10 +1002,57 @@ pub fn decode_captured_screen(payload: &[u8]) -> Result<PngImage, ResponseDecode
     png_image(bytes)
 }
 
+/// Decode the device's live `zenUI` widget tree; see [`commands::read_graphics_tree`].
+///
+/// The payload is indented text, not a structured message, so it is returned
+/// verbatim for a caller to parse or diff.
+pub fn decode_graphics_tree(payload: &[u8]) -> Result<String, ResponseDecodeError> {
+    let message: pa::RemoteControlMessage = decode_reply(payload)?;
+    if message.action != pa::message_action::Enum::Update as i32 {
+        return Err(ResponseDecodeError::Mismatch(
+            "graphics tree action is not UPDATE",
+        ));
+    }
+    message
+        .graphics_tree
+        .and_then(|value| value.payload)
+        .ok_or(ResponseDecodeError::Incomplete("graphics tree payload"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use proptest::prelude::*;
+
+    /// Shaped after a real reply from the unit; see `commands::read_graphics_tree`.
+    #[test]
+    fn graphics_tree_returns_the_device_widget_text_verbatim() {
+        let tree = "zenUI::RootGraphicsItem\n  zenUI::Grid\n    text : 'In\n1'\n";
+        let payload = pa::RemoteControlMessage {
+            action: pa::message_action::Enum::Update as i32,
+            graphics_tree: Some(pa::RemoteControlGraphicsTree {
+                payload: Some(tree.to_string()),
+            }),
+            ..Default::default()
+        }
+        .encode_to_vec();
+        assert_eq!(decode_graphics_tree(&payload).unwrap(), tree);
+
+        // A screenshot reply carries no tree, and must not be reported as one.
+        let screenshot = pa::RemoteControlMessage {
+            action: pa::message_action::Enum::Update as i32,
+            screenshot: Some(pa::RemoteControlScreenshot {
+                payload: Some(vec![0x89, 0x50, 0x4E, 0x47]),
+                ..Default::default()
+            }),
+            ..Default::default()
+        }
+        .encode_to_vec();
+        assert!(matches!(
+            decode_graphics_tree(&screenshot),
+            Err(ResponseDecodeError::Incomplete("graphics tree payload"))
+        ));
+    }
 
     #[test]
     fn tuner_settings_are_complete_and_expose_absolute_reference() {
