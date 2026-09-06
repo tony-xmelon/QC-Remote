@@ -186,6 +186,77 @@ The complete per-state evidence and score join is in
 | `settings-wifi` | **93.92%** | **93.92%** |
 | `settings-storage` | **93.31%** | **93.31%** |
 
+## Text validated against the device's own scene graph
+
+Every capture in the corpus is stored with the CorOS graphics tree that produced
+it, and until now the tree was only read to classify a capture into a screen
+family. It is a stronger oracle than that: it lists every string the device
+actually drew, so each one can be *required* to exist in our reconstruction.
+
+`npm run verify:qc-screen-text` (`tools/verify_screen_tree_coverage.py`) does
+that check. It reads wording rather than shapes, which is exactly the axis a
+structural or colour score cannot see.
+
+**893 device strings across 69 screens; 0 unaccounted for.** Reverting any of
+the three fixes below fails the check.
+
+### What it found on its first run
+
+All three sat inside screens already scoring above 97% on colour similarity, and
+none of them would ever have shown up as a pixel regression.
+
+| screen | device draws | we drew |
+| --- | --- | --- |
+| `grid-context-menu` | `Save as...` | `Save as…` — a typographic ellipsis |
+| `settings-info` | `Zenjack FW app:` | `Zeniack FW app:` — and four firmware rows missing |
+| `output-route-selector` | `USB Output 5/6`, `USB Output 7/8` | absent; only the unpaired 5, 6, 7, 8 |
+
+The device-information screen is the clearest case for the method. It renders a
+column of labels and per-unit values; a mis-transcribed label one letter out,
+with four rows simply absent below it, is invisible to a whole-frame score and
+obvious to a string comparison.
+
+### What the check deliberately ignores
+
+- Text inside `ModelListCell`, `PluginModelListCell`, `ModelPresetListCell` and
+  `WifiTableCell`. Those rows are model, plugin, device-preset and Wi-Fi names
+  the unit supplies at runtime, so they belong to the catalog, not to a
+  reconstruction. That is 101 of the 119 strings an unfiltered run reports.
+- Per-unit values on the device information screen — serial, MAC, kernel and
+  bootloader banners, firmware build ids. The **labels** beside them are still
+  required, which is what caught `Zenjack`.
+
+Two traps are worth recording because both produced convincing wrong answers
+while the check was being written. Matching device text against source has to
+ignore layout, since CorOS wraps with newlines and JSX with `<br />`; without
+that, `ON PRESET LOAD\nMESSAGE` and the Hybrid Mode help text both looked
+missing when they were present and correct. And the check greps source, so a
+comment quoting a device string satisfies it — the comment added beside the
+`Save as...` fix kept the check green when the fix itself was reverted. Whole-line
+comments are now stripped before matching.
+
+### Not extended to icons
+
+The trees also carry each icon's asset path, and 32 of the device's 102 icon
+stems have no counterpart name in our sources. That is not a defect list. It is
+dominated by per-state and per-theme variants — `copy_dark`/`copy_light`,
+`edit_dark`/`edit_light`, `shift_icon_active`/`shift_icon_inactive`,
+`fav_inactive`, `toggle_iconOn` — where our reconstruction legitimately uses one
+icon plus a CSS state. A check that fires on a sound design decision teaches
+people to ignore it, so this stays an observation.
+
+### Coverage
+
+69 of the 76 physical captures carry a tree. The other seven — `block-context`,
+`delete-confirmation`, `device-preset-save`, `directory-item-context`,
+`generic-confirmation`, `input-gate-control`, `onscreen-keyboard` — predate tree
+capture. Their manifest entries record the tap sequences that reached them, but
+those sequences assume the preset that was loaded at capture time, so replaying
+them now would photograph a different screen under the old name. Re-acquiring
+them means restoring that device state first, and the corpus directory is
+immutable for its firmware family, so they are left as they are rather than
+silently overwritten.
+
 ## Improvements in this pass
 
 - Captured five additional physical Settings framebuffers directly from CorOS:
