@@ -195,8 +195,18 @@ test("one generated profile owns USB and performance MIDI policy across native h
   assert.match(source("packages/rust/qc-protocol/src/commands.rs"), /profile::LIVE_SUBSCRIPTIONS/);
   assert.match(source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java"), /QcUsbProfile\.MESSAGE_TYPE_(?:VERSION|GLOBAL_TEMPO|BACKUP|MODEL_REPO|RESET_COMMS_BUFFERS)/);
   assert.match(source("services/device-broker/src/usb.rs"), /profile::MESSAGE_TYPE_(?:BACKUP|MODEL_REPO|RESET_COMMS_BUFFERS)/);
-  assert.match(source("services/device-broker/src/worker.rs"), /liveness_probe_timed_out[\s\S]*MESSAGE_TYPE_VERSION/);
+  // The QC is held open by its dedicated KeepAlive on a fixed cadence, the same
+  // message Cortex Control and the reference client send every five seconds. A
+  // Version READ is answered, so the link looks alive, but it does not keep the
+  // session serving: the device stops pushing state and stops answering File
+  // READs after about a minute, which left the preset library permanently empty.
+  assert.match(source("services/device-broker/src/worker.rs"), /keepalive_due\(now_ms\)[\s\S]{0,600}commands::keepalive\(\)/);
+  assert.doesNotMatch(source("services/device-broker/src/worker.rs"), /keepalive_due\(now_ms\)[\s\S]{0,600}read\(qc_protocol::profile::MESSAGE_TYPE_VERSION\)/);
+  // Android still keeps the QC alive with a Version READ outside a backup, and
+  // needs the same treatment; its Version read additionally serves an Android
+  // USB-host purpose, so it cannot simply be swapped without hardware testing.
   assert.match(source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java"), /readCommand\(QcUsbProfile\.MESSAGE_TYPE_VERSION\)/);
+  assert.match(source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java"), /keepaliveCommand\(\)/);
   assert.match(source("packages/rust/qc-windows-midi/src/lib.rs"), /profile::MIDI_CONTROL_CHANGE_STATUS/);
   assert.match(source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java"), /QcUsbProfile\.MIDI_(?:USB_EVENT_PACKET_HEADER|CONTROL_CHANGE_STATUS)/);
   assert.doesNotMatch(source("packages/rust/qc-windows-midi/src/lib.rs"), /0xB0/i);
