@@ -100,8 +100,12 @@ test("neutral Grid colors match the native QC capture", () => {
 
 test("Grid contextual menu starts with the device Create New command", () => {
   assert.equal(GRID_CONTEXT_MENU[0].label, "Create New");
+  // Spelled as the device spells it. The CorOS graphics tree captured in
+  // references/qc-ui-corpus/coros-4.1.0/grid-context-menu.tree.txt draws three
+  // periods, not a typographic ellipsis; this list previously carried the
+  // prettier form, which no pixel score was ever going to notice.
   assert.deepEqual(GRID_CONTEXT_MENU.map((item) => item.label), [
-    "Create New", "Save as…", "Edit Details", "Copy Scene A", "Swap Scene A",
+    "Create New", "Save as...", "Edit Details", "Copy Scene A", "Swap Scene A",
     "Preset MIDI Out", "Add to favorites", "Delete Preset", "New Neural Capture",
     "Modes Configuration", "Tempo", "CPU Monitor", "Settings"
   ]);

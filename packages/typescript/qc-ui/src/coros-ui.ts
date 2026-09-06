@@ -113,7 +113,9 @@ export function routedPortIsPlugged(
 
 export const GRID_CONTEXT_MENU = [
   { label: "Create New", icon: "add", action: "create-new" },
-  { label: "Save as…", icon: "save-as", action: "save-as" },
+  // The device draws three periods here, not a typographic ellipsis; the
+  // CorOS graphics tree for `grid-context-menu` reads 'Save as...'.
+  { label: "Save as...", icon: "save-as", action: "save-as" },
   { label: "Edit Details", icon: "edit", action: "edit-details" },
   { label: "Copy Scene A", icon: "file", action: "copy-scene" },
   { label: "Swap Scene A", icon: "next", action: "swap-scene" },
