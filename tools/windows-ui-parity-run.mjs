@@ -89,7 +89,7 @@ await step("01-connection-ready", async (record) => {
   const status = await invoke("system.status");
   expect(status.usbDiagnostics?.connected, "the app reports no USB connection");
   expect(status.usbDiagnostics?.synchronized, "the app reports an unsynchronized session");
-  const badge = (await page.locator(".connection-badge").first().innerText()).trim();
+  const badge = (await page.locator(".connection-badge:not(.relay-badge)").first().innerText()).trim();
   expect(badge.includes("QC READY"), `readiness badge reads "${badge}"`);
   record.facts.parity = await captureParity("01-connection-ready");
   return { badge, usbDiagnostics: status.usbDiagnostics };
@@ -218,6 +218,15 @@ await step("06-preset-mode-footswitch-leds", async (record) => {
       active: node.classList.contains("is-active"),
       assigned: node.classList.contains("is-assigned")
     })));
+  const slotLamps = leds.filter((lamp) => /^[A-H]$/.test(lamp.label));
+  if (snapshot.mode === "PRESET") {
+    const colours = slotLamps.map((lamp) => lamp.accent.toLowerCase());
+    expect(new Set(colours).size === 8,
+      `PRESET lamps must carry eight distinct colours, saw ${new Set(colours).size}: ${colours.join(" ")}`);
+    const lit = slotLamps.map((lamp) => lamp.active);
+    expect(lit.filter(Boolean).length === 1, `exactly one PRESET lamp is lit, saw ${lit.filter(Boolean).length}`);
+    expect(lit[snapshot.presetPosition % 8], "the lit lamp is not the loaded slot");
+  }
   record.facts.parity = await captureParity("06-preset-mode-leds");
   // Gig View is the one place the QC paints its own footswitch colours on a
   // surface we can read back, so it is the ground truth for what the app's
@@ -242,6 +251,7 @@ await step("06-preset-mode-footswitch-leds", async (record) => {
     sceneColors: snapshot.sceneColors,
     presetPosition: snapshot.presetPosition,
     leds,
+    slotColours: slotLamps.map((lamp) => `${lamp.label}=${lamp.accent}`),
     gigView
   };
 });
@@ -268,14 +278,21 @@ await step("07-tempo-lamp-tracks-the-device-beat", async () => {
     };
   });
   if (!lamp.present) return { skipped: "the TEMPO lamp is not pulsing", clock, tempo: snapshot.tempo };
-  const period = 60_000 / snapshot.tempo;
   expect(lamp.count > 0, "the TEMPO lamp has no pulse animation");
-  const anchoredEpochMs = lamp.startTime === null ? null : lamp.startTime + lamp.timeOrigin;
-  const phaseError = anchoredEpochMs === null ? null
-    : Math.abs(((anchoredEpochMs - (snapshot.tempoPulseEpochMs ?? anchoredEpochMs)) % period + period * 1.5) % period - period / 2);
-  expect(phaseError === null || phaseError <= 2,
-    `the lamp sits ${phaseError?.toFixed(1)}ms off the device beat origin`);
-  return { tempo: snapshot.tempo, periodMs: Math.round(period), clock, lamp, anchoredEpochMs, phaseErrorMs: phaseError };
+  expect(lamp.startTime !== null, "the lamp's pulse is not anchored to any clock");
+  expect(clock.available, "the device is not reporting a tempo clock");
+  const period = 60_000 / snapshot.tempo;
+  // The device names its beat by MIDI tick: 24 ticks to the beat, timestamped
+  // when the broker read the frame. Beat zero therefore sits that many ticks
+  // before the frame, and the lamp must start its cycle there.
+  const deviceBeatOriginMs = clock.receivedAtUnixMs - ((clock.currentTick % 24) * period) / 24;
+  const anchoredEpochMs = lamp.startTime + lamp.timeOrigin;
+  const phaseErrorMs = Math.abs(
+    (((anchoredEpochMs - deviceBeatOriginMs) % period) + period * 1.5) % period - period / 2
+  );
+  expect(phaseErrorMs <= period / 20,
+    `the lamp sits ${phaseErrorMs.toFixed(1)}ms off the device beat, more than ${(period / 20).toFixed(1)}ms`);
+  return { tempo: snapshot.tempo, periodMs: Math.round(period), clock, lamp, anchoredEpochMs, deviceBeatOriginMs, phaseErrorMs };
 });
 
 // ------------------------------------------------------------- master volume
