@@ -226,6 +226,26 @@ already implements, sets the flag directly, and the editor then draws the
 A B / C D badge beside the parameter. Worth remembering that a state gated
 behind an unknown gesture may still be reachable over the protocol.
 
+### Driving the touchscreen: three rules, now enforced
+
+`tools/qc_screen_driver.py` exists because the same three mistakes were made
+repeatedly during this session, and remembering them did not work. Each is now
+refused by the tool rather than left to discipline.
+
+1. **Never toggle Gig View.** The gateway's `wake_remote_control` revives a
+   dormant framebuffer by flipping Gig View, which changes what the owner is
+   looking at and closes any dialog they have open. The driver refuses to import
+   it and revives the stream with a RemoteControl mouse MOVE, which presses
+   nothing.
+2. **One connection per sequence.** Connecting runs the session handshake, which
+   resets the device UI. A screenshot taken in one process and a tap sent from
+   the next act on *different screens*. Several "misclicks" in this session were
+   exactly this, not bad coordinates.
+3. **No gesture without a verified screen.** `expect` must pass immediately
+   before any tap, hold, swipe or drag, and every gesture clears the
+   verification. A tap aimed at a dialog that had already closed once landed on
+   the Grid and silently edited a preset that was not the scratch one.
+
 ### Physically impossible without the unit's owner
 
 | state | renderer | what it needs |
