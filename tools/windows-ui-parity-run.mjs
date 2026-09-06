@@ -307,11 +307,48 @@ await step("08-master-volume-round-trips-without-losing-sync", async (record) =>
     return ui === value && gateway === value;
   }, initial.gateway, { timeout: timeoutMs, polling: 25 });
   const restoreMs = Date.now() - restoreStarted;
-  // Sync must survive the round trip: this is where the session used to die.
+  // A single step is the easy case. A real encoder turn coalesces many steps
+  // while the device's echo is still in flight, which is where the write guard
+  // and the knob's own value disagree.
+  const sweepSteps = 6;
+  const sweepUp = initial.gateway <= 100 - sweepSteps;
+  const sweepKey = sweepUp ? "ArrowUp" : "ArrowDown";
+  const sweepTarget = initial.gateway + (sweepUp ? sweepSteps : -sweepSteps);
+  const notices = [];
+  const noticeWatch = setInterval(async () => {
+    const notice = await page.evaluate(() => document.querySelector(".status-notice")?.textContent?.trim() ?? null)
+      .catch(() => null);
+    if (notice && notices.at(-1) !== notice) notices.push(notice);
+  }, 120);
+  let sweep;
+  try {
+    const sweepStarted = Date.now();
+    for (let index = 0; index < sweepSteps; index += 1) await slider.press(sweepKey);
+    await page.waitForFunction(async (value) => {
+      const ui = Number(document.querySelector('[aria-label="Master volume knob"]')?.getAttribute("aria-valuenow"));
+      const gateway = (await window.__TAURI_INTERNALS__.invoke("gateway_invoke", { method: "device.masterVolume", params: {} })).value;
+      return ui === value && gateway === value;
+    }, sweepTarget, { timeout: timeoutMs, polling: 25 });
+    sweep = { steps: sweepSteps, target: sweepTarget, convergedMs: Date.now() - sweepStarted, converged: true };
+  } catch (error) {
+    const observedNow = await observed();
+    sweep = { steps: sweepSteps, target: sweepTarget, converged: false, observed: observedNow, error: String(error?.message ?? error) };
+  } finally {
+    clearInterval(noticeWatch);
+  }
+  // Put the device back where it was regardless of how the sweep went.
+  const beforeRestore = await observed();
+  if (beforeRestore.gateway !== initial.gateway) {
+    await invoke("device.setMasterVolume", { value: initial.gateway, expectedValue: beforeRestore.gateway }).catch(() => undefined);
+    await sleep(1200);
+  }
   const status = await invoke("system.status");
-  expect(status.usbDiagnostics?.synchronized, "the session lost synchronization after a volume change");
   record.facts.parity = await captureParity("08-master-volume");
-  return { initial, target, changeMs, restoreMs, usbDiagnostics: status.usbDiagnostics };
+  expect(status.usbDiagnostics?.synchronized, "the session lost synchronization after a volume change");
+  expect(sweep.converged, `a ${sweepSteps}-step encoder sweep never converged: ${sweep.error}`);
+  expect(!notices.some((notice) => /refresh and retry|changed on the quad cortex/i.test(notice)),
+    `the volume write guard rejected an in-flight step: ${notices.filter((notice) => /refresh and retry/i.test(notice))[0]}`);
+  return { initial, target, changeMs, restoreMs, sweep, notices, final: await observed(), usbDiagnostics: status.usbDiagnostics };
 });
 
 // ------------------------------------------------------------- chat collapse

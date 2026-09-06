@@ -162,11 +162,25 @@ test("device-reported STOMP LED state is authoritative", () => {
   assert.deepEqual(leds[4], { active: true, assigned: true, color: "#123456" });
 });
 
-test("SCENE and PRESET modes use colors reported by the preset", () => {
+test("SCENE lamps use the colors the preset reports", () => {
   const scene = footswitchLeds(snapshot({ mode: "SCENE", footswitchModes: ["SCENE", "SCENE"], activeScene: 3 }));
   assert.deepEqual(scene[3], { active: true, assigned: true, color: "#ff02c2" });
+  assert.deepEqual(scene[0], { active: false, assigned: true, color: "#ff2727" });
+});
+
+test("PRESET lamps use the device's fixed slot palette, not the active scene", () => {
+  // Measured from the QC's own Gig View: slots A through H carry these eight
+  // colours in every bank, whichever presets fill them, and only the loaded
+  // slot is lit. presetPosition 41 is slot 6B, so B is the active one.
   const preset = footswitchLeds(snapshot({ mode: "PRESET", footswitchModes: ["PRESET", "PRESET"], activeScene: 4 }));
-  assert.deepEqual(preset[1], { active: true, assigned: true, color: "#45f862" });
+  assert.deepEqual(preset.map((led) => led.color), [
+    "#45f862", "#0a74e0", "#ff7000", "#ff02c2", "#87daff", "#6954ff", "#ffd236", "#ff2727"
+  ]);
+  assert.deepEqual(preset.map((led) => led.active), [false, true, false, false, false, false, false, false]);
+  assert.ok(preset.every((led) => led.assigned), "every preset slot is lit on the device");
+  // The active scene must not colour the lamps any more.
+  const otherScene = footswitchLeds(snapshot({ mode: "PRESET", footswitchModes: ["PRESET", "PRESET"], activeScene: 0 }));
+  assert.deepEqual(otherScene.map((led) => led.color), preset.map((led) => led.color));
 });
 
 test("the TEMPO pulse animates only the colored fill and preserves the shared LED housing", () => {

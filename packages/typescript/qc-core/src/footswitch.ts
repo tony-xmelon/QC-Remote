@@ -1,4 +1,4 @@
-import { QC_SCENE_COLORS, QC_SCENE_COUNT, type GridBlock, type PresetSnapshot } from "@ndsp-qc/client";
+import { QC_PRESET_SLOT_COLORS, QC_SCENE_COLORS, QC_SCENE_COUNT, type GridBlock, type PresetSnapshot } from "@ndsp-qc/client";
 import { QC_COLORS } from "@ndsp-qc/theme";
 import { sceneLetter } from "./state.ts";
 
@@ -52,11 +52,20 @@ function sceneLed(snapshot: PresetSnapshot, index: number): FootswitchLed {
   return { active: snapshot.activeScene === index, assigned: true, color: snapshot.sceneColors?.[index] ?? QC_SCENE_COLORS[index] };
 }
 
+/**
+ * In PRESET mode the QC lights each of the eight slots in its own fixed colour
+ * - measured from the device's Gig View, which paints the same eight colours
+ * for slots A through H in every bank regardless of which presets fill them.
+ * The active slot is the one the device highlights.
+ *
+ * This used to paint all eight lamps with the loaded preset's active scene
+ * colour, which belongs to SCENE mode and matched the device only by accident.
+ */
 function presetLed(snapshot: PresetSnapshot, index: number): FootswitchLed {
   return {
     active: snapshot.presetPosition % 8 === index,
     assigned: true,
-    color: snapshot.sceneColors?.[snapshot.activeScene] ?? QC_SCENE_COLORS[snapshot.activeScene] ?? QC_SCENE_COLORS[0]
+    color: QC_PRESET_SLOT_COLORS[index] ?? QC_SCENE_COLORS[0]
   };
 }
 

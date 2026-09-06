@@ -6,6 +6,7 @@ const domain = JSON.parse(await readFile(resolve(root, "contracts/qc-domain.v1.j
 const colors = JSON.parse(await readFile(resolve(root, "packages/typescript/qc-theme/src/colors.json"), "utf8"));
 const { limits, inputRoutes, outputRoutes } = domain;
 const sceneColors = colors.scene;
+const presetSlotColors = colors.presetSlot;
 const tsRoutes = (routes) => routes.map(({ id, label, group }) => `  { id: ${id}, label: ${JSON.stringify(label)}, group: ${JSON.stringify(group)} }`).join(",\n");
 const pyRoutes = (routes) => `{${routes.map(({ id, label }) => `${id}: ${JSON.stringify(label)}`).join(", ")}}`;
 const rustRoutes = (routes) => routes.map(({ id, label }) => `    (${id}, ${JSON.stringify(label)}),`).join("\n");
@@ -22,6 +23,7 @@ export const QC_IPC_MAX_FRAME_BYTES = ${limits.ipcMaxFrameBytes};
 export const QC_STATE_EVENT_DEFAULT_LIMIT = ${limits.stateEventDefaultLimit};
 export const QC_STATE_EVENT_MAXIMUM_LIMIT = ${limits.stateEventMaximumLimit};
 export const QC_SCENE_COLORS = ${JSON.stringify(sceneColors)} as const;
+export const QC_PRESET_SLOT_COLORS = ${JSON.stringify(presetSlotColors)} as const;
 export const QC_CATEGORY_COLORS = ${JSON.stringify(colors.category)} as const;
 export const QC_HARDWARE_COLORS = ${JSON.stringify(colors.hardware)} as const;
 export const QC_INPUT_ROUTES = [
