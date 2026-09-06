@@ -77,3 +77,27 @@ test("a broker replacing a failed one restores the session without being asked",
   // readiness, so issuing it inline would stall the poll that triggered it.
   assert.doesNotMatch(host, /GatewayProcess::start\([\s\S]{0,200}request\(rpc::RECONNECT/);
 });
+
+test("a malformed gateway result is a protocol fault, not a dropped session", () => {
+  const host = readFileSync(new URL("../apps/windows/src-tauri/src/lib.rs", import.meta.url), "utf8");
+  const broker = readFileSync(new URL("../services/device-broker/src/rpc.rs", import.meta.url), "utf8");
+
+  // Only the transport arm may clear the process. Classifying a contract
+  // violation as a transport fault killed a broker that was alive, answering
+  // and correctly framed, on every preset change.
+  assert.match(host, /validate_result\(method, result\)\.map_err\([\s\S]{0,200}GatewayRequestFailure::Remote/);
+  assert.doesNotMatch(host, /validate_result\(method, result\)\.map_err\(GatewayRequestFailure::Transport\)/);
+
+  // recallPreset, navigateBank and reloadPreset share one result builder and are
+  // all contracted as DeviceActionResult, so it must carry verification
+  // semantics. It performs an authoritative readback, so this is accurate.
+  assert.match(broker, /"accepted": true,[\s\S]{0,160}"verification": "authoritative_readback",[\s\S]{0,120}"snapshot": after/);
+
+  // The broker's stderr must reach disk: discarding it left a dying broker
+  // indistinguishable from one the host killed.
+  assert.doesNotMatch(host, /\.stderr\(Stdio::null\(\)\)/);
+  assert.match(host, /fn broker_stderr_sink\(\)/);
+
+  // The health record must keep the reason, not just the status.
+  assert.match(host, /"lastDetail": detail/);
+});

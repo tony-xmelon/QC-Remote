@@ -1170,7 +1170,20 @@ fn execute_preset_recall(
             plan.position, after.preset_position
         ));
     }
-    Ok(json!({"detail": plan.detail, "snapshot": after}))
+    // recallPreset, navigateBank and reloadPreset are all contracted as
+    // DeviceActionResult, so they must carry verification semantics like every
+    // other device action. The target_matches checks above are an authoritative
+    // device readback - the call returns Err when the QC did not land on the
+    // requested slot - so reporting the readback here is accurate, not
+    // optimistic. Omitting these fields made the host reject a correct result
+    // and tear down the session on every preset change.
+    Ok(json!({
+        "accepted": true,
+        "verified": true,
+        "verification": "authoritative_readback",
+        "detail": plan.detail,
+        "snapshot": after
+    }))
 }
 
 fn gateway_recall_preset(controller: &DeviceController, params: &Value) -> Result<Value, String> {
@@ -1690,6 +1703,48 @@ fn write_response(output: &mut impl Write, response: &Value) -> Result<(), Strin
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn preset_recall_results_satisfy_their_own_generated_contract() {
+        // Regression: recallPreset, navigateBank and reloadPreset are contracted
+        // as DeviceActionResult but returned only {detail, snapshot}. The host
+        // validates every result and reported the mismatch as a transport
+        // fault, so it killed a healthy broker on every preset change. Nothing
+        // exercised validate_result against a real broker result, so the whole
+        // parity gate stayed green while the device session died on each click.
+        let recall = json!({
+            "accepted": true,
+            "verified": true,
+            "verification": "authoritative_readback",
+            "detail": "Preset recalled and verified",
+            "snapshot": {"presetName": "Test", "blocks": []}
+        });
+        for method in [
+            "device.recallPreset",
+            "device.navigateBank",
+            "device.reloadPreset",
+        ] {
+            generated_gateway::validate_result(method, &recall)
+                .unwrap_or_else(|error| panic!("{method} result must satisfy its contract: {error}"));
+        }
+
+        // The shape that caused the outage must still be rejected, so this can
+        // never silently regress to "detail plus snapshot".
+        let without_verification = json!({
+            "detail": "Preset recalled and verified",
+            "snapshot": {"presetName": "Test", "blocks": []}
+        });
+        for method in [
+            "device.recallPreset",
+            "device.navigateBank",
+            "device.reloadPreset",
+        ] {
+            assert!(
+                generated_gateway::validate_result(method, &without_verification).is_err(),
+                "{method} must not accept a result without verification semantics"
+            );
+        }
+    }
 
     #[test]
     fn coros_preset_name_deduplication_is_accepted_without_accepting_unrelated_names() {
