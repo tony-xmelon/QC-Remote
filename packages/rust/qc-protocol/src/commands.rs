@@ -1660,6 +1660,31 @@ pub fn set_tuner_mute(muted: bool) -> OutboundMessage {
     )
 }
 
+/// Turn the tuner's live meter push on or off.
+///
+/// Cortex Control pairs this with every tuner show: a HID capture of its TUNER
+/// button sends `ShowTuner{show: true}` and then `Tuner{enable_meter: true}`,
+/// and sends `enable_meter: false` when hiding. Showing the tuner without it
+/// gets the device screen but no pitch data pushed back.
+///
+/// Like every tuner write this engages the tuner invisibly; callers must
+/// surface that hazard the same way `set_tuner_input` and `set_tuner_mute` do.
+///
+/// The shape of what comes back is *not* established here: with nothing
+/// plugged into the unit, enabling the meter produced no `TunerMessage` pushes
+/// at all over 12 seconds, so `TunerMessage.meter`'s range and unit remain
+/// unmeasured and this stack does not yet interpret it.
+pub fn set_tuner_meter(enabled: bool) -> OutboundMessage {
+    OutboundMessage::encoded(
+        6,
+        pa::TunerMessage {
+            action: pa::message_action::Enum::Update as i32,
+            enable_meter: Some(pa::tuner_message::EnableMeter::EnableMeter(enabled)),
+            ..Default::default()
+        },
+    )
+}
+
 /// Set reference pitch as the signed Hz offset from A=440, matching the QC
 /// wire representation (for example `2.0` means 442 Hz).
 pub fn set_tuner_reference(offset_hz: f32) -> OutboundMessage {
@@ -2147,11 +2172,20 @@ pub fn setlist_position_with_request_id(
     )
 }
 
-pub fn set_tempo(bpm: u32) -> OutboundMessage {
+/// Map a BPM onto the QC's 0..1 tempo parameter.
+///
+/// Confirmed against Cortex Control 4.1.0: a HID capture of its TAP button
+/// while the footer read `75BPM` sent exactly `0.175`, and `(75 - 40) / 200`
+/// is `0.175`. The same scale is what [`responses::decode_tempo_settings`]
+/// already reads back.
+fn normalized_tempo(bpm: u32) -> f32 {
     let minimum = domain::MINIMUM_TEMPO_BPM as f32;
     let span = (domain::MAXIMUM_TEMPO_BPM - domain::MINIMUM_TEMPO_BPM) as f32;
-    let normalized =
-        (bpm.clamp(domain::MINIMUM_TEMPO_BPM, domain::MAXIMUM_TEMPO_BPM) as f32 - minimum) / span;
+    (bpm.clamp(domain::MINIMUM_TEMPO_BPM, domain::MAXIMUM_TEMPO_BPM) as f32 - minimum) / span
+}
+
+pub fn set_tempo(bpm: u32) -> OutboundMessage {
+    let normalized = normalized_tempo(bpm);
     let preset = BinaryPreset {
         tempo_program_data: vec![Model {
             hash: Some(model::Hash::Hash(25_000)),
@@ -2194,27 +2228,46 @@ pub fn set_tempo_parameters(parameters: Vec<(u32, f32)>) -> Vec<OutboundMessage>
         .collect()
 }
 
-/// Select whether the QC plays the loaded preset tempo or the device-global
-/// tempo block. This is GlobalTempo parameter 1, not preset TempoControl TYPE.
-pub fn set_tempo_mode(global: bool) -> OutboundMessage {
+/// Write one parameter of the device-global tempo block.
+fn global_tempo_parameter(index: u32, value: f32) -> OutboundMessage {
     OutboundMessage::encoded(
         profile::MESSAGE_TYPE_GLOBAL_TEMPO,
         pa::GlobalTempoMessage {
             action: pa::message_action::Enum::Update as i32,
             params: vec![Param {
-                index: Some(param::Index::Index(1)),
+                index: Some(param::Index::Index(index)),
                 param_values: vec![ParamValue {
-                    value: Some(param_value::Value::FloatValue(if global {
-                        1.0
-                    } else {
-                        0.0
-                    })),
+                    value: Some(param_value::Value::FloatValue(value)),
                 }],
                 ..Default::default()
             }],
             ..Default::default()
         },
     )
+}
+
+/// Select whether the QC plays the loaded preset tempo or the device-global
+/// tempo block. This is GlobalTempo parameter 1, not preset TempoControl TYPE.
+pub fn set_tempo_mode(global: bool) -> OutboundMessage {
+    global_tempo_parameter(1, if global { 1.0 } else { 0.0 })
+}
+
+/// Set the device-global tempo, which is GlobalTempo parameter 0.
+///
+/// This is the target Cortex Control's TAP button writes; [`set_tempo`] writes
+/// the *loaded preset's* TempoControl block instead, and [`set_tempo_mode`]
+/// decides which of the two the QC plays.
+///
+/// **The device only accepts this while it is in GLOBAL tempo mode.** Measured
+/// on hardware: with parameter 1 at `0.0` (PRESET), two writes of different
+/// values both left parameter 0 unchanged at its previous `0.4000`, with no
+/// error and no reply. After switching parameter 1 to `1.0` (GLOBAL), the same
+/// writes read back exactly - `0.60` then `0.30`. So a caller that wants the
+/// tempo the unit is actually playing must either check the mode first or write
+/// the preset block with [`set_tempo`]; sending this blind is a silent no-op
+/// more often than not.
+pub fn set_global_tempo(bpm: u32) -> OutboundMessage {
+    global_tempo_parameter(0, normalized_tempo(bpm))
 }
 
 /// Set the downstream master level. The QC wire value is normalized while the
@@ -2696,6 +2749,63 @@ mod tests {
             decoded.params[0].param_values[0].value,
             Some(param_value::Value::FloatValue(1.0))
         ));
+    }
+
+    /// Byte-for-byte against a HID capture of Cortex Control 4.1.0's TAP
+    /// button, taken while its footer read `75BPM`.
+    #[test]
+    fn global_tempo_matches_the_value_cortex_control_taps() {
+        let outbound = set_global_tempo(75);
+        assert_eq!(outbound.message_type, 33);
+        let decoded = pa::GlobalTempoMessage::decode(outbound.payload.as_slice()).unwrap();
+        assert_eq!(decoded.action, pa::message_action::Enum::Update as i32);
+        assert_eq!(decoded.params[0].index, Some(param::Index::Index(0)));
+        assert!(matches!(
+            decoded.params[0].param_values[0].value,
+            Some(param_value::Value::FloatValue(value)) if (value - 0.175).abs() < 1e-6
+        ));
+        // Parameter 0 is the global tempo; parameter 1 stays the mode switch.
+        let mode = set_tempo_mode(true);
+        assert_ne!(mode.payload, outbound.payload);
+    }
+
+    #[test]
+    fn global_tempo_clamps_to_the_device_range() {
+        for (bpm, expected) in [(0u32, 0.0f32), (40, 0.0), (240, 1.0), (10_000, 1.0)] {
+            let decoded =
+                pa::GlobalTempoMessage::decode(set_global_tempo(bpm).payload.as_slice()).unwrap();
+            let Some(param_value::Value::FloatValue(value)) =
+                decoded.params[0].param_values[0].value
+            else {
+                panic!("global tempo parameter is not a float");
+            };
+            assert!(
+                (value - expected).abs() < 1e-6,
+                "{bpm} bpm normalized to {value}, expected {expected}"
+            );
+        }
+    }
+
+    /// The second half of Cortex Control's tuner pair; see `set_tuner_meter`.
+    #[test]
+    fn tuner_meter_writes_only_the_enable_meter_field() {
+        for enabled in [true, false] {
+            let outbound = set_tuner_meter(enabled);
+            assert_eq!(outbound.message_type, 6);
+            let decoded = pa::TunerMessage::decode(outbound.payload.as_slice()).unwrap();
+            assert_eq!(decoded.action, pa::message_action::Enum::Update as i32);
+            assert_eq!(
+                decoded.enable_meter,
+                Some(pa::tuner_message::EnableMeter::EnableMeter(enabled))
+            );
+            // A tuner write that also carried input, mute or reference would
+            // silently overwrite the user's settings.
+            assert!(decoded.input_port_id.is_none());
+            assert!(decoded.mute.is_none());
+            assert!(decoded.frequency.is_none());
+        }
+        // Cortex Control's exact bytes for the enable half of the pair.
+        assert_eq!(set_tuner_meter(true).payload, [0x08, 0x01, 0x30, 0x01]);
     }
 
     #[test]

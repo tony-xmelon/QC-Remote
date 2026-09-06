@@ -313,6 +313,22 @@ The footer read `75BPM` at that moment, and `(75 - 40) / (240 - 40) = 0.175`
 exactly — an independent confirmation of `MINIMUM_TEMPO_BPM = 40` and
 `MAXIMUM_TEMPO_BPM = 240` in `qc-protocol::domain`.
 
+**But the device does not always act on it.** Parameter 0 is writable only
+while parameter 1 — the PRESET/GLOBAL switch — is GLOBAL. Measured directly:
+
+| tempo mode | write | parameter 0 afterwards |
+| --- | --- | --- |
+| PRESET (`param1 = 0.0`) | `0.175`, then `0.60` | unchanged at `0.4000` |
+| GLOBAL (`param1 = 1.0`) | `0.60` | `0.6000` |
+| GLOBAL (`param1 = 1.0`) | `0.30` | `0.3000` |
+
+No error, no reply, no acknowledgement in the PRESET case — the write is simply
+dropped. The unit here was in PRESET mode during the capture, so Cortex
+Control's tap almost certainly did nothing to the global tempo either, and its
+`75BPM` footer is its own optimistic display. Anything that wants "set the
+tempo I can hear" has to read the mode first and then choose between this and
+the preset's own TempoControl block.
+
 **ModelPreset (71)** — a type `pyquadcortex`'s enum does not have at all: its
 table stops at 70 and names 71 as the `NumberOfMessageTypes` sentinel, whereas
 CorOS 4.1.0 has 72 real types. Sent either side of a save:
@@ -326,19 +342,35 @@ ModelPreset{action: CREATE, request_id: 42, loaded_row: 0, loaded_column: 0}
 Read as teardown and re-subscription of the edited block's feeds; the exact
 contract is not established, only the bytes.
 
-### What this leaves open in our implementation
+### What this changed in our implementation
 
-Two concrete gaps, both evidenced above rather than guessed:
+Both gaps the capture exposed now have builders in `qc-protocol::commands`,
+each with a unit test asserting the bytes Cortex Control sent:
 
-- **No `enable_meter` writer and no `meter` decode.** `TunerMessage` has
-  `enable_meter` (6) and `meter` (7); `commands.rs` writes `input_port_id`,
-  `frequency` and `mute` only, and `decode_tuner_settings` ignores both meter
-  fields. Showing the tuner without enabling the meter gets the device screen
-  but no live pitch data.
-- **No writer for `GlobalTempo` parameter 0.** `set_tempo_mode` writes
-  parameter 1 (the PRESET/GLOBAL switch) and `set_tempo` writes the *preset*
-  TempoControl model. Nothing writes the device-global tempo value that Cortex
-  Control's TAP sets.
+- **`set_tuner_meter(enabled)`** — `TunerMessage.enable_meter` on type 6, the
+  half of Cortex Control's tuner pair we were missing. It writes that field and
+  nothing else, so it cannot clobber the user's input, mute or reference.
+- **`set_global_tempo(bpm)`** — `GlobalTempo` parameter 0, alongside the
+  existing `set_tempo_mode` on parameter 1. The read side already handled this
+  parameter correctly (`decode_tempo_settings` maps it as `40 + 200 × value`),
+  which the `0.175`/`75BPM` observation independently confirms.
+
+Neither is exposed as a gateway action yet, and both have a caveat that argues
+for care rather than haste:
+
+- The meter's payload is unverified. With nothing plugged into the unit,
+  enabling it produced no `TunerMessage` pushes at all over 12 seconds, so
+  `TunerMessage.meter`'s range and unit stay unmeasured and nothing decodes it.
+- A `set_global_tempo` action would be a silent no-op whenever the device is in
+  PRESET mode, per the table above. Exposing it means picking a behaviour —
+  switch the mode first (a global setting change the caller did not ask for),
+  or refuse and report the mode — and that is a product decision, not a
+  protocol one.
+
+Worth recording separately: `show_tuner` (type 27) is built and unit-tested in
+`commands.rs` but is **not on the live path**. `device.showTuner` is served by
+`request.rs` as MIDI CC 45 (`profile::TUNER_CONTROLLER`), and
+`DeviceCommand::ShowTuner` is constructed nowhere outside tests.
 
 ### How to reproduce a capture
 
