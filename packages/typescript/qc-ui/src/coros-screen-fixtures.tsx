@@ -125,7 +125,13 @@ function CorOsDirectoryFixture({ view, physicalContext = false }: { view: Direct
         Date Added, Author, Preferred Instrument, and marks the active row in
         green rather than with a tick. */}
     {view === "directory-sort" && <aside className="directory-tool-menu"><strong>Sort By</strong>{["Banks", "Name", "Date Added", "Author", "Preferred Instrument"].map((label, index) => <button key={label} className={index === 0 ? "is-active" : ""}>{label}</button>)}</aside>}
-    {view === "directory-filter" && <aside className="directory-tool-menu is-filter"><strong>FILTER</strong>{["All items", "Favorites", "Downloaded", "My items", "Factory"].map((label, index) => <button key={label} className={index === 0 ? "is-active" : ""}>{label}<b>{index === 0 ? "✓" : ""}</b></button>)}</aside>}
+    {/* The device's filter is a capture-type list, not a scope list. Captured
+        as `directory-filter` from the Neural Captures directory, where the
+        funnel appears: Default, Amp, Combo Amp, Amp + Cab, Cab, Overdrive,
+        Fuzz, Compressor, each with its category glyph and no heading. The
+        previous FILTER / All items / Favorites / Downloaded / My items /
+        Factory menu does not exist on the unit. */}
+    {view === "directory-filter" && <aside className="directory-tool-menu is-filter">{["Default", "Amp", "Combo Amp", "Amp + Cab", "Cab", "Overdrive", "Fuzz", "Compressor"].map((label) => <button key={label}><b><DeviceCategoryGlyph label={label} fallback="◈" /></b>{label}</button>)}</aside>}
     {/* The device calls this Multi Select, not Arrange, and draws it as a top
         header: a select-all box, the green title, then trash / rename / copy /
         upload / favourite and a done tick. The previous bar - "ARRANGE",

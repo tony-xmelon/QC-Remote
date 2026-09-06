@@ -5,8 +5,8 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 ## Coverage summary
 
 - Canonical device states: **103/103** routed through the shared Windows/Android surface.
-- Full-frame authoritative evidence: **87/103** states.
-- Official-detail-only evidence: **11/103** states.
+- Full-frame authoritative evidence: **89/103** states.
+- Official-detail-only evidence: **9/103** states.
 - Smoke-only evidence gaps: **5/103** states.
 - Exact-size dual-host capture paths: **103/103** states.
 
@@ -17,17 +17,17 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 
 Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` color similarity. A canonical state that references multiple frames reports their mean. Detail evidence is scoped and therefore never promoted into a full-frame score.
 
-Twenty-seven captures were added from hardware in the CorOS 4.1.0 session of 2026-09-06:
+Thirty-one captures were added from hardware in the CorOS 4.1.0 session of 2026-09-06:
 
-- Directory — `directory-categories`, `-captures`, `-irs`, `-plugins`, `-favorites`, `-search`, `-search-results`, `-sort`, `-arrange`, `-new-folder`
+- Directory — `directory-categories`, `-captures`, `-irs`, `-plugins`, `-favorites`, `-search`, `-search-results`, `-sort`, `-arrange`, `-new-folder`, `-nested`, `-filter`
 - I/O — `io-input`, `io-usb`, `global-eq`
 - Editor — `expression-parameter`, `expression-bypass`, `fixture-editor-pages`, `looper-editor`
-- Grid and browser — `empty-slot`, `plugin-folders`
+- Grid and browser — `empty-slot`, `plugin-folders`, `plugin-refresh`
 - Monitoring and Settings — `cpu-monitor`, `settings-account`, `settings-device`, `settings-midi`, `settings-system`
 - Cortex Cloud — `directory-cloud-upload`, `cloud-upload-overwrite`
 - Gig View — `gig-view-hybrid`
 
-Full-frame authoritative coverage moved from 79/103 to 87/103 as a result, which the summary counts above reflect.
+Full-frame authoritative coverage moved from 79/103 to 89/103 as a result, which the summary counts above reflect.
 
 Two things below are **not** refreshed for them, because both come from a scored dual-host render pass that has not been run: the score table, and the per-state `Evidence` column, which still reads `official frame` or `official detail` for the promoted states. Their wording has been checked against the device's own scene graph with `npm run verify:qc-screen-text`; their pixels have not been scored.
 
@@ -44,11 +44,11 @@ Two things below are **not** refreshed for them, because both come from a scored
 | Monitoring | 1 | 1 | 0 | 0 |
 | I/O | 8 | 8 | 0 | 0 |
 | Routing | 5 | 5 | 0 | 0 |
-| Device browser | 9 | 8 | 1 | 0 |
+| Device browser | 9 | 9 | 0 | 0 |
 | Editor | 9 | 9 | 0 | 0 |
 | Assignment | 4 | 2 | 2 | 0 |
 | Virtual Device preset | 2 | 2 | 0 | 0 |
-| Directory | 16 | 14 | 2 | 0 |
+| Directory | 16 | 16 | 0 | 0 |
 | Capture V1 | 7 | 4 | 2 | 1 |
 | Settings | 10 | 9 | 0 | 1 |
 | Recovery | 2 | 0 | 1 | 1 |
@@ -172,14 +172,25 @@ falls into three groups, and only the first is a matter of time.
 | state | renderer | what happened |
 | --- | --- | --- |
 | DR-12 | `directory-copy` | Multi Select's per-row checkboxes do not respond to a synthetic RemoteControl tap. Rows, checkbox glyphs and the select-all box were all tried; the selection count never moved off zero, so the copy destination dialog cannot be reached this way. |
-| DR-13 | `directory-nested` | Not yet distinguished from `directory-irs`, which already shows a nested folder (`IRs Library` → `My IRs`). Needs a decision about what state DR-13 is meant to depict before it is worth capturing. |
-| DR-10 | `directory-filter` | The funnel in the search results dialog **applies** a filter and disappears from the toolbar; it does not open a menu. Our fixture draws a FILTER list of All items / Favorites / Downloaded / My items / Factory, and no such menu was found on the unit. Treat the fixture as unverified until the real control is located. |
-| DB-08 | `plugin-refresh` | Not attempted. The refresh is benign but slow, and `overlay-busy` already covers the same renderer. |
 | ED-02 | `fixture-editor-pages` | Needs a block with more than one parameter page. The scratch preset carries a single-parameter Adaptive Gate, so a multi-page block has to be added first - a preset edit, revertible by reloading the slot. |
 | ED-06 | `looper-editor` | Same: a Looper block has to be added to the preset first. |
 | ED-09, ED-10 | `stomp-assignment`, `scene-assignment` | No on-screen path was found. Both look like footswitch gestures - hold a switch in STOMP or SCENE mode - which the RemoteControl mouse cannot express. |
 
 Several of the rows above share a symptom rather than a proven cause. `RemoteControlMouse` offers PRESS, RELEASE, MOVE, TAP and DRAG, so a press-hold-move-release gesture *is* expressible; what is unproven is how CorOS wants it timed. Neither the atomic DRAG nor a composed press-hold-move-release lands the Multi Select checkboxes or a mode-tile merge. Until that timing is worked out these states need a hand on the unit.
+
+The `directory-filter` fixture had invented its contents. CorOS does have a
+filter, but only in the Neural Captures directory, and it lists capture types -
+Default, Amp, Combo Amp, Amp + Cab, Cab, Overdrive, Fuzz, Compressor - not the
+All items / Favorites / Downloaded / My items / Factory scope list we drew. It
+was rebuilt from the capture. That is the fourth reconstruction in this session
+found to have been built from the manual rather than the unit, after the sort
+menu, the Multi Select bar and the Account page.
+
+The Neural Capture wizard was retried after the Gig View problem was fixed, with
+the menu verified open and the row coordinate verified by screenshot, on both a
+full preset and a nearly empty one. Selecting *New Neural Capture* returns to the
+Grid in every case, so NC-01 to NC-03 need the capture rig connected; this is not
+a navigation failure.
 
 ### Physically impossible without the unit's owner
 

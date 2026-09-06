@@ -1,0 +1,129 @@
+zenUI::RootGraphicsItem
+  zenUI::DirectoryDialog
+    zenUI::GraphicsItem
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/24/done.png'
+          zenUI::PressAnimationView
+      zenUI::DragHoverActivatedButton
+        zenUI::Button
+          image: 'icons/system/second level navigation/back.png'
+          zenUI::PressAnimationView
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/24/search.png'
+          zenUI::PressAnimationView
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/24/multiselect.png'
+          zenUI::PressAnimationView
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/24/sorting_order.png'
+          zenUI::PressAnimationView
+      zenUI::PushButtonIndicator
+        zenUI::Button
+          image: 'icons/24/filter.png'
+          zenUI::PressAnimationView
+      zenUI::ComboBoxWithSelector
+        text : 'Captures'
+        image: 'icons/custom/down_triangle.png'
+        zenUI::GraphicsItem
+          image: 'icons/24/neural_capture.png'
+        zenUI::PressAnimationView
+    zenUI::GraphicsItem
+    zenUI::FolderDirTable
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+    zenUI::FolderTable
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+      zenUI::JumpScrollbarContainer
+        zenUI::JumpScrollbarLetter
+          zenUI::GraphicsItem
+            text : '#'
+          zenUI::GraphicsItem
+            image: 'icons/16/bullet-white.png'
+          zenUI::GraphicsItem
+            text : 'A'
+          zenUI::GraphicsItem
+            image: 'icons/16/bullet-white.png'
+          zenUI::GraphicsItem
+            text : 'I'
+          zenUI::GraphicsItem
+            image: 'icons/16/bullet-white.png'
+          zenUI::GraphicsItem
+            text : 'R'
+          zenUI::GraphicsItem
+            image: 'icons/16/bullet-white.png'
+          zenUI::GraphicsItem
+            text : 'Z'
+  zenUI::Button
+    zenUI::PushButton
+      zenUI::Button
+        image: 'icons/24/filter.png'
+        zenUI::PressAnimationView
+    zenUI::PressAnimationView
+  zenUI::FilterMenuTable
+    zenUI::Table
+      zenUI::GraphicsItem
+        zenUI::TableCell
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+          zenUI::ButtonWithCheckmark
+            text : 'Default'
+            zenUI::PressAnimationView
+        zenUI::TableCell
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+          zenUI::ButtonWithCheckmark
+            text : 'Amp'
+            zenUI::PressAnimationView
+        zenUI::TableCell
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+          zenUI::ButtonWithCheckmark
+            text : 'Combo Amp'
+            zenUI::PressAnimationView
+        zenUI::TableCell
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+          zenUI::ButtonWithCheckmark
+            text : 'Amp + Cab'
+            zenUI::PressAnimationView
+        zenUI::TableCell
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+          zenUI::ButtonWithCheckmark
+            text : 'Cab'
+            zenUI::PressAnimationView
+        zenUI::TableCell
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+          zenUI::ButtonWithCheckmark
+            text : 'Overdrive'
+            zenUI::PressAnimationView
+        zenUI::TableCell
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+          zenUI::ButtonWithCheckmark
+            text : 'Fuzz'
+            zenUI::PressAnimationView
+        zenUI::TableCell
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+          zenUI::ButtonWithCheckmark
+            text : 'Compressor'
+            zenUI::PressAnimationView

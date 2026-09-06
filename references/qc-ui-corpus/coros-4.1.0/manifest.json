@@ -3454,6 +3454,120 @@
           "seconds": 2.5
         }
       ]
+    },
+    {
+      "id": "plugin-refresh",
+      "label": "Device browser - plugin list refreshing",
+      "screen": "device-browser",
+      "image": "plugin-refresh.png",
+      "graphicsTree": "plugin-refresh.tree.txt",
+      "sha256": "e4886c897f084e7c68626a6156549cb2c246f37df8b1e530e6f99994a8914ff7",
+      "bytes": 32217,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T19:08:38.861161Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 200,
+          "y": 147
+        },
+        {
+          "type": "wait",
+          "seconds": 2.2
+        },
+        {
+          "type": "tap",
+          "x": 500,
+          "y": 47
+        },
+        {
+          "type": "wait",
+          "seconds": 2.4
+        },
+        {
+          "type": "tap",
+          "x": 759,
+          "y": 30
+        },
+        {
+          "type": "wait",
+          "seconds": 1.2
+        }
+      ]
+    },
+    {
+      "id": "directory-nested",
+      "label": "Directory - Captures, nested Factory Captures V2",
+      "screen": "directory",
+      "image": "directory-nested.png",
+      "graphicsTree": "directory-nested.tree.txt",
+      "sha256": "8c313edd5aca23199ded38a84e39901c17fc719bc13fef75ec104ad7bb4c3f2f",
+      "bytes": 38223,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T19:11:08.925413Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 300,
+          "y": 40
+        },
+        {
+          "type": "wait",
+          "seconds": 1.8
+        },
+        {
+          "type": "tap",
+          "x": 140,
+          "y": 30
+        },
+        {
+          "type": "wait",
+          "seconds": 1.5
+        },
+        {
+          "type": "tap",
+          "x": 140,
+          "y": 210
+        },
+        {
+          "type": "wait",
+          "seconds": 2.2
+        },
+        {
+          "type": "tap",
+          "x": 150,
+          "y": 330
+        },
+        {
+          "type": "wait",
+          "seconds": 2.2
+        }
+      ]
+    },
+    {
+      "id": "directory-filter",
+      "label": "Directory - Captures filter menu",
+      "screen": "directory",
+      "image": "directory-filter.png",
+      "graphicsTree": "directory-filter.tree.txt",
+      "sha256": "332d237dc8d93c6b691ffd97c1184a5806bf821f1efb2549fdcdf00024c60a11",
+      "bytes": 30447,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T19:11:13.397921Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 495,
+          "y": 30
+        },
+        {
+          "type": "wait",
+          "seconds": 2.0
+        }
+      ]
     }
   ]
 }
