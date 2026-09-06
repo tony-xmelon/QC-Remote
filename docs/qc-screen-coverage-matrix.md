@@ -17,13 +17,14 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 
 Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` color similarity. A canonical state that references multiple frames reports their mean. Detail evidence is scoped and therefore never promoted into a full-frame score.
 
-Twenty-four captures were added from hardware in the CorOS 4.1.0 session of 2026-09-06:
+Twenty-six captures were added from hardware in the CorOS 4.1.0 session of 2026-09-06:
 
 - Directory — `directory-categories`, `-captures`, `-irs`, `-plugins`, `-favorites`, `-search`, `-search-results`, `-sort`, `-arrange`, `-new-folder`
 - I/O — `io-input`, `io-usb`, `global-eq`
 - Editor — `expression-parameter`, `expression-bypass`, `fixture-editor-pages`, `looper-editor`
 - Grid and browser — `empty-slot`, `plugin-folders`
 - Monitoring and Settings — `cpu-monitor`, `settings-account`, `settings-device`, `settings-midi`, `settings-system`
+- Cortex Cloud — `directory-cloud-upload`, `cloud-upload-overwrite`
 
 Full-frame authoritative coverage moved from 79/103 to 87/103 as a result, which the summary counts above reflect.
 
@@ -193,7 +194,7 @@ Three of the rows above share one cause. `RemoteControlMouse` offers PRESS, RELE
 
 | state | renderer | why |
 | --- | --- | --- |
-| DR-16 | `directory-cloud-upload` | Uploads the owner's presets to Cortex Cloud. Outward-facing and not reversible from here. |
+| DR-16 | `directory-cloud-upload` | **Captured with the owner's explicit approval**, who nominated preset 4B "Top 3 Acoustic Sims" and authorised overwriting. Pressing a row's upload button raised a *Preset already exists / CANCEL / OVERWRITE* dialog, captured separately as `cloud-upload-overwrite` and attached to OV-02, which shares the overlay. Only 4B left the unit. |
 | ST-06 | `settings-update` | The acquisition plan marks it `do-not-trigger`: reaching update progress means starting a firmware update. |
 | ED-15 | `fixture-warning-dsp` | **Attempted and not reproduced.** The scratch preset was loaded up with an amp, a Looper and a second amp until the DSP was full. CorOS does not warn after the fact: it **greys out** every model that no longer fits in the device browser, and tapping a greyed model does nothing at all. So the warning our `fixture-warning-dsp` renderer draws is reached some other way - a preset that became too heavy after a model update is the likeliest - and the fixture is unverified until that path is found. |
 | GL-22 | `gig-official-hybrid` | **Attempted with the owner's approval and not reproduced.** Dragging Scene onto Preset in Modes Configuration puts the dialog into drag mode - the tile lifts and a red delete target replaces the tick - but never merges. `RemoteControlMouse` DRAG carries only two endpoints, and the dialog appears to want press, hold, move, release. The drag was cancelled onto empty space rather than onto the delete target, and the dialog was confirmed pixel-identical to a before capture (max channel difference 17, no pixel over 60). Same protocol limitation as DR-12 and ED-09/ED-10. |

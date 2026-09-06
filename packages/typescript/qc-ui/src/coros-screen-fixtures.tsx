@@ -166,7 +166,7 @@ function CorOsRemainingFixture({ view }: { view: RemainingFixtureView }) {
   return <section className={`qc-screen coros-detail-editor ${view}`}><header><button>⋮</button><span><small>{editor[1] as string}</small><strong>{editor[0] as string}</strong></span><i>●</i><button>✓</button></header>{view === "fixture-editor-cab" && <div className="cab-stage"><span>57</span><b>▰</b><span>121</span></div>}{view === "fixture-editor-eq" && <svg viewBox="0 0 800 150" preserveAspectRatio="none"><path d="M0 120 C100 120 110 35 205 55 S335 115 410 70 S565 20 640 75 S735 105 800 60" /></svg>}<main>{(editor[2] as string[]).map((label,index)=><section key={label}><span>{label}</span><i><b style={{transform:`rotate(${index*23-35}deg)`}} /></i><strong>{index%2 ? "0.0 dB" : index===0 ? "80 Hz" : "5.0"}</strong></section>)}</main><footer><button>1</button><button className="is-active">2</button><span /><button>BYPASS</button></footer></section>;
 }
 
-type SystemFixtureView = "recovery-entry" | "recovery-options" | "overlay-keyboard" | "overlay-confirmation" | "overlay-error" | "overlay-busy";
+type SystemFixtureView = "recovery-entry" | "recovery-options" | "overlay-keyboard" | "overlay-confirmation" | "overlay-overwrite" | "overlay-error" | "overlay-busy";
 
 const KEYBOARD_ROWS = [
   ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
@@ -184,11 +184,19 @@ function CorOsKeyboardScreen() {
   </section>;
 }
 
-function CorOsDeleteConfirmation() {
-  return <section className="qc-screen coros-physical-confirmation" aria-label="Delete preset confirmation">
+// CorOS reuses one confirmation overlay for more than deletion: uploading a
+// preset that already exists in Cortex Cloud raises the same dialog with an
+// OVERWRITE action, captured as `cloud-upload-overwrite`. Only the copy and
+// the confirm label differ. Note the device's own graphics tree exposes just
+// the two buttons for this dialog - its title and body are not in the tree.
+function CorOsDeleteConfirmation({ variant = "delete" }: { variant?: "delete" | "overwrite" }) {
+  const copy = variant === "overwrite"
+    ? { title: "Preset already exists", body: "Preset Top 3 Acoustic Sims already exists. Overwrite?", confirm: "OVERWRITE", label: "Overwrite cloud preset confirmation" }
+    : { title: "ALI The List", body: "Are you sure you want to delete this item?", confirm: "DELETE", label: "Delete preset confirmation" };
+  return <section className="qc-screen coros-physical-confirmation" aria-label={copy.label}>
     <CorOsDirectoryFixture view="directory-presets" physicalContext />
     <i className="confirmation-scrim" />
-    <aside><h1>ALI The List</h1><p>Are you sure you want to delete this item?</p><footer><button>CANCEL</button><button>DELETE</button></footer></aside>
+    <aside><h1>{copy.title}</h1><p>{copy.body}</p><footer><button>CANCEL</button><button>{copy.confirm}</button></footer></aside>
   </section>;
 }
 
@@ -198,6 +206,7 @@ function CorOsSystemFixture({ view }: { view: SystemFixtureView }) {
   return <section className="qc-screen coros-system-overlay"><div className="overlay-underlay"><header><span>32H pyquadcortex scratch</span><b>A</b></header><main>{[1,2,3,4,5].map(item => <i key={item} />)}</main></div>
     {view === "overlay-keyboard" && <CorOsKeyboardScreen />}
     {view === "overlay-confirmation" && <CorOsDeleteConfirmation />}
+    {view === "overlay-overwrite" && <CorOsDeleteConfirmation variant="overwrite" />}
     {view === "overlay-error" && <aside className="system-dialog"><b className="dialog-icon is-error">!</b><h1>Action unavailable</h1><p>Quad Cortex could not complete the request. Check the connection and try again.</p><footer><button>OK</button></footer></aside>}
     {view === "overlay-busy" && <aside className="system-dialog is-busy"><b className="dialog-spinner" /><h1>Saving preset</h1><p>Please wait. Do not disconnect or power off Quad Cortex.</p></aside>}
   </section>;

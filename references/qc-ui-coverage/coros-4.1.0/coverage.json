@@ -870,6 +870,9 @@
       ],
       "smoke": [
         "directory-cloud-upload"
+      ],
+      "physical": [
+        "directory-cloud-upload"
       ]
     },
     {
@@ -1083,6 +1086,7 @@
       "id": "OV-02",
       "renderer": "overlay-confirmation",
       "physical": [
+        "cloud-upload-overwrite",
         "generic-confirmation"
       ],
       "smoke": [

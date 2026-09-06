@@ -3359,6 +3359,79 @@
           "seconds": 2.5
         }
       ]
+    },
+    {
+      "id": "directory-cloud-upload",
+      "label": "Directory - Cortex Cloud upload mode",
+      "screen": "directory",
+      "image": "directory-cloud-upload.png",
+      "graphicsTree": "directory-cloud-upload.tree.txt",
+      "sha256": "e04a3de712a7f658f22d66492d0fb5fb037c608a8f88b182c2a455118029e56d",
+      "bytes": 41012,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T18:35:31.717665Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 300,
+          "y": 40
+        },
+        {
+          "type": "wait",
+          "seconds": 1.6
+        },
+        {
+          "type": "tap",
+          "x": 320,
+          "y": 30
+        },
+        {
+          "type": "wait",
+          "seconds": 2.0
+        }
+      ]
+    },
+    {
+      "id": "cloud-upload-overwrite",
+      "label": "Directory - cloud upload overwrite confirmation",
+      "screen": "directory",
+      "image": "cloud-upload-overwrite.png",
+      "graphicsTree": "cloud-upload-overwrite.tree.txt",
+      "sha256": "cda88a1d1f95db01ea90cfb90711d27bf1fdae187638b8709e32f57b7e29f649",
+      "bytes": 31373,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T18:41:05.901720Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 300,
+          "y": 40
+        },
+        {
+          "type": "wait",
+          "seconds": 1.8
+        },
+        {
+          "type": "tap",
+          "x": 320,
+          "y": 30
+        },
+        {
+          "type": "wait",
+          "seconds": 2.2
+        },
+        {
+          "type": "tap",
+          "x": 751,
+          "y": 137
+        },
+        {
+          "type": "wait",
+          "seconds": 3.0
+        }
+      ]
     }
   ]
 }
