@@ -25,6 +25,7 @@ export type ChatDockProps = {
   quotaLabel: string;
   resetLabel: string;
   onRestore: () => void;
+  onCollapse: () => void;
   onScroll: () => void;
   onUserScroll: () => void;
   onValueChange: (value: string) => void;
@@ -38,9 +39,14 @@ export type ChatDockProps = {
 };
 
 export function ChatDock(props: ChatDockProps) {
-  if (!props.open) return <button className="restore-chat" onClick={props.onRestore}>Open assistant <span>Ctrl+L</span></button>;
+  if (!props.open) return <button className="restore-chat" onClick={props.onRestore} aria-expanded={false} title="Open assistant (Ctrl+L)"><QcUiIcon kind="previous" />Open assistant <span>Ctrl+L</span></button>;
 
   return <section className="chat-dock" aria-label="QC assistant">
+    <header className="chat-dock-header">
+      <span>ASSISTANT</span>
+      {/* The pane is collapsible from the pane itself, not only from the View menu. */}
+      <button type="button" className="chat-collapse" onClick={props.onCollapse} aria-expanded={true} aria-label="Collapse assistant" title="Collapse assistant (Ctrl+L)"><QcUiIcon kind="next" /></button>
+    </header>
     <div ref={props.conversationRef} className="conversation-preview" aria-live="polite" onScroll={props.onScroll} onWheel={props.onUserScroll} onTouchMove={props.onUserScroll} onPointerDown={props.onUserScroll}>
       {props.messages.map((item) => <div className={`${item.role}-message`} key={item.id}>
         {item.role !== "tool" && <span>{item.role.toUpperCase()}</span>}

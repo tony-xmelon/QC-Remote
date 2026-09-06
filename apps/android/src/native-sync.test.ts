@@ -53,7 +53,8 @@ test("USB attachment auto-connects and reports synchronization separately", () =
   assert.match(javaSource, /handshakeComplete && presetSynchronized && currentSetlist != null/);
   assert.match(appSource, /if \(state === "available"\)[\s\S]*attemptUsbConnection\(\)/);
   assert.match(appSource, /state\.kind === "preset"[\s\S]*usbSessionReady\.current[\s\S]*transitionConnection\("connected"\)/);
-  assert.match(appSource, /label: usbLabel, appearance: usbState/);
+  assert.match(appSource, /connected: usbConnected, busy: usbBusy, appearance: usbState/);
+  assert.match(appSource, /\{qcReadyLabel\(connection\)\}/, "the pill reads the shared cross-host readiness wording");
 });
 
 test("A through H use the reported hardware mode and assignments", () => {

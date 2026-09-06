@@ -14,9 +14,9 @@
       {
         "title": "QC Control",
         "width": 1440,
-        "height": 980,
+        "height": 820,
         "minWidth": 920,
-        "minHeight": 720,
+        "minHeight": 640,
         "resizable": true,
         "fullscreen": false
       }

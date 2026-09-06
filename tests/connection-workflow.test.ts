@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { qcConnectionPresentation } from "../packages/typescript/qc-ui/src/use-qc-connection-workflow.ts";
+import { qcConnectionPresentation, qcReadyLabel } from "../packages/typescript/qc-ui/src/use-qc-connection-workflow.ts";
 import { isQcConnectionFailure, qcConnectionIsVerified, qcDeviceStatusDetail, qcVisibleStatusNotice, runtimeHasSynchronizedQc } from "../apps/windows/src/qc-readiness.ts";
 
 test("connection presentation is identical for native hosts", () => {
@@ -14,6 +14,35 @@ test("connection presentation is identical for native hosts", () => {
   assert.equal(qcConnectionPresentation({ phase: "opening", detail: "opening", demo: true }).label, "WAIT");
   assert.equal(qcConnectionPresentation({ phase: "needs-attention", detail: "failed", demo: true }).appearance, "error");
   assert.equal(qcConnectionPresentation({ phase: "disconnected", detail: "absent", demo: true }).appearance, "absent");
+});
+
+test("both hosts read one device-readiness vocabulary", () => {
+  // Windows verifies readiness separately, Android reads the phase alone. The
+  // same device state must still be spelled the same way on both.
+  const ready = { phase: "ready" as const, detail: "ready", demo: false };
+  assert.equal(qcReadyLabel(ready, true), "QC READY", "Windows: verified device");
+  assert.equal(qcReadyLabel(ready), "QC READY", "Android: ready transport is ready");
+  assert.equal(qcReadyLabel(ready, false), "CHECKING QC", "Windows only: transport up, device unverified");
+  assert.equal(qcReadyLabel(ready, true, 40), "SYNCING 40%");
+  assert.equal(qcReadyLabel(ready, false, 0), "SYNCING 0%", "a zero-percent sync is still a sync, not a check");
+  for (const deviceReady of [undefined, false]) {
+    assert.equal(qcReadyLabel({ phase: "syncing", detail: "", demo: false }, deviceReady), "SYNCING");
+    assert.equal(qcReadyLabel({ phase: "needs-attention", detail: "", demo: true }, deviceReady), "QC OFFLINE");
+    assert.equal(qcReadyLabel({ phase: "degraded", detail: "", demo: true }, deviceReady), "QC OFFLINE");
+    assert.equal(qcReadyLabel({ phase: "disconnected", detail: "", demo: true }, deviceReady), "DISCONNECTED");
+    assert.equal(qcReadyLabel({ phase: "handshaking", detail: "", demo: true }, deviceReady), "HANDSHAKING");
+  }
+  assert.equal(qcReadyLabel({ phase: "ready", detail: "", demo: true }, undefined), "READY", "a demo session is never QC READY");
+});
+
+test("neither host spells device readiness on its own", () => {
+  const windowsMenu = readFileSync(new URL("../apps/windows/src/menu-bar.tsx", import.meta.url), "utf8");
+  const android = readFileSync(new URL("../apps/android/src/App.tsx", import.meta.url), "utf8");
+  assert.match(windowsMenu, /qcReadyLabel\(connection, deviceReady, syncing \? syncProgress : undefined\)/);
+  assert.match(android, /qcReadyLabel\(connection\)/);
+  for (const [host, source] of [["windows", windowsMenu], ["android", android]] as const) {
+    assert.doesNotMatch(source, /"QC READY"|"QC OFFLINE"|"CHECKING QC"/, `${host} must not restate readiness wording locally`);
+  }
 });
 
 const liveRuntime = {

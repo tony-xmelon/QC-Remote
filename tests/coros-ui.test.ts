@@ -321,7 +321,9 @@ test("switching Grid devices replaces the parameter screen atomically", () => {
 test("startup synchronization is visible in the connection indicator", () => {
   const appSource = readFileSync(new URL("../apps/windows/src/App.tsx", import.meta.url), "utf8") + readFileSync(new URL("../apps/windows/src/menu-bar.tsx", import.meta.url), "utf8");
   const styles = readFileSync(new URL("../apps/windows/src/styles.css", import.meta.url), "utf8");
-  assert.match(appSource, /SYNCING \$\{syncProgress\}%/);
+  const sharedLabel = readFileSync(new URL("../packages/typescript/qc-ui/src/use-qc-connection-workflow.ts", import.meta.url), "utf8");
+  assert.match(sharedLabel, /SYNCING \$\{syncProgress\}%/, "the sync percentage is shared wording, not a Windows string");
+  assert.match(appSource, /syncProgress=\{syncProgress\}/, "the indicator still receives live sync progress");
   assert.match(appSource, /phase: "syncing"/);
   assert.match(appSource, /className="connection-progress"/);
   assert.match(styles, /\.connection-progress/);
@@ -337,14 +339,14 @@ test("connection status owns one non-modal details and recovery panel", () => {
   assert.doesNotMatch(appSource, /className="menubar-more"/);
   assert.doesNotMatch(appSource, /className="menubar-reconnect"/);
   assert.doesNotMatch(appSource, /dialog === "connection"/);
-  assert.match(appSource, /deviceReady \? "QC READY"/);
+  assert.match(appSource, /qcReadyLabel\(connection, deviceReady, syncing \? syncProgress : undefined\)/);
   assert.match(appSource, /deviceReady=\{deviceReady\}/);
 });
 
 test("device and chat own fixed-size status buttons and mutually exclusive detail panes", () => {
   const appSource = readFileSync(new URL("../apps/windows/src/App.tsx", import.meta.url), "utf8") + readFileSync(new URL("../apps/windows/src/menu-bar.tsx", import.meta.url), "utf8");
   const styles = readFileSync(new URL("../apps/windows/src/styles.css", import.meta.url), "utf8");
-  assert.match(appSource, /useState<"device" \| "chat" \| null>/);
+  assert.match(appSource, /useState<"device" \| "relay" \| "chat" \| null>/, "every menu-bar badge shares one panel slot, so opening one closes the others");
   assert.match(appSource, /className="menubar-device-side"/);
   assert.match(appSource, /className="menubar-chat-side"/);
   assert.match(appSource, /statusPanelOpen === "device"/);
@@ -353,7 +355,31 @@ test("device and chat own fixed-size status buttons and mutually exclusive detai
   assert.match(appSource, /Conversational model/);
   assert.doesNotMatch(appSource, /className="chat-provider-status"/);
   assert.match(styles, /\.connection-badge, \.chat-status-badge \{[^}]*flex: 0 0 176px;[^}]*width: 176px;[^}]*min-width: 176px;[^}]*max-width: 176px;/s);
+  assert.match(styles, /\.relay-badge \{[^}]*flex: 0 0 92px;[^}]*width: 92px;[^}]*min-width: 92px;[^}]*max-width: 92px;/s);
+  assert.match(styles, /\.menubar-actions \{[^}]*flex: 0 0 292px;[^}]*width: 292px;/s, "the action strip must reserve room for both badges");
   assert.match(styles, /\.menu-bar \{[^}]*grid-template-columns: minmax\(0, 1fr\) clamp\(320px, 27vw, 420px\)/s);
+});
+
+test("Windows reaches the MCP relay from the menu bar, not only from Settings", () => {
+  const menuSource = readFileSync(new URL("../apps/windows/src/menu-bar.tsx", import.meta.url), "utf8");
+  const appSource = readFileSync(new URL("../apps/windows/src/App.tsx", import.meta.url), "utf8");
+  const androidSource = readFileSync(new URL("../apps/android/src/App.tsx", import.meta.url), "utf8");
+  const sharedLabel = readFileSync(new URL("../packages/typescript/qc-ui/src/use-qc-connection-workflow.ts", import.meta.url), "utf8");
+  assert.match(menuSource, /function RelayBadge\(/);
+  assert.match(menuSource, /className=\{`connection-badge relay-badge phase-\$\{relayPhase\(status\)\}`\}/);
+  assert.match(menuSource, /aria-label="MCP relay details"/);
+  assert.match(menuSource, /onClick=\{onRelayConnect\}/, "the badge panel can start the relay without opening Settings");
+  assert.match(menuSource, /onClick=\{onRelayUnpair\}/);
+  assert.match(appSource, /onRelayConnect=\{\(\) => void reconnectPublicRelay\(\)\}/);
+  assert.match(appSource, /onRelayUnpair=\{\(\) => void unpairPublicRelay\(\)\}/);
+  assert.match(appSource, /onOpenRelaySettings=\{\(\) => \{ setSettingsTab\("general"\); setDialog\("settings"\); \}\}/);
+  // The badge wording is the same one Android already shows.
+  assert.match(sharedLabel, /export function qcRelayLabel/);
+  assert.match(menuSource, /qcRelayLabel\(status\)/);
+  assert.match(androidSource, /qcRelayLabel\(relayWorkflow\.status\)/);
+  for (const [host, source] of [["windows", menuSource], ["android", androidSource]] as const) {
+    assert.doesNotMatch(source, /"REMOTE" : .* \? "RELAY"/, `${host} must not restate the relay wording locally`);
+  }
 });
 
 test("startup synchronization advances continuously and exposes completion", () => {
@@ -400,7 +426,7 @@ test("all Windows ready indicators require the live synchronized broker status",
   assert.match(heartbeat, /!runtimeHasSynchronizedQc\(status\)/);
   assert.match(appSource, /setTimeout\(\(\) => void monitorDeviceHealth\(\), 250\)/, "local readiness should be revoked promptly without polling the QC");
   assert.match(appSource, /deviceReady \? "LIVE"[\s\S]*"OFFLINE"/);
-  assert.match(menuSource, /deviceReady \? "QC READY"/);
+  assert.match(menuSource, /qcReadyLabel\(connection, deviceReady, syncing \? syncProgress : undefined\)/);
   assert.match(menuSource, /deviceReady \? "ready" : connection\.phase === "ready" \? "syncing"/);
   assert.match(menuSource, /qcDeviceStatusDetail\(connection, deviceReady, syncProgress\)/);
   assert.match(menuSource, /<p>\{deviceStatusDetail\}<\/p>/, "the open panel must not repeat stale transport text");
@@ -782,6 +808,22 @@ test("slow device saves and navigation stay off the window event thread", () => 
   assert.match(rustSource, /async fn gateway_invoke\([\s\S]{0,100}app: AppHandle/);
   assert.match(rustSource, /gateway_invoke[\s\S]*spawn_blocking\(move \|\|/);
   assert.doesNotMatch(rustSource, /async fn (navigate_bank|recall_preset|press_footswitch|list_preset_slots|save_preset_as|rename_current_preset)\(/);
+});
+
+test("the assistant pane collapses and reopens from the pane itself", () => {
+  const appSource = readFileSync(new URL("../apps/windows/src/App.tsx", import.meta.url), "utf8");
+  const dockSource = readFileSync(new URL("../apps/windows/src/chat-dock.tsx", import.meta.url), "utf8");
+  const styles = readFileSync(new URL("../apps/windows/src/styles.css", import.meta.url), "utf8");
+  // Collapsing used to be reachable only through the View menu or Ctrl+L.
+  assert.match(dockSource, /className="chat-collapse"[^>]*onClick=\{props\.onCollapse\}/, "the open dock carries its own collapse control");
+  assert.match(dockSource, /className="chat-collapse"[^>]*aria-expanded=\{true\}/);
+  assert.match(dockSource, /className="restore-chat"[^>]*aria-expanded=\{false\}/, "the collapsed state announces itself as collapsed");
+  assert.match(appSource, /onCollapse=\{\(\) => setChatOpen\(false\)\}/);
+  assert.match(appSource, /onRestore=\{\(\) => setChatOpen\(true\)\}/);
+  assert.match(appSource, /case "toggle-chat": setChatOpen\(\(open\) => !open\)/, "the View menu keeps toggling the same state");
+  assert.match(styles, /\.chat-dock-header \{/);
+  assert.match(styles, /\.chat-collapse \{/);
+  assert.match(styles, /\.chat-dock \{[^}]*grid-template-rows: auto minmax\(0, 1fr\)/, "the header takes its own row instead of eating the conversation");
 });
 
 test("chat follows new messages without stealing a user-controlled scroll position", () => {

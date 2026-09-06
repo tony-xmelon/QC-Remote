@@ -60,7 +60,7 @@ export { applyPreparedOfflineAssistantAction, offlineAssistantEditConfirmation, 
 export type { OfflineAssistantParameterPort, OfflineAssistantPerformancePort, OfflineAssistantPresetPort, OfflineAssistantWorkflowOptions, OfflineAssistantWorkflowOutcome, PreparedOfflineAssistantAction } from "./offline-assistant-workflow";
 export { useAssistantConversation } from "./use-assistant-conversation";
 export type { AssistantConversationOptions, AssistantSubmission } from "./use-assistant-conversation";
-export { qcConnectionPresentation, useQcConnectionWorkflow } from "./use-qc-connection-workflow";
+export { qcConnectionPresentation, qcReadyLabel, qcRelayLabel, useQcConnectionWorkflow } from "./use-qc-connection-workflow";
 export type { QcConnectionPresentation, QcConnectionTransition } from "./use-qc-connection-workflow";
 export { ASSISTANT_ACCESS_OPTIONS, AssistantAccessSelect, AssistantAttachmentList, CollapsibleAssistantResult } from "./assistant-chat-primitives";
 export type { AssistantAttachment } from "./assistant-chat-primitives";

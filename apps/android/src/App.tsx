@@ -4,7 +4,7 @@ import { demoSnapshot, QC_SCENE_COUNT } from "@ndsp-qc/client";
 import { assistantToolActionPrompt, footswitchLeds, parseAssistantIntent, parseAssistantReply, recentModelConversation, runToolConversation, sceneLetter, textModelConversationPrompt, validateAssistantToolCalls, type AssistantAccessMode as ControlAccessMode, type AssistantToolCall, type PublicRelayState as RelayState } from "@ndsp-qc/core";
 import { formFactors, skins } from "@ndsp-qc/form-factors";
 import { QC_BRAND, QC_COLORS, QC_VISUAL_ASSETS } from "@ndsp-qc/theme";
-import { AddBlockPanel, applyPreparedOfflineAssistantAction, AssistantAccessSelect, AssistantAttachmentList, browserWorkflowPrompts, consumeQcNativeStateFrame, corosFixtureConfiguration, corOsUnavailableContextActionMessage, executeAndReconcileQcAction, GridManagementPanel, MicrophoneIcon, offlineAssistantEditConfirmation, parameterEditorAccent, parameterEditorControlSlots, parameterEditorPageSize, qcParameterEditorBindings, QcHardwareSwitch, QcMasterVolumeKnob, QcUiIcon, QuadCortexSurface, readAssistantAccessMode, RoutingEditor, runOfflineAssistantIntent, SceneEditor, useAssistantAutoScroll, useAssistantConversation, useBlockEditorSession, useContinuousControlWorkflow, usePublicRelayWorkflow, useQcConnectionWorkflow, useQcController, useQcLiveState, useQcSurfaceActions, useQcWorkflows, writeAssistantAccessMode, type CorOsContextAction, type CorOsScreenView } from "@ndsp-qc/ui";
+import { AddBlockPanel, applyPreparedOfflineAssistantAction, AssistantAccessSelect, AssistantAttachmentList, browserWorkflowPrompts, consumeQcNativeStateFrame, corosFixtureConfiguration, corOsUnavailableContextActionMessage, executeAndReconcileQcAction, GridManagementPanel, MicrophoneIcon, offlineAssistantEditConfirmation, parameterEditorAccent, parameterEditorControlSlots, parameterEditorPageSize, qcParameterEditorBindings, qcReadyLabel, qcRelayLabel, QcHardwareSwitch, QcMasterVolumeKnob, QcUiIcon, QuadCortexSurface, readAssistantAccessMode, RoutingEditor, runOfflineAssistantIntent, SceneEditor, useAssistantAutoScroll, useAssistantConversation, useBlockEditorSession, useContinuousControlWorkflow, usePublicRelayWorkflow, useQcConnectionWorkflow, useQcController, useQcLiveState, useQcSurfaceActions, useQcWorkflows, writeAssistantAccessMode, type CorOsContextAction, type CorOsScreenView } from "@ndsp-qc/ui";
 import { androidGatewayTransport, createAndroidQcTransport, GeminiNative, publicRelay, QcUsbNative, subscribeRelayState, VoiceInputNative } from "./native-services";
 import { quotaSummary, recordGeminiUsage, type GeminiModelId, type GeminiQuotaLedger } from "./gemini-quota";
 
@@ -66,7 +66,7 @@ export function App() {
     detail: native ? "Looking for the Quad Cortex…" : "Android USB is unavailable in browser preview.",
     demo: true
   });
-  const { connection, transition: transitionConnection, connected: usbConnected, busy: usbBusy, label: usbLabel, appearance: usbState } = deviceConnection;
+  const { connection, transition: transitionConnection, connected: usbConnected, busy: usbBusy, appearance: usbState } = deviceConnection;
   const [selectedModel, setSelectedModel] = useState<AndroidGeminiModel>(() => {
     const saved = window.localStorage.getItem(androidModelStorageKey);
     return androidGeminiModels.some((model) => model.id === saved) ? saved as AndroidGeminiModel : "gemini-3.7-flash";
@@ -510,8 +510,8 @@ export function App() {
     <header className="mobile-header">
       <div className="mobile-brand"><AppMark /><span><strong>{QC_BRAND.appName}</strong><small>{snapshot.presetLocation} · {snapshot.presetName}</small></span></div>
       <div className="connection-pills">
-        <button className={`connection-pill relay-${relayState}`} onClick={() => void configureRelay()} aria-label={relayPaired ? "Remote relay settings" : "Pair remote relay"}><i /> {relayState === "connected" ? "REMOTE" : relayPaired ? "RELAY" : "PAIR"}</button>
-        <button className={`connection-pill ${usbState}`} onClick={() => void connectUsb()} aria-label="Connect Quad Cortex over USB"><i /> {usbLabel}</button>
+        <button className={`connection-pill relay-${relayState}`} onClick={() => void configureRelay()} aria-label={relayPaired ? "Remote relay settings" : "Pair remote relay"}><i /> {qcRelayLabel(relayWorkflow.status)}</button>
+        <button className={`connection-pill ${usbState}`} onClick={() => void connectUsb()} aria-label="Connect Quad Cortex over USB"><i /> {qcReadyLabel(connection)}</button>
       </div>
     </header>
 

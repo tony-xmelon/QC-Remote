@@ -1547,6 +1547,11 @@ export function App() {
       deviceName={snapshot.deviceName}
       presetLabel={presetLabel}
       events={connectionEvents}
+      relayStatus={relayStatus}
+      relayPending={relayPending}
+      onRelayConnect={() => void reconnectPublicRelay()}
+      onRelayUnpair={() => void unpairPublicRelay()}
+      onOpenRelaySettings={() => { setSettingsTab("general"); setDialog("settings"); }}
       chatOpen={chatOpen}
       chatStatus={chatStatus}
       chatSettings={chatSettings}
@@ -1594,6 +1599,7 @@ export function App() {
         quotaLabel={chatQuota?.available && chatQuota.remainingFraction !== undefined ? `${Math.round(chatQuota.remainingFraction * 100)}%` : "—"}
         resetLabel={quotaResetLabel(chatQuota?.resetTime) ?? "—"}
         onRestore={() => setChatOpen(true)}
+        onCollapse={() => setChatOpen(false)}
         onScroll={assistantScroll.onScroll}
         onUserScroll={assistantScroll.onUserScroll}
         onValueChange={setMessage}

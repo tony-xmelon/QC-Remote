@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { ConnectionState, RuntimeStatus } from "@ndsp-qc/client";
 import { chatCredentialStatus, type ChatQuota, type ChatSettings, type ChatUsage } from "./model-chat";
-import { QcUiIcon } from "@ndsp-qc/ui";
+import type { PublicRelayStatus } from "@ndsp-qc/core";
+import { QcUiIcon, qcReadyLabel, qcRelayLabel } from "@ndsp-qc/ui";
 import { qcDeviceStatusDetail } from "./qc-readiness";
 
 export type ConnectionEvent = { at: string; event: string; result: "pending" | "success" | "warning" | "failure" | "info"; detail: string };
@@ -33,7 +34,7 @@ export const quotaResetLabel = (resetTime?: string) => {
 export const divider = (): MenuItem => ({ separator: true });
 
 
-export function MenuBar({ menus, onSelect, connection, deviceReady, syncProgress, busy, runtime, deviceName, presetLabel, events, chatOpen, chatStatus, chatSettings, chatQuota, chatUsage, assistantPending, modelWarming, remoteChatAllowed, onConnect, onDisconnect, onReset, onRefresh, onClearEvents, onExportDiagnostics, onOpenDeviceInfo, onOpenChatSettings, onTestChat, onRefreshChatQuota, onCancelChat, onOpenChange }: {
+export function MenuBar({ menus, onSelect, connection, deviceReady, syncProgress, busy, runtime, deviceName, presetLabel, events, relayStatus, relayPending, onRelayConnect, onRelayUnpair, onOpenRelaySettings, chatOpen, chatStatus, chatSettings, chatQuota, chatUsage, assistantPending, modelWarming, remoteChatAllowed, onConnect, onDisconnect, onReset, onRefresh, onClearEvents, onExportDiagnostics, onOpenDeviceInfo, onOpenChatSettings, onTestChat, onRefreshChatQuota, onCancelChat, onOpenChange }: {
   menus: AppMenu[];
   onSelect: (item: MenuCommand) => void;
   connection: ConnectionState;
@@ -44,6 +45,11 @@ export function MenuBar({ menus, onSelect, connection, deviceReady, syncProgress
   deviceName: string;
   presetLabel: string;
   events: ConnectionEvent[];
+  relayStatus?: PublicRelayStatus;
+  relayPending: boolean;
+  onRelayConnect: () => void;
+  onRelayUnpair: () => void;
+  onOpenRelaySettings: () => void;
   chatOpen: boolean;
   chatStatus: "checking" | "online" | "offline" | "error";
   chatSettings?: ChatSettings;
@@ -66,7 +72,7 @@ export function MenuBar({ menus, onSelect, connection, deviceReady, syncProgress
   onOpenChange: (open: boolean) => void;
 }) {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
-  const [statusPanelOpen, setStatusPanelOpen] = useState<"device" | "chat" | null>(null);
+  const [statusPanelOpen, setStatusPanelOpen] = useState<"device" | "relay" | "chat" | null>(null);
   const root = useRef<HTMLDivElement>(null);
   const deviceStatusRoot = useRef<HTMLDivElement>(null);
   const chatStatusRoot = useRef<HTMLDivElement>(null);
@@ -137,7 +143,7 @@ export function MenuBar({ menus, onSelect, connection, deviceReady, syncProgress
   const displayedDevicePhase = syncProgress !== null ? "syncing" : deviceReady ? "ready" : connection.phase === "ready" ? "syncing" : connection.phase;
   const synchronizedPreset = deviceReady ? presetLabel : connection.lastSync ? `${presetLabel} (last known)` : "Not synchronized";
   const deviceStatusDetail = qcDeviceStatusDetail(connection, deviceReady, syncProgress);
-  const toggleStatusPanel = (panel: "device" | "chat") => {
+  const toggleStatusPanel = (panel: "device" | "relay" | "chat") => {
     const next = statusPanelOpen === panel ? null : panel;
     closeMenu(false);
     setStatusPanelOpen(next);
@@ -188,6 +194,21 @@ export function MenuBar({ menus, onSelect, connection, deviceReady, syncProgress
       </div>)}
     </div>
     <div className="menubar-actions" ref={deviceStatusRoot}>
+      <RelayBadge status={relayStatus} expanded={statusPanelOpen === "relay"} onClick={() => toggleStatusPanel("relay")} />
+      {statusPanelOpen === "relay" && <section className="connection-panel relay-status-panel" role="dialog" aria-modal="false" aria-label="MCP relay details">
+        <header><div><span className={`connection-panel-light panel-phase-${relayPhase(relayStatus)}`} /><strong>Public MCP relay</strong></div><span>{relayStatus?.state.replaceAll("_", " ") ?? "not paired"}</span></header>
+        <p>{relayDetail(relayStatus)}</p>
+        <dl>
+          <div><dt>Relay</dt><dd>{relayStatus?.endpoint ?? "Not paired"}</dd></div>
+          <div><dt>Device ID</dt><dd>{relayStatus?.deviceId ?? "Not paired"}</dd></div>
+          <div><dt>Assistant access</dt><dd>{relayStatus?.accessMode?.replaceAll("-", " ") ?? "Unavailable"}</dd></div>
+        </dl>
+        <div className="chat-panel-actions">
+          <button className="primary" disabled={relayPending || !relayStatus?.paired || relayStatus.state === "connected" || relayStatus.state === "connecting"} onClick={onRelayConnect}>Connect</button>
+          <button disabled={relayPending || !relayStatus?.paired} onClick={onRelayUnpair}>Unpair</button>
+          <button onClick={() => { setStatusPanelOpen(null); onOpenChange(false); onOpenRelaySettings(); }}>{relayStatus?.paired ? "Relay settings" : "Pair this computer…"}</button>
+        </div>
+      </section>}
       <ConnectionBadge connection={connection} deviceReady={deviceReady} syncProgress={syncProgress} expanded={statusPanelOpen === "device"} onClick={() => toggleStatusPanel("device")} />
       {statusPanelOpen === "device" && <section className="connection-panel" role="dialog" aria-modal="false" aria-label="Connection details">
         <header><div><span className={`connection-panel-light panel-phase-${displayedDevicePhase}`} /><strong>{deviceReady ? deviceName : "Quad Cortex"}</strong></div><span>{displayedDevicePhase.replaceAll("-", " ")}</span></header>
@@ -242,13 +263,43 @@ function ConnectionBadge({ connection, deviceReady, syncProgress, expanded, onCl
   const syncing = syncProgress !== null;
   const awaitingVerification = !connection.demo && connection.phase === "ready" && !deviceReady;
   const phase = syncing || awaitingVerification ? "syncing" : deviceReady ? "ready" : connection.phase;
-  const label = syncing ? `SYNCING ${syncProgress}%` : deviceReady ? "QC READY" : awaitingVerification ? "CHECKING QC" : connection.phase === "needs-attention" || connection.phase === "degraded" ? "QC OFFLINE" : connection.phase === "disconnected" ? "DISCONNECTED" : connection.phase.replace("-", " ").toUpperCase();
+  const label = qcReadyLabel(connection, deviceReady, syncing ? syncProgress : undefined);
   const detail = qcDeviceStatusDetail(connection, deviceReady, syncProgress);
   return <button type="button" className={`connection-badge phase-${phase}`} aria-expanded={expanded} aria-haspopup="dialog" aria-label={syncing ? `Synchronizing device, ${syncProgress}% complete; open connection details` : `${label}; open connection details`} title={detail} onClick={onClick}>
     <span className="status-light" />
     <span>{label}</span>
     <span className="connection-chevron" aria-hidden="true" />
     {syncing && <span className="connection-progress" aria-hidden="true"><span style={{ width: `${syncProgress}%` }} /></span>}
+  </button>;
+}
+
+/** One vocabulary for the relay light: the same states the device badge uses. */
+function relayPhase(status?: PublicRelayStatus): "ready" | "syncing" | "needs-attention" | "idle" {
+  if (status?.state === "connected") return "ready";
+  if (status?.state === "connecting" || status?.state === "reconnecting") return "syncing";
+  if (status?.state === "invalid_endpoint" || status?.state === "pairing_required") return "needs-attention";
+  return "idle";
+}
+
+function relayDetail(status?: PublicRelayStatus): string {
+  if (!status?.paired) return "Not paired. Pair this computer to let ChatGPT or Claude reach this Quad Cortex over an outbound-only connection.";
+  switch (status.state) {
+    case "connected": return "A remote assistant can reach this Quad Cortex.";
+    case "connecting": return "Opening the outbound relay connection…";
+    case "reconnecting": return "The relay connection dropped and is being re-established.";
+    case "invalid_endpoint": return "The stored relay address was rejected. Re-pair this computer.";
+    case "pairing_required": return "The relay no longer recognizes this computer. Re-pair it.";
+    default: return "Paired but stopped. Connect to make this Quad Cortex reachable.";
+  }
+}
+
+function RelayBadge({ status, expanded, onClick }: { status?: PublicRelayStatus; expanded: boolean; onClick: () => void }) {
+  const label = qcRelayLabel(status);
+  const detail = relayDetail(status);
+  return <button type="button" className={`connection-badge relay-badge phase-${relayPhase(status)}`} aria-expanded={expanded} aria-haspopup="dialog" aria-label={`${label}; open MCP relay details`} title={detail} onClick={onClick}>
+    <span className="status-light" />
+    <span>{label}</span>
+    <span className="connection-chevron" aria-hidden="true" />
   </button>;
 }
 
