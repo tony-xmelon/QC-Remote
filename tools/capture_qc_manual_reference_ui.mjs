@@ -1,6 +1,7 @@
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { writeTypographyMask, writeTypographySnapshot } from "./qc-typography-snapshot.mjs";
 
 const playwrightModule = process.env.CODEX_WORKSPACE_NODE_MODULES
   ? pathToFileURL(join(process.env.CODEX_WORKSPACE_NODE_MODULES, "playwright", "index.mjs")).href
@@ -50,6 +51,8 @@ const androidCss = `
 `;
 
 async function capture(host, baseUrl, viewport, css) {
+  const hostOutput = join(outputDirectory, host);
+  await mkdir(hostOutput, { recursive: true });
   const page = await browser.newPage({ viewport, deviceScaleFactor: 1, isMobile: host === "android", hasTouch: host === "android" });
   for (const view of views) {
     const url = new URL(baseUrl);
@@ -61,7 +64,9 @@ async function capture(host, baseUrl, viewport, css) {
     const screen = page.locator(".qc-screen-bezel");
     const box = await screen.boundingBox();
     if (!box || Math.round(box.width) !== 800 || Math.round(box.height) !== 480) throw new Error(`${host}/${view}: expected 800x480, got ${box?.width}x${box?.height}`);
-    await screen.screenshot({ path: `${outputDirectory}/${host}-${view}.png`, animations: "disabled" });
+    await writeTypographySnapshot(page, screen, join(hostOutput, `${view}.typography.json`), host, view);
+    await screen.screenshot({ path: join(hostOutput, `${view}.png`), animations: "disabled" });
+    await writeTypographyMask(page, screen, join(hostOutput, `${view}.no-text.png`));
     console.log(`Captured ${host} ${view}`);
   }
   await page.close();

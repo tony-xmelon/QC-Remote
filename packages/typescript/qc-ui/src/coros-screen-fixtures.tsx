@@ -19,6 +19,7 @@ import "./official-gig.css";
 import "./official-modes.css";
 import "./official-settings-device.css";
 import "./official-tuner.css";
+import "./qc-device-typography.css";
 
 const officialBlockSprite = QC_VISUAL_ASSETS.blockSprite.url;
 type OfficialGigMode = "preset" | "scene" | "stomp" | "hybrid";
@@ -473,13 +474,18 @@ function CorOsIoSettings({ initialView, onClose }: { initialView: IoView; onClos
   const title = view === "input" ? "Input 1" : view === "output" ? "Output 1/L" : view === "send-return" ? "Return 1" : view === "usb" ? "USB" : "Headphones";
   const meters = view === "usb" ? ["IN 1/2", "IN 3/4", "IN 5/6", "IN 7/8", "OUT 1/2", "OUT 3/4", "OUT 5/6", "OUT 7/8"] : [];
   return <section className={`coros-io-settings is-${view}`} aria-label={`I/O Settings ${title}`}>
-    <header><span>I/O Settings <strong>{title}</strong></span><button className="io-global-eq" onClick={() => setGlobalEqOpen(true)}>GLOBAL EQ</button><button aria-label="Close I/O Settings" onClick={onClose}>✓</button></header>
+    <header><span className="io-heading"><i aria-hidden="true">◆</i><span><small>I/O SETTINGS</small><strong>{title}</strong></span></span><button className="io-global-eq" onClick={() => setGlobalEqOpen(true)}>GLOBAL EQ</button><button aria-label="Close I/O Settings" onClick={onClose}>✓</button></header>
     <div className="io-ports">{IO_PORTS.map((port, index) => <button key={`${port.label}-${index}`} className={`${port.id === view && (view !== "input" || index === IO_PORTS.length - 1) ? "is-active" : ""} is-${port.kind ?? "jack"}${port.paired ? " is-paired" : ""}`} onClick={() => setView(port.id)}><span className={port.id === "headphones" ? "io-headphone-label" : undefined}>{port.id === "headphones" ? <IoHeadphonesGlyph /> : port.label}</span><i><IoPortGlyph kind={port.kind ?? "jack"} primary={index === IO_PORTS.length - 1} /></i>{port.paired && <i><IoPortGlyph /></i>}<small>{port.sub}</small></button>)}{view === "usb" && <div className="io-input-selectors"><button>1</button><button>2</button></div>}</div>
     {view === "usb" ? <div className="io-editor is-usb"><section><span>USB LEVEL</span><IoDial value="0.0 dB" /></section><section><span>HP SOURCE</span><IoDial value="BOTH" /></section><div className="io-meter-grid">{meters.map((meter) => <span key={meter}><b>{meter}</b><i>i</i><small>-40.0 dB　　　-40.0</small><em /><em /></span>)}</div></div>
+      : view === "headphones" ? <div className="io-editor is-headphones">
+        <section><span>HP LEVEL</span><IoDial value="0.0 dB" /></section>
+        <section><span>MULTI OUT</span><IoDial value="0.0 dB" /></section>
+        <div className="io-headphone-meter"><span>LEVEL</span><small>-40.0 dB　　　0.00</small><i /><i /></div>
+        <div className="io-headphone-meter"><span>MULTI OUT</span><small>-40.0 dB　　　0.00</small><i /><i /></div>
+      </div>
       : <div className="io-editor is-analog">
         <section><span>{view === "input" ? "IN 1 LEVEL" : view === "output" ? "OUT 1 LEVEL" : view === "send-return" ? "RETURN 1 LEVEL" : "HP LEVEL"}</span><IoDial value="0.0 dB" /></section>
         {view === "input" && <><section><span>IMPEDANCE</span><IoDial value="1M Ω" /></section><section className="io-switch"><span>TYPE</span><label><i />Mic</label><label><i className="is-active" />Instrument</label></section><section className="io-switch is-disabled"><span>PHANTOM 48V</span><label><i />On</label><label><i className="is-active" />Off</label></section></>}
-        {view === "headphones" && <section><span>HP SOURCE</span><button className="io-select">MULTI OUT　⌄</button></section>}
         <section className="io-switch"><span>GROUND LIFT</span><label><i />On</label><label><i className="is-active" />Off</label></section>
         {view !== "input" && <section className="io-switch"><span>MUTE</span><label><i />On</label><label><i className="is-active" />Off</label></section>}
         <div className="io-level-meter"><span>{view === "input" ? "IN 1 LEVEL" : `${title.toUpperCase()} LEVEL`}</span><strong>-40.0 dB</strong><i /></div>
@@ -725,7 +731,7 @@ function CaptureLibraryRail() {
 
 function CaptureLibraryKeyboard({ query = "" }: { query?: string }) {
   const rows = [["q","w","e","r","t","y","u","i","o","p"],["a","s","d","f","g","h","j","k","l"],["⇧","z","x","c","v","b","n","m","⌫"],["123",",","Space",".",query ? "Search" : "Done"]];
-  return <section className="capture-search-keyboard"><header><button aria-label="Close search"><QcUiIcon kind="close" /></button><button className={query ? "is-ready" : ""} aria-label="Run search"><QcDirectoryIcon kind="search" /></button></header><h1>{query || "Search for ..."}</h1><small>{query ? "Suggestions" : "Recently searched"}</small>{query ? <div className="capture-search-suggestion"><i><QcLibraryIcon kind="capture-library" /></i> JQ~Marshall JMP (Gary Moore)~</div> : <div className="capture-recent-searches"><b>gary</b><b>whammy</b><b>still</b><button>Clear all</button></div>}<main>{rows.map((row, rowIndex) => <div key={rowIndex}>{row.map((key) => <button key={key} className={key === "Space" ? "is-space" : key === "Search" || key === "Done" ? "is-done" : key === "123" ? "is-numeric" : ""}>{key}</button>)}</div>)}</main></section>;
+  return <section className="capture-search-keyboard"><header><button aria-label="Close search"><QcUiIcon kind="close" /></button><button className={query ? "is-ready" : ""} aria-label="Run search"><QcDirectoryIcon kind="search" /></button></header><h1 className={query ? "is-query" : ""}>{query || "Search for ..."}</h1><small>{query ? "Suggestions" : "Recently searched"}</small>{query ? <div className="capture-search-suggestion"><i><QcLibraryIcon kind="capture-library" /></i> JQ~Marshall JMP (Gary Moore)~</div> : <div className="capture-recent-searches"><b>gary</b><b>whammy</b><b>still</b><button>Clear all</button></div>}<main>{rows.map((row, rowIndex) => <div key={rowIndex}>{row.map((key) => <button key={key} className={key === "Space" ? "is-space" : key === "Search" || key === "Done" ? "is-done" : key === "123" ? "is-numeric" : ""}>{key}</button>)}</div>)}</main></section>;
 }
 
 function CorOsCaptureLibrary({ view }: { view: CaptureLibraryView }) {
@@ -875,7 +881,7 @@ function CorOsOfficialGrid({ snapshot, children, browserChrome = false }: { snap
   return <div className="qc-screen coros-vector-screen" aria-label="CorOS Grid">
     <svg className="coros-vector-canvas" viewBox="0 0 800 480" preserveAspectRatio="none" role="img" aria-label={`${snapshot.presetLocation} ${snapshot.presetName}, ${snapshot.mode} mode`}>
       <rect width="800" height="480" fill="#020202" />
-      <text x="14" y="76" fill="#f4f4f4" fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="64"><tspan letterSpacing="-2">{snapshot.presetLocation.slice(0, -1)}</tspan><tspan fill={browserChrome ? "#d63b3e" : "#2df36a"} letterSpacing="-2">{snapshot.presetLocation.slice(-1)}</tspan><tspan dx={browserChrome ? 16 : 14} dy={browserChrome ? -11 : 0} fill="#f4f4f4" fontSize={browserChrome ? 40 : 64} letterSpacing={browserChrome ? 0 : -2}>{snapshot.presetName}</tspan></text>
+      <text x="14" y="76" fill="#f4f4f4" fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="64"><tspan letterSpacing="-2">{snapshot.presetLocation.slice(0, -1)}</tspan><tspan fill={browserChrome ? "#d63b3e" : "#2df36a"} letterSpacing="-2">{snapshot.presetLocation.slice(-1)}</tspan><tspan dx={16} dy={browserChrome ? -11 : 0} fill="#f4f4f4" fontSize={browserChrome ? 40 : 64} letterSpacing={browserChrome ? 0 : -2} textLength={browserChrome ? undefined : 313} lengthAdjust={browserChrome ? undefined : "spacingAndGlyphs"}>{snapshot.presetName}</tspan></text>
       <QcScreenHeaderGlyph kind="undo" officialRaster />
       <QcScreenHeaderGlyph kind="save" officialRaster />
       <g className="grid-scene-badge"><rect x="656" y="12" width="25" height="25" rx="3" fill="#f2cf32" /><text x="668.5" y="33" textAnchor="middle" fill="#141414" fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="22">A</text></g>

@@ -15,10 +15,10 @@ export { REFERENCE_BLOCK_ICONS } from "./reference-block-icons.ts";
 export const QC_COLORS = colorTheme;
 
 export const QC_TYPOGRAPHY = {
-  device: '"Arial Narrow", "Roboto Condensed", Arial, Helvetica, sans-serif',
-  devicePlain: 'Arial, Helvetica, sans-serif',
-  deviceRoute: '"Helvetica Neue", Helvetica, Arial, sans-serif',
-  control: '"IBM Plex Sans", Arial, sans-serif',
+  device: '"Arimo Variable", Arial, Helvetica, sans-serif',
+  devicePlain: '"Arimo Variable", Arial, Helvetica, sans-serif',
+  deviceRoute: '"Arimo Variable", Arial, Helvetica, sans-serif',
+  control: '"Arimo Variable", Arial, sans-serif',
   app: 'Inter, "Segoe UI Variable", "Segoe UI", sans-serif',
   mono: '"DM Mono", "Cascadia Mono", Consolas, monospace'
 } as const;

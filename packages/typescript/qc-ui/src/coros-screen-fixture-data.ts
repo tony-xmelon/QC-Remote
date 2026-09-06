@@ -1,4 +1,5 @@
-import type { GridBlock, PresetSnapshot } from "@ndsp-qc/client";
+import { QC_SCENE_COLORS, type GridBlock, type PresetSnapshot } from "@ndsp-qc/client";
+import { QC_COLORS } from "@ndsp-qc/theme";
 
 export type CorOsScreenView = "grid" | "grid-official-brit" | "corpus-device-browser-root" | "corpus-device-browser-models" | "corpus-device-browser-models-clean" | "gig" | "gig-live-tuner" | "gig-official-preset" | "gig-official-scene" | "gig-official-stomp" | "gig-official-hybrid" | "tuner" | "tuner-live-enabled" | "tempo" | "midi-out" | "cpu-monitor" | "io-overview" | "io-input" | "io-output" | "io-send-return" | "io-usb" | "io-headphones" | "global-eq" | "power-overlay" | "splitter-placement" | "splitter-editor" | "mixer-editor" | "empty-slot" | "device-search" | "device-search-entry" | "device-search-suggestions" | "device-search-results" | "device-favorites" | "device-recents" | "device-browser-amp-official" | "plugin-devices-official" | "plugin-folders" | "plugin-list" | "plugin-models" | "plugin-locked" | "plugin-refresh" | "looper-editor" | "device-presets" | "device-presets-user" | "device-presets-official" | "device-preset-actions" | "device-preset-actions-official" | "device-preset-save" | "stomp-assignment" | "scene-assignment" | "expression-parameter" | "expression-bypass" | "block-context" | "directory-presets" | "directory-categories" | "directory-captures" | "directory-irs" | "directory-plugins" | "directory-favorites" | "directory-search" | "directory-search-results" | "directory-sort" | "directory-filter" | "directory-arrange" | "directory-copy" | "directory-nested" | "directory-new-folder" | "directory-item-context" | "directory-cloud-upload" | "capture-intro" | "capture-type" | "capture-routing" | "capture-calibration" | "capture-progress" | "capture-result" | "capture-save" | "settings-account" | "settings-system" | "settings-device" | "settings-support" | "settings-wifi" | "settings-update" | "settings-storage" | "settings-midi" | "settings-info" | "settings-diagnostics" | "recovery-entry" | "recovery-options" | "overlay-keyboard" | "overlay-confirmation" | "overlay-error" | "overlay-busy" | "fixture-boot" | "fixture-shutdown" | "fixture-copy-scene" | "fixture-swap-scene" | "fixture-delete" | "fixture-input-gate" | "fixture-editor-pages" | "fixture-editor-cab" | "fixture-editor-eq" | "fixture-editor-capture" | "fixture-warning-clip" | "fixture-warning-dsp" | "modes" | "modes-official" | "save-as" | "edit-details";
 
@@ -20,6 +21,60 @@ function officialBrit2203Snapshot(base: PresetSnapshot): PresetSnapshot {
     { id: "brit-looper", name: "Looper X", kind: "utility", category: "Looper", row: 2, column: 7 }
   ];
   return { ...base, presetLocation: "1A", presetPosition: 0, presetName: "Brit 2203", mode: "PRESET", activeScene: 0, dirty: false, blocks, routes: [{ row: 0, input: "In 1", output: "Row 3", splitMuted: false }, { row: 1, input: "", output: "", splitMuted: false }, { row: 2, input: "Prev. Row", output: "Multi Out", splitMuted: false }, { row: 3, input: "", output: "", splitMuted: false }] };
+}
+
+function captureTypeSnapshot(base: PresetSnapshot): PresetSnapshot {
+  return {
+    ...base,
+    presetLocation: "2E",
+    presetPosition: 12,
+    presetName: "QC MCP TEST",
+    mode: "PRESET",
+    footswitchModes: ["PRESET", "PRESET"],
+    activeScene: 0,
+    sceneColors: [QC_SCENE_COLORS[6], ...QC_SCENE_COLORS.slice(1)],
+    dirty: false,
+    blocks: [{ id: "capture-type", name: "Neural Capture", kind: "capture", category: "Neural Capture", row: 0, column: 0 }],
+    routes: [
+      { row: 0, inputId: 1, outputId: 19, input: "In 1", output: "Multi Out", splitMuted: false },
+      { row: 1, inputId: 0, outputId: 0, input: "", output: "", splitMuted: false },
+      { row: 2, inputId: 0, outputId: 0, input: "", output: "", splitMuted: false },
+      { row: 3, inputId: 0, outputId: 0, input: "", output: "", splitMuted: false }
+    ]
+  };
+}
+
+function referenceModalSnapshot(base: PresetSnapshot): PresetSnapshot {
+  return {
+    ...base,
+    presetLocation: "5C",
+    presetPosition: 34,
+    presetName: "Ilia",
+    mode: "PRESET",
+    footswitchModes: ["PRESET", "PRESET"],
+    activeScene: 0,
+    sceneColors: [QC_COLORS.captured.presetBrown, ...QC_SCENE_COLORS.slice(1)],
+    dirty: false,
+    footswitchStates: [{ index: 2, active: true, assigned: true, color: QC_COLORS.captured.presetBrown }],
+    blocks: [
+      { id: "ilia-cab", name: "Cab", kind: "cab", category: "Cab", row: 0, column: 1 },
+      { id: "ilia-looper", name: "Looper", kind: "utility", category: "Looper", row: 0, column: 2 }
+    ],
+    routes: [
+      { row: 0, inputId: 1, outputId: 19, input: "In 1", output: "Multi Out", splitMuted: false },
+      { row: 1, inputId: 0, outputId: 0, input: "", output: "", splitMuted: false },
+      { row: 2, inputId: 0, outputId: 0, input: "", output: "", splitMuted: false },
+      { row: 3, inputId: 0, outputId: 0, input: "", output: "", splitMuted: false }
+    ]
+  };
+}
+
+function referenceBrowserSnapshot(base: PresetSnapshot): PresetSnapshot {
+  return {
+    ...captureTypeSnapshot(base),
+    presetLocation: "2F",
+    presetPosition: 13
+  };
 }
 
 export function coros410FixtureSnapshot(base: PresetSnapshot, overrides: Partial<Pick<PresetSnapshot, "tempo" | "mode">> = {}): PresetSnapshot {
@@ -45,6 +100,7 @@ export function coros410FixtureSnapshot(base: PresetSnapshot, overrides: Partial
       { row: 3, inputId: 0, outputId: 0, input: "", output: "", splitMuted: false }
     ],
     ioPorts: [{ kind: "input", id: 1, label: "In 1", plugged: false }],
+    footswitchStates: [{ index: 7, active: true, assigned: true, color: QC_SCENE_COLORS[0] }],
     blocks: [
       { id: "simple-gate", modelId: 1, name: "Simple Gate", kind: "utility", category: "Utility", row: 0, column: 0, footswitch: 0 },
       { id: "chief-ds1", modelId: 2, name: "Chief DS1", kind: "utility", category: "Guitar Overdrive", row: 0, column: 1, footswitch: 1 },
@@ -76,9 +132,16 @@ export function corosFixtureConfiguration(search: string, base: PresetSnapshot):
       ? { mode: mode as PresetSnapshot["mode"] }
       : {})
   };
+  const initialSnapshot = enabled ? coros410FixtureSnapshot(base, overrides) : base;
   return {
     enabled,
-    initialSnapshot: enabled ? coros410FixtureSnapshot(base, overrides) : base,
+    initialSnapshot: enabled && params.get("variant") === "capture-type"
+      ? captureTypeSnapshot(initialSnapshot)
+      : enabled && params.get("variant") === "reference-modal"
+        ? referenceModalSnapshot(initialSnapshot)
+        : enabled && params.get("variant") === "reference-browser"
+          ? referenceBrowserSnapshot(initialSnapshot)
+          : initialSnapshot,
     screenView: params.get("screen") as CorOsScreenView | null
   };
 }

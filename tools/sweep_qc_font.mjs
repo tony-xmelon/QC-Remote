@@ -11,7 +11,8 @@ const baseUrl = process.argv[2] ?? "http://127.0.0.1:1420/";
 const screen = process.argv[3] ?? "save-as";
 const selector = process.argv[4] ?? ".coros-save-as";
 const outputDirectory = process.argv[5] ?? ".artifacts/font-sweep";
-const fonts = ["Arial", "Roboto", "Noto Sans", "Segoe UI", "Inter", "DejaVu Sans"];
+const fonts = (process.env.QC_FONT_FACES ?? "Arial,Roboto,Noto Sans,Segoe UI,Inter,DejaVu Sans")
+  .split(",").map((font) => font.trim()).filter(Boolean);
 const captureCss = `
   html, body, #root { width: 802px !important; height: 482px !important; overflow: hidden !important; }
   .menu-bar, .status-strip, .chat-dock, .restore-chat, .dialog-backdrop { display: none !important; }
@@ -30,7 +31,10 @@ for (const font of fonts) {
   url.searchParams.set("fixture", "coros410");
   url.searchParams.set("screen", screen);
   await page.goto(url.href, { waitUntil: "networkidle" });
-  await page.addStyleTag({ content: `${captureCss}\n${selector}, ${selector} * { font-family: ${JSON.stringify(font)} !important; }` });
+  await page.evaluate(() => document.fonts.ready);
+  await page.addStyleTag({ content: `${captureCss}\nhtml body ${selector}, html body ${selector} * { font-family: ${JSON.stringify(font)} !important; }` });
+  const appliedFamily = await page.locator(selector).evaluate((element) => getComputedStyle(element).fontFamily);
+  console.log(`${font}: ${appliedFamily}`);
   await page.locator(".dialog-close").click({ timeout: 1000 }).catch(() => undefined);
   if (screen === "preset-directory") await page.getByLabel(/Open preset Directory/).click();
   if (screen.startsWith("editor-")) {

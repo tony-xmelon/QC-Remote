@@ -66,6 +66,9 @@
 .coros-route-picker .coros-route-group > strong { display: block; margin: 0 3% 9%; padding: .5cqw 0; background: #0d0e0e; color: #dedede; font: 400 1.5cqw Roboto, Arial, sans-serif; letter-spacing: 0; }
 .coros-route-picker .coros-route-options button { width: 100%; min-height: 7.5cqw; display: flex; align-items: center; gap: 7%; padding: 0 3%; border: 0; background: transparent; color: #f4f4f4; font: 400 2.5cqw Roboto, Arial, sans-serif; }
 .coros-route-picker .coros-route-options button > svg { width: 4cqw; height: 4cqw; flex: 0 0 auto; }
+.coros-route-picker .coros-route-options button > span { display: grid; gap: .25cqw; }
+.coros-route-picker .coros-route-options button small { color: #8f9092; font: 400 1.75cqw Roboto, Arial, sans-serif; }
+.coros-route-picker .coros-route-options button[aria-selected="true"] > span { color: #20ed5b; }
 .coros-route-picker.is-input::after { content: ""; position: absolute; right: 15px; top: 224px; bottom: 11px; width: 2px; background: #313431; pointer-events: none; }
 .coros-route-picker.is-output > header { display: none; }
 .coros-route-picker.is-output .coros-route-options { position: relative; top: 1.25cqw; height: calc(100% - 1.25cqw); padding-top: 0; padding-left: 2.5%; }
