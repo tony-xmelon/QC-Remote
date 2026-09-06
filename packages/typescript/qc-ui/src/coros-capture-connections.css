@@ -1,0 +1,247 @@
+/* Neural Capture connection steps.
+   Jack positions come from the device framebuffer in its own 800x480 pixels and
+   are divided by 8 in the component, so 1cqw is one device pixel times 8 and
+   the panel scales with the screen instead of being pinned to one host size. */
+
+/* `.qc-screen` is a grid in the shared stylesheet, which stretches a flow
+   layout into rows and pushes content past the bezel. Every element here is
+   placed absolutely at its device coordinate instead, so the reconstruction
+   does not depend on what the surrounding sheet does with its children. */
+.coros-capture-connections {
+  position: relative;
+  display: block;
+  container-type: inline-size;
+  height: 60cqw;
+  overflow: hidden;
+  background: #0b0c0b;
+  color: #e8eae8;
+  font-size: 2cqw;
+}
+
+.coros-capture-connections > header { display: contents; }
+.coros-capture-connections > header > span { display: none; }
+
+.coros-capture-connections > header button {
+  position: absolute;
+  top: 1cqw;
+  height: 5.5cqw;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: .75cqw;
+  background: #22241f;
+  color: #e8eae8;
+  font-size: 2.75cqw;
+  line-height: 1;
+}
+
+.capture-connections-close { left: 1.25cqw; width: 11.75cqw; }
+.capture-connections-skip { left: 15cqw; width: 9.25cqw; }
+.capture-connections-back { left: 77.5cqw; width: 8.25cqw; }
+.capture-connections-next { left: 87.5cqw; width: 11cqw; }
+.capture-connections-next.is-wide { left: 86.75cqw; width: 11.75cqw; }
+
+.capture-connections-caption {
+  position: absolute;
+  left: 4cqw;
+  right: 4cqw;
+  top: 8.5cqw;
+  margin: 0;
+  text-align: center;
+  line-height: 1.45;
+  color: #e8eae8;
+}
+
+.capture-connections-caption b { font-weight: 400; color: #2df36a; }
+
+/* Spans the whole screen, so a jack's `top` is its device y exactly as
+   measured from the framebuffer. */
+.capture-connections-panel {
+  position: absolute;
+  inset: 0;
+}
+
+.capture-jack {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: block;
+  width: 4.25cqw;
+  height: 4.25cqw;
+  color: #6d726d;
+}
+
+.capture-jack-xlr, .capture-jack-input { width: 5.75cqw; height: 5.75cqw; }
+.capture-jack-usb { width: 4cqw; height: 4cqw; }
+
+.capture-jack svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+}
+
+.capture-jack .jack-core { stroke-width: 1.8; }
+.capture-jack .jack-pin { fill: currentColor; stroke: none; }
+.capture-jack-usb svg { fill: currentColor; stroke: none; }
+.capture-jack-usb .jack-core { fill: #0b0c0b; }
+
+.capture-jack.is-green { color: #2df36a; }
+.capture-jack.is-white { color: #f4f6f4; }
+
+/* Step 1 asks for Send and Return to be disconnected, and strikes those four
+   jacks through rather than merely dimming them. */
+.capture-jack.is-crossed::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 5.25cqw;
+  height: 1.5px;
+  background: #6d726d;
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.capture-jack small {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + .75cqw);
+  transform: translateX(-50%);
+  white-space: pre;
+  text-align: center;
+  font-size: 1.625cqw;
+  line-height: 1.2;
+  color: #b9beb9;
+}
+
+.capture-jack small.is-above {
+  top: auto;
+  bottom: calc(100% + .75cqw);
+}
+
+.capture-jack.is-green small, .capture-jack.is-white small { color: #f4f6f4; }
+
+.capture-phones-glyph {
+  position: absolute;
+  left: 52.25cqw;
+  top: 19.5cqw;
+  width: 2.25cqw;
+  height: 2.25cqw;
+  transform: translate(-50%, -50%);
+  fill: none;
+  stroke: #e8eae8;
+  stroke-width: 1.8;
+}
+
+.capture-annotation {
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: pre;
+  text-align: center;
+  font-size: 1.625cqw;
+  line-height: 1.25;
+  color: #b9beb9;
+}
+
+/* The arrow runs from the caption toward its jack, so it points down when the
+   label sits above the panel and up when it sits below. */
+.capture-annotation::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  width: 1px;
+  height: 3.25cqw;
+  background: #6d726d;
+}
+
+.capture-annotation.is-up::before { bottom: calc(100% + .5cqw); }
+.capture-annotation.is-down::before { top: calc(100% + .5cqw); }
+
+.capture-annotation::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  width: .9cqw;
+  height: .9cqw;
+  border-left: 1px solid #6d726d;
+  border-top: 1px solid #6d726d;
+}
+
+.capture-annotation.is-up::after {
+  bottom: calc(100% + 3.35cqw);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.capture-annotation.is-down::after {
+  top: calc(100% + 3.35cqw);
+  transform: translateX(-50%) rotate(-135deg);
+}
+
+.capture-tube-warning {
+  position: absolute;
+  left: 38.5cqw;
+  right: 1.5cqw;
+  top: 37.125cqw;
+  display: grid;
+  grid-template-columns: 1fr 6cqw;
+  align-items: center;
+  gap: 1cqw;
+  padding: 1.25cqw 1.5cqw;
+  border-left: .5cqw solid #6b4a12;
+  border-radius: .5cqw;
+  background: #f5b96b;
+  color: #201703;
+}
+
+.capture-tube-warning strong {
+  grid-column: 1;
+  font-size: 1.875cqw;
+  letter-spacing: .05cqw;
+}
+
+.capture-tube-warning p {
+  grid-column: 1;
+  margin: .5cqw 0 0;
+  font-size: 1.875cqw;
+  line-height: 1.35;
+}
+
+.capture-tube-warning svg {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  width: 100%;
+  fill: none;
+  stroke: #201703;
+  stroke-width: 2;
+}
+
+.capture-connections-footer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 46.5cqw;
+  margin: 0;
+  text-align: center;
+  line-height: 1.45;
+  color: #9aa09a;
+}
+
+.capture-connections-footer b { font-weight: 400; color: #2df36a; }
+
+.capture-connections-dots {
+  position: absolute;
+  left: 50%;
+  top: 55.625cqw;
+  display: flex;
+  gap: 1.5cqw;
+  transform: translateX(-50%);
+}
+
+.capture-connections-dots i {
+  width: 3.5cqw;
+  height: 2px;
+  background: #3a3d3a;
+}
+
+.capture-connections-dots i.is-active { background: #f4f6f4; }

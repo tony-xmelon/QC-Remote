@@ -141,16 +141,21 @@ def main() -> int:
     haystack = source_text()
     checked = 0
     gaps: dict[str, list[tuple[str, str]]] = {}
+    unjudged: list[str] = []
 
     for path in trees:
         screen = path.name.removesuffix(".tree.txt")
+        found = 0
         for text, chain in strings_with_context(qc_screen_tree.load(path).root):
             if DATA_CELLS & set(chain) or PER_UNIT_VALUE.match(text):
                 continue
             checked += 1
+            found += 1
             if all(part in haystack for part in fragments(text)):
                 continue
             gaps.setdefault(screen, []).append((text, chain[-1]))
+        if not found:
+            unjudged.append(screen)
 
     missing = sum(len(entries) for entries in gaps.values())
     if args.report or gaps:
@@ -158,7 +163,18 @@ def main() -> int:
             print(f"{screen}:")
             for text, widget in gaps[screen]:
                 print(f"    {text!r} drawn by {widget}")
-    print(f"{checked} device strings checked across {len(trees)} screens; "
+    # A screen CorOS draws entirely as images has nothing for this check to
+    # compare, so passing says nothing about it. Three Capture V1 fixtures were
+    # invented outright and passed here silently for exactly that reason; they
+    # are named so nobody mistakes silence for evidence again.
+    if unjudged:
+        print(f"{len(unjudged)} screen(s) offer no checkable string and CANNOT "
+              f"be judged here - CorOS draws them as images, or every string "
+              f"they have is filtered as a data cell or a per-unit value. They "
+              f"need their images reviewed by eye: "
+              f"{', '.join(sorted(unjudged))}")
+    print(f"{checked} device strings checked across "
+          f"{len(trees) - len(unjudged)} of {len(trees)} screens; "
           f"{missing} not found in our reconstruction")
     return 1 if gaps else 0
 

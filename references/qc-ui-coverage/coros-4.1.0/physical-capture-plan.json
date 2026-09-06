@@ -10,10 +10,37 @@
     "Accept a physical frame only after two consecutive 800x480 captures are byte-identical."
   ],
   "states": [
-    { "id": "ED-14", "tier": "controlled-transient", "status": "requires-trigger", "route": "Use a bounded test signal to reproduce the native clipping warning", "capture": "Clipping warning at safe monitor volume", "restore": "Remove the signal and verify meters return to idle" },
-    { "id": "ED-15", "tier": "controlled-transient", "status": "requires-disposable-preset", "route": "Load a disposable DSP-stress preset that is known to produce the native warning", "capture": "DSP capacity warning before accepting any edit", "restore": "Reload the original clean scratch preset" },
-    { "id": "NC-02", "tier": "safe-navigation", "status": "ready", "route": "Grid/Preset menu > New Neural Capture", "capture": "Capture-type selection before starting calibration", "restore": "Cancel the wizard and verify Grid" },
-    { "id": "ST-06", "tier": "external-evidence", "status": "do-not-trigger", "route": "Acquire during a user-initiated supported CorOS update or from an official full-frame source", "capture": "Update progress", "restore": "Never initiate or interrupt firmware update solely for corpus acquisition" },
-    { "id": "RC-02", "tier": "disruptive", "status": "requires-scheduled-session", "route": "Enter Recovery Mode using the documented hardware boot gesture", "capture": "Recovery options before selecting an operation", "restore": "Exit or reboot normally; verify CorOS and the scratch preset after startup" }
+    {
+      "id": "ED-14",
+      "tier": "controlled-transient",
+      "status": "requires-trigger",
+      "route": "Use a bounded test signal to reproduce the native clipping warning",
+      "capture": "Clipping warning at safe monitor volume",
+      "restore": "Remove the signal and verify meters return to idle"
+    },
+    {
+      "id": "ED-15",
+      "tier": "controlled-transient",
+      "status": "requires-disposable-preset",
+      "route": "Load a disposable DSP-stress preset that is known to produce the native warning",
+      "capture": "DSP capacity warning before accepting any edit",
+      "restore": "Reload the original clean scratch preset"
+    },
+    {
+      "id": "ST-06",
+      "tier": "external-evidence",
+      "status": "do-not-trigger",
+      "route": "Acquire during a user-initiated supported CorOS update or from an official full-frame source",
+      "capture": "Update progress",
+      "restore": "Never initiate or interrupt firmware update solely for corpus acquisition"
+    },
+    {
+      "id": "RC-02",
+      "tier": "disruptive",
+      "status": "requires-scheduled-session",
+      "route": "Enter Recovery Mode using the documented hardware boot gesture",
+      "capture": "Recovery options before selecting an operation",
+      "restore": "Exit or reboot normally; verify CorOS and the scratch preset after startup"
+    }
   ]
 }

@@ -157,3 +157,7 @@
 .coros-global-eq > header button:last-child { background: #282c28; }
 
 }
+
+/* NC-08: the Sanity Check failure reuses the progress layout, with the failed
+   stage in red, no spinner, and a recovery button back to calibration. */
+.capture-official-error>main>nav div.is-error{color:#f4463c}.capture-official-error>main>nav div.is-error b{background:#f4463c;color:#101210}.capture-official-error>main>nav div.is-pending b{background:#101210;color:#606460}.capture-official-error>main>nav div:last-child b{color:#606460}.capture-official-error h1{margin-bottom:2.5cqw}.capture-official-error section>button{position:absolute;right:2cqw;bottom:2cqw;padding:0 2cqw;height:5.5cqw;border:0;border-radius:.75cqw;background:#1668ff;color:#fff;font-size:2.25cqw;letter-spacing:.05cqw}

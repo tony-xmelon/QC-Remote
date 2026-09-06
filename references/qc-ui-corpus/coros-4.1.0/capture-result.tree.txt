@@ -1,0 +1,34 @@
+zenUI::RootGraphicsItem
+  zenUI::NeuralCaptureDialog
+    zenUI::GraphicsItem
+      text : 'Neural Capture'
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/cabsim/close.png'
+          zenUI::PressAnimationView
+      zenUI::Button
+        text : 'BACK TO CALIBRATION'
+        zenUI::PressAnimationView
+    zenUI::GraphicsItem
+      zenUI::Button
+        text : 'SAVE'
+        zenUI::PressAnimationView
+      zenUI::NeuralCaptureBackground
+        zenUI::NeuralCaptureSemiRoundedRect
+        zenUI::NeuralCaptureSemiRoundedRect
+        zenUI::RadioButton
+          zenUI::Button
+            text : 'CORTEX'
+            zenUI::PressAnimationView
+          zenUI::Button
+            text : 'REFERENCE'
+            zenUI::PressAnimationView
+        zenUI::ParameterControl
+          zenUI::GraphicsItem
+            zenUI::GraphicsItem
+          zenUI::GraphicsItem
+        zenUI::GraphicsItem
+          image: 'icons/24/headphones.png'
+      zenUI::ModelItemBasic
+        zenUI::PressAnimationView
+      zenUI::GraphicsItem

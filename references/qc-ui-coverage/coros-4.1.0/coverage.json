@@ -905,13 +905,19 @@
       ],
       "smoke": [
         "capture-intro"
+      ],
+      "physical": [
+        "capture-intro"
       ]
     },
     {
       "id": "NC-02",
-      "renderer": "capture-type",
+      "renderer": "capture-monitoring",
       "smoke": [
-        "capture-type"
+        "capture-monitoring"
+      ],
+      "physical": [
+        "capture-monitoring"
       ]
     },
     {
@@ -924,7 +930,14 @@
         "official-detail-capture-routing-return"
       ],
       "smoke": [
-        "capture-routing"
+        "capture-routing",
+        "capture-connect-out",
+        "capture-connect-input-2"
+      ],
+      "physical": [
+        "capture-routing",
+        "capture-connect-out",
+        "capture-connect-input-2"
       ]
     },
     {
@@ -934,6 +947,9 @@
         "official-capture-settings"
       ],
       "smoke": [
+        "capture-calibration"
+      ],
+      "physical": [
         "capture-calibration"
       ]
     },
@@ -945,6 +961,9 @@
       ],
       "smoke": [
         "capture-progress"
+      ],
+      "physical": [
+        "capture-progress"
       ]
     },
     {
@@ -954,6 +973,9 @@
         "official-capture-ab-test"
       ],
       "smoke": [
+        "capture-result"
+      ],
+      "physical": [
         "capture-result"
       ]
     },
@@ -965,6 +987,16 @@
       ],
       "smoke": [
         "capture-save"
+      ],
+      "physical": [
+        "capture-save"
+      ]
+    },
+    {
+      "id": "NC-08",
+      "renderer": "capture-sanity-error",
+      "physical": [
+        "capture-sanity-error"
       ]
     },
     {

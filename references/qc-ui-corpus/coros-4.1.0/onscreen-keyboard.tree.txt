@@ -1,0 +1,204 @@
+zenUI::RootGraphicsItem
+  zenUI::ModelPresetDialog
+    zenUI::GraphicsItem
+    zenUI::Keyboard
+      zenUI::Button
+        zenUI::KeyboardButton
+          text : 'Q'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+            text : '1'
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : 'W'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+            text : '2'
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : 'E'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+            text : '3'
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : 'R'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+            text : '4'
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : 'T'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+            text : '5'
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : 'Y'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+            text : '6'
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : 'U'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+            text : '7'
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : 'I'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+            text : '8'
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : 'O'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+            text : '9'
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : 'P'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+            text : '0'
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : 'A'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : 'S'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : 'D'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : 'F'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : 'G'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : 'H'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : 'J'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+            text : '|'
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : 'K'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+            text : '('
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : 'L'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+            text : ')'
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/custom/shift_icon_active.png'
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : 'Z'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : 'X'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : 'C'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : 'V'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : 'B'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : 'N'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : 'M'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/custom/backspace-icon.png'
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : '123'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : ','
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : 'Space'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : '.'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+          zenUI::PressAnimationView
+        zenUI::KeyboardButton
+          text : 'Done'
+          zenUI::MouseArea
+          zenUI::GraphicsItem
+          zenUI::PressAnimationView
+      zenUI::KeyboardModelPreset
+        zenUI::SearchSuggestTable
+      zenUI::GraphicsItem
+    zenUI::GraphicsItem
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/24/close.png'
+          zenUI::PressAnimationView
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/24/floppy_white.png'
+          zenUI::PressAnimationView
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/24/checkbox_unchecked.png'
+          zenUI::PressAnimationView
+      zenUI::GraphicsItem
+        text : 'Save as default User Preset'
+        image: 'icons/24/default.png'

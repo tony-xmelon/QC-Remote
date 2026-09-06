@@ -1,0 +1,45 @@
+zenUI::RootGraphicsItem
+  zenUI::NeuralCaptureDialog
+    zenUI::GraphicsItem
+      text : 'Neural Capture'
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/cabsim/close.png'
+          zenUI::PressAnimationView
+    zenUI::GraphicsItem
+      zenUI::Table
+        zenUI::GraphicsItem
+          zenUI::TableCell
+            zenUI::GraphicsItem
+              text : 'Calibration'
+            zenUI::GraphicsItem
+            zenUI::GraphicsItem
+              image: 'neuralcapture/selected.png'
+          zenUI::TableCell
+            zenUI::GraphicsItem
+              text : 'Recording Signals'
+            zenUI::GraphicsItem
+            zenUI::GraphicsItem
+              image: 'neuralcapture/selected.png'
+          zenUI::TableCell
+            zenUI::GraphicsItem
+              text : 'Sanity Check'
+            zenUI::GraphicsItem
+            zenUI::GraphicsItem
+              image: 'neuralcapture/selected.png'
+          zenUI::TableCell
+            zenUI::GraphicsItem
+              text : 'Training'
+            zenUI::GraphicsItem
+            zenUI::GraphicsItem
+              image: 'neuralcapture/current step.png'
+      zenUI::NeuralCaptureDialogAnimationBackground
+        zenUI::ProgressBar
+        zenUI::GraphicsItem
+          text : 'Neural Capture in progress'
+        zenUI::GraphicsItem
+          text : '91 %'
+        zenUI::RotatingBusyIndicator
+      zenUI::ModelItemBasic
+        zenUI::PressAnimationView
+      zenUI::GraphicsItem

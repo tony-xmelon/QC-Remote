@@ -27,17 +27,17 @@ The live Grid, Directory, routing, and
 parameter editor implementations are shared.
 
 The complete product target is larger than the measured corpus. The canonical
-inventory contains **103 CorOS screen/state rows** plus **16 Cortex Control-only
+inventory contains **104 CorOS screen/state rows** plus **16 Cortex Control-only
 rows**. Current canonical CorOS implementation counts are:
 
 | Status | Windows | Android |
 | --- | ---: | ---: |
-| Built | 103 | 103 |
+| Built | 104 | 104 |
 | Partial | 0 | 0 |
 | Shell only | 0 | 0 |
 | Missing | 0 | 0 |
 
-“70/70” therefore means every physical regression state has a renderer. All 103
+“70/70” therefore means every physical regression state has a renderer. All 104
 cataloged states are built, and 70 captured device frames now participate in the
 physical comparison.
 
@@ -50,7 +50,7 @@ Across the physical and official full-frame corpora, **79 canonical states**
 have directly comparable 800x480 evidence. A separate checksummed corpus of
 **27 official manual SVG details** supplies scoped control, editor-fragment,
 interaction, or hardware-diagram evidence for additional states, bringing the
-number with some authoritative visual evidence to **98/103**. Detail assets do
+number with some authoritative visual evidence to **99/104**. Detail assets do
 not enter full-screen similarity averages.
 
 Two UI-bearing details now also have crop-level regression measurements. These
@@ -216,6 +216,35 @@ column of labels and per-unit values; a mis-transcribed label one letter out,
 with four rows simply absent below it, is invisible to a whole-frame score and
 obvious to a string comparison.
 
+### Where the check is blind
+
+A text oracle can only judge screens that carry text. CorOS draws the Neural
+Capture wizard's five connection steps as **images**: their graphics trees
+contain no text nodes at all, so every string the check knows about is zero, it
+compares nothing, and it passes. Three fixtures survived that way and were
+pure invention:
+
+| state | our fixture drew | the device shows |
+| --- | --- | --- |
+| NC-01 | an orbit graphic, *Create a digital replica of your amplifier...*, a **GET STARTED** button | connection step 1 of 5: the rear panel with **INPUT 1** lit and Send/Return struck through |
+| NC-02 | a picker offering **AMP + CAB**, **AMP**, **DRIVE**, **OTHER** | connection step 2 of 5: monitoring, with the headphone jack and Out 1-4 lit |
+| NC-03 | a signal path **QC SEND 1 -> AMPLIFIER -> CAB / LOAD -> QC RETURN 1** | connection step 5 of 5: the rear panel summary |
+
+The routing one was not merely a different drawing, it was wrong about the
+hardware: the wizard wants **CAPTURE OUT** into the target device and the
+target's output into **INPUT 2**, and Send/Return is what step 1 asks you to
+*disconnect*. NC-02 was wrong about the product: CorOS 4.1.0 has no capture-type
+step at all, and the type is chosen when saving, on the metadata pane NC-07
+renders.
+
+All three are replaced by `coros-capture-connections.tsx`, one rear-panel
+diagram driven by the five captured framebuffers, with jack coordinates taken
+from the device's own 800x480 pixels.
+
+The lesson is not that the oracle is bad but that a green oracle is not
+evidence for a screen it cannot see. A capture whose tree has no text needs an
+eye on the image.
+
 ### What the check deliberately ignores
 
 - Text inside `ModelListCell`, `PluginModelListCell`, `ModelPresetListCell` and
@@ -247,7 +276,7 @@ people to ignore it, so this stays an observation.
 
 ### Coverage
 
-69 of the 76 physical captures carry a tree. The other seven — `block-context`,
+109 of the 116 physical captures carry a tree. The other seven — `block-context`,
 `delete-confirmation`, `device-preset-save`, `directory-item-context`,
 `generic-confirmation`, `input-gate-control`, `onscreen-keyboard` — predate tree
 capture. Their manifest entries record the tap sequences that reached them, but
@@ -258,6 +287,43 @@ immutable for its firmware family, so they are left as they are rather than
 silently overwritten.
 
 ## Improvements in this pass
+
+- Ran Neural Captures on the unit with the owner's approval and recorded
+  every distinct frame of them, which closed the whole Capture V1 family
+  except the type picker. The wizard's stages are **Calibration, Recording
+  Signals, Sanity Check, Training**.
+  - The first run failed the **Sanity Check** at 30% with *No signal
+    detected, or signal too low* - correct behaviour, since nothing was
+    patched into INPUT 2. That recoverable failure screen was a state the
+    canonical inventory did not have at all, and is now **NC-08**
+    (`capture-sanity-error`) with its own fixture.
+  - The owner then patched CAPTURE OUT into INPUT 2, which is enough for the
+    wizard: it checks for signal, not for a real amplifier. The second run
+    completed, giving hardware evidence for **NC-05** (Training stage),
+    **NC-06** (the A/B result, *CORTEX* against *REFERENCE*) and **NC-07**
+    (the save metadata). All three matched their existing manual-derived
+    fixtures with zero unmatched strings, so the reconstructions built from
+    the official manual are now confirmed against the device itself.
+  - `zenUI::NCSaveDialog` has three panes behind one header: a folder
+    chooser, a name pane carrying the standard on-screen keyboard (already
+    canonical as OV-01) and the metadata pane that NC-07 renders. Nothing
+    was saved: closing the dialog returns to the A/B result, and closing
+    that returns to the Grid without a discard prompt, so no capture was
+    left on the unit.
+  - A one-shot sequence cannot be re-staged to catch a screen that was
+    missed, so `qc_screen_driver.py` gained a `record` verb that writes every
+    changed frame with its graphics tree, and `promote_recorded_frame.py`
+    moves a reviewed frame into the corpus through the same manifest writer
+    a live capture uses. It refuses to overwrite an existing capture unless
+    told to, because `capture-type` was destroyed earlier in this session by
+    writing a new screenshot over a slug that was already another state's
+    reference.
+- Collapsed the CorOS screen classifier, which existed twice - once in
+  `verify-qc-ui-corpora.mjs` and once in `verify_qc_ui_corpus.py` - into
+  `tools/qc-tree-classifier.mjs`, which both now use. The copies had drifted:
+  the Python one was missing six rules, so `capture-progress` was written into
+  the manifest as `unknown` while the verifier called it `busy-progress`, and
+  a capture failed verification the instant it was taken.
 
 - Captured five additional physical Settings framebuffers directly from CorOS:
   Support, Device Information, Diagnostics, Wi-Fi, and Device Storage. Serial,

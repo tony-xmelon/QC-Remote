@@ -1232,226 +1232,6 @@
       ]
     },
     {
-      "id": "input-gate-control",
-      "label": "Input Gate Control \u2014 Path 1",
-      "screen": "input-gate-control",
-      "image": "input-gate-control.png",
-      "sha256": "c4161c9371ca6abd8ef8ce55aaf75f0cf3cb7924c4e0ba0c5274c3e4ee337f82",
-      "bytes": 28736,
-      "width": 800,
-      "height": 480,
-      "capturedAt": "2026-09-05T10:26:13Z",
-      "actions": [
-        {
-          "type": "tap",
-          "x": 30,
-          "y": 147
-        },
-        {
-          "type": "wait",
-          "seconds": 0.7
-        }
-      ]
-    },
-    {
-      "id": "block-context",
-      "label": "Block contextual actions \u2014 Parametric-8",
-      "screen": "block-context",
-      "image": "block-context.png",
-      "sha256": "9ee4f2c656be4b6db343d47c34001c2bb0cc38d16206a0e1231b702840817a19",
-      "bytes": 25953,
-      "width": 800,
-      "height": 480,
-      "capturedAt": "2026-09-05T14:11:14Z",
-      "actions": [
-        {
-          "type": "tap",
-          "x": 610,
-          "y": 147
-        },
-        {
-          "type": "wait",
-          "seconds": 1.2
-        },
-        {
-          "type": "tap",
-          "x": 30,
-          "y": 30
-        },
-        {
-          "type": "wait",
-          "seconds": 0.9
-        }
-      ]
-    },
-    {
-      "id": "device-preset-save",
-      "label": "Save Virtual Device preset \u2014 keyboard",
-      "screen": "device-preset-save",
-      "image": "device-preset-save.png",
-      "sha256": "ffdcf4082d35f6292bf6bec4e1f45a29d8028cd82aa4af2edc9ee14b4d9d3660",
-      "bytes": 24912,
-      "width": 800,
-      "height": 480,
-      "capturedAt": "2026-09-05T14:15:34Z",
-      "actions": [
-        {
-          "type": "tap",
-          "x": 610,
-          "y": 335
-        },
-        {
-          "type": "wait",
-          "seconds": 0.9
-        },
-        {
-          "type": "tap",
-          "x": 30,
-          "y": 225
-        },
-        {
-          "type": "wait",
-          "seconds": 0.7
-        },
-        {
-          "type": "tap",
-          "x": 190,
-          "y": 300
-        },
-        {
-          "type": "wait",
-          "seconds": 0.9
-        }
-      ]
-    },
-    {
-      "id": "directory-item-context",
-      "label": "Directory item contextual actions \u2014 current preset",
-      "screen": "directory-item-context",
-      "image": "directory-item-context.png",
-      "sha256": "282ec5708c1a765981f7a8312d1a1c3fdd6a6e0dae6d69513cd8fd0de816e623",
-      "bytes": 27846,
-      "width": 800,
-      "height": 480,
-      "capturedAt": "2026-09-05T14:23:09Z",
-      "actions": [
-        {
-          "type": "tap",
-          "x": 300,
-          "y": 40
-        },
-        {
-          "type": "wait",
-          "seconds": 1.0
-        },
-        {
-          "type": "tap",
-          "x": 765,
-          "y": 390
-        },
-        {
-          "type": "wait",
-          "seconds": 0.9
-        }
-      ]
-    },
-    {
-      "id": "delete-confirmation",
-      "label": "Delete preset confirmation \u2014 before acceptance",
-      "screen": "delete-confirmation",
-      "image": "delete-confirmation.png",
-      "sha256": "eda07078f6ba5aae0242f7a3654b5585c5f4d4c4600ab91fd61c08a87572cd1f",
-      "bytes": 24627,
-      "width": 800,
-      "height": 480,
-      "capturedAt": "2026-09-05T14:23:32Z",
-      "actions": [
-        {
-          "type": "tap",
-          "x": 300,
-          "y": 40
-        },
-        {
-          "type": "wait",
-          "seconds": 1.0
-        },
-        {
-          "type": "tap",
-          "x": 765,
-          "y": 390
-        },
-        {
-          "type": "wait",
-          "seconds": 0.9
-        },
-        {
-          "type": "tap",
-          "x": 570,
-          "y": 447
-        },
-        {
-          "type": "wait",
-          "seconds": 0.9
-        }
-      ]
-    },
-    {
-      "id": "onscreen-keyboard",
-      "label": "On-screen keyboard \u2014 Virtual Device preset name",
-      "screen": "onscreen-keyboard",
-      "image": "onscreen-keyboard.png",
-      "sha256": "ffdcf4082d35f6292bf6bec4e1f45a29d8028cd82aa4af2edc9ee14b4d9d3660",
-      "bytes": 24912,
-      "width": 800,
-      "height": 480,
-      "capturedAt": "2026-09-05T14:15:34Z",
-      "actions": [
-        {
-          "type": "tap",
-          "x": 610,
-          "y": 335
-        },
-        {
-          "type": "tap",
-          "x": 30,
-          "y": 225
-        },
-        {
-          "type": "tap",
-          "x": 190,
-          "y": 300
-        }
-      ]
-    },
-    {
-      "id": "generic-confirmation",
-      "label": "Generic confirmation overlay \u2014 preset deletion",
-      "screen": "generic-confirmation",
-      "image": "generic-confirmation.png",
-      "sha256": "eda07078f6ba5aae0242f7a3654b5585c5f4d4c4600ab91fd61c08a87572cd1f",
-      "bytes": 24627,
-      "width": 800,
-      "height": 480,
-      "capturedAt": "2026-09-05T14:23:32Z",
-      "actions": [
-        {
-          "type": "tap",
-          "x": 300,
-          "y": 40
-        },
-        {
-          "type": "tap",
-          "x": 765,
-          "y": 390
-        },
-        {
-          "type": "tap",
-          "x": 570,
-          "y": 447
-        }
-      ]
-    },
-    {
       "id": "settings-support",
       "label": "Support",
       "screen": "settings-support",
@@ -1938,29 +1718,6 @@
             120
           ],
           "duration": 0.35
-        },
-        {
-          "type": "wait",
-          "seconds": 1.0
-        }
-      ]
-    },
-    {
-      "id": "capture-type",
-      "label": "Neural Capture handoff empty Grid",
-      "screen": "grid",
-      "image": "capture-type.png",
-      "graphicsTree": "capture-type.tree.txt",
-      "sha256": "6d9e255fad709c46a5d76819150f602c33bff6ac7e93481336fe280c4bdc9454",
-      "bytes": 16986,
-      "width": 800,
-      "height": 480,
-      "capturedAt": "2026-09-05T19:48:01.086213Z",
-      "actions": [
-        {
-          "type": "tap",
-          "x": 600,
-          "y": 165
         },
         {
           "type": "wait",
@@ -3626,6 +3383,354 @@
       "height": 480,
       "capturedAt": "2026-09-06T20:06:41.240793Z",
       "actions": []
+    },
+    {
+      "id": "capture-intro",
+      "label": "Neural Capture - wizard entry",
+      "screen": "unknown",
+      "image": "capture-intro.png",
+      "graphicsTree": "capture-intro.tree.txt",
+      "sha256": "27fcf7bb2f2dc6bcae441709586fe1757d0eb4d7e1c17291405eec61257bb55d",
+      "bytes": 36450,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T20:17:04.705357Z",
+      "actions": []
+    },
+    {
+      "id": "capture-calibration",
+      "label": "Neural Capture - input levels and calibration",
+      "screen": "unknown",
+      "image": "capture-calibration.png",
+      "graphicsTree": "capture-calibration.tree.txt",
+      "sha256": "edd1359cfc0d702f859ad2a033e614af9b582a258eba8dacdac497912de4b959",
+      "bytes": 41423,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T20:20:18.255432Z",
+      "actions": []
+    },
+    {
+      "id": "capture-routing",
+      "label": "Neural Capture - connection summary",
+      "screen": "unknown",
+      "image": "capture-routing.png",
+      "graphicsTree": "capture-routing.tree.txt",
+      "sha256": "d3c471680dc351ee90a504e6e8e6d4ef192e1c3a2a09594d7567919993c228f6",
+      "bytes": 38260,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T20:21:02.735423Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 742.0,
+          "y": 30.0
+        },
+        {
+          "type": "tap",
+          "x": 742.0,
+          "y": 30.0
+        },
+        {
+          "type": "tap",
+          "x": 742.0,
+          "y": 30.0
+        },
+        {
+          "type": "tap",
+          "x": 742.0,
+          "y": 30.0
+        }
+      ]
+    },
+    {
+      "id": "capture-type",
+      "label": "Neural Capture handoff empty Grid",
+      "screen": "grid",
+      "image": "capture-type.png",
+      "graphicsTree": "capture-type.tree.txt",
+      "sha256": "6d9e255fad709c46a5d76819150f602c33bff6ac7e93481336fe280c4bdc9454",
+      "bytes": 16986,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-05T19:48:01.086213Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 600,
+          "y": 165
+        },
+        {
+          "type": "wait",
+          "seconds": 1.0
+        }
+      ]
+    },
+    {
+      "id": "capture-sanity-error",
+      "label": "Neural Capture Sanity Check failure, no signal detected",
+      "screen": "unknown",
+      "image": "capture-sanity-error.png",
+      "graphicsTree": "capture-sanity-error.tree.txt",
+      "sha256": "4a9d0979925b46fb630bcdccea714227d79083ec5e1da23a97c4c5d62b66e378",
+      "bytes": 26735,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T20:31:19.272115Z",
+      "actions": []
+    },
+    {
+      "id": "capture-progress",
+      "label": "Neural Capture in progress, Training stage",
+      "screen": "busy-progress",
+      "image": "capture-progress.png",
+      "graphicsTree": "capture-progress.tree.txt",
+      "sha256": "7cb47e00beb1671d56775423eb539a4c4eeb0d0ddc95442121f498bf1d4df32a",
+      "bytes": 22380,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T20:50:23.805320Z",
+      "actions": []
+    },
+    {
+      "id": "capture-result",
+      "label": "Neural Capture A/B result, Cortex versus reference",
+      "screen": "unknown",
+      "image": "capture-result.png",
+      "graphicsTree": "capture-result.tree.txt",
+      "sha256": "0fa34851fb6cc6cdc6cc8e4e8d49699a73377ddc0f4e224d4c1d7c86250b4f63",
+      "bytes": 23958,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T20:50:24.281154Z",
+      "actions": []
+    },
+    {
+      "id": "capture-save",
+      "label": "Neural Capture save metadata, Amp type and Guitar instrument",
+      "screen": "unknown",
+      "image": "capture-save.png",
+      "graphicsTree": "capture-save.tree.txt",
+      "sha256": "e9a7f30800c853fd5989d6b34497fbe3e3a5fb5d9e099d1279c7c69d2781f388",
+      "bytes": 21086,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T20:53:44.511906Z",
+      "actions": []
+    },
+    {
+      "id": "capture-monitoring",
+      "label": "Neural Capture connections 2 of 5, headphone and output monitoring",
+      "screen": "unknown",
+      "image": "capture-monitoring.png",
+      "graphicsTree": "capture-monitoring.tree.txt",
+      "sha256": "587b04157628fb9b45ae386e10eb1ad4a7555efbebf74f4caccd65e1f7f51770",
+      "bytes": 33630,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T21:01:59.273186Z",
+      "actions": []
+    },
+    {
+      "id": "capture-connect-out",
+      "label": "Neural Capture connections 3 of 5, Capture Out to target input",
+      "screen": "unknown",
+      "image": "capture-connect-out.png",
+      "graphicsTree": "capture-connect-out.tree.txt",
+      "sha256": "92c232672a8ccbba6a8fdc61587063d6562ca02f57d063078ad23b280a13aa05",
+      "bytes": 33254,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T21:01:59.758605Z",
+      "actions": []
+    },
+    {
+      "id": "capture-connect-input-2",
+      "label": "Neural Capture connections 4 of 5, mic or D.I. into Input 2 with tube amplifier warning",
+      "screen": "unknown",
+      "image": "capture-connect-input-2.png",
+      "graphicsTree": "capture-connect-input-2.tree.txt",
+      "sha256": "a99bf3bf4ff7535b75e9bfcfeeb39fdcd43043c5e58383df7e467bc354a1e214",
+      "bytes": 54284,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T21:02:00.260322Z",
+      "actions": []
+    },
+    {
+      "id": "delete-confirmation",
+      "label": "Delete preset confirmation - before acceptance",
+      "screen": "grid",
+      "image": "delete-confirmation.png",
+      "graphicsTree": "delete-confirmation.tree.txt",
+      "sha256": "3b769e3e53e7653bd0e432df6b86a46fdb357d8da2d2536fb22fde476dccea5e",
+      "bytes": 20734,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T22:09:35.320175Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 765,
+          "y": 24
+        },
+        {
+          "type": "tap",
+          "x": 583,
+          "y": 46
+        }
+      ]
+    },
+    {
+      "id": "generic-confirmation",
+      "label": "Generic confirmation overlay - preset deletion",
+      "screen": "grid",
+      "image": "generic-confirmation.png",
+      "graphicsTree": "generic-confirmation.tree.txt",
+      "sha256": "3b769e3e53e7653bd0e432df6b86a46fdb357d8da2d2536fb22fde476dccea5e",
+      "bytes": 20734,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T22:09:36.952467Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 765,
+          "y": 24
+        },
+        {
+          "type": "tap",
+          "x": 583,
+          "y": 46
+        }
+      ]
+    },
+    {
+      "id": "directory-item-context",
+      "label": "Directory item contextual actions - current preset",
+      "screen": "directory",
+      "image": "directory-item-context.png",
+      "graphicsTree": "directory-item-context.tree.txt",
+      "sha256": "2bb8a25c5dc21a6c5b322dfc9bb445b7d274162cfca24bd5c8fa67910f016619",
+      "bytes": 29891,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T22:12:26.396335Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 300,
+          "y": 40
+        },
+        {
+          "type": "tap",
+          "x": 765,
+          "y": 289
+        }
+      ]
+    },
+    {
+      "id": "block-context",
+      "label": "Block contextual actions - Adaptive Gate",
+      "screen": "parameter-editor",
+      "image": "block-context.png",
+      "graphicsTree": "block-context.tree.txt",
+      "sha256": "fe77d8d2f6534867e04b416fda93cf10ae2fefa9056a18d04f9595b4f9fa5166",
+      "bytes": 24176,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T22:14:02.218941Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 101,
+          "y": 146
+        },
+        {
+          "type": "tap",
+          "x": 30,
+          "y": 225
+        }
+      ]
+    },
+    {
+      "id": "device-preset-save",
+      "label": "Save Virtual Device preset - keyboard",
+      "screen": "unknown",
+      "image": "device-preset-save.png",
+      "graphicsTree": "device-preset-save.tree.txt",
+      "sha256": "79d042a5c8315d935369b35897b472924a5135a77aa4b19a4a1e04341fd528e1",
+      "bytes": 24938,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T22:14:33.773689Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 101,
+          "y": 146
+        },
+        {
+          "type": "tap",
+          "x": 30,
+          "y": 225
+        },
+        {
+          "type": "tap",
+          "x": 194,
+          "y": 300
+        }
+      ]
+    },
+    {
+      "id": "onscreen-keyboard",
+      "label": "On-screen keyboard - Virtual Device preset name",
+      "screen": "unknown",
+      "image": "onscreen-keyboard.png",
+      "graphicsTree": "onscreen-keyboard.tree.txt",
+      "sha256": "79d042a5c8315d935369b35897b472924a5135a77aa4b19a4a1e04341fd528e1",
+      "bytes": 24938,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T22:14:35.495850Z",
+      "actions": [
+        {
+          "type": "tap",
+          "x": 101,
+          "y": 146
+        },
+        {
+          "type": "tap",
+          "x": 30,
+          "y": 225
+        },
+        {
+          "type": "tap",
+          "x": 194,
+          "y": 300
+        }
+      ]
+    },
+    {
+      "id": "input-gate-control",
+      "label": "Input Gate Control - Path 1",
+      "screen": "splitter-editor",
+      "image": "input-gate-control.png",
+      "graphicsTree": "input-gate-control.tree.txt",
+      "sha256": "b8f75ff6f60325a93eed67237c3a0c6bd6f4a6d0a76ed76cdc8a79dc8e7f5014",
+      "bytes": 28234,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T22:15:38.327362Z",
+      "actions": [
+        {
+          "type": "hold",
+          "x": 30,
+          "y": 147,
+          "duration": 1.3
+        }
+      ]
     }
   ]
 }

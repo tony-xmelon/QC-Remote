@@ -4,11 +4,11 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 
 ## Coverage summary
 
-- Canonical device states: **103/103** routed through the shared Windows/Android surface.
-- Full-frame authoritative evidence: **92/103** states.
-- Official-detail-only evidence: **6/103** states.
-- Smoke-only evidence gaps: **5/103** states.
-- Exact-size dual-host capture paths: **103/103** states.
+- Canonical device states: **104/104** routed through the shared Windows/Android surface.
+- Full-frame authoritative evidence: **96/104** states.
+- Official-detail-only evidence: **4/104** states.
+- Smoke-only evidence gaps: **4/104** states.
+- Exact-size dual-host capture paths: **104/104** states.
 
 | Corpus | Windows structural | Windows color | Android structural | Android color |
 | --- | ---: | ---: | ---: | ---: |
@@ -27,7 +27,7 @@ Thirty-five captures were added from hardware in the CorOS 4.1.0 session of 2026
 - Cortex Cloud — `directory-cloud-upload`, `cloud-upload-overwrite`
 - Gig View — `gig-view-hybrid`
 
-Full-frame authoritative coverage moved from 79/103 to 92/103 as a result, which the summary counts above reflect.
+Full-frame authoritative coverage moved from 79/103 to 95/104 as a result, which the summary counts above reflect. The denominator grew by one because running a Neural Capture exposed a state the canonical inventory did not have: NC-08, the Sanity Check failure.
 
 Two things below are **not** refreshed for them, because both come from a scored dual-host render pass that has not been run: the score table, and the per-state `Evidence` column, which still reads `official frame` or `official detail` for the promoted states. Their wording has been checked against the device's own scene graph with `npm run verify:qc-screen-text`; their pixels have not been scored.
 
@@ -138,13 +138,14 @@ Two things below are **not** refreshed for them, because both come from a scored
 | DR-14 | Directory | New folder / setlist editor | official detail | Built | Built | — / — | — / — | — / — | — / — |
 | DR-15 | Directory | Item contextual menu | physical frame | Built | Built | 88.93% / 88.93% | 98.87% / 98.87% | — / — | — / — |
 | DR-16 | Directory | Cortex Cloud upload mode | official frame | Built | Built | — / — | — / — | 96.19% / 96.00% | 98.34% / 98.34% |
-| NC-01 | Capture V1 | Capture introduction | official detail | Built | Built | — / — | — / — | — / — | — / — |
-| NC-02 | Capture V1 | Capture type selection | smoke only | Built | Built | — / — | — / — | — / — | — / — |
-| NC-03 | Capture V1 | Connection and routing | official detail | Built | Built | — / — | — / — | — / — | — / — |
+| NC-01 | Capture V1 | Connections 1 of 5, instrument into Input 1 | device frame | Built | Built | — / — | — / — | — / — | — / — |
+| NC-02 | Capture V1 | Connections 2 of 5, headphone and output monitoring | device frame | Built | Built | — / — | — / — | — / — | — / — |
+| NC-03 | Capture V1 | Connections 3 to 5, Capture Out, Input 2, and the summary | device frame | Built | Built | — / — | — / — | — / — | — / — |
 | NC-04 | Capture V1 | Calibration settings | official frame | Built | Built | — / — | — / — | 92.89% / 92.89% | 95.46% / 95.46% |
 | NC-05 | Capture V1 | Capture process / progress | official frame | Built | Built | — / — | — / — | 91.03% / 91.03% | 97.22% / 97.22% |
 | NC-06 | Capture V1 | A/B result | official frame | Built | Built | — / — | — / — | 94.14% / 94.14% | 97.94% / 97.94% |
 | NC-07 | Capture V1 | Metadata and save | official frame | Built | Built | — / — | — / — | 92.96% / 92.96% | 98.31% / 98.31% |
+| NC-08 | Capture V1 | Sanity Check failure | device frame | Built | Built | — / — | — / — | — / — | — / — |
 | ST-01 | Settings | Account settings | official frame | Built | Built | — / — | — / — | 93.11% / 93.11% | 98.44% / 98.44% |
 | ST-02 | Settings | System settings | official frame | Built | Built | — / — | — / — | 90.80% / 90.86% | 96.73% / 96.73% |
 | ST-03 | Settings | Device settings | official frame | Built | Built | — / — | — / — | 92.92% / 92.92% | 96.37% / 96.38% |
@@ -253,8 +254,6 @@ refused by the tool rather than left to discipline.
 | GL-01, GL-02, GL-03 | `fixture-boot`, `fixture-shutdown`, `power-overlay` | A power cycle, a power-button hold, and a short power press. |
 | RC-01, RC-02 | `recovery-entry`, `recovery-options` | The documented Recovery Mode boot gesture. |
 | ED-14 | `fixture-warning-clip` | A hot input signal. Nothing is plugged into the unit. |
-| NC-01 to NC-03 | `capture-intro`, `capture-type`, `capture-routing` | The Neural Capture wizard **refuses to open** with nothing connected: selecting *New Neural Capture* from the preset menu returns straight to the Grid. It needs an amp on Send/Return. |
-| NC-04 to NC-07 | calibration, progress, result, save | A capture actually being run. |
 
 ### Deliberately not triggered
 
@@ -284,7 +283,6 @@ These states are implemented and captured on both hosts, but only against determ
 | --- | --- | --- | --- | --- | --- | --- |
 | ED-14 | Grid | I/O clipping warning | `fixture-warning-clip` | controlled-transient | requires-trigger | `fixture-warning-clip` |
 | ED-15 | Grid | DSP/side-chain limit warning | `fixture-warning-dsp` | controlled-transient | requires-disposable-preset | `fixture-warning-dsp` |
-| NC-02 | Capture V1 | Capture type selection | `capture-type` | safe-navigation | ready | `capture-type` |
 | ST-06 | Settings | Update availability/progress | `settings-update` | external-evidence | do-not-trigger | `settings-update` |
 | RC-02 | Recovery | Recovery options | `recovery-options` | disruptive | requires-scheduled-session | `recovery-options` |
 

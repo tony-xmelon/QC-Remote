@@ -31,6 +31,8 @@ Commands are read from stdin, one per line:
     drag X Y TOX TOY [HOLD] [STEPS] press, hold, move, release
     shot PATH                       settled screenshot (no verification needed)
     capture SLUG "LABEL"            write PNG + tree + manifest entry
+    capture! SLUG "LABEL"           same, but for a screen that never settles
+    record DIR SECONDS              save every distinct frame + tree to DIR
     tree                            print a summary of the current screen
     wait SECONDS
 
@@ -73,6 +75,38 @@ _spec.loader.exec_module(_classify)
 
 CORPUS = REPOSITORY_ROOT / "references" / "qc-ui-corpus" / "coros-4.1.0"
 GESTURES = {"tap", "hold", "swipe", "drag"}
+
+
+def write_capture(slug: str, label: str, png: bytes, tree: str,
+                  actions: list[dict[str, object]] | None = None) -> tuple[int, int]:
+    """Write a PNG, its graphics tree and a manifest entry into the corpus.
+
+    The screen family is classified from the tree with the corpus verifier's own
+    rules rather than hardcoded, because a hardcoded family that disagrees with
+    the verifier is rejected as stale.
+    """
+    width, height = struct.unpack(">II", png[16:24])
+    (CORPUS / f"{slug}.png").write_bytes(png)
+    (CORPUS / f"{slug}.tree.txt").write_text(tree, encoding="utf-8")
+
+    path = CORPUS / "manifest.json"
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    manifest["captures"] = [c for c in manifest["captures"] if c["id"] != slug]
+    manifest["captures"].append({
+        "id": slug,
+        "label": label,
+        "screen": _classify.classify_tree(tree),
+        "image": f"{slug}.png",
+        "graphicsTree": f"{slug}.tree.txt",
+        "sha256": hashlib.sha256(png).hexdigest(),
+        "bytes": len(png),
+        "width": width,
+        "height": height,
+        "capturedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "actions": list(actions or []),
+    })
+    path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    return width, height
 
 
 class Driver:
@@ -125,32 +159,53 @@ class Driver:
         return False
 
     # -- capture ---------------------------------------------------------
-    def capture(self, slug: str, label: str) -> None:
-        png = capture_settled_screen(self.qc)
+    def capture(self, slug: str, label: str, settle: bool = True) -> None:
+        # A progress screen never settles: its spinner and percentage change
+        # every frame, so waiting for two identical frames waits forever.
+        # `capture!` takes the next frame as-is for exactly those states.
+        png = capture_settled_screen(self.qc) if settle else capture_screen(self.qc)
         tree = capture_graphics_tree(self.qc)
-        width, height = struct.unpack(">II", png[16:24])
-        (CORPUS / f"{slug}.png").write_bytes(png)
-        (CORPUS / f"{slug}.tree.txt").write_text(tree, encoding="utf-8")
-
-        path = CORPUS / "manifest.json"
-        manifest = json.loads(path.read_text(encoding="utf-8"))
-        manifest["captures"] = [c for c in manifest["captures"] if c["id"] != slug]
-        manifest["captures"].append({
-            "id": slug,
-            "label": label,
-            "screen": _classify.classify_tree(tree),
-            "image": f"{slug}.png",
-            "graphicsTree": f"{slug}.tree.txt",
-            "sha256": hashlib.sha256(png).hexdigest(),
-            "bytes": len(png),
-            "width": width,
-            "height": height,
-            "capturedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-            "actions": list(self.actions),
-        })
-        path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+        width, height = write_capture(slug, label, png, tree, self.actions)
         self.actions.clear()
         print(f"  captured {slug}: {width}x{height}, {len(png)} bytes", flush=True)
+
+    def record(self, directory: str, seconds: float) -> None:
+        """Save every distinct frame, with its tree, for a one-shot sequence.
+
+        A Neural Capture runs once and cannot be paused, so its progress and
+        result screens cannot be composed for and then captured deliberately.
+        Recording every changed frame turns a transient sequence into files
+        that can be reviewed afterwards and promoted into the corpus with
+        `promote_recorded_frame.py`, which reuses `write_capture` below - so a
+        promoted frame is indistinguishable from one captured live.
+        """
+        out = Path(directory)
+        out.mkdir(parents=True, exist_ok=True)
+        seen: set[str] = set()
+        index = 0
+        deadline = time.time() + seconds
+        while time.time() < deadline:
+            try:
+                png = capture_screen(self.qc)
+            except Exception:
+                time.sleep(0.8)
+                continue
+            digest = hashlib.sha256(png).hexdigest()
+            if digest in seen:
+                time.sleep(0.35)
+                continue
+            seen.add(digest)
+            stem = out / f"frame-{index:03d}-{digest[:8]}"
+            stem.with_suffix(".png").write_bytes(png)
+            try:
+                tree = capture_graphics_tree(self.qc)
+            except Exception:
+                tree = ""
+            stem.with_suffix(".tree.txt").write_text(tree, encoding="utf-8")
+            print(f"  {stem.name}.png ({len(png)} bytes, tree {len(tree)} chars)",
+                  flush=True)
+            index += 1
+        print(f"  recorded {index} distinct frame(s) into {out}", flush=True)
 
 
 def main() -> int:
@@ -183,8 +238,11 @@ def main() -> int:
             elif verb == "shot":
                 Path(values[0]).write_bytes(capture_settled_screen(driver.qc))
                 print(f"  wrote {values[0]}", flush=True)
-            elif verb == "capture":
-                driver.capture(values[0], " ".join(values[1:]) or values[0])
+            elif verb == "record":
+                driver.record(values[0], float(values[1]))
+            elif verb in ("capture", "capture!"):
+                driver.capture(values[0], " ".join(values[1:]) or values[0],
+                               settle=(verb == "capture"))
             elif verb == "tap":
                 x, y = float(values[0]), float(values[1])
                 tap_screen(driver.qc, x, y)

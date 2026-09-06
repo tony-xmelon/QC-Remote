@@ -7,6 +7,7 @@ import { QcDeviceGlyph } from "./device-glyph";
 import { QcDirectoryIcon, QcEditorIcon, QcHardwareIcon, QcLibraryIcon, QcModeGlyph, QcScreenHeaderGlyph, QcUiIcon } from "./theme-icons";
 import "./fixture-live-surface.css";
 import "./remaining-fixtures.css";
+import { CorOsCaptureConnections, type CaptureConnectionView } from "./coros-capture-connections";
 import "./remaining-fixtures-fixes.css";
 import "./official-settings-midi.css";
 import "./official-expression.css";
@@ -145,7 +146,7 @@ function CorOsDirectoryFixture({ view, physicalContext = false }: { view: Direct
         CorOS emits its own <b> markup inside these label strings. */}
     {view === "directory-copy" && <aside className="directory-copy-dialog"><header>Choose pasting option</header><p>Please select how you would like to paste these 1 Preset(s) into the banks in <b>My Presets</b>:</p>{[<>Choose each slot manually</>, <>Paste consecutively from the first <b>chosen</b> slot onwards</>, <>Paste consecutively from the first <b>empty</b> slot onwards</>].map((label, index) => <button key={index} className={index === 0 ? "is-active" : ""}>{label}{index === 0 && <i>✓</i>}</button>)}<footer><button>CANCEL</button><button className="is-primary">CONTINUE</button></footer></aside>}
     {view === "directory-new-folder" && <aside className="directory-name-dialog"><header>New Setlist</header><label>NAME<input readOnly value="New Setlist" /></label><footer><button>CANCEL</button><button>CREATE</button></footer></aside>}
-    {view === "directory-item-context" && <><i className="directory-context-scrim" /><aside className="directory-item-menu">{["Edit", "Copy", "Cut", "Delete"].map(label => <button key={label}>{label}</button>)}</aside></>}
+    {view === "directory-item-context" && <><i className="directory-context-scrim" /><aside className="directory-item-menu">{["Edit", "Copy", "Cut", "Paste to replace", "Delete"].map(label => <button key={label}>{label}</button>)}</aside></>}
     {view === "directory-cloud-upload" && <div className="directory-mode-bar is-cloud"><strong>UPLOAD TO CORTEX CLOUD</strong><span>Select Presets, Neural Captures, or IRs</span><button>CANCEL</button><button>UPLOAD (2)</button></div>}
   </section>;
 }
@@ -203,7 +204,7 @@ function CorOsKeyboardScreen() {
 function CorOsDeleteConfirmation({ variant = "delete" }: { variant?: "delete" | "overwrite" }) {
   const copy = variant === "overwrite"
     ? { title: "Preset already exists", body: "Preset Top 3 Acoustic Sims already exists. Overwrite?", confirm: "OVERWRITE", label: "Overwrite cloud preset confirmation" }
-    : { title: "ALI The List", body: "Are you sure you want to delete this item?", confirm: "DELETE", label: "Delete preset confirmation" };
+    : { title: "ALI The List", body: "Are you sure you want to delete this preset?", confirm: "DELETE PRESET", label: "Delete preset confirmation" };
   return <section className="qc-screen coros-physical-confirmation" aria-label={copy.label}>
     <CorOsDirectoryFixture view="directory-presets" physicalContext />
     <i className="confirmation-scrim" />
@@ -223,7 +224,7 @@ function CorOsSystemFixture({ view }: { view: SystemFixtureView }) {
   </section>;
 }
 
-type CaptureFixtureView = "capture-intro" | "capture-type" | "capture-routing" | "capture-calibration" | "capture-progress" | "capture-result" | "capture-save";
+type CaptureFixtureView = CaptureConnectionView | "capture-calibration" | "capture-progress" | "capture-sanity-error" | "capture-result" | "capture-save";
 
 function CaptureTargetIcon() {
   return <span className="capture-target-icon"><i>⊙</i></span>;
@@ -240,7 +241,8 @@ function CaptureKindGlyph({ index }: { index: number }) {
 
 const SETTINGS_CLOUD_PATH = "M8 25h16a6 6 0 0 0 1-11.9A9 9 0 0 0 8 11a7 7 0 0 0 0 14Z";
 
-function CorOsOfficialCapture({ view }: { view: "capture-calibration" | "capture-progress" | "capture-result" | "capture-save" }) {
+function CorOsOfficialCapture({ view }: { view: "capture-calibration" | "capture-progress" | "capture-sanity-error" | "capture-result" | "capture-save" }) {
+  if (view === "capture-sanity-error") return <section className="qc-screen capture-official capture-official-progress capture-official-error"><header><span>Neural Capture</span><button>×</button></header><main><nav>{([["✓", "Calibration", ""], ["✓", "Recording Signals", ""], ["!", "Sanity Check", "is-error"], ["✓", "Training", "is-pending"]] as const).map(([icon, label, state]) => <div key={label} className={state}><b>{icon}</b>{label}</div>)}</nav><section><h1>There was an error during the Sanity Check stage</h1><p>No signal detected, or signal too low. Please go back to the<br />calibration screen and make sure the level meters are at a<br />sensible level.</p><strong>30 %</strong><i className="capture-official-progress-bar"><b /></i><button>CALIBRATION SCREEN</button></section></main></section>;
   if (view === "capture-progress") return <section className="qc-screen capture-official capture-official-progress"><header><span>Neural Capture</span><button>×</button></header><main><nav>{[["✓", "Calibration"], ["✓", "Recording Signals"], ["✓", "Sanity Check"], ["➜", "Training"]].map(([icon, label]) => <div key={label}><b>{icon}</b>{label}</div>)}</nav><section><h1>Neural Capture in progress</h1><p>The core of Neural Capture. Training a neural network to<br />emulate the sound of your favorite device.</p><strong>30%</strong><i className="capture-official-progress-bar"><b /></i><em>◔</em></section></main></section>;
   if (view === "capture-save") return <section className="qc-screen capture-official capture-official-save"><header><button><QcUiIcon kind="close" /></button><button className="capture-folder"><DirectoryIcon kind="folder" /><span>My Captures</span></button><button>Name</button><button className="capture-note"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7Z" /><path d="M14 3v5h5M10 12h5m-5 3h5m-5 3h5" /></svg></button><button className="capture-save-now"><QcEditorIcon kind="save" /></button></header><main><small>TYPE OF CAPTURE</small><h1>Amp</h1><div className="capture-kinds">{Array.from({ length: 6 }, (_, index) => <button key={index} className={index === 1 ? "is-active" : ""}><CaptureKindGlyph index={index} />{index > 0 && <i />}</button>)}</div><small>PREFERRED INSTRUMENT</small><div className="capture-instruments">{["Guitar", "Bass", "Synth", "Vocal", "Other"].map((label, index) => <button key={label} className={index === 0 ? "is-active" : ""}>{label}</button>)}</div></main></section>;
   if (view === "capture-result") return <section className="qc-screen capture-official capture-official-result"><header><span>Neural Capture</span><button>×</button></header><p>Your Neural Capture is ready. Switch between the reference and Quad Cortex using<br />the buttons below.</p><div className="capture-result-actions"><button>BACK TO CALIBRATION</button><button>SAVE</button><CaptureTargetIcon /></div><main><section><button>CORTEX</button><label><span className="capture-level-label"><IoHeadphonesGlyph />LEVEL</span><b className="capture-level-dial" /><small>0.0 dB</small></label></section><section><button>REFERENCE</button></section></main></section>;
@@ -248,19 +250,10 @@ function CorOsOfficialCapture({ view }: { view: "capture-calibration" | "capture
 }
 
 function CorOsCaptureFixture({ view }: { view: CaptureFixtureView }) {
-  if (view === "capture-calibration" || view === "capture-progress" || view === "capture-result" || view === "capture-save") return <CorOsOfficialCapture view={view} />;
-  const steps: Array<[string, CaptureFixtureView]> = [["TYPE", "capture-type"], ["CONNECTIONS", "capture-routing"], ["CALIBRATE", "capture-calibration"], ["CAPTURE", "capture-progress"], ["RESULT", "capture-result"], ["SAVE", "capture-save"]];
-  const current = Math.max(0, steps.findIndex(([, step]) => step === view));
-  return <section className="qc-screen coros-capture-fixture" aria-label={view.replaceAll("-", " ")}>
-    <header><button>‹</button><strong>New Neural Capture</strong><button>×</button></header>
-    {view === "capture-intro" ? <main className="capture-intro">
-      <div className="capture-orbit"><i>◉</i><span /><span /><span /></div><h1>Neural Capture</h1><p>Create a digital replica of your amplifier, cabinet, or drive pedal.</p><aside><b>1</b><span>Connect your gear</span><b>2</b><span>Set levels and calibrate</span><b>3</b><span>Capture, compare, and save</span></aside><button>GET STARTED</button>
-    </main> : <><nav className="capture-steps">{steps.map(([label, step], index) => <span key={step} className={index === current ? "is-active" : index < current ? "is-done" : ""}><b>{index < current ? "✓" : index + 1}</b>{label}</span>)}</nav><main className={`capture-workspace ${view}`}>
-      {view === "capture-type" && <><h1>What would you like to capture?</h1><p>Select the device type for the most accurate result.</p><div className="capture-type-grid">{[["▰", "AMP + CAB", "A complete amplifier and cabinet"], ["◉", "AMP", "Amplifier or preamp only"], ["◇", "DRIVE", "Overdrive, distortion, or fuzz"], ["≋", "OTHER", "Compressors and other devices"]].map(([icon, title, text], index) => <button key={title} className={index === 0 ? "is-active" : ""}><b>{icon}</b><strong>{title}</strong><small>{text}</small></button>)}</div></>}
-      {view === "capture-routing" && <><h1>Connect your equipment</h1><p>Follow the signal path below, then confirm that all cables are connected.</p><div className="capture-routing-map"><span><b>QC SEND 1</b><i>OUT</i></span><em>→</em><span className="capture-gear"><b>AMPLIFIER</b><i>INPUT</i></span><em>→</em><span className="capture-gear"><b>CAB / LOAD</b><i>OUTPUT</i></span><em>→</em><span><b>QC RETURN 1</b><i>IN</i></span></div><div className="capture-check"><i>✓</i><span><strong>Connections complete</strong><small>Use a load box when capturing an amplifier without a cabinet.</small></span></div></>}
-      <button className="capture-next">NEXT</button>
-    </main></>}
-  </section>;
+  // The wizard's five connection steps are one rear-panel diagram with
+  // different jacks highlighted; everything after them is a distinct screen.
+  if (view === "capture-intro" || view === "capture-monitoring" || view === "capture-connect-out" || view === "capture-connect-input-2" || view === "capture-routing") return <CorOsCaptureConnections view={view} />;
+  return <CorOsOfficialCapture view={view} />;
 }
 
 type SettingsFixtureView = "settings-account" | "settings-system" | "settings-device" | "settings-support" | "settings-wifi" | "settings-update" | "settings-storage" | "settings-midi" | "settings-info" | "settings-diagnostics";

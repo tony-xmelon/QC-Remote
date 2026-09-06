@@ -1,0 +1,288 @@
+zenUI::RootGraphicsItem
+  zenUI::GraphicsItem
+    zenUI::Grid
+      zenUI::SplitCableHelper
+      zenUI::SplitCableHelper
+      zenUI::Chain
+        zenUI::SplitControlPointEditModeArea
+        zenUI::OutputPortItem
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            text : 'Multi
+Out'
+          zenUI::PressAnimationView
+        zenUI::ChainCableHelper
+        zenUI::ChainItemContainer
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::ModelItem
+            zenUI::PressAnimationView
+          zenUI::ModelItemOverlays
+        zenUI::InputPortItem
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            text : 'In
+1'
+          zenUI::GraphicsItem
+            zenUI::GraphicsItem
+            zenUI::GraphicsItem
+          zenUI::PressAnimationView
+      zenUI::Chain
+        zenUI::SplitControlPointEditModeArea
+        zenUI::InputPortItem
+          zenUI::GraphicsItem
+            image: 'icons/24/plus.png'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            zenUI::GraphicsItem
+            zenUI::GraphicsItem
+          zenUI::PressAnimationView
+        zenUI::OutputPortItem
+          zenUI::GraphicsItem
+            image: 'icons/24/plus.png'
+          zenUI::GraphicsItem
+          zenUI::PressAnimationView
+        zenUI::ChainCableHelper
+        zenUI::ChainItemContainer
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+      zenUI::Chain
+        zenUI::SplitControlPointEditModeArea
+        zenUI::InputPortItem
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            text : 'In
+1'
+          zenUI::GraphicsItem
+            zenUI::GraphicsItem
+            zenUI::GraphicsItem
+          zenUI::PressAnimationView
+        zenUI::OutputPortItem
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            text : 'Multi
+Out'
+          zenUI::PressAnimationView
+        zenUI::ChainCableHelper
+        zenUI::ChainItemContainer
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+      zenUI::Chain
+        zenUI::SplitControlPointEditModeArea
+        zenUI::InputPortItem
+          zenUI::GraphicsItem
+            image: 'icons/24/plus.png'
+          zenUI::GraphicsItem
+            text : '
+'
+          zenUI::GraphicsItem
+            zenUI::GraphicsItem
+            zenUI::GraphicsItem
+          zenUI::PressAnimationView
+        zenUI::OutputPortItem
+          zenUI::GraphicsItem
+            image: 'icons/24/plus.png'
+          zenUI::GraphicsItem
+          zenUI::PressAnimationView
+        zenUI::ChainCableHelper
+        zenUI::ChainItemContainer
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+          zenUI::SlotItem
+            zenUI::PressAnimationView
+      zenUI::SplitControlPointGrid
+    zenUI::GraphicsItem
+      zenUI::NavigationBar
+      zenUI::NavMenuBlock
+        zenUI::ModeButton
+          text : 'STOMP'
+          image: 'icons/navigationBar/modes/stomp.png'
+          zenUI::PressAnimationView
+        zenUI::Button
+          image: 'icons/24/presetMenu.png'
+          zenUI::PressAnimationView
+        zenUI::Button
+          image: 'icons/navigationBar/undo.png'
+          zenUI::PressAnimationView
+        zenUI::Button
+          zenUI::PressAnimationView
+        zenUI::SceneIndicator
+          zenUI::GraphicsItem
+            zenUI::GraphicsItem
+              text : 'A'
+        zenUI::Button
+          image: 'icons/navigationBar/save.png'
+          zenUI::PressAnimationView
+    zenUI::ParameterEditor
+      zenUI::ParameterEditorBackground
+      zenUI::GraphicsItem
+        zenUI::ModelEditor
+          zenUI::GenericModelEditor
+            zenUI::PageScroller
+              zenUI::GraphicsItem
+                zenUI::GraphicsItem
+                  zenUI::ParameterRowBackground
+                  zenUI::ParameterControl
+                    zenUI::GraphicsItem
+                      zenUI::GraphicsItem
+                    zenUI::GraphicsItem
+      zenUI::GraphicsItem
+        zenUI::PushButton
+          zenUI::Button
+            image: 'icons/24/done.png'
+            zenUI::PressAnimationView
+        zenUI::Button
+          zenUI::GraphicsItem
+            zenUI::GraphicsItem
+              image: 'icons/24/presetMenu.png'
+          zenUI::PressAnimationView
+        zenUI::ParameterEditorTitle
+        zenUI::Button
+          zenUI::PressAnimationView
+        zenUI::BypassButton
+          zenUI::GraphicsItem
+            zenUI::GraphicsItem
+              image: 'icons/24/bypass_white.png'
+          zenUI::PressAnimationView
+        zenUI::SceneSelector
+          zenUI::GraphicsItem
+            zenUI::GraphicsItem
+              image: 'icons/24/previous.png'
+          zenUI::GraphicsItem
+            zenUI::GraphicsItem
+              image: 'icons/24/next.png'
+          zenUI::Button
+            zenUI::PressAnimationView
+          zenUI::Button
+            zenUI::SceneIndicator
+              zenUI::GraphicsItem
+                zenUI::GraphicsItem
+                  text : 'A'
+            zenUI::PressAnimationView
+        zenUI::GraphicsItem
+        zenUI::StompAssignButton
+          zenUI::GraphicsItem
+            zenUI::GraphicsItem
+              image: 'icons/navigationBar/modes/assign.png'
+            zenUI::GraphicsItem
+              text : '?'
+          zenUI::PressAnimationView
+  zenUI::_OptionsPopup
+  zenUI::GraphicsItem
+    zenUI::Table
+      zenUI::GraphicsItem
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Change device'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/24/change.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Copy device'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/custom/copy.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Paste device'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/custom/paste.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Reset to defaults'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/navigationBar/undo.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Save Current Parameters as...'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/24/save.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Assign expression pedal'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/24/exp.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Mute/bypass'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/custom/mute_bypass.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Model update available'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/24/model-update.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Change to legacy version'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/24/model-downgrade.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Remove block from the grid'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/24/delete.png'
+      zenUI::GraphicsItem

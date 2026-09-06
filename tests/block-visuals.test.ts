@@ -51,7 +51,9 @@ test("physical interaction fixtures preserve the captured CorOS overlay structur
   for (const marker of ["coros-physical-keyboard", "coros-physical-confirmation", "directory-context-scrim", "block-context-scrim"]) {
     assert.match(fixture, new RegExp(marker));
   }
-  assert.match(fixture, /\["Edit", "Copy", "Cut", "Delete"\]/);
+  // The device's item menu carries a Paste entry between Cut and Delete;
+  // `directory-item-context.tree.txt` is the evidence.
+  assert.match(fixture, /\["Edit", "Copy", "Cut", "Paste to replace", "Delete"\]/);
   assert.match(fixture, /DirectoryIcon kind="folder" number=\{4\}/);
   assert.match(fixture, /function PhysicalDirectoryStatusIcon/);
   assert.match(fixture, /function PluginLockIcon/);
