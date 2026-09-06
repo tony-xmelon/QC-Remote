@@ -64,6 +64,7 @@ for (const id of ["grid-base", "grid-restored", "grid-scene-a-restored", "captur
 await gridState("grid-scene-selector", async () => page.getByLabel("Select scene").click());
 await gridState("grid-context-menu", async () => page.getByLabel("Open Grid menu").click());
 await gridState("grid-context-menu-bottom", async () => { await page.getByLabel("Open Grid menu").click(); await page.locator(".coros-screen-menu").evaluate((element) => { element.scrollTop = element.scrollHeight; }); });
+await gridState("grid-context-menu-favorite", async () => { await page.getByLabel("Open Grid menu").click(); await page.locator(".coros-screen-menu").evaluate((element) => { element.scrollTop = element.scrollHeight - element.clientHeight - 60; }); });
 await gridState("grid-scene-b", async () => {
   await page.getByLabel("Select scene").click();
   await page.getByRole("menuitem").nth(1).click();
@@ -74,10 +75,12 @@ for (const [id, screen] of [["copy-scene-destination", "fixture-copy-scene"], ["
   await capture(id);
 }
 await gridState("preset-directory", async () => page.getByLabel(/Open preset Directory/).click());
+await gridState("input-route-selector-top", async () => page.getByLabel("Edit row 1 input").click());
 await gridState("input-route-selector", async () => {
   await page.getByLabel("Edit row 1 input").click();
   await page.locator(".coros-route-options, .route-picker-list").evaluate((element) => { element.scrollTop = element.scrollHeight - element.clientHeight - 20; });
 });
+await gridState("output-route-selector-top", async () => page.getByLabel("Edit row 1 output").click());
 await gridState("output-route-selector", async () => {
   await page.getByLabel("Edit row 1 output").click();
   await page.locator(".coros-route-options, .route-picker-list").evaluate((element) => { element.scrollTop = element.scrollHeight; });
@@ -110,10 +113,36 @@ for (const [id, mode] of [["gig-view", "STOMP"], ["gig-view-preset", "PRESET"], 
   await load({ screen: "gig", mode });
   await capture(id);
 }
-for (const [id, view] of [["device-browser-plugin-list", "plugin-list"], ["device-browser-plugin-models", "plugin-models"], ["device-browser-plugin-locked", "plugin-locked"], ["plugin-browser-ready", "plugin-list"], ["overlay-busy", "plugin-refresh"], ["device-browser-base", "corpus-device-browser-root"], ["device-browser-top", "corpus-device-browser-root"], ["device-browser-neural-capture", "device-favorites"], ["device-favorites", "device-favorites"], ["device-recents", "device-recents"], ["device-search-entry", "device-search-entry"], ["device-search", "device-search-suggestions"], ["device-search-results", "device-search-results"], ["overlay-error", "device-search-results"], ["io-overview", "io-overview"], ["io-output", "io-output"], ["io-send-return", "io-send-return"], ["io-headphones", "io-headphones"], ["fixture-editor-capture", "fixture-editor-capture"], ["device-presets-exotic-z-boost", "device-presets"], ["device-presets-user", "device-presets-user"], ["device-preset-actions", "device-preset-actions"], ["block-context", "block-context"], ["device-preset-save", "device-preset-save"], ["onscreen-keyboard", "overlay-keyboard"], ["directory-item-context", "directory-item-context"], ["delete-confirmation", "fixture-delete"], ["generic-confirmation", "overlay-confirmation"], ["splitter-editor", "splitter-editor"], ["mixer-editor", "mixer-editor"], ["input-gate-control", "fixture-input-gate"], ["tempo-metronome", "tempo"], ["tuner", "tuner"], ["tuner-live-enabled", "tuner-live-enabled"], ["gig-view-live-tuner", "gig-live-tuner"], ["preset-midi-out", "midi-out"], ["modes-configuration", "modes"], ["save-as-editor", "save-as"], ["edit-details-editor", "edit-details"], ["settings-support", "settings-support"], ["settings-info", "settings-info"], ["settings-diagnostics", "settings-diagnostics"], ["settings-wifi", "settings-wifi"], ["settings-storage", "settings-storage"]]) {
+for (const [id, view] of [["device-browser-plugin-list", "plugin-list"], ["device-browser-plugin-models", "plugin-models"], ["device-browser-plugin-locked", "plugin-locked"], ["plugin-browser-ready", "plugin-list"], ["overlay-busy", "plugin-refresh"], ["device-browser-base", "corpus-device-browser-root"], ["device-browser-top", "corpus-device-browser-root"], ["device-browser-middle-deep", "corpus-device-browser-root"], ["device-browser-middle-reverb", "corpus-device-browser-root"], ["device-browser-neural-capture", "device-favorites"], ["device-favorites", "device-favorites"], ["device-recents", "device-recents"], ["device-search-entry", "device-search-entry"], ["device-search", "device-search-suggestions"], ["device-search-results", "device-search-results"], ["overlay-error", "device-search-results"], ["io-overview", "io-overview"], ["io-output", "io-output"], ["io-send-return", "io-send-return"], ["io-headphones", "io-headphones"], ["fixture-editor-capture", "fixture-editor-capture"], ["device-presets-exotic-z-boost", "device-presets"], ["device-presets-user", "device-presets-user"], ["device-preset-actions", "device-preset-actions"], ["block-context", "block-context"], ["block-context-bottom", "block-context"], ["device-preset-save", "device-preset-save"], ["onscreen-keyboard", "overlay-keyboard"], ["directory-item-context", "directory-item-context"], ["delete-confirmation", "fixture-delete"], ["generic-confirmation", "overlay-confirmation"], ["splitter-editor", "splitter-editor"], ["mixer-editor", "mixer-editor"], ["input-gate-control", "fixture-input-gate"], ["tempo-metronome", "tempo"], ["tuner", "tuner"], ["tuner-live-enabled", "tuner-live-enabled"], ["gig-view-live-tuner", "gig-live-tuner"], ["preset-midi-out", "midi-out"], ["modes-configuration", "modes"], ["save-as-editor", "save-as"], ["edit-details-editor", "edit-details"], ["settings-support", "settings-support"], ["settings-info", "settings-info"], ["settings-diagnostics", "settings-diagnostics"], ["settings-wifi", "settings-wifi"], ["settings-storage", "settings-storage"]]) {
   if (!shouldCapture(id)) continue;
   await load({ screen: view, ...(view === "tempo" ? { tempo: "56" } : {}) });
+  if (id === "device-browser-base") await page.locator(".coros-device-browser > nav").evaluate((element) => { element.scrollTop = element.scrollHeight; });
+  if (id === "device-browser-middle-deep") await page.locator(".coros-device-browser > nav").evaluate((element) => { element.scrollTop = 554; });
+  if (id === "device-browser-middle-reverb") await page.locator(".coros-device-browser > nav").evaluate((element) => { element.scrollTop = 242; });
+  if (id === "block-context-bottom") await page.locator(".coros-block-context > aside").evaluate((element) => { element.scrollTop = element.scrollHeight; });
   await capture(id);
+}
+for (const [id, mode] of [["official-gig-view-stomp", "STOMP"], ["official-gig-view-preset", "PRESET"], ["official-gig-view-scene", "SCENE"], ["official-gig-view-hybrid", "HYBRID"]]) {
+  if (!shouldCapture(id)) continue;
+  await load({ screen: `gig-official-${mode.toLowerCase()}` });
+  await capture(id);
+}
+
+for (const [id, screen] of [["official-directory-presets", "directory-presets"], ["official-directory-captures", "directory-captures"], ["official-directory-favorites", "directory-favorites"], ["official-directory-irs", "directory-irs"], ["official-directory-nested", "directory-nested"], ["official-directory-plugin-presets", "directory-plugins"], ["official-directory-search-results", "directory-search-results"], ["official-directory-upload", "directory-cloud-upload"]]) {
+  if (!shouldCapture(id)) continue;
+  await load({ screen });
+  await capture(id);
+}
+
+for (const [id, screen] of [["official-device-browser-amp", "device-browser-amp-official"], ["official-looper", "looper-editor"], ["official-plugin-devices", "plugin-devices-official"], ["official-plugin-folders", "plugin-folders"]]) {
+  if (!shouldCapture(id)) continue;
+  await load({ screen });
+  await capture(id);
+}
+
+if (shouldCapture("iconography-audit")) {
+  await load({ screen: "iconography-audit" });
+  await capture("iconography-audit");
 }
 
 await browser.close();

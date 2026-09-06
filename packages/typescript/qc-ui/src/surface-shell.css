@@ -692,6 +692,7 @@
 .directory-grid-icon { width: 11%; color: var(--qc-palette-f1f1f1); line-height: 1; }
 .directory-grid-icon svg { display: block; width: 100%; fill: currentColor; }
 .directory-chevron { margin-left: auto; color: var(--qc-palette-f1f1f1); font-size: .8em; }
+.directory-chevron .qc-ui-icon { width: 3cqw; height: 3cqw; transform: translate(13px, 1px); }
 .directory-tools { width: 42%; display: flex; align-items: stretch; justify-content: flex-end; gap: 2.2%; }
 .directory-tools button { flex: 0 0 19%; display: grid; place-items: center; padding: 0; border-radius: 7px; background: var(--qc-palette-1d221e); color: var(--qc-palette-f1f1f1); }
 .directory-tools button:hover { background: var(--qc-palette-2c322d); color: var(--qc-palette-43ed73); }

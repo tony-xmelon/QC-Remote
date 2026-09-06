@@ -116,7 +116,7 @@ export const GRID_CONTEXT_MENU = [
   { label: "Add to favorites", icon: "favorite", action: "favorite" },
   { label: "Delete Preset", icon: "delete", action: "delete-preset", danger: true },
   { label: "New Neural Capture", icon: "capture", action: "new-capture" },
-  { label: "Modes Configuration", icon: "settings", action: "modes-configuration" },
+  { label: "Modes Configuration", icon: "modes", action: "modes-configuration" },
   { label: "Tempo", icon: "tempo", action: "tempo" },
   { label: "CPU Monitor", icon: "cpu", action: "cpu-monitor" },
   { label: "Settings", icon: "settings", action: "settings" }

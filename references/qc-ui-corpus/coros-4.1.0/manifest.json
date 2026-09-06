@@ -2125,6 +2125,72 @@
       ]
     },
     {
+      "id": "grid-context-menu-favorite",
+      "label": "Grid context menu favorite action",
+      "screen": "grid-context-menu",
+      "image": "grid-context-menu-favorite.png",
+      "graphicsTree": "grid-context-menu-favorite.tree.txt",
+      "sha256": "e3a85de2d132abd82b36cddb63f2dbba002b0e26963e9c4e96c58577e972690c",
+      "bytes": 25025,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T00:24:33.802116Z",
+      "actions": [
+        {
+          "type": "swipe",
+          "from": [700, 300],
+          "to": [700, 310],
+          "duration": 0.1
+        }
+      ]
+    },
+    {
+      "id": "block-context-bottom",
+      "label": "Parameter context menu lower actions",
+      "screen": "parameter-editor",
+      "image": "block-context-bottom.png",
+      "graphicsTree": "block-context-bottom.tree.txt",
+      "sha256": "8a6aef11202c58950874bbe6f18c962064218364c34ccb73241c3530a0f0f436",
+      "bytes": 28926,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T00:29:38.203895Z",
+      "actions": [
+        {
+          "type": "swipe",
+          "from": [300, 390],
+          "to": [300, 300],
+          "duration": 0.2
+        }
+      ]
+    },
+    {
+      "id": "input-route-selector-top",
+      "label": "Input route selector top",
+      "screen": "route-selector",
+      "image": "input-route-selector-top.png",
+      "graphicsTree": "input-route-selector-top.tree.txt",
+      "sha256": "91d818014e2f03389dc67cbba61e0e4a844c5128fb8951e8eb32c35b65b6587b",
+      "bytes": 21425,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T00:41:07.106904Z",
+      "actions": [{ "type": "tap", "x": 30, "y": 145 }]
+    },
+    {
+      "id": "output-route-selector-top",
+      "label": "Output route selector top",
+      "screen": "route-selector",
+      "image": "output-route-selector-top.png",
+      "graphicsTree": "output-route-selector-top.tree.txt",
+      "sha256": "0058cf16596c1257f53fc20bfbba1cdc06704ffe68b788a27a22f4002501997b",
+      "bytes": 28369,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T00:41:27.105049Z",
+      "actions": [{ "type": "tap", "x": 770, "y": 145 }]
+    },
+    {
       "id": "overlay-busy",
       "label": "Catalog refresh in progress",
       "screen": "busy-progress",
@@ -2141,6 +2207,48 @@
           "x": 758,
           "y": 30
         }
+      ]
+    },
+    {
+      "id": "device-browser-middle-deep",
+      "label": "Device browser middle categories — Compressor through Filter",
+      "screen": "device-browser",
+      "image": "device-browser-middle-deep.png",
+      "graphicsTree": "device-browser-middle-deep.tree.txt",
+      "sha256": "53d4e035583d835899eb9890ab9f6ba49903e94ecdbbe117af12e3a1e33af8ea",
+      "bytes": 43518,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T01:28:37.3466628Z",
+      "actions": [
+        {
+          "type": "swipe",
+          "from": [600, 300],
+          "to": [600, 250],
+          "duration": 0.05
+        },
+        { "type": "wait", "seconds": 0.9 }
+      ]
+    },
+    {
+      "id": "device-browser-middle-reverb",
+      "label": "Device browser middle categories — Reverb overlap",
+      "screen": "device-browser",
+      "image": "device-browser-middle-reverb.png",
+      "graphicsTree": "device-browser-middle-reverb.tree.txt",
+      "sha256": "6ad597e6c1cbaef9f283dcc0f8b30927d6179cfd2b852d886f55b9d52920e33d",
+      "bytes": 45194,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-06T01:28:53.4175154Z",
+      "actions": [
+        {
+          "type": "swipe",
+          "from": [600, 250],
+          "to": [600, 280],
+          "duration": 0.03
+        },
+        { "type": "wait", "seconds": 0.9 }
       ]
     }
   ]

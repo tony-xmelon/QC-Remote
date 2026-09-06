@@ -24,7 +24,6 @@ const unavailableLabels = {
   "save-device-preset": "Save Current Parameters As…",
   "change-device": "Change device",
   "reset-defaults": "Reset to defaults",
-  "set-parameters-defaults": "Set parameters as defaults",
   "assign-looper-actions": "Assign Looper X Actions",
   "mute-bypass": "Mute/Bypass"
 } as const;
@@ -74,7 +73,6 @@ export function qcParameterEditorBindings(options: QcParameterEditorBindingOptio
       "copy-device": true,
       "paste-device": Boolean(grid.clipboard && grid.clipboard.modelId === details.modelId && connected && !pending),
       "reset-defaults": false,
-      "set-parameters-defaults": false,
       expression: true,
       "assign-looper-actions": false,
       "mute-bypass": false,

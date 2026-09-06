@@ -17,9 +17,50 @@ test("shared theme retains every measured native QC color", () => {
     unsaved: "#313031",
     routeRail: "#c6c3c6",
     routeText: "#dedfde",
+    routeGlyphSurface: "#292c29",
     utilityMark: "#949694",
     primaryText: "#ffffff",
+    iconPrimary: "#f8fcf8",
+    iconMuted: "#889088",
+    iconToolbarMuted: "#606060",
+    keyboardGlyph: "#f7f3f7",
+    cabArrowDark: "#848684",
+    cabArrowLight: "#9c9e9c",
+    editorMuted: "#8c8a8c",
+    editorDisabled: "#101410",
+    editorDisabledShadow: "#080c08",
+    editorDisabledAccent: "#081008",
+    editorDisabledEdge: "#081010",
+    editorSaveMid: "#cecbce",
+    editorSaveDark: "#5a5d5a",
+    contextCaptureBlack: "#181c18",
+    contextCaptureDark: "#393c39",
+    contextCaptureMid: "#4a4d4a",
+    contextCaptureMuted: "#525152",
+    contextCaptureSoft: "#bdbebd",
+    contextCaptureLight: "#c6c7c6",
+    sceneControlMuted: "#505050",
+    looperRing: "#909490",
+    categoryTrail: "#909490",
+    categoryCaptureMuted: "#505050",
+    categorySpriteMuted: "#959595",
+    captureStripeLow: "#283028",
+    captureStripeShadow: "#404040",
+    captureStripeDark: "#505050",
+    captureStripeMuted: "#586058",
+    captureStripeSoft: "#c0c0c0",
+    captureStripeLight: "#c8c8c8",
+    headerUndo: "#f6f8f6",
+    headerSave: "#eceeec",
+    headerMenu: "#ffffff",
+    modeJoin: "#707c70",
     sceneBadge: "#ffd331"
+  });
+  assert.deepEqual(QC_COLORS.browserCategory, {
+    plugin: "#42fb63", amp: "#ff2421", capture: "#949694", cab: "#6b55ff", overdrive: "#ff7100",
+    delay: "#00ffde", reverb: "#00ffde", compressor: "#42fb63", pitch: "#ffd331", modulation: "#3100f7",
+    morph: "#949694", synth: "#e7495a", filter: "#84dbff", equalizer: "#0875e7", irLoader: "#6b55ff",
+    wah: "#949694", fxLoop: "#949694", looper: "#ff2421", utility: "#949694"
   });
   assert.equal(QC_GEOMETRY.screen.width, 800);
   assert.equal(QC_GEOMETRY.screen.height, 480);
@@ -56,6 +97,23 @@ test("shared glyph registry covers hardware, routing, directory, editing, and co
   assert.equal(readdirSync("packages/typescript/qc-ui/src").filter((entry) => /icon/i.test(entry)).join(","), "theme-icons.tsx");
   assert.doesNotMatch(read("packages/typescript/qc-ui/src/quad-cortex-surface.tsx"), /function (?:RoutePickerGlyph|DirectoryIcon|ModeGlyph)/);
   assert.doesNotMatch(read("packages/typescript/qc-ui/src/parameter-editor.tsx"), /function ParameterMenuIcon/);
+  const fixtures = read("packages/typescript/qc-ui/src/coros-screen-fixtures.tsx");
+  assert.match(fixtures, /return <QcModeGlyph mode=\{mode\} \/>/, "fixture modes must delegate to the shared glyph registry");
+  assert.match(fixtures, /return <QcDirectoryIcon kind=\{kind\} number=\{number\} \/>/, "fixture Directory icons must delegate to the shared glyph registry");
+});
+
+test("official Directory toolbar glyphs retain exact CorOS vector colors and geometry", () => {
+  const colors = JSON.parse(read("packages/typescript/qc-theme/src/colors.json"));
+  assert.equal(colors.captured.iconPrimary, "#f8fcf8");
+  assert.equal(colors.captured.iconToolbarMuted, "#606060");
+  const icons = read("packages/typescript/qc-ui/src/theme-icons.tsx");
+  for (const path of [
+    "M14 4H1v2h13V4Z",
+    "m15 6 4-5 4 5h-8Z",
+    "M22 4.254c0 .259-.101.508-.281.695",
+    "M10 2a8 8 0 1 0 4.914 14.314",
+  ]) assert.ok(icons.includes(path), `missing official Directory vector: ${path}`);
+  assert.doesNotMatch(icons, /fill=["']#(?:fff|ffffff|616161)["']/i, "official colors must come from the shared measured palette");
 });
 
 test("all deployed visual assets match the theme's canonical fingerprints", () => {

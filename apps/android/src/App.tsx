@@ -526,8 +526,8 @@ export function App() {
 
     <nav className="quick-controls" aria-label="Quick device controls">
       <div className="mobile-volume-control"><QcMasterVolumeKnob value={snapshot.masterVolume} onAction={handleSurfaceAction} /><small>VOLUME</small></div>
-      <button className={`device-view-control mobile-io-control${ioViewOpen ? " is-active" : ""}`} onClick={toggleIoView} aria-pressed={ioViewOpen} aria-label={`${ioViewOpen ? "Close" : "Open"} I/O Settings`}><span>I/O</span></button>
-      <button className={`device-view-control mobile-gig-control${gigViewOpen ? " is-active" : ""}`} onClick={toggleGigView} aria-pressed={gigViewOpen} aria-label={`${gigViewOpen ? "Close" : "Open"} Gig View`}><span>GIG</span></button>
+      <button className={`device-view-control mobile-io-control${ioViewOpen ? " is-active" : ""}`} onClick={toggleIoView} aria-pressed={ioViewOpen} aria-label={ioViewOpen ? "Hide I/O Settings quick control" : "Open I/O Settings"}><span>I/O</span></button>
+      <button className={`device-view-control mobile-gig-control${gigViewOpen ? " is-active" : ""}`} onClick={toggleGigView} aria-pressed={gigViewOpen} aria-label={gigViewOpen ? "Hide Gig View quick control" : "Open Gig View"}><span>GIG</span></button>
       <div className="mobile-up-control"><QcHardwareSwitch role="bank:up" label={<QcUiIcon kind="up" />} ariaLabel="Previous preset" active={Boolean(parameterEditorBindings)} assigned={Boolean(parameterEditorBindings)} accent={QC_COLORS.hardware.whiteLed} onAction={handleSurfaceAction} /></div>
       {sceneFootswitches.map(({ index, label }) => {
         const slot = index < 4 ? index : index + 1;

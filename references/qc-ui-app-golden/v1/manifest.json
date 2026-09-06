@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "description": "Cross-host golden screenshot for app-owned and chassis glyphs that have no CorOS framebuffer equivalent. Physical QC evidence remains in the separate CorOS corpus.",
+  "captures": [
+    {
+      "id": "iconography-audit",
+      "image": "iconography-audit.png",
+      "width": 800,
+      "height": 480,
+      "sha256": "455c3bb2def6019e3daa42779f6fb9f165f3b4d15a052c216e22dbb7e1c6ef97",
+      "bytes": 13468,
+      "authority": "app-owned-golden",
+      "baselineHost": "windows"
+    }
+  ]
+}
