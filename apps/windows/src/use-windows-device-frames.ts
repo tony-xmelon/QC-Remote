@@ -12,11 +12,12 @@ export interface WindowsDeviceFrameSession {
   available: MutableRefObject<boolean>;
   consume(states: readonly QcStateUpdate[], observedAt?: number): unknown;
   setSnapshot: Dispatch<SetStateAction<PresetSnapshot>>;
+  onStreamRestart(): void;
 }
 
 /** Windows-only subscription glue; all state reduction remains in shared UI/core. */
 export function useWindowsDeviceFrames({
-  enabled, sequence, available, consume, setSnapshot
+  enabled, sequence, available, consume, setSnapshot, onStreamRestart
 }: WindowsDeviceFrameSession) {
   useEffect(() => {
     if (!enabled) {
@@ -28,7 +29,7 @@ export function useWindowsDeviceFrames({
     let disposed = false;
     let detach: (() => void) | undefined;
     void listen<NativeFrame>("qc-state-frame", ({ payload: frame }) => {
-      if (!disposed) consumeQcNativeStateFrame(frame, { sequence, available, consume, setSnapshot });
+      if (!disposed) consumeQcNativeStateFrame(frame, { sequence, available, consume, setSnapshot, onStreamRestart });
     }).then((unlisten) => {
       if (disposed) unlisten();
       else detach = unlisten;
@@ -37,5 +38,5 @@ export function useWindowsDeviceFrames({
       disposed = true;
       detach?.();
     };
-  }, [available, consume, enabled, sequence, setSnapshot]);
+  }, [available, consume, enabled, onStreamRestart, sequence, setSnapshot]);
 }

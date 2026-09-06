@@ -266,12 +266,30 @@ export function App() {
       setNotice("Assign Expression Pedal opened; current assignments are shown beside their parameter controls.");
     }
   });
+  // A replacement broker restarts its frame numbering, and frames are deltas:
+  // whatever the device did while the two producers swapped is in no frame at
+  // all. Pull the whole state once so the UI rejoins the device where it is.
+  const resyncAfterStreamRestart = useCallback(() => {
+    setConnectionEvents((events) => [...events, { at: new Date().toISOString(), event: "state-stream-restarted", result: "warning", detail: "The device state stream restarted; reading the complete preset state again." }]);
+    void tauriTransport.currentSnapshot()
+      .then((current) => {
+        setSnapshot(current);
+        setConnection((state) => ({ ...state, lastSync: new Date().toISOString() }));
+        setConnectionEvents((events) => [...events, { at: new Date().toISOString(), event: "state-stream-resynchronized", result: "success", detail: `${current.presetLocation} · ${current.presetName} resynchronized after the stream restarted.` }]);
+      })
+      .catch((error) => {
+        const detail = error instanceof Error ? error.message : String(error);
+        setConnectionEvents((events) => [...events, { at: new Date().toISOString(), event: "state-stream-resync-failed", result: "failure", detail }]);
+      });
+  }, []);
+
   useWindowsDeviceFrames({
     enabled: deviceReady,
     sequence: nativeStateSequence,
     available: nativeStateAvailable,
     consume: consumeLiveState,
-    setSnapshot
+    setSnapshot,
+    onStreamRestart: resyncAfterStreamRestart
   });
 
   useEffect(() => {

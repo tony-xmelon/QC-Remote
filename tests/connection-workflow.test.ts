@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { qcConnectionPresentation, qcReadyLabel } from "../packages/typescript/qc-ui/src/use-qc-connection-workflow.ts";
+import { consumeQcNativeStateFrame } from "../packages/typescript/qc-ui/src/qc-native-state-frame.ts";
 import { isQcConnectionFailure, qcConnectionIsVerified, qcDeviceStatusDetail, qcVisibleStatusNotice, runtimeHasSynchronizedQc } from "../apps/windows/src/qc-readiness.ts";
 
 test("connection presentation is identical for native hosts", () => {
@@ -43,6 +44,48 @@ test("neither host spells device readiness on its own", () => {
   for (const [host, source] of [["windows", windowsMenu], ["android", android]] as const) {
     assert.doesNotMatch(source, /"QC READY"|"QC OFFLINE"|"CHECKING QC"/, `${host} must not restate readiness wording locally`);
   }
+});
+
+test("a replacement state producer is adopted instead of ignored forever", () => {
+  // The sequence counter belongs to the producer. A broker replaced after a
+  // crash, reset, or reconnect starts at one again; treating that as "already
+  // seen" froze the UI against a device that was still perfectly healthy.
+  const sequence = { current: 0 };
+  const available = { current: false };
+  const seen: number[] = [];
+  let restarts = 0;
+  const consumer = {
+    sequence,
+    available,
+    consume: (states: readonly { kind: string }[]) => { seen.push(states.length); },
+    setSnapshot: () => undefined,
+    onStreamRestart: () => { restarts += 1; }
+  };
+  const frame = (n: number) => ({ sequence: n, observedAt: 1_000 + n, states: [{ kind: "scene" as const, activeScene: 1 }] });
+
+  assert.equal(consumeQcNativeStateFrame(frame(1), consumer), true);
+  assert.equal(consumeQcNativeStateFrame(frame(2), consumer), true);
+  assert.equal(consumeQcNativeStateFrame(frame(2), consumer), false, "a repeated sequence is still a duplicate");
+  assert.equal(restarts, 0);
+
+  // The producer is replaced and starts counting again.
+  assert.equal(consumeQcNativeStateFrame(frame(1), consumer), true, "the new producer's first frame must be taken");
+  assert.equal(restarts, 1, "the host is told to read the complete state back");
+  assert.equal(sequence.current, 1, "the baseline follows the new producer");
+  assert.equal(consumeQcNativeStateFrame(frame(2), consumer), true);
+  assert.equal(restarts, 1, "a rising sequence is not a restart");
+  assert.equal(seen.length, 4);
+  assert.equal(available.current, true);
+});
+
+test("both hosts read the complete state back when their stream restarts", () => {
+  const windowsGlue = readFileSync(new URL("../apps/windows/src/use-windows-device-frames.ts", import.meta.url), "utf8");
+  const windowsApp = readFileSync(new URL("../apps/windows/src/App.tsx", import.meta.url), "utf8");
+  const android = readFileSync(new URL("../apps/android/src/App.tsx", import.meta.url), "utf8");
+  assert.match(windowsGlue, /consumeQcNativeStateFrame\(frame, \{ sequence, available, consume, setSnapshot, onStreamRestart \}\)/);
+  assert.match(windowsApp, /onStreamRestart: resyncAfterStreamRestart/);
+  assert.match(windowsApp, /tauriTransport\.currentSnapshot\(\)[\s\S]{0,200}setSnapshot\(current\)/, "the Windows resync reads the whole preset, not a delta");
+  assert.match(android, /onStreamRestart: \(\) => \{[\s\S]{0,200}androidGatewayTransport\.currentSnapshot\(\)/);
 });
 
 const liveRuntime = {

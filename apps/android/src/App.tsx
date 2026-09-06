@@ -210,7 +210,13 @@ export function App() {
         consumeQcNativeStateFrame(frame, {
           sequence: nativeStateSequence,
           consume: consumeLiveState,
-          setSnapshot
+          setSnapshot,
+          // A restarted native stream numbers its frames from the beginning
+          // again, and frames are deltas: read the whole state back so the
+          // screen rejoins the device where it actually is.
+          onStreamRestart: () => {
+            void androidGatewayTransport.currentSnapshot().then(setSnapshot).catch(() => undefined);
+          }
         });
       })
     ];

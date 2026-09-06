@@ -8,7 +8,9 @@
  * Every step records evidence even when it fails, so one broken workflow does
  * not hide the state of the others.
  */
+import { execFile } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
+import { promisify } from "node:util";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -16,6 +18,7 @@ const playwrightModule = process.env.CODEX_WORKSPACE_NODE_MODULES
   ? pathToFileURL(join(process.env.CODEX_WORKSPACE_NODE_MODULES, "playwright", "index.mjs")).href
   : "playwright";
 const { chromium } = await import(playwrightModule);
+const run = promisify(execFile);
 
 const argv = process.argv.slice(2);
 const option = (name, fallback) => {
@@ -39,10 +42,22 @@ const page = browser.contexts()
     || candidate.url().startsWith("http://127.0.0.1:1420/"));
 if (!page) throw new Error("A debuggable QC Control WebView was not found.");
 
-const invoke = (method, params = {}) => page.evaluate(
-  ({ method, params }) => window.__TAURI_INTERNALS__.invoke("gateway_invoke", { method, params }),
-  { method, params }
-);
+/**
+ * A rejected Tauri command carries a plain object, which Playwright reports as
+ * the useless "page.evaluate: Object". Bring the message across as text so a
+ * failing step names the device error instead of its shape.
+ */
+const invoke = async (method, params = {}) => {
+  const outcome = await page.evaluate(async ({ method, params }) => {
+    try { return { ok: await window.__TAURI_INTERNALS__.invoke("gateway_invoke", { method, params }) }; }
+    catch (error) {
+      const detail = error?.message ?? error?.error ?? (typeof error === "string" ? error : JSON.stringify(error));
+      return { failed: String(detail) };
+    }
+  }, { method, params });
+  if (outcome.failed !== undefined) throw new Error(`${method}: ${outcome.failed}`);
+  return outcome.ok;
+};
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const steps = [];
 
@@ -88,6 +103,32 @@ async function step(name, body) {
 }
 
 const expect = (condition, message) => { if (!condition) throw new Error(message); };
+
+/** Poll a device condition rather than guessing at a fixed delay. */
+async function waitFor(condition, message, budgetMs = timeoutMs) {
+  const deadline = Date.now() + budgetMs;
+  while (Date.now() < deadline) {
+    if (await condition().catch(() => false)) return;
+    await sleep(250);
+  }
+  throw new Error(message);
+}
+
+/** The pid of the broker the host currently owns, or null when none runs. */
+async function brokerPid() {
+  const { stdout } = await run("tasklist", ["/FI", "IMAGENAME eq qc-device-broker.exe", "/FO", "CSV", "/NH"])
+    .catch(() => ({ stdout: "" }));
+  const match = /^"qc-device-broker\.exe","(\d+)"/m.exec(stdout);
+  return match ? Number(match[1]) : null;
+}
+
+const readLamps = () => page.evaluate(() => [...document.querySelectorAll(".footswitch-row .hardware-switch")]
+  .map((node) => ({
+    label: node.querySelector(".switch-label")?.textContent?.trim() ?? "",
+    accent: getComputedStyle(node).getPropertyValue("--switch-accent").trim(),
+    active: node.classList.contains("is-active"),
+    assigned: node.classList.contains("is-assigned")
+  })));
 
 // ---------------------------------------------------------------- connection
 
@@ -218,13 +259,7 @@ async function readPresetFromUi() {
 
 await step("06-preset-mode-footswitch-leds", async (record) => {
   const snapshot = await invoke("device.snapshot");
-  const leds = await page.evaluate(() => [...document.querySelectorAll(".footswitch-row .hardware-switch")]
-    .map((node) => ({
-      label: node.querySelector(".switch-label")?.textContent?.trim() ?? "",
-      accent: getComputedStyle(node).getPropertyValue("--switch-accent").trim(),
-      active: node.classList.contains("is-active"),
-      assigned: node.classList.contains("is-assigned")
-    })));
+  const leds = await readLamps();
   const slotLamps = leds.filter((lamp) => /^[A-H]$/.test(lamp.label));
   if (snapshot.mode === "PRESET") {
     const colours = slotLamps.map((lamp) => lamp.accent.toLowerCase());
@@ -444,13 +479,310 @@ await step("11-grid-empty-cells-add-blocks", async () => {
   return { hits: hits.length, emptyCells: emptyCells.length, target, selectedCell: selected };
 });
 
+// ------------------------------------------------------- scenes and modes
+
+await step("13-scene-mode-lamps-and-selection", async (record) => {
+  const start = await invoke("device.snapshot");
+  const startSlot = start.modeSlots?.findIndex((slot) => slot.mode === start.mode) ?? 0;
+  const sceneSlot = start.modeSlots?.findIndex((slot) => slot.mode === "SCENE");
+  if (sceneSlot === undefined || sceneSlot < 0) return { skipped: "no SCENE slot is assigned on this device" };
+  await invoke("device.selectModeSlot", { slot: sceneSlot, expectedPresetName: start.presetName ?? "" });
+  await waitFor(async () => (await invoke("device.snapshot")).mode === "SCENE", "the device did not enter SCENE mode");
+  const target = (start.activeScene + 1) % 8;
+  await invoke("device.selectScene", { scene: target, expectedPresetName: start.presetName ?? "" });
+  await waitFor(async () => (await invoke("device.snapshot")).activeScene === target, "the device did not change scene");
+  const inScene = await invoke("device.snapshot");
+  // The app has to see the mode change before its lamps can be judged.
+  await waitFor(async () => (await page.evaluate(() =>
+    document.querySelector(".coros-vector-canvas")?.getAttribute("aria-label") ?? "")).includes("SCENE mode"),
+    "the app never showed SCENE mode while the device was in it");
+  const lamps = await readLamps();
+  record.facts.parity = await captureParity("13-scene-mode");
+  const expected = inScene.sceneColors ?? [];
+  const observed = lamps.filter((lamp) => /^[A-H]$/.test(lamp.label)).map((lamp) => lamp.accent.toLowerCase());
+  const lit = lamps.filter((lamp) => /^[A-H]$/.test(lamp.label)).map((lamp) => lamp.active);
+  Object.assign(record.facts, { startMode: start.mode, sceneSlot, target, observed, expected });
+  try {
+    // SCENE lamps carry the preset's own scene colours, one per switch.
+    expect(observed.length === 8, `expected eight scene lamps, saw ${observed.length}`);
+    expect(observed.every((colour, index) => colour === (expected[index] ?? "").toLowerCase()),
+      `SCENE lamps do not match the preset's scene colours: ${observed.join(" ")} against ${expected.join(" ")}`);
+    expect(lit[target], `scene ${target} is selected on the device but its lamp is not lit`);
+  } finally {
+    // Put the device back on the scene and mode it started in, pass or fail.
+    const now = await invoke("device.snapshot").catch(() => inScene);
+    await invoke("device.selectScene", { scene: start.activeScene, expectedPresetName: now.presetName ?? "" }).catch(() => undefined);
+    await invoke("device.selectModeSlot", { slot: startSlot, expectedPresetName: now.presetName ?? "" }).catch(() => undefined);
+    await waitFor(async () => (await invoke("device.snapshot")).mode === start.mode,
+      "the device did not return to its starting mode").catch(() => undefined);
+    record.facts.restoredMode = (await invoke("device.snapshot").catch(() => ({}))).mode;
+  }
+  return undefined;
+});
+
+// --------------------------------------------------------------- block edits
+
+await step("14-block-bypass-round-trips-through-the-grid", async (record) => {
+  const start = await invoke("device.snapshot");
+  const block = start.blocks.find((candidate) => candidate.column >= 0 && candidate.modelId !== undefined)
+    ?? start.blocks[0];
+  if (!block) return { skipped: "the loaded preset has no blocks" };
+  const original = Boolean(block.bypassed);
+  await invoke("device.toggleBypass", {
+    row: block.row, column: block.column, expectedScene: start.activeScene,
+    expectedBypassed: original, desiredBypassed: !original, expectedPresetName: start.presetName ?? ""
+  });
+  await waitFor(async () => {
+    const now = await invoke("device.snapshot");
+    return Boolean(now.blocks.find((c) => c.row === block.row && c.column === block.column)?.bypassed) !== original;
+  }, "the device did not toggle the block's bypass");
+  const toggledInUi = await page.evaluate(({ row, column }) => {
+    const node = document.querySelector(`[aria-label^="Row ${row + 1}, "]`);
+    return { present: Boolean(node), label: node?.getAttribute("aria-label") ?? null };
+  }, { row: block.row, column: block.column });
+  record.facts.parity = await captureParity("14-block-bypass");
+  // Restore the grid exactly as it was; nothing here is saved to the device.
+  const mid = await invoke("device.snapshot");
+  await invoke("device.toggleBypass", {
+    row: block.row, column: block.column, expectedScene: mid.activeScene,
+    expectedBypassed: !original, desiredBypassed: original, expectedPresetName: mid.presetName ?? ""
+  });
+  await waitFor(async () => {
+    const now = await invoke("device.snapshot");
+    return Boolean(now.blocks.find((c) => c.row === block.row && c.column === block.column)?.bypassed) === original;
+  }, "the block's bypass was not restored");
+  return { block: { row: block.row, column: block.column, name: block.name }, original, toggledInUi };
+});
+
+await step("15-parameter-edit-reads-back-and-restores", async () => {
+  const start = await invoke("device.snapshot");
+  const block = start.blocks.find((candidate) => candidate.column >= 0 && candidate.modelId !== undefined);
+  if (!block) return { skipped: "the loaded preset has no editable blocks" };
+  const details = await invoke("device.blockDetails", { row: block.row, column: block.column, expectedPresetName: start.presetName ?? "" });
+  const parameter = (details.parameters ?? []).find((candidate) => typeof candidate.normalizedValue === "number");
+  if (!parameter) return { skipped: `${block.name} reports no continuous parameter` };
+  const original = parameter.normalizedValue;
+  const target = original > 0.5 ? Number((original - 0.15).toFixed(3)) : Number((original + 0.15).toFixed(3));
+  await invoke("device.setParameter", {
+    row: block.row, column: block.column, parameterIndex: parameter.index, value: target,
+    expectedValue: original, expectedScene: start.activeScene, expectedPresetName: start.presetName ?? ""
+  });
+  let readBack;
+  await waitFor(async () => {
+    const now = await invoke("device.blockDetails", { row: block.row, column: block.column, expectedPresetName: start.presetName ?? "" });
+    readBack = (now.parameters ?? []).find((candidate) => candidate.index === parameter.index)?.normalizedValue;
+    return typeof readBack === "number" && Math.abs(readBack - target) < 0.02;
+  }, "the device did not report the written parameter value");
+  await invoke("device.setParameter", {
+    row: block.row, column: block.column, parameterIndex: parameter.index, value: original,
+    expectedValue: readBack, expectedScene: start.activeScene, expectedPresetName: start.presetName ?? ""
+  });
+  await waitFor(async () => {
+    const now = await invoke("device.blockDetails", { row: block.row, column: block.column, expectedPresetName: start.presetName ?? "" });
+    const value = (now.parameters ?? []).find((candidate) => candidate.index === parameter.index)?.normalizedValue;
+    return typeof value === "number" && Math.abs(value - original) < 0.02;
+  }, "the parameter was not restored");
+  return { block: block.name, parameter: parameter.name ?? parameter.index, original, target, readBack };
+});
+
+// ---------------------------------------------------------------- tempo write
+
+await step("16-tempo-write-moves-the-device-and-the-lamp", async (record) => {
+  const start = await invoke("device.snapshot");
+  const target = start.tempo >= 130 ? start.tempo - 11 : start.tempo + 11;
+  await invoke("device.setTempo", { bpm: target, expectedTempo: start.tempo, expectedPresetName: start.presetName ?? "" });
+  await waitFor(async () => (await invoke("device.snapshot")).tempo === target, "the device did not accept the new tempo");
+  const lampPeriod = () => page.evaluate(() => {
+    const node = document.querySelector(".hardware-switch.is-tempo-pulse .switch-led");
+    if (!node) return null;
+    const animation = node.getAnimations({ subtree: true })
+      .find((candidate) => candidate.animationName === "qc-tempo-led-pulse");
+    return animation?.effect?.getTiming?.().duration ?? null;
+  });
+  const expectedPeriod = 60_000 / target;
+  Object.assign(record.facts, { from: start.tempo, target, expectedPeriod: Number(expectedPeriod.toFixed(1)) });
+  try {
+    await waitFor(async () => {
+      const period = await lampPeriod();
+      return period === null || Math.abs(period - expectedPeriod) < 1;
+    }, `the lamp still runs at ${await lampPeriod()}ms where ${target} BPM needs ${expectedPeriod.toFixed(1)}ms`);
+    record.facts.lampPeriod = await lampPeriod();
+  } finally {
+    const mid = await invoke("device.snapshot").catch(() => start);
+    await invoke("device.setTempo", { bpm: start.tempo, expectedTempo: mid.tempo, expectedPresetName: mid.presetName ?? "" })
+      .catch(() => undefined);
+    await waitFor(async () => (await invoke("device.snapshot")).tempo === start.tempo, "the tempo was not restored")
+      .catch(() => undefined);
+    record.facts.restoredTempo = (await invoke("device.snapshot").catch(() => ({}))).tempo;
+  }
+  return undefined;
+});
+
+// -------------------------------------------------------------------- tuner
+
+await step("17-tuner-opens-and-closes-on-the-device", async (record) => {
+  await invoke("device.showTuner", { shown: true });
+  await sleep(1500);
+  record.facts.parity = await captureParity("17-tuner", false);
+  await invoke("device.showTuner", { shown: false });
+  await sleep(1200);
+  const after = await invoke("system.status");
+  expect(after.usbDiagnostics?.synchronized, "the session lost synchronization around the tuner");
+  return { usbDiagnostics: after.usbDiagnostics };
+});
+
+// ------------------------------------------------------- recall from library
+
+await step("18-directory-recall-converges", async (record) => {
+  const start = await invoke("device.snapshot");
+  await page.locator(".preset-title-hit").click();
+  await page.locator(".coros-directory").waitFor({ timeout: timeoutMs });
+  await waitFor(async () => (await page.locator(".directory-preset-row").count()) > 0, "the Directory never listed presets");
+  const rows = await page.evaluate(() => [...document.querySelectorAll(".directory-preset-row .preset-recall")]
+    .map((node) => ({ location: node.querySelector("strong")?.textContent ?? "", name: node.querySelector("span")?.textContent ?? "" })));
+  const other = rows.find((row) => row.location !== start.presetLocation && row.name && row.name !== "Unsaved");
+  if (!other) { await page.getByRole("button", { name: "Return to Grid" }).click(); return { skipped: "no other named preset in this bank" }; }
+  await page.getByRole("button", { name: new RegExp(`^${other.location}`) }).first().click().catch(async () => {
+    await page.locator(".directory-preset-row .preset-recall").nth(rows.indexOf(other)).click();
+  });
+  await waitFor(async () => (await invoke("device.snapshot")).presetName === other.name,
+    `the device did not recall ${other.location} ${other.name}`, 30_000);
+  const recalled = await invoke("device.snapshot");
+  const ui = await readPresetFromUi();
+  record.facts.parity = await captureParity("18-directory-recall");
+  expect(ui.name === recalled.presetName, `app shows "${ui.name}", device holds "${recalled.presetName}"`);
+  // Go back to where the run found the device.
+  await invoke("device.recallPreset", {
+    setlistKey: start.setlistKey, position: start.presetPosition,
+    expectedPresetName: recalled.presetName ?? "", expectedPosition: recalled.presetPosition,
+    expectedSetlistKey: recalled.setlistKey
+  });
+  await waitFor(async () => (await invoke("device.snapshot")).presetPosition === start.presetPosition, "the starting preset was not restored");
+  return { from: start.presetLocation, to: other, restored: (await invoke("device.snapshot")).presetLocation };
+});
+
+// ---------------------------------------------------------------- long haul
+
+await step("19-session-holds-under-a-quiet-soak", async () => {
+  // The keepalive regression only showed after roughly a minute of quiet, and
+  // it took File READs down with it. Sit still, then ask for the library.
+  const soakSeconds = Number(option("--soak-seconds", "100"));
+  const started = Date.now();
+  const samples = [];
+  while (Date.now() - started < soakSeconds * 1000) {
+    await sleep(10_000);
+    const status = await invoke("system.status");
+    samples.push({
+      atMs: Date.now() - started,
+      phase: status.usbDiagnostics?.phase,
+      synchronized: status.usbDiagnostics?.synchronized,
+      messagesReceived: status.usbDiagnostics?.messagesReceived
+    });
+    expect(status.usbDiagnostics?.synchronized, `the session lost sync after ${Math.round((Date.now() - started) / 1000)}s`);
+  }
+  const listing = await invoke("device.listPresetFolders", { refresh: true });
+  const deadline = Date.now() + timeoutMs * 2;
+  let folders = listing;
+  while (Date.now() < deadline && (folders.loading || (folders.folders ?? []).length === 0)) {
+    await sleep(500);
+    folders = await invoke("device.listPresetFolders");
+  }
+  expect((folders.folders ?? []).length > 0, "an aged session stopped answering File READs");
+  const received = samples.map((sample) => sample.messagesReceived);
+  expect(received.at(-1) > received[0], "the device stopped pushing state during the soak");
+  return { soakSeconds, samples, foldersAfterSoak: folders.folders.length };
+});
+
+// ------------------------------------------------------------------- backup
+
+await step("20-device-backup-completes", async () => {
+  if (!argv.includes("--backup")) return { skipped: "pass --backup to include the 20MB device backup" };
+  const started = Date.now();
+  const name = `parity-run-${new Date().toISOString().replace(/[:.]/g, "-")}`;
+  const backup = await invoke("device.createBackup", { name });
+  const elapsedMs = Date.now() - started;
+  expect(elapsedMs < 60_000, `the backup took ${Math.round(elapsedMs / 1000)}s`);
+  const status = await invoke("system.status");
+  expect(status.usbDiagnostics?.synchronized, "the session did not recover after the backup");
+  return { elapsedMs, name, backup: typeof backup === "string" ? backup.slice(0, 120) : backup, usbDiagnostics: status.usbDiagnostics };
+});
+
+// --------------------------------------------------------------- recovery
+
+await step("21-session-reset-recovers", async () => {
+  const before = await invoke("system.status");
+  const beforeConnectedAt = before.usbDiagnostics?.connectedAtUnixMs;
+  await invoke("device.resetSession").catch(() => undefined);
+  const started = Date.now();
+  // A reset that "recovers" instantly means the old session was still being
+  // reported. Wait for a genuinely new session before calling it recovered.
+  await waitFor(async () => {
+    const status = await invoke("system.status").catch(() => undefined);
+    const usb = status?.usbDiagnostics;
+    return Boolean(usb?.connected && usb.synchronized && usb.connectedAtUnixMs !== beforeConnectedAt);
+  }, "the session did not come back as a new session after a reset", 60_000);
+  const recoveredMs = Date.now() - started;
+  await page.getByRole("button", { name: /QC READY; open connection details/ }).waitFor({ timeout: timeoutMs });
+  const after = await invoke("system.status");
+  return { recoveredMs, handshakeMs: after.usbDiagnostics?.handshakeMs, before: before.usbDiagnostics?.phase, after: after.usbDiagnostics?.phase, connectedAtChanged: after.usbDiagnostics?.connectedAtUnixMs !== beforeConnectedAt };
+});
+
+// ------------------------------------------------- surviving a broker swap
+
+await step("21b-ui-follows-the-device-after-a-broker-swap", async (record) => {
+  // The frame sequence belongs to the broker process, so a replacement starts
+  // counting from one. The UI used to read that as "already seen" and discard
+  // every later frame, freezing the screen against a healthy device. Kill the
+  // broker for real and prove the screen keeps up afterwards.
+  const before = await invoke("system.status");
+  const beforePid = await brokerPid();
+  expect(beforePid !== null, "no qc-device-broker process to replace");
+  await run("taskkill", ["/PID", String(beforePid), "/F"]).catch(() => undefined);
+  await waitFor(async () => {
+    const pid = await brokerPid();
+    return pid !== null && pid !== beforePid;
+  }, "the host never started a replacement broker", 60_000);
+  await waitFor(async () => {
+    const status = await invoke("system.status").catch(() => undefined);
+    return Boolean(status?.usbDiagnostics?.connected && status.usbDiagnostics.synchronized);
+  }, "the replacement broker never reached a synchronized session", 60_000);
+  const afterPid = await brokerPid();
+
+  // Now move the device from outside the app and require the screen to follow.
+  const snapshot = await invoke("device.snapshot");
+  const targetScene = (snapshot.activeScene + 1) % 8;
+  const uiScene = () => page.evaluate(() => {
+    const badge = [...document.querySelectorAll(".coros-vector-canvas text")]
+      .map((node) => node.textContent).find((text) => /^[A-H]$/.test(text ?? ""));
+    return badge ?? null;
+  });
+  const letter = (index) => String.fromCharCode(65 + index);
+  Object.assign(record.facts, { beforePid, afterPid, fromScene: snapshot.activeScene, targetScene });
+  try {
+    await invoke("device.selectScene", { scene: targetScene, expectedPresetName: snapshot.presetName ?? "" });
+    await waitFor(async () => (await invoke("device.snapshot")).activeScene === targetScene,
+      "the device did not change scene after the swap");
+    await waitFor(async () => (await uiScene()) === letter(targetScene),
+      `the screen still reads scene ${await uiScene()} while the device is on ${letter(targetScene)}`, 20_000);
+    record.facts.uiScene = await uiScene();
+  } finally {
+    const now = await invoke("device.snapshot").catch(() => snapshot);
+    await invoke("device.selectScene", { scene: snapshot.activeScene, expectedPresetName: now.presetName ?? "" })
+      .catch(() => undefined);
+    await waitFor(async () => (await invoke("device.snapshot")).activeScene === snapshot.activeScene,
+      "the scene was not restored").catch(() => undefined);
+  }
+  record.facts.parity = await captureParity("21b-after-broker-swap");
+  return undefined;
+});
+
 // ------------------------------------------------------------------- teardown
 
-await step("12-session-survives-the-run", async (record) => {
+await step("22-session-survives-the-run", async (record) => {
   const status = await invoke("system.status");
   expect(status.usbDiagnostics?.connected && status.usbDiagnostics?.synchronized,
     `the session ended ${status.usbDiagnostics?.phase}: ${status.usbDiagnostics?.detail}`);
-  record.facts.parity = await captureParity("12-final");
+  record.facts.parity = await captureParity("22-final");
   return { usbDiagnostics: status.usbDiagnostics };
 });
 
