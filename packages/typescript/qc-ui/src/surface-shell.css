@@ -198,6 +198,10 @@
 
 /* Orthographic top panel and CorOS 4.1 Grid fidelity. */
 .qc-chassis {
+  /* All screen and hardware geometry is absolute to the chassis. Keep the
+     containing block on the final production rule as well as the base rule so
+     CSS extraction/hot reload cannot rebase the chrome to the workspace. */
+  position: relative;
   width: min(1120px, 100%);
   min-height: 0;
   max-height: none;
