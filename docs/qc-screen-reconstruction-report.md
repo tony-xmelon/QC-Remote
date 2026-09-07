@@ -708,6 +708,52 @@ bold is wider relative to the roman than the device's. The measure is set so the
 paragraph takes two lines with a break one word later - closer than the three
 lines an exact-width box produced.
 
+### The audit: every frame against every render
+
+The sixth pass was then audited from a clean tree - fresh server, renders
+deleted, all 94 drawn again - and each frame scored against **every** render
+rather than only its own. Mean error alone cannot make that call, so the
+shortlist is taken on mean error and the verdict on 2px edge agreement, which is
+what separated the mislabelled captures in the first place.
+
+**Three frames in the corpus are stored twice under different names.** Byte for
+byte:
+
+| | | |
+| --- | --- | --- |
+| `generic-confirmation` | = | `delete-confirmation` |
+| `overlay-error` | = | `device-search-results` |
+| `onscreen-keyboard` | = | `device-preset-save` |
+
+So the 94 mapped frames are 91 distinct images, and the pairs that tie in the
+audit tie because they are the same picture, not because two views collide.
+
+**Two frames were matched better by another view, and both were defects.**
+
+`empty-slot` scored 0.731 against its own view and 0.792 against
+`device-browser-root`'s. Its Grid pane had been squeezed into the left 400px,
+which pushed the toolbar and Multi Out into the open half - on the unit they sit
+behind the list at x 610 and 748 - and left no room for the preset title the
+frame shows at full size. Redrawn as the whole 800px Grid with the list over its
+right half, measured off the frame (44x76 route tiles at x 8 on a 94px pitch
+from y 109, a 70px `#101010` slot at (152, 112), the cable at y 146): **0.023 /
+0.727**, and it is now its own closest match.
+
+`fixture-editor-capture` scored 0.705 against its own view and 0.721 against
+`editor-chief-ds1`'s - a near-identical screen drawn more accurately. Two causes:
+its header's undo and save glyphs had no fill or stroke rule, so they were
+invisible, and its editor was a rounded panel wrapping bar and parameters
+together where the frame has the same bar and five-cell strip the assignment
+screens use. **0.041 / 0.731**, and it now beats `editor-chief-ds1` on the frame
+it belongs to.
+
+Everything else that surfaced is explained: `copy-scene-destination` and
+`swap-scene-destination` are 0.0009 apart because the two screens differ by a
+word, `device-search` and `directory-new-folder` by 0.006 because both are the
+keyboard, and the I/O pages by 0.005 because they share one layout. **No mapping
+errors remain.** After the audit the 94 sit at a 0.0251 median, worst 0.0574,
+65 under 0.03, 88 under 0.04, and 90 agreeing on 70% or more of their edges.
+
 ## Improvements in this pass
 
 - Ran Neural Captures on the unit with the owner's approval and recorded

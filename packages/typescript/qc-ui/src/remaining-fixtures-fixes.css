@@ -328,3 +328,24 @@
 .capture-search-keyboard > main button.is-space, .capture-search-keyboard > main button.is-numeric, .capture-search-keyboard > main button.is-done, .capture-search-keyboard > main button.is-shift, .capture-search-keyboard > main button.is-backspace { flex-basis: auto; width: auto; }
 .capture-search-keyboard > main button.is-shift, .capture-search-keyboard > main button.is-backspace, .capture-search-keyboard > main button.is-numeric { font-size: 20px; }
 .capture-search-keyboard > main button small { position: absolute; right: 6px; top: 3px; color: #5a595a; font-size: 12px; }
+
+/* fixture-editor-capture.png, measured: the header's tools sit at x 609, 656,
+   705 and 753, and the editor is the same bar and strip the assignment screens
+   use - #101010 under it, five 156px #292c29 cells from y 256 to 362. */
+.capture-editor-physical > header > nav { gap: 26px; padding-right: 23px; }
+.capture-editor-physical > header > nav i svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.capture-editor-physical > header > nav i:last-child svg { fill: currentColor; stroke: none; }
+.capture-editor-panel { position: absolute; left: 0; right: 0; top: 196px; bottom: 0; margin: 0; overflow: visible; border-radius: 0; background: transparent; }
+.capture-editor-panel > header { position: absolute; left: 0; right: 0; top: 0; height: 60px; gap: 0; background: transparent; }
+.capture-editor-panel > header > button { position: absolute; top: 8px; height: 44px; border-radius: 8px; background: #181c18; }
+.capture-editor-panel > header > button:first-child { left: 8px; width: 44px; }
+.capture-editor-panel > header > span { position: absolute; left: 59px; top: 9px; width: auto; }
+.capture-editor-panel > header > nav { position: absolute; left: 505px; top: 8px; width: 125px; height: 44px; margin: 0; gap: 0; justify-content: space-around; border-radius: 8px; background: #181c18; }
+.capture-editor-panel > header > nav i { font-size: 17px; letter-spacing: -3px; }
+.capture-editor-panel > header .capture-editor-power { left: 655px; width: 60px; }
+.capture-editor-panel > header .capture-editor-power svg { width: 24px; height: 24px; }
+.capture-editor-panel > header .capture-editor-confirm { left: 726px; width: 66px; background: #292c29; }
+.capture-editor-panel > header .capture-editor-confirm svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.capture-editor-panel > main { position: absolute; left: 8px; right: 8px; top: 60px; height: 107px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; }
+.capture-editor-panel > main > section { padding: 9px; border: 0; background: #292c29; }
+
