@@ -57,6 +57,35 @@ wrong reason is worse than no check. The protos are now generated from the
 descriptor and verified field for field, so this class of drift is gone rather
 than fixed.
 
+#### The schema also parses what the device actually sends
+
+Matching Cortex Control's descriptors proves we copied them correctly. It does
+not prove the descriptors describe the firmware. `tools/verify_cortex_schema_against_device.py`
+closes that: it listens to a connected unit, keeps the raw payload of every
+message pushed, and parses each one against a pool built from the extracted
+`.desc` files - reporting both parse failures and any top-level field the schema
+does not declare.
+
+```
+PASS 170 payload(s) parsed cleanly against the schema extracted from
+Cortex Control, with no undeclared fields
+```
+
+across roughly 25 types in a 30-second session, including `GridMessage`,
+`RecallPresetMessage`, `SceneMessage`, `IOSettingsMessage`,
+`GeneralSettingsMessage` and `GlobalEQMessage`. Two things it must handle, and
+which are properties of the protocol rather than of the tool:
+
+- **Whole frames arrive gzipped.** A payload beginning `1f 8b` is a deflate
+  stream and has to be inflated before it is protobuf at all; the device does
+  this for large pushes such as a full `BinaryPreset` or a library listing.
+- **Two types are not protobuf.** `License` (58) and `CloudLogin` (18) flag a
+  raw body in their trailer. Parsing them as protobuf reports "wire format was
+  corrupt", which is a category error, not a schema defect.
+
+It needs hardware, so it is not part of the release preflight; run it when the
+firmware or Cortex Control changes.
+
 #### What the device says about `GlobalEQMessage` field 5
 
 pyquadcortex carries the same older definition we did, so the two schemas
