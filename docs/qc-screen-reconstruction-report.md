@@ -413,20 +413,84 @@ sprite checksum are self-anchored by nature - one asserts a flag in our capture
 tools, the other pins a vendored asset's bytes - and are correctly classified as
 such rather than being device claims at all.
 
-### One thing the second pass did not change
+### The third pass: the underlay, and a renderer
 
-Behind the block context menu the device shows the Grid above and an editor
-panel below; our `.physical-eq-underlay` draws a full-screen editor. Both are
-real CorOS layouts - `editor-parametric-8.png` is the one our markup names, and
-every number in that rule matches it - but the underlay we composite into
-`block-context.png`'s reconstruction is the wrong one of the two. Fixing that is
-a fixture change rather than a value correction, and it is not made here.
-
-Three colour values were also *reverted* during this pass. `.plugin-grid-underlay`
+Three colour values were *reverted* during the second pass. `.plugin-grid-underlay`
 declares base fills that the plugin-list fixture overrides in the only frame
 that shows them; correcting the base rules to what that frame measures would
 have been changing values on the strength of a frame that does not exercise
 them.
+
+The second pass also left the block context underlay drawing the wrong screen:
+`.physical-eq-underlay` painted a full-screen EQ editor, while `block-context.png`
+shows the Grid above an editor's action bar with an **empty parameter area**
+below. Both are real CorOS layouts; only one is behind that menu. It is now
+rebuilt as `.physical-grid-underlay`, and its grid header turns out to be the
+one in `input-gate-control.png` pixel for pixel, down to the preset name.
+
+Measured from `block-context.png`, the layout is:
+
+| element | geometry |
+| --- | --- |
+| Grid area | y 0..195, black |
+| preset title | number cap rows 28..76, name cap rows 31..74, name from x=114 |
+| header actions | four 24px icons on a 48px pitch, right edge 776, y 12..35 |
+| mode row | 21px glyph, 12px gap, STOMP ending at x=764, y 64..82 |
+| signal row | 44x76 pills at x 8 and 750, y 109..184; 2px cable at y 146 |
+| action bar | four cards, 8px gaps, right edge 792, y 204..247, widths 66/132/66/66 |
+| parameter area | y 248..479, one flat colour - nothing is drawn there |
+
+**This pass could check its work, which the earlier ones could not.** Playwright's
+bundled browser is not installed, but `QC_BROWSER_EXECUTABLE` accepts the Chrome
+already on the machine, so `tools/capture_qc_ui_screen.mjs` renders a fixture
+against a dev server and the render can be measured with the same predicates as
+the frame:
+
+```
+cd apps/windows && npx vite --host 127.0.0.1 --port 1473 --strictPort
+QC_BROWSER_EXECUTABLE="C:/Program Files/Google/Chrome/Application/chrome.exe"   node tools/capture_qc_ui_screen.mjs http://127.0.0.1:1473/ out.png block-context
+```
+
+Port 1420 is often taken by another worktree's dev server, which would serve
+that worktree's code. Every number above was iterated that way rather than reasoned about:
+the title now lands within 2px of the device's, the cable is exact, and the
+action bar's cards, badge, bypass and confirm all land within 1px.
+
+That is also how the next defect surfaced. With bright content finally under it,
+the scrim was obviously wrong:
+
+| under the scrim | device shows | `rgba(71,74,71,.92)` gives |
+| --- | --- | --- |
+| page `#101010` | `#424542` | `#424542` |
+| confirm card `#292c29` | `#4a4d4a` | `#444744` |
+| scene badge `#ffd331` | `#84794a` | `#555445` |
+| white glyph `#f8fcf8` | `#848684` | `#555855` |
+
+The old value reproduced the page background *exactly* and crushed everything
+brighter, which is why it survived every check: they all sampled the background.
+Fitted across those five elements the scrim is `rgba(85,88,85,.72)`, within two
+values everywhere. The verifier now samples the composite over two different
+under-colours, because one sample cannot separate a scrim's tint from its alpha -
+any pair that reproduces the background will pass.
+
+The device does not composite the way a CSS alpha layer does: fitting the two
+dark samples exactly puts the bright ones 8-10 values out, and vice versa. The
+colour comparison through a scrim therefore allows three values, and says so.
+
+### Two more, in the fixture next door
+
+`input-gate-control.png` is the frame the grid header came from, and comparing
+our render of that screen with it found two more:
+
+- its preset letter is drawn **blue** (`#427184`), not the red `#e61723` the
+  stylesheet declared - `#69b5d4` before the fixture's 0.62 dimming;
+- its preset name is nearly as large as the number (cap rows 31..74 against
+  28..76), not the half-height face `font-size: 4.45cqw` produces.
+
+Correcting the size made the fixture's own preset name wrap, because it carried
+a placeholder (`QC-MCP-TEST-mtniwbfb-R`) rather than the name in the frame it
+reconstructs. The name now matches the capture, and the render's glyph columns
+land within 7px of the device's across the whole title.
 
 ## Improvements in this pass
 

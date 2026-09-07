@@ -659,12 +659,19 @@ def dominant(pixels, region, step=2):
     return tally.most_common(1)[0][0]
 
 
-def compare_colour(label: str, measured, expected) -> None:
+# A flat fill has to match exactly; one seen through a scrim gets a little room.
+# The device does not composite the way a CSS alpha layer does - fitting one
+# alpha to five elements from black to white leaves about two values of error -
+# so demanding equality through a scrim would be demanding the wrong thing.
+COLOUR_TOLERANCE = 3
+
+
+def compare_colour(label: str, measured, expected, tolerance: int = 0) -> None:
     global measurements
     measurements += 1
     if report:
         print(f"  {label}: frame {as_hex(measured)}, stylesheet {as_hex(expected)}")
-    if measured != expected:
+    if any(abs(a - b) > tolerance for a, b in zip(measured, expected)):
         problems.append(f"{label}: the stylesheet says {as_hex(expected)}, "
                         f"the frame is {as_hex(measured)}")
 
@@ -750,62 +757,80 @@ def check_block_context_menu() -> None:
         return
     tint = tuple(int(match.group(index)) for index in (1, 2, 3))
     alpha = float(match.group(4))
-    # What the scrim is drawn over, taken from the sheet rather than assumed.
-    under = parse_hex(declaration(sheet, ".physical-eq-underlay", "background"))
-    expected = tuple(int(alpha * tint[index] + (1 - alpha) * under[index]) for index in range(3))
-    compare_colour(f"{scrim} over the dimmed screen (block-context.png)",
-                   dominant(pixels, (400, 60, 780, 440)), expected)
+
+    def through(under):
+        return tuple(int(alpha * tint[index] + (1 - alpha) * under[index]) for index in range(3))
+
+    # One sample cannot separate the tint from the alpha: any pair that
+    # reproduces the page background will, and the pair that was here crushed
+    # everything brighter. Two under-colours far apart pin both.
+    for label, selector, region in (
+        ("page", ".physical-grid-underlay", (360, 260, 790, 470)),
+        ("confirm card", ".physical-grid-underlay .underlay-editor-bar .editor-confirm",
+         (730, 210, 788, 242)),
+    ):
+        compare_colour(f"{scrim} over the {label} (block-context.png)",
+                       dominant(pixels, region),
+                       through(parse_hex(declaration(sheet, selector, "background"))),
+                       COLOUR_TOLERANCE)
 
 
-def check_editor_underlay() -> None:
-    """The EQ editor our block-context underlay reconstructs.
+def check_block_context_underlay() -> None:
+    """The Grid and editor bar behind the block context menu.
 
-    editor-parametric-8.png is that screen: the underlay's header sits at the
-    top of the frame and its confirm button is 98px, neither of which is true
-    of the editor visible behind the menu in block-context.png.
+    block-context.png shows the Grid above, an editor's action bar at 204, and
+    an empty parameter area below it. Only the confirm card is bright enough to
+    read through the scrim, so it carries the bar's geometry here; the rest of
+    the bar is checked by rendering the fixture, not by this tool.
     """
+    global measurements
     sheet = "fixture-live-surface.css"
-    root = ".physical-eq-underlay"
-    confirm = ".physical-eq-underlay header nav .physical-eq-confirm"
-    footer = ".physical-eq-underlay footer"
-    pixels, _ = frame(CORPUS, "editor-parametric-8.png")
+    grid = ".physical-grid-underlay .underlay-grid"
+    bar = ".physical-grid-underlay .underlay-editor-bar"
+    button = ".physical-grid-underlay .underlay-editor-bar button"
+    confirm = ".physical-grid-underlay .underlay-editor-bar .editor-confirm"
+    cable = ".physical-grid-underlay .underlay-cable"
+    pixels, _ = frame(CORPUS, "block-context.png")
 
-    button = tile_extent(pixels, 30, 600, 800)
-    if button is None:
-        problems.append("editor-parametric-8.png: no confirm button resolved")
-        return
-    compare(f"{confirm} width (editor-parametric-8.png)", button[1] - button[0] + 1,
-            declared(sheet, confirm, "width"))
-    compare_colour(f"{confirm} fill (editor-parametric-8.png)", button[2],
-                   parse_hex(declaration(sheet, confirm, "background")))
-    compare_colour(f"{root} background (editor-parametric-8.png)",
-                   dominant(pixels, (300, 100, 700, 140)),
-                   parse_hex(declaration(sheet, root, "background")))
+    # The Grid is black and the page below it is not, so the boundary is where
+    # the column stops being the darker of the two.
+    # Start below the signal row so its cable is not mistaken for the boundary.
+    grid_fill = pixels[700, 100]
+    edge = next((y for y in range(160, 300) if pixels[700, y] != grid_fill), None)
+    compare(f"{grid} height (block-context.png)", edge, declared(sheet, grid, "height"))
 
-    band = parse_hex(declaration(sheet, footer, "background"))
-    compare_colour(f"{footer} fill (editor-parametric-8.png)",
-                   dominant(pixels, (20, 380, 150, 420)), band)
-    # The selected tab shares the footer's fill and joins onto it, so read the
-    # band by width: the footer spans the frame, one tab does not.
-    left = int(declared(sheet, footer, "left"))
-    right = 800 - int(declared(sheet, footer, "right"))
-    rows = spans([y for y in range(280, 480)
-                  if sum(1 for x in range(left, right) if pixels[x, y] == band)
-                  > (right - left) * 0.5])
-    rows = [run for run in rows if run[1] - run[0] > 40]
-    if not rows:
-        problems.append("editor-parametric-8.png: the footer band did not resolve")
+    card = tile_extent(pixels, 226, 700, 800)
+    if card is None:
+        problems.append("block-context.png: the confirm card did not resolve")
         return
-    top = rows[-1][0]
-    # Knobs and dropdowns break up the lower rows, so walk down from the top for
-    # as long as the band's fill is present at all.
-    bottom = top
-    while bottom < 479 and any(pixels[x, bottom + 1] == band for x in range(left, right)):
-        bottom += 1
-    compare(f"{footer} top (editor-parametric-8.png)", top,
-            480 - declared(sheet, footer, "bottom") - declared(sheet, footer, "height"))
-    compare(f"{footer} bottom (editor-parametric-8.png)", bottom + 1,
-            480 - declared(sheet, footer, "bottom"))
+    compare(f"{confirm} width (block-context.png)", card[1] - card[0] + 1,
+            declared(sheet, button, "width"))
+    compare(f"{bar} right (block-context.png)", 800 - (card[1] + 1),
+            declared(sheet, bar, "right"))
+    rows = spans([y for y in range(196, 280) if pixels[770, y] == card[2]])
+    compare(f"{bar} top (block-context.png)", rows[0][0], declared(sheet, bar, "top"))
+    compare(f"{bar} height (block-context.png)", rows[0][1] - rows[0][0] + 1,
+            declared(sheet, bar, "height"))
+
+    # The signal row's cable, whose offsets are inside `main`.
+    main_top = declared(sheet, ".physical-grid-underlay > .underlay-grid > main", "top")
+    line = spans([y for y in range(100, 196) if max(pixels[600, y]) > 80])
+    compare(f"{cable} top (block-context.png)", line[0][0],
+            main_top + declared(sheet, cable, "top"))
+    compare(f"{cable} height (block-context.png)", line[0][1] - line[0][0] + 1,
+            declared(sheet, cable, "height"))
+    run = spans([x for x in range(356, 800) if max(pixels[x, line[0][0]]) > 80])
+    compare(f"{cable} right (block-context.png)", 800 - (run[0][1] + 1),
+            declared(sheet, cable, "right"))
+
+    # The parameter area is empty: one flat colour across the whole band.
+    measurements += 1
+    colours = {pixels[x, y] for y in range(260, 470, 3) for x in range(360, 790, 3)}
+    if report:
+        print(f"  parameter area (block-context.png): {len(colours)} colour(s)")
+    if len(colours) != 1:
+        problems.append(f"block-context.png: the parameter area below the editor bar is empty "
+                        f"on the device, but {len(colours)} colours were found there")
 
 
 def check_plugin_underlay() -> None:
@@ -1025,7 +1050,7 @@ def main() -> int:
     check_directory_context_header()
     check_item_menu_rows()
     check_block_context_menu()
-    check_editor_underlay()
+    check_block_context_underlay()
     check_plugin_underlay()
     check_plugin_lock()
     check_tuner_footer()

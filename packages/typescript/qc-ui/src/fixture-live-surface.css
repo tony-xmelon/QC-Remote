@@ -738,38 +738,52 @@
 .iconography-audit-fixture figure[data-icon="stop"] > svg .qc-ui-icon-fill { fill: currentColor; stroke: none; }
 .iconography-audit-fixture figure[data-icon="waveform"] > svg { left: 20px; width: 80px; }
 .iconography-audit-fixture figcaption { position: absolute; left: 4px; right: 4px; top: 55px; overflow: hidden; color: #8c8a8c; font: 12px Roboto,Arial,sans-serif; text-align: center; white-space: nowrap; }
-.physical-eq-underlay { position: absolute; inset: 0; overflow: hidden; background: #101010; }
-.physical-eq-underlay header { position: absolute; inset: 0 0 auto; height: 60px; color: #919591; }
-.physical-eq-underlay header .physical-eq-more { position: absolute; left: 20px; top: 8px; width: 22px; height: 44px; padding: 0; border: 0; background: transparent; color: #a2a5a2; font-size: 24px; }
-.physical-eq-underlay header .physical-eq-title small { position: absolute; left: 60px; top: 12px; font-size: 14px; }
-.physical-eq-underlay header .physical-eq-title strong { position: absolute; left: 60px; top: 34px; color: #008dff; font-size: 18px; font-weight: 400; }
-.physical-eq-underlay header nav { position: absolute; inset: 0 8px 0 auto; display: flex; align-items: center; gap: 7px; }
-.physical-eq-underlay header nav button { width: 32px; height: 44px; padding: 0; border: 0; background: transparent; color: #a3a6a3; }
-.physical-eq-underlay header nav button svg { width: 24px; height: 24px; fill: currentColor; }
-.physical-eq-underlay header nav b { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 3px; background: #ffd42d; color: #111; font-size: 18px; font-weight: 600; }
-.physical-eq-underlay header nav i { width: 1px; height: 24px; margin: 0 7px; background: #6c706c; }
-.physical-eq-underlay header nav .physical-eq-save { width: 52px; color: #0aa9ff; }
-.physical-eq-underlay header nav .physical-eq-save svg,.physical-eq-underlay header nav .physical-eq-confirm svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.physical-eq-underlay header nav .physical-eq-confirm { width: 98px; margin-left: 8px; border-radius: 8px; background: #292c29; color: #f1f1f1; }
-.physical-eq-underlay > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.physical-eq-underlay > svg .physical-eq-curve { fill: none; stroke: #8f9490; stroke-width: 2; }
-.physical-eq-underlay > svg .physical-eq-grid path { fill: none; stroke: #343835; stroke-width: 1; }
-.physical-eq-underlay > svg text { fill: #737773; font: 14px Arial,sans-serif; }
-.physical-eq-underlay > svg circle { fill: #1c211d; stroke: #050505; stroke-width: 2; }
-.physical-eq-underlay footer { position: absolute; left: 8px; right: 8px; bottom: 8px; height: 108px; display: grid; grid-template-columns: repeat(5,1fr); border-radius: 8px; background: #292c29; }
-.physical-eq-underlay footer span { position: relative; padding: 10px; border-right: 1px solid #151715; color: #aeb1ae; font-size: 16px; }
-.physical-eq-underlay footer span strong { position: absolute; left: 7%; bottom: 14%; color: #b0b3b0; font-size: 16px; font-weight: 400; }
-.physical-eq-underlay footer span strong small { font-size: 12px; }
-.physical-eq-footer-dial { position: absolute; top: 40px; width: 58px; height: 58px; box-sizing: border-box; border: 5px solid #111412; border-radius: 50%; background: radial-gradient(circle,#252826 0 68%,transparent 70%),conic-gradient(from 218deg,#1689ee 0 34deg,#252826 34deg); }
-.physical-eq-footer-dial::after { content: ""; position: absolute; left: calc(50% - 1px); top: 4%; width: 2px; height: 42%; background: #eceeed; transform-origin: 50% 100%; }
-.physical-eq-footer-dial.is-frequency { left: 52%; }
-.physical-eq-footer-dial.is-frequency::after { transform: rotate(-98deg); }
-.physical-eq-footer-dial.is-q { left: 54%; }
-.physical-eq-footer-dial.is-q::after { transform: rotate(-124deg); }
-.physical-eq-footer-power { position: absolute; left: 7%; top: 40px; width: 50px; height: 45px; border-radius: 7px; background: #171b18; }
-.physical-eq-footer-power::before { content: ""; position: absolute; left: 50%; top: 50%; width: 17px; height: 17px; translate: -50% -50%; border: 2px solid #dfe1df; border-top-color: transparent; border-radius: 50%; }
-.physical-eq-footer-power::after { content: ""; position: absolute; left: calc(50% - 1px); top: 11px; width: 2px; height: 10px; background: #dfe1df; }
-.coros-block-context > .block-context-scrim { position: absolute; inset: 0; z-index: 2; background: rgba(71,74,71,.92); }
+/* The underlay behind the block context menu, measured from
+   references/qc-ui-corpus/coros-4.1.0/block-context.png. The device shows the
+   Grid above and an editor's action bar below it, with an empty parameter area
+   underneath - not the full-screen EQ editor this used to draw, which is a real
+   CorOS layout (editor-parametric-8.png) but not the one behind this menu.
+   Its grid header is pixel-for-pixel the one in input-gate-control.png, down to
+   the preset name. */
+.physical-grid-underlay { position: absolute; inset: 0; overflow: hidden; background: #101010; color: #848684; font-family: Arial,sans-serif; }
+.physical-grid-underlay .underlay-grid { position: absolute; inset: 0 0 auto; height: 196px; background: #000; }
+.physical-grid-underlay > .underlay-grid > header { position: relative; height: 96px; display: flex; align-items: flex-start; padding: 20px 13.6px; box-sizing: border-box; }
+.physical-grid-underlay > .underlay-grid > header > strong { color: #427184; font-size: 71px; line-height: .82; font-weight: 700; letter-spacing: 1.4px; transform: translateY(5px); }
+.physical-grid-underlay > .underlay-grid > header > strong span { color: #848684; }
+.physical-grid-underlay > .underlay-grid > header h1 { margin: 6px 0 0 12.6px; color: #848684; font-size: 58px; line-height: 1; font-weight: 700; }
+.physical-grid-underlay > .underlay-grid > header nav { position: absolute; right: 24px; top: 12px; display: flex; align-items: center; gap: 24px; color: #848684; font-style: normal; }
+.physical-grid-underlay > .underlay-grid > header nav i { width: 24px; height: 24px; display: grid; place-items: center; font-style: normal; }
+.physical-grid-underlay > .underlay-grid > header nav i svg { width: 26px; height: 26px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.physical-grid-underlay > .underlay-grid > header nav i:last-child svg circle { fill: currentColor; stroke: none; }
+.physical-grid-underlay > .underlay-grid > header nav b { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 4px; background: #846d18; color: #101010; font-size: 17px; font-weight: 700; }
+.physical-grid-underlay > .underlay-grid > header em { position: absolute; right: 35px; top: 62px; display: flex; align-items: center; gap: 12px; color: #848684; font-size: 21px; font-style: normal; font-weight: 700; }
+.physical-grid-underlay > .underlay-grid > header em svg { width: 24px; height: 24px; fill: currentColor; }
+.physical-grid-underlay > .underlay-grid > main { position: absolute; left: 0; right: 0; top: 96px; bottom: 0; }
+.physical-grid-underlay .underlay-route,
+.physical-grid-underlay .underlay-output { position: absolute; top: 13px; width: 44px; height: 76px; display: grid; place-items: center; border-radius: 14px; background: #080808; color: #737573; font-size: 14px; line-height: 1.35; text-align: center; }
+.physical-grid-underlay .underlay-route { left: 8px; }
+.physical-grid-underlay .underlay-output { right: 6px; font-size: 15px; }
+.physical-grid-underlay .underlay-cable { position: absolute; left: 52px; right: 52px; top: 50px; height: 2px; background: #636563; }
+/* The action bar: four cards ending 8px from the right edge, on an 8px gap.
+   block-context.png has no title card at its left, and nothing below it. */
+.physical-grid-underlay .underlay-editor-bar { position: absolute; right: 8px; top: 204px; height: 44px; display: flex; align-items: stretch; gap: 8px; }
+.physical-grid-underlay .underlay-editor-bar button { box-sizing: border-box; width: 66px; padding: 0; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: #181c18; color: #f2f2f2; font: 700 17px Arial,sans-serif; }
+.physical-grid-underlay .underlay-editor-bar svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.physical-grid-underlay .underlay-editor-bar .editor-expression { gap: 1px; }
+.physical-grid-underlay .underlay-editor-bar .editor-expression svg { width: 22px; height: 22px; fill: currentColor; stroke: none; }
+.physical-grid-underlay .underlay-editor-bar .editor-expression small { font-size: 17px; }
+.physical-grid-underlay .underlay-editor-bar .editor-scene { width: 132px; gap: 17px; }
+.physical-grid-underlay .underlay-editor-bar .editor-step { width: 21px; height: 24px; fill: currentColor; stroke: none; }
+.physical-grid-underlay .underlay-editor-bar .editor-step .is-dim { fill: #525152; }
+.physical-grid-underlay .underlay-editor-bar .editor-scene b { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 4px; background: #ffd331; color: #101010; font-size: 17px; font-weight: 700; }
+.physical-grid-underlay .underlay-editor-bar .editor-divider { width: 2px; height: 28px; align-self: center; background: #292c29; }
+.physical-grid-underlay .underlay-editor-bar .editor-confirm { background: #292c29; }
+/* Fitted over five elements in block-context.png whose undimmed colours are
+   known from editor-ambience.png: the page, an editor card, the confirm
+   button, the scene badge and a white glyph. The old rgba(71,74,71,.92)
+   reproduced the page background exactly and crushed everything brighter,
+   which no check caught because none looked past the background. */
+.coros-block-context > .block-context-scrim { position: absolute; inset: 0; z-index: 2; background: rgba(85,88,85,.72); }
 .qc-screen.coros-block-context > aside { position: absolute; z-index: 3; left: 32px; right: auto; top: 30px; bottom: 29px; width: 320px; display: block; overflow-x: hidden; overflow-y: auto; scrollbar-width: none; border-radius: 7px; background: #101010; box-shadow: none; }
 .qc-screen.coros-block-context > aside::-webkit-scrollbar { display: none; }
 .qc-screen.coros-block-context > aside::after { content: ""; position: absolute; right: 8px; top: 10px; bottom: 132px; border-right: 2px solid #343735; }

@@ -60,20 +60,29 @@ test("physical interaction fixtures preserve the captured CorOS overlay structur
   assert.match(fixture, /className="physical-preset-name">\{`2\$\{String\.fromCharCode\(65 \+ index\)\} \$\{name\}`\}/);
   assert.match(fixture, /"Save Current Parameters as\.\.\."/);
   assert.match(fixture, /function BlockContextIcon/);
-  assert.match(fixture, /className="physical-eq-grid"/);
+  // block-context.png shows the Grid above an editor action bar with an empty
+  // parameter area below - not the full-screen EQ editor this used to draw,
+  // which is a real CorOS layout but not the one behind this menu.
+  assert.match(fixture, /className="physical-grid-underlay"/);
+  assert.doesNotMatch(fixture, /physical-eq-/);
   for (const kind of ["change", "copy", "paste", "reset", "save", "expression", "bypass"]) {
     assert.match(fixture, new RegExp(`\\["${kind}"`));
   }
   assert.match(fixture, /dy=\{browserChrome \? -11 : 0\}/);
   assert.match(css, /\.qc-screen\.coros-block-context > aside \{[^}]*left: 32px;[^}]*width: 320px;/s);
   assert.match(css, /\.qc-screen\.coros-block-context > aside button \{[^}]*grid-template-columns: 57px 1fr;[^}]*font: 16px Roboto,Arial,sans-serif;/s);
-  assert.match(css, /\.coros-block-context > \.block-context-scrim \{[^}]*rgba\(71,74,71,\.92\)/s);
+  // Fitted over five elements in block-context.png whose undimmed colours are
+  // known: rgba(71,74,71,.92) reproduced the page background exactly and
+  // crushed everything brighter, which no check caught because none looked
+  // past the background.
+  assert.match(css, /\.coros-block-context > \.block-context-scrim \{[^}]*rgba\(85,88,85,\.72\)/s);
   assert.match(css, /\.coros-block-context > aside button span svg \{[^}]*width: 24px;[^}]*height: 24px;/s);
-  assert.match(css, /\.physical-eq-underlay header nav \.physical-eq-confirm \{[^}]*width: 98px;/s);
+  assert.match(css, /\.physical-grid-underlay \.underlay-grid \{[^}]*height: 196px;/s);
+  assert.match(css, /\.underlay-editor-bar \{[^}]*right: 8px;[^}]*top: 204px;[^}]*height: 44px;/s);
   // editor-parametric-8.png separates the tab strip from the parameter cards
   // with a 2px gap of page background, not with a rule 45px above the footer;
   // nothing is drawn at that height in it or in either block-context frame.
-  assert.doesNotMatch(css, /\.physical-eq-underlay footer::before/);
+  assert.doesNotMatch(css, /\.physical-eq-underlay/);
   // Measured from references/qc-ui-corpus/coros-4.1.0/directory-item-context.png:
   // the menu is bottom-anchored at y=472 and the device's five items make it
   // 260 tall, not the 208 a four-item menu would be.
@@ -100,7 +109,11 @@ test("physical interaction fixtures preserve the captured CorOS overlay structur
   assert.match(remainingCss, /\.is-physical-plugin-list \.plugin-grid-underlay \.underlay-add\{left:40\.25cqw;top:12cqw;width:8\.75cqw;height:8\.875cqw\}/);
   assert.match(remainingCss, /\.is-physical-plugin-list \.plugin-grid-underlay main i:not\(\.underlay-input\)::before\{width:3cqw;height:2px\}/);
   assert.match(remainingCss, /\.coros-device-presets\.is-physical:not\(\.is-official-factory\):not\(\.is-official-actions\) section:nth-child\(2\) header \.preset-close\{[^}]*translateX\(\.25cqw\);font-size:0\}/);
-  assert.match(fixtureCss, /\.input-gate-grid h1 \{[^}]*margin: 1\.625cqw 0 0 1\.575cqw;/s);
+  // input-gate-control.png draws the preset name nearly as large as the number
+  // - cap rows 31..74 against the number's 28..76 - not the half-height face a
+  // 4.45cqw h1 produces, and it draws the letter blue rather than red.
+  assert.match(fixtureCss, /\.input-gate-grid h1 \{[^}]*margin: \.75cqw 0 0 1\.575cqw;[^}]*font-size: 7\.25cqw;/s);
+  assert.match(fixtureCss, /\.input-gate-grid > header > strong \{[^}]*color: #69b5d4;/s);
 });
 
 test("framebuffer capture drivers disable host LCD text artifacts", () => {
@@ -255,8 +268,9 @@ test("every pinned device geometry is measured against a captured frame", () => 
     ".tuner-official > footer > section:last-child::after",
     ".settings-system-detail > div strong",
     ".physical-keyboard-rows button",
-    ".physical-eq-underlay header nav .physical-eq-confirm",
-    ".physical-eq-underlay footer",
+    ".physical-grid-underlay .underlay-grid",
+    ".physical-grid-underlay .underlay-editor-bar",
+    ".physical-grid-underlay .underlay-cable",
     ".plugin-grid-underlay main::before",
     ".underlay-plus",
     ".underlay-add",
@@ -281,7 +295,6 @@ test("every pinned device geometry is measured against a captured frame", () => 
     "references/qc-ui-official-manual/coros-4.1.0/official-directory-plugin-presets.png",
     "references/qc-ui-official-manual/coros-4.1.0/official-device-preset-actions.png",
     "references/qc-ui-corpus/coros-4.1.0/block-context.png",
-    "references/qc-ui-corpus/coros-4.1.0/editor-parametric-8.png",
     "references/qc-ui-corpus/coros-4.1.0/device-browser-plugin-list.png"
   ];
   for (const frame of frames) {

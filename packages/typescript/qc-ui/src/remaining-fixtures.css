@@ -215,16 +215,16 @@
     line-height: 0.82;
     font-weight: 700;
     letter-spacing: 0.175cqw;
-    color: #e61723;
+    color: #69b5d4;
     transform: translateY(5px);
   }
   .input-gate-grid > header > strong span {
     color: #c8cac9;
   }
   .input-gate-grid h1 {
-    margin: 1.625cqw 0 0 1.575cqw;
+    margin: .75cqw 0 0 1.575cqw;
     color: #d5d8d5;
-    font-size: 4.45cqw;
+    font-size: 7.25cqw;
     line-height: 1;
     font-weight: 700;
   }

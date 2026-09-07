@@ -166,7 +166,7 @@ function CorOsRemainingFixture({ view }: { view: RemainingFixtureView }) {
   </section>;
   if (view === "fixture-input-gate") return <section className="qc-screen coros-input-gate" aria-label="Input Gate Control">
     <div className="input-gate-grid">
-      <header><strong><span>2</span>H</strong><h1>QC-MCP-TEST-mtniwbfb-R</h1><nav><i className="input-gate-undo"><GridToolbarIcon kind="undo" /></i><b>A</b><i><GridToolbarIcon kind="save" /></i><i><QcUiIcon kind="more" /></i></nav><em><svg viewBox="0 0 24 24" aria-hidden="true"><ModeGlyph mode="STOMP" /></svg><span>STOMP</span></em></header>
+      <header><strong><span>4</span>E</strong><h1>QC MCP TEST_2</h1><nav><i className="input-gate-undo"><GridToolbarIcon kind="undo" /></i><b>A</b><i><GridToolbarIcon kind="save" /></i><i><QcUiIcon kind="more" /></i></nav><em><svg viewBox="0 0 24 24" aria-hidden="true"><ModeGlyph mode="STOMP" /></svg><span>STOMP</span></em></header>
       <main><span className="input-gate-route">In<br />1</span><i className="input-gate-cable" /><span className="input-gate-device"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M7 27c4-10 7-10 11 0s7 10 11 0 7-10 12 0" /></svg></span><span className="input-gate-output">Multi<br />Out</span>{[0, 1, 2].map(row => <span className="input-gate-plus" style={{ top: `${50 + row * 32}%` }} key={row}><QcUiIcon kind="add" /></span>)}</main>
     </div>
     <section className="input-gate-panel">
@@ -821,7 +821,19 @@ function CorOsBlockContext() {
     ["remove", "Remove block from the grid", ""],
   ];
   return <section className="qc-screen coros-block-context" aria-label="Block contextual actions">
-    <div className="physical-eq-underlay"><header><button className="physical-eq-more" aria-label="More">⋮</button><span className="physical-eq-title"><small>EQ</small><strong>Parametric-8</strong></span><nav><button aria-label="Previous scene"><svg viewBox="0 0 24 24"><path d="m15 4-8 8 8 8Z" /></svg></button><b>A</b><button aria-label="Next scene"><svg viewBox="0 0 24 24"><path d="m9 4 8 8-8 8Z" /></svg></button><i /><button className="physical-eq-save" aria-label="Save"><svg viewBox="0 0 28 28"><path d="M7 9h14l2 3v10H5V12l2-3Z" /><path d="M8 9V6h12v3M9 14h10" /></svg></button><button className="physical-eq-confirm" aria-label="Confirm"><svg viewBox="0 0 28 28"><path d="m8 14 4 4 8-9" /></svg></button></nav></header><svg viewBox="0 0 800 480" aria-hidden="true"><g className="physical-eq-grid"><path d="M449 60v250M712 60v250" /><text x="465" y="71">1k</text><text x="728" y="71">10k</text></g><path className="physical-eq-curve" d="M0 300C80 180 180 195 310 165S500 42 610 92 750 170 790 310" />{[[105,185],[185,185],[512,119],[600,113],[770,219]].map(([cx,cy], index) => <g key={index}><circle cx={cx} cy={cy} r="20" /><text x={cx} y={cy + 5} textAnchor="middle">{index + 1}</text></g>)}</svg><footer><span>TYPE</span><span>GAIN</span><span>FREQ<i className="physical-eq-footer-dial is-frequency" /><strong>50 <small>Hz</small></strong></span><span>Q<i className="physical-eq-footer-dial is-q" /><strong>0.10</strong></span><span>BYPASS 1<i className="physical-eq-footer-power" /></span></footer></div>
+    <div className="physical-grid-underlay">
+      <div className="underlay-grid">
+        <header><strong><span>4</span>E</strong><h1>QC MCP TEST_2</h1><nav><i><GridToolbarIcon kind="undo" /></i><b>A</b><i><GridToolbarIcon kind="save" /></i><i><QcUiIcon kind="more" /></i></nav><em><svg viewBox="0 0 24 24" aria-hidden="true"><ModeGlyph mode="STOMP" /></svg>STOMP</em></header>
+        <main><span className="underlay-route">In<br />1</span><i className="underlay-cable" /><span className="underlay-output">Multi<br />Out</span></main>
+      </div>
+      <nav className="underlay-editor-bar">
+        <button className="editor-expression"><svg viewBox="0 0 24 24" aria-hidden="true"><ModeGlyph mode="STOMP" /></svg><small>?</small></button>
+        <button className="editor-scene"><svg viewBox="0 0 21 24" aria-hidden="true" className="editor-step"><path d="M11 5 0 12l11 7Z" /><path className="is-dim" d="M21 6.5 13 12l8 5.5Z" /></svg><b>A</b><svg viewBox="0 0 21 24" aria-hidden="true" className="editor-step"><path className="is-dim" d="M0 6.5 8 12l-8 5.5Z" /><path d="M10 5 21 12l-11 7Z" /></svg></button>
+        <i className="editor-divider" />
+        <button className="editor-bypass" aria-label="Mute"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="15" rx="5" /><path strokeWidth="2.6" d="M1 11.75h22" /></svg></button>
+        <button className="editor-confirm"><QcUiIcon kind="check" /></button>
+      </nav>
+    </div>
     <i className="block-context-scrim" />
     <aside>{rows.map(([kind, label, className], index) => <button key={label} className={`${className}${index === 3 ? " has-gap" : ""}`}><span><BlockContextIcon kind={kind} /></span>{label}</button>)}</aside>
   </section>;
