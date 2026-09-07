@@ -1,6 +1,5 @@
 package com.qccontrol.mobile;
 
-import android.annotation.TargetApi;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ContentValues;
@@ -17,6 +16,7 @@ import android.hardware.usb.UsbRequest;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
+import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
@@ -1417,7 +1417,7 @@ public class QcUsbPlugin extends Plugin {
         return reading && generation == connectionGeneration.get() && connection == activeConnection;
     }
 
-    @TargetApi(Build.VERSION_CODES.O)
+    @RequiresApi(Build.VERSION_CODES.O)
     private void readInputReportsAsync(
         UsbDeviceConnection activeConnection, UsbEndpoint activeEndpoint, long generation
     ) {

@@ -26,6 +26,7 @@ const relayProtocolSource = readFileSync(new URL("../android/app/src/main/java/c
 const actionContract = JSON.parse(readFileSync(new URL("../../../contracts/qc-actions.v1.json", import.meta.url), "utf8"));
 const gatewayContract = JSON.parse(readFileSync(new URL("../../../contracts/gateway-methods.v1.json", import.meta.url), "utf8"));
 const androidManifestSource = readFileSync(new URL("../android/app/src/main/AndroidManifest.xml", import.meta.url), "utf8");
+const splashFallbackSource = readFileSync(new URL("../android/app/src/main/res/drawable/splash.xml", import.meta.url), "utf8");
 
 test("tempo synchronizes in both directions over the native USB bridge", () => {
   assert.match(sharedTransportSource, /gateway\.setTempo\(bpm, state\.tempo, state\.presetName\)/);
@@ -305,7 +306,7 @@ test("Android verifies timed-out structural writes after reconnect without repla
 
 test("modern Android keeps a buffered interrupt-read ring queued across idle periods", () => {
   assert.match(javaSource, /Build\.VERSION\.SDK_INT >= Build\.VERSION_CODES\.O/);
-  assert.match(javaSource, /@TargetApi\(Build\.VERSION_CODES\.O\)[\s\S]*readInputReportsAsync/);
+  assert.match(javaSource, /@RequiresApi\(Build\.VERSION_CODES\.O\)[\s\S]*readInputReportsAsync/);
   assert.match(javaSource, /HID_INPUT_REQUEST_DEPTH = 32/);
   assert.match(javaSource, /UsbRequest\[\] requests = new UsbRequest\[HID_INPUT_REQUEST_DEPTH\]/);
   assert.match(javaSource, /requests\[index\]\.queue\(buffer\)[\s\S]*activeConnection\.requestWait\(\)/);
@@ -313,6 +314,10 @@ test("modern Android keeps a buffered interrupt-read ring queued across idle per
   assert.doesNotMatch(javaSource, /requestWait\(\d+/);
   assert.match(javaSource, /inputRequest\.cancel\(\)[\s\S]*inputRequest\.close\(\)[\s\S]*releaseInterface/);
   assert.match(javaSource, /activeConnection\.bulkTransfer\(activeEndpoint[\s\S]*readerIsActive/);
+});
+
+test("Android provides a configuration-independent splash fallback", () => {
+  assert.match(splashFallbackSource, /<shape[\s\S]*<solid android:color="#08090B"/);
 });
 
 test("Android automatically recovers USB attachment and unexpected reader exit", () => {
