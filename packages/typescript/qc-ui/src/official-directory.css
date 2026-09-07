@@ -51,7 +51,7 @@
 .directory-favorites-official .directory-official-list > button { grid-template-columns: 1fr 17.25cqw 3.75cqw; }
 .directory-favorites-official .directory-official-list > button > i b svg { width: 3.5cqw; height: 3.5cqw; fill: none; }
 .directory-favorites-official .directory-official-list > button > i b:last-child svg { fill: var(--qc-icon-primary); }
-.directory-favorites-official .directory-official-list .qc-library-icon-binoculars { translate: 0 -3px; }
+.directory-favorites-official .directory-official-list .qc-library-icon-binoculars { translate: 1px -1px; }
 .directory-irs-official .directory-official-list > button { grid-template-columns: 1fr 17.25cqw; padding-right: 1cqw; }
 .directory-irs-official .directory-official-list > button > i > b:first-child > span { width: 3cqw; height: 3cqw; display: grid; place-items: center; border-radius: 50%; background: #2df36a; color: #071008; font-size: 2cqw; }
 .directory-irs-official .directory-official-list > button > i > b svg { width: 3cqw; height: 3cqw; fill: none; color: var(--qc-icon-primary); }

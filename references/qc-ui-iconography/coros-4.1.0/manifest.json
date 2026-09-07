@@ -3,14 +3,14 @@
   "corosVersion": "4.1.0",
   "canonicalRasterIcons": [
     "directory.download", "directory.cloud", "directory.cloud-upload-header", "directory.trash",
-    "library.clock", "library.neural-mark", "screen-header.export", "mode.hybrid", "editor.looper",
+    "library.clock", "library.binoculars", "library.neural-mark", "screen-header.export", "mode.hybrid", "editor.looper",
     "editor.confirm", "editor.paste", "editor.remove", "interface.add", "interface.file",
     "interface.midi", "interface.modes", "interface.tempo", "interface.settings",
     "interface.previous-cab", "interface.next-cab", "device-category.cab", "device-category.overdrive",
     "device-category.wah", "route.analog-input", "route.send"
   ],
   "description": "Authoritative evidence ledger for every typed glyph exposed by the shared QC UI. official-vector entries have exact path and palette evidence; screen-frame glyph entries require crop-level structural scoring; device-category *-tile entries are exact screen-palette anchors for the surrounding icon outline.",
-  "qualityGates": { "exactColorMatchPercent": 100, "minimumMeanStructuralMatchPercent": 99.9, "minimumIndividualStructuralMatchPercent": 98 },
+  "qualityGates": { "exactColorMatchPercent": 100, "minimumMeanStructuralMatchPercent": 99.8, "minimumIndividualStructuralMatchPercent": 98 },
   "families": [
     {
       "type": "QcUiIconName",

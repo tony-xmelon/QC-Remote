@@ -10,10 +10,10 @@ export type QcUiIconName = "add" | "subtract" | "previous" | "next" | "cab-previ
 
 type ReferenceRasterName = keyof typeof QC_REFERENCE_ICON_RASTERS;
 
-function QcReferenceRaster({ icon, color, className }: { icon: ReferenceRasterName; color: string; className?: string }) {
+function QcReferenceRaster({ icon, color, className, crisp = true }: { icon: ReferenceRasterName; color: string; className?: string; crisp?: boolean }) {
   const raster = QC_REFERENCE_ICON_RASTERS[icon];
   const path = (raster.paths as Record<string, string>)[color];
-  return <svg className={className} viewBox={`0 0 ${raster.width} ${raster.height}`} shapeRendering="crispEdges" aria-hidden="true"><path d={path} fill={color} stroke="none" /></svg>;
+  return <svg className={className} viewBox={`0 0 ${raster.width} ${raster.height}`} shapeRendering={crisp ? "crispEdges" : "auto"} aria-hidden="true"><path d={path} fill={color} stroke="none" /></svg>;
 }
 
 function referencePath(icon: ReferenceRasterName, index = 0) {
@@ -439,14 +439,7 @@ export function QcLibraryIcon({ kind, className }: { kind: QcLibraryIconName; cl
         <path d="M12 1h4v1h-4ZM12 5h9v1h-9ZM12 9h11v1H12ZM12 13h11v1H12ZM12 17h10v1H12ZM12 21h6v1H12Z" fill={QC_COLORS.captured.iconPrimary} stroke="none" />
       </svg>
     );
-  if (kind === "binoculars")
-    return (
-      <svg className={classes} viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M7 8 4 17a3 3 0 1 0 5.7 1l.8-4h3l.8 4A3 3 0 1 0 20 17l-3-9-3-2-2 3-2-3Z" fill="none" />
-        <circle cx="6.5" cy="17" r="2.3" fill="none" />
-        <circle cx="17.5" cy="17" r="2.3" fill="none" />
-      </svg>
-    );
+  if (kind === "binoculars") return <QcReferenceRaster icon="library.binoculars" color={QC_COLORS.captured.iconPrimary} className={classes} crisp={false} />;
   if (kind === "broken-heart")
     return (
       <svg className={classes} viewBox="0 0 24 24" aria-hidden="true">
