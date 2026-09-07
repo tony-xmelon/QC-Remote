@@ -141,7 +141,7 @@ public final class QcRelayPlugin extends Plugin {
         }
         getActivity().runOnUiThread(() -> new AlertDialog.Builder(getActivity())
             .setTitle("Allow Remote notifications?")
-            .setMessage("Remote access keeps a secure connection to your Quad Cortex while QC Control is in the background. "
+            .setMessage("Remote access keeps a secure connection to your Quad Cortex while " + getContext().getString(R.string.app_name) + " is in the background. "
                 + "Android requires one low-priority, ongoing notification for that connection. USB control and chat do not use notifications.")
             .setNegativeButton("Not now", (dialog, which) -> call.reject(
                 "Notification permission is required while the remote relay is active.", "NOTIFICATION_PERMISSION_DENIED"))
