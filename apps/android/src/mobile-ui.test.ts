@@ -18,6 +18,9 @@ test("the mobile control deck follows the physical three-row QC layout", () => {
   assert.match(appSource, /REMOTE RELAY[\s\S]*Remote access/);
   assert.match(appSource, /Assistant status/, "the CHAT indicator opens an assistant status panel");
   assert.match(appSource, /Chat settings/, "the CHAT status panel provides a settings action");
+  assert.match(appSource, /function assistantWelcomeMessage\(connection: ConnectionState, native: boolean\)/);
+  assert.match(appSource, /Quad Cortex is connected directly over USB and ready/);
+  assert.match(appSource, /Tap USB for connection details, diagnostics, and reconnect actions/);
   assert.match(appSource, /ScreenWakeNative\.setEnabled\(\{ enabled \}\)/, "the foreground Android activity stays awake only for a live USB session");
   assert.match(appSource, /screenDimAfterMs = 90_000/);
   assert.match(appSource, /onPointerDown=\{resetScreenDimmer\}/);
@@ -111,6 +114,20 @@ test("Android exposes an allowlisted Gemini selector and a compact persisted quo
   assert.match(styles, /\.chat-model-bar/);
 });
 
+test("Android accurately discloses the model data it currently transmits", () => {
+  const appSource = readFileSync(new URL("./App.tsx", import.meta.url), "utf8");
+  const chatSource = readFileSync(new URL("../../../packages/typescript/qc-core/src/chat-session.ts", import.meta.url), "utf8");
+  const dataSafety = readFileSync(new URL("../../../docs/ANDROID_DATA_SAFETY_DRAFT.md", import.meta.url), "utf8");
+  assert.match(appSource, /Allow messages, attachment names and types, and relevant device context to be sent to Gemini/);
+  assert.match(appSource, /localStorage\.getItem\(androidVoiceProcessingConsentKey\) === "accepted"/);
+  assert.match(appSource, /if \(!voiceProcessingAllowed\) \{ setWorkflowPanel\("privacy"\); return; \}[\s\S]*VoiceInputNative\.start\(\)/);
+  assert.match(appSource, /Allow microphone audio to be processed by Android's configured speech recognition service/);
+  assert.match(chatSource, /attachment\.name[\s\S]*attachment\.mediaType/);
+  assert.doesNotMatch(chatSource, /attachment\.data/);
+  assert.match(dataSafety, /no Android user-file picker/i);
+  assert.match(dataSafety, /content bytes are not sent/i);
+});
+
 test("Firebase AI and Play Integrity initialize only inside a consent-gated Gemini request", () => {
   const appSource = readFileSync(new URL("./App.tsx", import.meta.url), "utf8");
   const mainSource = readFileSync(new URL("../android/app/src/main/java/com/qccontrol/mobile/MainActivity.java", import.meta.url), "utf8");
@@ -148,10 +165,12 @@ test("Android exposes shared About, privacy, legal, and third-party notices", ()
   }
   assert.match(themeSource, /not affiliated with, authorized, sponsored, endorsed, or supported/);
   assert.match(themeSource, /identify the product with which this application is compatible/);
+  assert.match(themeSource, /relay operator you trust/);
+  assert.match(appSource, /QC_LEGAL\.privacy\.relay/);
   assert.match(appSource, /localStorage\.getItem\(androidOnlineModelConsentKey\) === "accepted"/);
   assert.match(appSource, /native && onlineModelsAllowed/);
   assert.match(appSource, /disabled=\{busy \|\| !onlineModelsAllowed\}/);
-  assert.match(appSource, /Allow messages, attachments, and relevant device context to be sent to Gemini/);
+  assert.match(appSource, /Allow messages, attachment names and types, and relevant device context to be sent to Gemini/);
   assert.match(appSource, /Online model sharing is disabled; no data was sent/);
   assert.match(appSource, /conversation\.setMessages\(\[\]\)/);
 });

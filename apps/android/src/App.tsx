@@ -8,6 +8,7 @@ import { AddBlockPanel, applyPreparedOfflineAssistantAction, AssistantAccessSele
 import { androidGatewayTransport, createAndroidQcTransport, GeminiNative, publicRelay, QcUsbNative, ScreenWakeNative, subscribeRelayState, VoiceInputNative } from "./native-services";
 import { quotaSummary, recordGeminiUsage, type GeminiModelId, type GeminiQuotaLedger } from "./gemini-quota";
 import appPackage from "../package.json";
+import type { ConnectionState } from "@qc-remote/client";
 
 type AndroidGeminiModel = GeminiModelId;
 type AndroidAttachment = { name: string; mediaType: "image/png"; data: string };
@@ -29,6 +30,7 @@ const androidQuotaStorageKey = "qc-control.android-gemini-quota-v1";
 const androidChatCollapsedStorageKey = "qc-control.android-chat-collapsed-v1";
 const androidKeepScreenAwakeStorageKey = "qc-control.android-keep-screen-awake-v1";
 const androidOnlineModelConsentKey = "qc-remote.android-online-model-consent-v1";
+const androidVoiceProcessingConsentKey = "qc-remote.android-voice-processing-consent-v1";
 const screenDimAfterMs = 90_000;
 const legacyControlAccessModeKey = "qc-control.device-access-mode-v1";
 const qcRemoteScreen = {
@@ -47,6 +49,15 @@ function AppMark({ onClick }: { onClick: () => void }) {
   return <button type="button" className="app-mark" onClick={onClick} aria-label={`About ${QC_BRAND.appName}`}><img src={QC_VISUAL_ASSETS.appIcon.url} alt="" /></button>;
 }
 
+function assistantWelcomeMessage(connection: ConnectionState, native: boolean): string {
+  if (!native) return "This browser preview cannot access Android USB. Install QC Remote on a phone to connect a Quad Cortex directly.";
+  if (connection.phase === "ready" && !connection.demo) return "Quad Cortex is connected directly over USB and ready. Type a request or use the microphone to speak.";
+  if (connection.phase === "syncing") return "Quad Cortex is connected over USB and its live state is synchronizing. You can type a request while that finishes.";
+  if (["discovering", "opening", "handshaking"].includes(connection.phase)) return `${connection.detail} I’ll confirm when the Quad Cortex is ready.`;
+  if (["needs-attention", "degraded"].includes(connection.phase)) return `${connection.detail} Tap USB for connection details, diagnostics, and reconnect actions.`;
+  return "No Quad Cortex is connected over USB. Connect it, then tap USB for connection details or type a request for help.";
+}
+
 export function App() {
   const native = Capacitor.isNativePlatform();
   const qcController = useQcController(demoSnapshot);
@@ -60,18 +71,18 @@ export function App() {
   const editor = useBlockEditorSession();
   const { details: blockDetails } = editor;
   const [devicePending, setDevicePending] = useState(false);
-  const conversation = useAssistantConversation<AndroidAttachment>({
-    initialMessages: [{ id: 1, role: "assistant", text: "Ready. Connect the Quad Cortex by USB, type a request, or use the microphone to speak." }],
-    maximumInputLength: 2000
-  });
-  const { input: message, setInput: setMessage, messages, pending: busy } = conversation;
-  const assistantScroll = useAssistantAutoScroll(true, messages);
   const deviceConnection = useQcConnectionWorkflow({
     phase: native ? "discovering" : "disconnected",
     detail: native ? "Looking for the Quad Cortex…" : "Android USB is unavailable in browser preview.",
     demo: true
   });
   const { connection, transition: transitionConnection, connected: usbConnected, busy: usbBusy, appearance: usbState } = deviceConnection;
+  const conversation = useAssistantConversation<AndroidAttachment>({
+    initialMessages: [{ id: 1, role: "assistant", text: assistantWelcomeMessage(connection, native) }],
+    maximumInputLength: 2000
+  });
+  const { input: message, setInput: setMessage, messages, pending: busy } = conversation;
+  const assistantScroll = useAssistantAutoScroll(true, messages);
   const [selectedModel, setSelectedModel] = useState<AndroidGeminiModel>(() => {
     const saved = window.localStorage.getItem(androidModelStorageKey);
     return androidGeminiModels.some((model) => model.id === saved) ? saved as AndroidGeminiModel : "gemini-3.7-flash";
@@ -82,6 +93,7 @@ export function App() {
   const [chatCollapsed, setChatCollapsed] = useState(() => window.localStorage.getItem(androidChatCollapsedStorageKey) === "true");
   const [keepScreenAwake, setKeepScreenAwake] = useState(() => window.localStorage.getItem(androidKeepScreenAwakeStorageKey) !== "false");
   const [onlineModelsAllowed, setOnlineModelsAllowed] = useState(() => window.localStorage.getItem(androidOnlineModelConsentKey) === "accepted");
+  const [voiceProcessingAllowed, setVoiceProcessingAllowed] = useState(() => window.localStorage.getItem(androidVoiceProcessingConsentKey) === "accepted");
   const [screenDimmed, setScreenDimmed] = useState(false);
   const [voiceState, setVoiceState] = useState("idle");
   const [controlAccessMode, setControlAccessMode] = useState<ControlAccessMode>(storedControlAccessMode);
@@ -97,6 +109,15 @@ export function App() {
   const nativeStateSequence = useRef(0);
   const screenDimTimer = useRef<number | undefined>(undefined);
   const appendAssistant = useCallback((text: string, attachments?: AndroidAttachment[]) => conversation.append("assistant", text, attachments), [conversation.append]);
+  const welcomeMessage = assistantWelcomeMessage(connection, native);
+  useEffect(() => {
+    conversation.setMessages((current) => {
+      // Keep the opening status live while the app starts, but never rewrite a
+      // conversation once the user or an operation has added context.
+      if (current.length !== 1 || current[0]?.id !== 1 || current[0]?.text === welcomeMessage) return current;
+      return [{ ...current[0], text: welcomeMessage }];
+    });
+  }, [conversation.setMessages, welcomeMessage]);
   useEffect(() => {
     if (!native) return;
     const enabled = keepScreenAwake && usbConnected;
@@ -518,6 +539,7 @@ export function App() {
   const toggleVoice = async () => {
     if (!native || busy) return;
     if (voiceState !== "idle") { await VoiceInputNative.stop(); return; }
+    if (!voiceProcessingAllowed) { setWorkflowPanel("privacy"); return; }
     setVoiceState("starting");
     try {
       const { transcript } = await VoiceInputNative.start();
@@ -637,11 +659,11 @@ export function App() {
         {workflowPanel === "add" && <AddBlockPanel snapshot={snapshot} filteredModels={gridWorkflow.filteredModels} loading={gridWorkflow.modelsLoading} pending={devicePending} modelFilter={gridWorkflow.modelFilter} setModelFilter={gridWorkflow.setModelFilter} addCell={gridWorkflow.addCell} setAddCell={gridWorkflow.setAddCell} addModelId={gridWorkflow.addModelId} setAddModelId={gridWorkflow.setAddModelId} add={() => void gridWorkflow.add()} cancel={() => setWorkflowPanel(null)} />}
         {workflowPanel === "scene" && <SceneEditor snapshot={snapshot} pending={devicePending} sourceScene={sceneWorkflow.sourceScene} setSourceScene={sceneWorkflow.setSourceScene} destinationScene={sceneWorkflow.destinationScene} setDestinationScene={sceneWorkflow.setDestinationScene} swap={sceneWorkflow.swap} setSwap={sceneWorkflow.setSwap} label={sceneWorkflow.label} setLabel={sceneWorkflow.setLabel} color={sceneWorkflow.color} setColor={sceneWorkflow.setColor} colors={sceneWorkflow.colors} copy={() => void sceneWorkflow.copy()} saveLabel={() => void sceneWorkflow.saveLabel()} saveColor={() => void sceneWorkflow.saveColor()} />}
         {workflowPanel === "usb" && <><div className="dialog-kicker">DIRECT USB</div><h2 id="dialog-title">Quad Cortex connection</h2><p>{connection.detail || (usbConnected ? "The Quad Cortex is connected directly over USB." : "No Quad Cortex is connected directly over USB.")}</p><p className="mobile-status-detail">{usbPanelDetail}</p><div className="mobile-legal-actions"><button className="primary" disabled={!native || usbBusy} onClick={() => void connectUsb().then(openUsbStatusPanel)}>{usbConnected ? "Reconnect" : "Connect"}</button><button disabled={!native} onClick={() => void openUsbStatusPanel()}>Refresh</button></div></>}
-        {workflowPanel === "remote" && <><div className="dialog-kicker">REMOTE RELAY</div><h2 id="dialog-title">Remote access</h2><p>{!relayPaired ? "This phone is not paired to a remote relay." : relayState === "connected" ? "A paired remote client can reach this Quad Cortex." : relayState === "connecting" || relayState === "reconnecting" ? "The outbound relay is connecting." : "This phone is paired, but the relay is not connected."}</p>{relayWorkflow.status?.endpoint && <p className="mobile-status-detail">{relayWorkflow.status.endpoint}</p>}<div className="mobile-legal-actions"><button className="primary" disabled={!native || relayWorkflow.pending} onClick={() => void (relayPaired ? relayWorkflow.start() : configureRelay())}>{relayPaired ? "Connect" : "Pair"}</button><button disabled={!native || relayWorkflow.pending} onClick={() => void openRemoteStatusPanel()}>Refresh</button>{relayPaired && <button className="danger" disabled={relayWorkflow.pending} onClick={() => void configureRelay()}>Unpair</button>}</div></>}
+        {workflowPanel === "remote" && <><div className="dialog-kicker">REMOTE RELAY</div><h2 id="dialog-title">Remote access</h2><p>{!relayPaired ? "This phone is not paired to a remote relay." : relayState === "connected" ? "A paired remote client can reach this Quad Cortex." : relayState === "connecting" || relayState === "reconnecting" ? "The outbound relay is connecting." : "This phone is paired, but the relay is not connected."}</p><p className="mobile-legal-note">{QC_LEGAL.privacy.relay}</p>{relayWorkflow.status?.endpoint && <p className="mobile-status-detail">{relayWorkflow.status.endpoint}</p>}<div className="mobile-legal-actions"><button className="primary" disabled={!native || relayWorkflow.pending} onClick={() => void (relayPaired ? relayWorkflow.start() : configureRelay())}>{relayPaired ? "Connect" : "Pair"}</button><button disabled={!native || relayWorkflow.pending} onClick={() => void openRemoteStatusPanel()}>Refresh</button>{relayPaired && <button className="danger" disabled={relayWorkflow.pending} onClick={() => void configureRelay()}>Unpair</button>}</div></>}
         {workflowPanel === "chat" && <><div className="dialog-kicker">CHAT</div><h2 id="dialog-title">Assistant status</h2><p>{busy ? "The assistant is preparing a response." : onlineModelsAllowed ? "Gemini chat is enabled for this device." : "Local assistant commands are available. Gemini chat is disabled."}</p><p className="mobile-status-detail">{androidGeminiModels.find((model) => model.id === selectedModel)?.label ?? selectedModel} · {quotaState === "exhausted" ? "Limit reached" : `${selectedQuota.dayRemaining}/${selectedQuota.limits.requestsPerDay} requests today`} · {messages.length} messages</p><div className="mobile-legal-actions"><button className="primary" onClick={() => { if (chatCollapsed) toggleChat(); setWorkflowPanel(null); }}>{chatCollapsed ? "Open Chat" : "Chat Open"}</button><button onClick={() => setWorkflowPanel("privacy")}>Chat settings</button><button className="danger" disabled={busy || messages.length === 0} onClick={() => { conversation.setMessages([]); setMessage(""); setWorkflowPanel(null); }}>Clear chat</button></div></>}
         {workflowPanel === "about" && <><div className="dialog-kicker">ABOUT</div><h2 id="dialog-title">{QC_BRAND.appName} <small>{appPackage.version}</small></h2><p>An independent mobile companion for controlling a connected Quad Cortex.</p><p className="mobile-legal-note">{QC_LEGAL.independence}</p><p>{QC_LEGAL.copyright}</p><div className="mobile-legal-actions"><button onClick={() => setWorkflowPanel("display")}>Display</button><button onClick={() => setWorkflowPanel("privacy")}>Privacy</button><button onClick={() => setWorkflowPanel("legal")}>Legal</button><button onClick={() => setWorkflowPanel("notices")}>Notices</button></div></>}
         {workflowPanel === "display" && <><div className="dialog-kicker">DISPLAY</div><h2 id="dialog-title">Screen wake</h2><p>Keep this screen on while QC Remote is in front and a Quad Cortex is connected. It automatically releases when you disconnect or leave the app.</p><label className="mobile-setting-toggle"><input type="checkbox" checked={keepScreenAwake} onChange={(event) => changeKeepScreenAwake(event.target.checked)} /> Keep screen awake while connected</label><div className="mobile-legal-actions"><button onClick={() => setWorkflowPanel("about")}>Back to About</button></div></>}
-        {workflowPanel === "privacy" && <><div className="dialog-kicker">PRIVACY</div><h2 id="dialog-title">Local control, optional services</h2><p>{QC_LEGAL.privacy.local}</p><p>{QC_LEGAL.privacy.models}</p><p>{QC_LEGAL.privacy.voice}</p><label className="mobile-setting-toggle"><input type="checkbox" checked={onlineModelsAllowed} onChange={(event) => { const allowed = event.target.checked; setOnlineModelsAllowed(allowed); window.localStorage.setItem(androidOnlineModelConsentKey, allowed ? "accepted" : "declined"); }} /> Allow messages, attachments, and relevant device context to be sent to Gemini</label><div className="mobile-legal-actions"><button onClick={() => { conversation.setMessages([]); setMessage(""); setWorkflowPanel("about"); }}>Clear conversation</button><button onClick={() => setWorkflowPanel("about")}>Back to About</button></div></>}
+        {workflowPanel === "privacy" && <><div className="dialog-kicker">PRIVACY</div><h2 id="dialog-title">Local control, optional services</h2><p>{QC_LEGAL.privacy.local}</p><p>{QC_LEGAL.privacy.models}</p><p>{QC_LEGAL.privacy.voice}</p><label className="mobile-setting-toggle"><input type="checkbox" checked={onlineModelsAllowed} onChange={(event) => { const allowed = event.target.checked; setOnlineModelsAllowed(allowed); window.localStorage.setItem(androidOnlineModelConsentKey, allowed ? "accepted" : "declined"); }} /> Allow messages, attachment names and types, and relevant device context to be sent to Gemini</label><label className="mobile-setting-toggle"><input type="checkbox" checked={voiceProcessingAllowed} onChange={(event) => { const allowed = event.target.checked; setVoiceProcessingAllowed(allowed); window.localStorage.setItem(androidVoiceProcessingConsentKey, allowed ? "accepted" : "declined"); if (!allowed && voiceState !== "idle") void VoiceInputNative.stop(); }} /> Allow microphone audio to be processed by Android's configured speech recognition service</label><div className="mobile-legal-actions"><button onClick={() => { conversation.setMessages([]); setMessage(""); setWorkflowPanel("about"); }}>Clear conversation</button><button onClick={() => setWorkflowPanel("about")}>Back to About</button></div></>}
         {workflowPanel === "legal" && <><div className="dialog-kicker">LEGAL</div><h2 id="dialog-title">Independent companion</h2><p>{QC_LEGAL.independence}</p><p>{QC_LEGAL.trademarks}</p><p>{QC_LEGAL.productSafety}</p><p>{QC_LEGAL.copyright}</p><div className="mobile-legal-actions"><button onClick={() => setWorkflowPanel("about")}>Back to About</button></div></>}
         {workflowPanel === "notices" && <><div className="dialog-kicker">THIRD-PARTY NOTICES</div><h2 id="dialog-title">Runtime components</h2>{QC_LEGAL.thirdParty.map((notice) => <p key={notice}>{notice}</p>)}<p><a href="./legal/THIRD_PARTY-NOTICES.md" target="_blank" rel="noreferrer">Open the complete locked dependency notices</a></p><p><a href="./legal/THIRD_PARTY-LICENSE-TEXTS.txt" target="_blank" rel="noreferrer">Open bundled license and NOTICE texts</a></p><p><a href="./legal/THIRD_PARTY-SOURCE-OFFER.md" target="_blank" rel="noreferrer">Open exact-version third-party source availability</a></p><p><a href="./legal/THIRD_PARTY-LICENSE-INVENTORY.json" target="_blank" rel="noreferrer">Open the machine-readable license inventory</a></p><div className="mobile-legal-actions"><button onClick={() => setWorkflowPanel("about")}>Back to About</button></div></>}
       </section>
