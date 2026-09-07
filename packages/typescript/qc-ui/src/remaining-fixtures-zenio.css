@@ -176,21 +176,21 @@
 .coros-io-settings.is-headphones .io-port-link svg { width: 100%; height: 100%; }
 .coros-io-settings.is-headphones .io-port-link-main { left: 39.375cqw; }
 .coros-io-settings.is-headphones .io-port-link-capture { left: 59.625cqw; }
-.coros-io-settings.is-headphones .io-editor.is-headphones > section > span,
+.coros-io-settings.is-headphones .io-editor.is-headphones > section > .io-control-label,
 .coros-io-settings.is-headphones .io-headphone-meter > span { left: 1.125cqw; }
-.coros-io-settings.is-headphones .io-editor.is-headphones > section > span { top: 1.25cqw; }
-.coros-io-settings.is-headphones .io-headphone-meter > span { top: 1cqw; }
-.coros-io-settings.is-headphones .io-editor.is-headphones > section:nth-child(2) > span,
+.coros-io-settings.is-headphones .io-editor.is-headphones > section > .io-control-label { top: 1cqw; }
+.coros-io-settings.is-headphones .io-headphone-meter > span { top: .875cqw; }
+.coros-io-settings.is-headphones .io-editor.is-headphones > section:nth-child(2) > .io-control-label,
 .coros-io-settings.is-headphones .io-headphone-meter:nth-child(4) > span,
 .coros-io-settings.is-headphones .io-headphone-meter:nth-child(4) > small { left: 1.5cqw; }
-.coros-io-settings .io-editor.is-headphones .io-dial { width: 8.5cqw; height: 8.5cqw; border: .25cqw solid #101010; background: conic-gradient(from 220deg, #42fb63 0 63.3%, #101010 63.3%); }
+.coros-io-settings .io-editor.is-headphones .io-dial { width: 8.875cqw; height: 8.875cqw; border: .25cqw solid #101010; background: conic-gradient(from 220deg, #42fb63 0 63.3%, #101010 63.3%); }
 .coros-io-settings .io-editor.is-headphones .io-dial::before { position: absolute; inset: .75cqw; border-radius: 50%; background: #000; content: ""; }
 .coros-io-settings .io-editor.is-headphones .io-dial::after { position: absolute; inset: 1.25cqw; border-radius: 50%; background: #212421; content: ""; }
 .coros-io-settings .io-editor.is-headphones .io-dial b { position: absolute; z-index: 1; left: calc(50% + .875cqw); top: 50%; width: 2cqw; height: .25cqw; margin: 0; transform: rotate(-15deg); transform-origin: left center; }
-.coros-io-settings .io-editor.is-headphones .io-dial { transform: translateY(-.625cqw); }
+.coros-io-settings .io-editor.is-headphones .io-dial { transform: translateY(-.375cqw); }
 .coros-io-settings .io-editor.is-headphones > section:first-child .io-dial { right: -.25cqw; }
-.coros-io-settings .io-editor.is-headphones > section:nth-child(2) .io-dial { right: 0; }
-.coros-io-settings .io-editor.is-headphones .io-dial-wrap > strong { left: .625cqw; bottom: 1.5cqw; color: #c5c8c5; }
+.coros-io-settings .io-editor.is-headphones > section:nth-child(2) .io-dial { right: -.125cqw; }
+.coros-io-settings .io-editor.is-headphones .io-dial-wrap > strong { left: .5cqw; bottom: 1.5cqw; color: #c5c8c5; }
 .coros-io-settings.is-headphones > header .io-global-eq { width: 13.625cqw; height: 5.5cqw; border-radius: 1cqw; }
 .coros-io-settings.is-headphones .io-ports button:nth-child(12) > i { color: #171a18; }
 .coros-io-settings.is-headphones .io-headphone-meter small { left: 1.125cqw; top: 4.375cqw; }

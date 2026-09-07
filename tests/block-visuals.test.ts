@@ -121,6 +121,7 @@ test("official low-score refinements retain their measured geometry and glyphs",
   const captureCss = readFileSync("packages/typescript/qc-ui/src/official-looper-eq.css", "utf8");
   const settingsCss = readFileSync("packages/typescript/qc-ui/src/official-settings-device.css", "utf8");
   const remainingCss = readFileSync("packages/typescript/qc-ui/src/remaining-fixtures-fixes.css", "utf8");
+  const zenIoCss = readFileSync("packages/typescript/qc-ui/src/remaining-fixtures-zenio.css", "utf8");
   assert.match(browserCss, /\.device-browser-official:not\(\.is-plugins\) nav button:nth-child\(2\) svg \{ transform: scale\(1\.07, 1\.23\); \}/);
   assert.match(browserCss, /\.device-browser-official:not\(\.is-plugins\) nav button\.is-active i \{ border-color: #f82420; background: #101010; \}/);
   assert.match(browserCss, /\.device-browser-official:not\(\.is-plugins\) \.device-browser-grid main i:first-of-type \{ background: #101010; \}/);
@@ -139,6 +140,11 @@ test("official low-score refinements retain their measured geometry and glyphs",
   assert.match(fixture, /\{ id: "send-return", label: "", sub: "MIDI IN", kind: "midi" \}/);
   assert.match(ioCss, /\.coros-io-settings:not\(\.is-usb\) \.io-ports button:nth-child\(1\) > i \{ color: #f8fcf8; \}/);
   assert.match(ioCss, /\.coros-io-settings > header \{[^}]*background: #101010;/);
+  assert.match(fixture, /<span className="io-control-label">HP LEVEL<\/span><IoDial value="0\.0 dB" \/>/);
+  assert.match(ioCss, /\.io-editor\.is-headphones > section > \.io-control-label,/);
+  assert.match(zenIoCss, /\.io-editor\.is-headphones \.io-dial \{ width: 8\.875cqw; height: 8\.875cqw;/);
+  assert.match(zenIoCss, /\.io-editor\.is-headphones \.io-dial \{ transform: translateY\(-\.375cqw\); \}/);
+  assert.doesNotMatch(ioCss, /\.io-editor\.is-headphones > section > span,/);
   assert.match(fixture, /className="capture-level-label"><IoHeadphonesGlyph \/>LEVEL/);
   assert.match(captureCss, /\.capture-official-result \.capture-result-actions \.capture-target-icon \{ transform: translateY\(-1\.625cqw\); \}/);
   assert.match(captureCss, /\.capture-official-result > main > section:last-child > button \{ transform: translateY\(\.5cqw\); \}/);

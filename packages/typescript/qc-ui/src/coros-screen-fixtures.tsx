@@ -471,8 +471,8 @@ function CorOsIoSettings({ initialView, onClose }: { initialView: IoView; onClos
     <div className="io-ports">{IO_PORTS.map((port, index) => <button key={`${port.label}-${index}`} className={`${activePort(index) ? `is-active${activeHalf(index)}` : ""} is-${port.kind ?? "jack"}${port.paired ? " is-paired" : ""}`} onClick={() => setView(port.id)}><span className={port.id === "headphones" ? "io-headphone-label" : undefined}>{port.id === "headphones" ? <IoHeadphonesGlyph /> : port.label}</span><i><IoPortGlyph kind={port.kind ?? "jack"} active={activePort(index) && activeHalf(index) !== " is-active-secondary"} /></i>{port.paired && <i><IoPortGlyph active={activePort(index) && activeHalf(index) === " is-active-secondary"} /></i>}<small>{port.sub}</small></button>)}{view === "headphones" && <><i className="io-port-link io-port-link-main"><QcIoIcon kind="linked" /></i><i className="io-port-link io-port-link-capture"><QcIoIcon kind="linked" /></i></>}{view === "usb" && <div className="io-input-selectors"><button>1</button><button>2</button></div>}</div>
     {view === "usb" ? <div className="io-editor is-usb"><section><span>USB LEVEL</span><IoDial value="0.0 dB" /></section><section><span>HP SOURCE</span><IoDial value="BOTH" /></section><div className="io-meter-grid">{meters.map((meter) => <span key={meter}><b>{meter}</b><i>i</i><small>-40.0 dB　　　-40.0</small><em /><em /></span>)}</div></div>
       : view === "headphones" ? <div className="io-editor is-headphones">
-        <section><span>HP LEVEL</span><IoDial value="0.0 dB" /></section>
-        <section><span>MULTI OUT</span><IoDial value="0.0 dB" /></section>
+        <section><span className="io-control-label">HP LEVEL</span><IoDial value="0.0 dB" /></section>
+        <section><span className="io-control-label">MULTI OUT</span><IoDial value="0.0 dB" /></section>
         <div className="io-headphone-meter"><span>LEVEL</span><small>-40.0 dB　　　0.00</small><i /><i /></div>
         <div className="io-headphone-meter"><span>MULTI OUT</span><small>-40.0 dB　　　0.00</small><i /><i /></div>
       </div>
