@@ -85,10 +85,14 @@
   stroke-width: 2.4;
 }
 
-.capture-jack .jack-core { stroke-width: 1.8; }
-.capture-jack .jack-pin { fill: currentColor; stroke: none; }
-.capture-jack-usb svg { fill: currentColor; stroke: none; }
-.capture-jack-usb .jack-core { fill: #101010; }
+.coros-capture-connections > header button > svg { width: 3cqw; height: 3cqw; }
+
+.capture-jack .jack-shell { fill: currentColor; stroke: none; }
+.capture-jack .jack-core { fill: #101010; stroke: #252725; stroke-width: 1.4; }
+.capture-jack .jack-outline { fill: none; stroke: currentColor; stroke-width: 2; }
+.capture-jack .jack-hole, .capture-jack .jack-input-core { fill: currentColor; stroke: none; }
+.capture-jack-usb svg { fill: none; stroke: none; }
+.capture-jack-usb .jack-core { fill: #101010; stroke: none; }
 
 .capture-jack.is-green { color: #2df36a; }
 .capture-jack.is-white { color: #f4f6f4; }

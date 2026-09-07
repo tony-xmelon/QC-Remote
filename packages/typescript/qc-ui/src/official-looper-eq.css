@@ -121,9 +121,13 @@
 .capture-official-result > main > section:last-child > button { transform: translateY(.5cqw); }
 .capture-official-result label { width: 18.125cqw; }
 .capture-official-result label .capture-level-dial { right: 1.125cqw; bottom: -.5cqw; width: 8.5cqw; height: 8.5cqw; }
-.capture-official-progress > main > nav { padding-top: .375cqw; }
+.capture-official-progress > main > nav { padding-top: 0; }
 .capture-official-progress h1 { margin-bottom: 3.25cqw; }
-.capture-official-progress > header > span { transform: translateY(1px); }
+.capture-official-progress > header > span { transform: translateY(-3px); }
+.capture-official-progress > main > nav div { gap: .5cqw; padding-inline: .5cqw; font-weight: 400; }
+.capture-official-progress > main > nav b { width: 3cqw; height: 3cqw; }
+.capture-official-progress > main > nav b svg { width: 3cqw; height: 3cqw; }
+.capture-official-progress h1 { position: relative; top: -.5cqw; margin-bottom: 3.75cqw; font-weight: 400; }
 .capture-official-progress > header > button:last-child { position: relative; font-size: 0; }
 .capture-official-progress > header > button:last-child::before,
 .capture-official-progress > header > button:last-child::after { content: ""; position: absolute; left: 50%; top: 50%; width: 2.5cqw; height: 2px; background: currentColor; }
@@ -131,7 +135,9 @@
 .capture-official-progress > header > button:last-child::after { transform: translate(-50%,-50%) rotate(-45deg); }
 .capture-official-progress > main > nav div:last-child b { color: #eee; }
 .capture-official-progress .capture-official-progress-bar b { width: 31.25%; }
-.capture-official-progress section > em { right: 2cqw; top: 18.625cqw; width: 2.75cqw; height: 2.75cqw; border: .375cqw solid #505450; border-top-color: #eee; border-right-color: #eee; border-radius: 50%; color: transparent; font-size: 0; transform: rotate(-17deg); }
+.capture-official-progress:not(.capture-official-error) .capture-official-progress-bar b { width: 88.75%; }
+.capture-official-progress .capture-official-progress-bar { top: 24.875cqw; height: 3cqw; }
+.capture-official-progress section > em { right: 2cqw; top: 19.125cqw; width: 2.75cqw; height: 2.75cqw; border: .375cqw solid #505450; border-top-color: #eee; border-right-color: #eee; border-radius: 50%; color: transparent; font-size: 0; transform: rotate(-17deg); }
 .capture-kinds button > svg { width: 6cqw; height: 6cqw; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .capture-kinds button > i:empty { width: 2.75cqw; height: 2.75cqw; border: .2cqw solid #111; border-radius: 50%; background: repeating-linear-gradient(to bottom, #eee 0 .22cqw, #222 .22cqw .45cqw); }
 .capture-official-save > main { margin-top: 3.125cqw; }
@@ -168,7 +174,7 @@
 /* NC-08: the Sanity Check failure reuses the progress layout, with the failed
    stage in red, no spinner, and a recovery button back to calibration. */
 .capture-official-error>main>nav div.is-error{color:#f4463c}.capture-official-error>main>nav div.is-error b{background:#f4463c;color:#101210}.capture-official-error>main>nav div.is-pending b{background:#101210;color:#606460}.capture-official-error>main>nav div:last-child b{color:#606460}.capture-official-error h1{margin-bottom:3.375cqw}/* Its box is 220x44 at x 557, y 404 in the frame. */
-.capture-official-error section>button{position:absolute;right:2cqw;bottom:3cqw;padding:0 1cqw;height:5.5cqw;border:0;border-radius:.75cqw;background:#1668ff;color:#fff;font-size:2.25cqw;letter-spacing:.05cqw}
+.capture-official-error section>button{position:absolute;right:2cqw;bottom:3cqw;padding:0 1.625cqw;height:5.5cqw;border:0;border-radius:.75cqw;background:#1668ff;color:#fff;font-size:2.25cqw;letter-spacing:.05cqw}
 
 /* global-eq.png: the EQ is off and flat - only the band in view keeps a tile,
    the rest of the tabs are bare text, and the power button is unlit. */
@@ -176,4 +182,7 @@
 .coros-global-eq .global-eq-tabs button.is-active { background: #212421; }
 .coros-global-eq .global-eq-power.is-off { background: #292c29; color: #adaaad; }
 .coros-global-eq .global-eq-power.is-off > i { background: #101010; }
+.coros-global-eq:has(.global-eq-power.is-off) .global-eq-graph,
+.coros-global-eq:has(.global-eq-power.is-off) .global-eq-tabs,
+.coros-global-eq:has(.global-eq-power.is-off) .global-eq-controls { opacity: .55; }
 

@@ -176,15 +176,16 @@ function CorOsOfficialDirectory({
   }
   if (view === "directory-cloud-upload") {
     const rows = [
-      "1A My Main Rig",
-      "1B Nano Cortex FX Loop",
-      "1C 65' Deluxe Reverb",
-      "1D Synth Arp",
-      "1E Lofi Bass",
-      "1F Jazz Solo",
-      "1G Full Band Recording",
-      "1H Parallax Chain",
+      "4A Acoustic sim-_1",
+      "4B Top 3 Acoustic Sims",
+      "4C XUSH 12string Bass",
+      "4D QC-MCP-TEST-mtniwb_1",
+      "4E QC MCP TEST_2",
+      "4F Unsaved",
+      "4G Unsaved",
+      "4H Unsaved",
     ];
+    const folders = ["My Presets", "ALI Live", "ALI Rec", "ALI AcousticLive", "Downloaded", "Downloaded2", "QC-MCP-TEST-mtos3yws-copy"];
     return (
       <section className="qc-screen directory-official directory-upload-official">
         <header>
@@ -205,13 +206,10 @@ function CorOsOfficialDirectory({
         </header>
         <main>
           <nav>
-            <button className="is-active">
-              <b>
-                <DirectoryIcon kind="folder" number={1} />
-              </b>
-              <span>My Presets</span>
-              <small>⋮</small>
-            </button>
+            {folders.map((folder, index) => <button key={folder} className={index === 0 ? "is-active" : undefined}>
+              <b><DirectoryIcon kind="folder" number={index + 1} /></b>
+              <span>{folder}</span><small>⋮</small>
+            </button>)}
           </nav>
           <nav className="directory-upload-banks">
             {Array.from({ length: 14 }, (_, index) => (
@@ -219,8 +217,8 @@ function CorOsOfficialDirectory({
             ))}
           </nav>
           <section className="directory-official-list">
-            {rows.map((name) => (
-              <button key={name}>
+            {rows.map((name, index) => (
+              <button key={name} className={index === 1 ? "is-selected" : index >= 5 ? "is-muted" : undefined}>
                 <span>{name}</span>
                 <b>
                   <DirectoryIcon kind="cloud-upload" />
@@ -687,7 +685,7 @@ function CorOsDirectoryFixture({ view, physicalContext = false }: { view: Direct
         folder's banks. Captured as `directory-copy`; the previous
         "Copy 3 items to..." folder picker with COPY HERE was not on the unit.
         CorOS emits its own <b> markup inside these label strings. */}
-    {view === "directory-copy" && <><i className="directory-context-scrim" /><aside className="directory-copy-dialog"><header>Choose pasting option</header><p>Please select how you would like to paste these 1 Preset(s) into the banks in <b>My Presets</b>:</p>{[<>Choose each slot manually</>, <>Paste consecutively from the first <b>chosen</b> slot onwards</>, <>Paste consecutively from the first <b>empty</b> slot onwards</>].map((label, index) => <button key={index} className={index === 0 ? "is-active" : ""}><span>{label}</span>{index === 0 && <i>✓</i>}</button>)}<footer><button>CANCEL</button><button className="is-primary">CONTINUE</button></footer></aside></>}
+    {view === "directory-copy" && <><i className="directory-context-scrim" /><aside className="directory-copy-dialog"><header>Choose pasting option</header><p>Please select how you would like to paste<br />these 1 Preset(s) into the banks in <b>My Presets</b>:</p>{[<>Choose each slot manually</>, <>Paste consecutively from the first <b>chosen</b> slot onwards</>, <>Paste consecutively from the first <b>empty</b> slot onwards</>].map((label, index) => <button key={index} className={index === 0 ? "is-active" : ""}><span>{label}</span>{index === 0 && <i>✓</i>}</button>)}<footer><button>CANCEL</button><button className="is-primary">CONTINUE</button></footer></aside></>}
     {view === "directory-item-context" && <><i className="directory-context-scrim" /><aside className="directory-item-menu">{["Edit", "Copy", "Cut", "Paste to replace", "Delete"].map(label => <button key={label}>{label}</button>)}</aside></>}
     {view === "directory-cloud-upload" && <div className="directory-mode-bar is-cloud"><strong>UPLOAD TO CORTEX CLOUD</strong><span>Select Presets, Neural Captures, or IRs</span><button>CANCEL</button><button>UPLOAD (2)</button></div>}
   </section>;
@@ -1190,7 +1188,7 @@ function CorOsOfficialCapture({
               ] as const
             ).map(([icon, label, state]) => (
               <div key={label} className={state}>
-                <b>{icon}</b>
+                <b>{icon === "✓" || state === "is-pending" ? <QcUiIcon kind="check" /> : icon}</b>
                 {label}
               </div>
             ))}
@@ -1228,7 +1226,7 @@ function CorOsOfficialCapture({
               ["➜", "Training"],
             ].map(([icon, label]) => (
               <div key={label}>
-                <b>{icon}</b>
+                <b>{icon === "✓" ? <QcUiIcon kind="check" /> : icon}</b>
                 {label}
               </div>
             ))}
@@ -1240,7 +1238,7 @@ function CorOsOfficialCapture({
               <br />
               emulate the sound of your favorite device.
             </p>
-            <strong>30%</strong>
+            <strong>88 %</strong>
             <i className="capture-official-progress-bar">
               <b />
             </i>
@@ -1436,11 +1434,11 @@ function SettingsPowerIcon() {
 }
 
 function SettingsDeviceIcon({ label }: { label: string }) {
-  if (label === "Global Bypass") return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="2" /><path d="M4 5 2.5 3.5M20 5l1.5-1.5M4 19l-1.5 1.5M20 19l1.5 1.5" /></svg>;
+  if (label === "Global Bypass") return <span className="settings-device-icon-raster"><QcEditorIcon kind="bypass" /></span>;
   if (label === "Scene Bypass Behavior") return <SettingsPowerIcon />;
-  if (label === "Stomp Mode Bypass") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15.5 14.5 11l5.5 2.4-10.5 4.5L4 15.5Zm3.5-2.2 1.3-4.8 7.4-3 1.3 5.4M5 19h9M7 19v2h5v-2" /><circle cx="18.5" cy="18.5" r="1.5" /></svg>;
+  if (label === "Stomp Mode Bypass") return <span className="settings-device-icon-raster"><QcEditorIcon kind="footswitch" /></span>;
   if (label === "Swap Tempo and Tuner") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h16m0 0-3.5-3.5M19 8l-3.5 3.5M21 16H5m0 0 3.5-3.5M5 16l3.5 3.5" /></svg>;
-  if (label === "Gig View Access") return <svg viewBox="0 0 24 24" aria-hidden="true"><g className="settings-scene-cells"><rect x="2" y="3" width="8" height="8" /><rect x="14" y="3" width="8" height="8" /><rect x="2" y="13" width="8" height="8" /><rect x="14" y="13" width="8" height="8" /></g><path d="M10 7h4M10 17h4" /></svg>;
+  if (label === "Gig View Access") return <span className="settings-device-icon-raster"><QcModeGlyph mode="SCENE" /></span>;
   return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 4v8l6 3" /></svg>;
 }
 
@@ -2539,7 +2537,7 @@ function CaptureLibraryKeyboard({ query = "" }: { query?: string }) {
 function CorOsCaptureLibrary({ view }: { view: CaptureLibraryView }) {
   if (view === "device-search-entry") return <CaptureLibraryKeyboard />;
   if (view === "device-search-suggestions") return <CaptureLibraryKeyboard query="gary" />;
-  if (view === "device-search" || view === "device-search-results") return <section className="qc-screen capture-search-results"><header><button><QcDirectoryIcon kind="search" /></button><i /><button><QcDirectoryIcon kind="grid" /> (0)</button><button className="is-active"><QcLibraryIcon kind="capture-library" /> (1)</button><button><QcLibraryIcon kind="capture-header" /> (0)</button><button aria-label="Filter"><QcDirectoryIcon kind="filter" /></button><button aria-label="Arrange"><QcDirectoryIcon kind="arrange" /></button><button aria-label="Done"><QcDirectoryIcon kind="done" /></button></header><main><h2>DEVICE DIRECTORIES <b>⌄</b></h2><article><strong>JQ~Marshall JMP (Gary Moore)~</strong><small>Josepqr</small><em>J</em></article><h2>DOWNLOADS <b>⌄</b></h2><p>No results</p></main></section>;
+  if (view === "device-search" || view === "device-search-results") return <section className="qc-screen capture-search-results"><header><button><QcDirectoryIcon kind="search" /></button><i /><button><QcDirectoryIcon kind="grid" /> (0)</button><button className="is-active"><QcLibraryIcon kind="capture-header" /> (1)</button><button><QcLibraryIcon kind="capture-library" /> (0)</button><button aria-label="Filter"><QcDirectoryIcon kind="filter" /></button><button aria-label="Arrange"><QcDirectoryIcon kind="arrange" /></button><button aria-label="Done"><QcDirectoryIcon kind="done" /></button></header><main><h2>DEVICE DIRECTORIES <b><QcUiIcon kind="down" /></b></h2><article><strong>JQ~Marshall JMP (Gary Moore)~</strong><small>Josepqr</small><em>J</em></article><h2>DOWNLOADS <b><QcUiIcon kind="down" /></b></h2><p>No results</p></main></section>;
   const recent = view === "device-recents";
   const captures = view === "device-browser-neural-capture";
   const captureRows = Array.from({ length: 7 }, (_, index) => `4-Comp Custom ${index + 1}`);

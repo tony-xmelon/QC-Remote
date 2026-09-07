@@ -114,7 +114,7 @@
 .directory-upload-official > main { grid-template-columns: 32cqw 14.125cqw 49.875cqw; }
 .directory-upload-official .directory-upload-banks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 6.625cqw; gap: .875cqw; background: transparent; }
 .directory-upload-official .directory-upload-banks button { border-radius: 1cqw; background: #292c29; font-size: 2cqw; }
-.directory-upload-official .directory-upload-banks button:first-child { color: #2df36a; }
+.directory-upload-official .directory-upload-banks button:nth-child(4) { color: #2df36a; }
 .directory-upload-official .directory-official-list > button { grid-template-columns: 1fr 8.25cqw; }
 .directory-upload-official .directory-official-list > button b { width: 8.25cqw; height: 4.75cqw; display: grid; place-items: center; border-radius: 1cqw; background: #181c18; color: var(--qc-icon-primary); font-size: 3cqw; }
 .directory-upload-official .directory-official-list > button b svg { width: 3.25cqw; height: 3.25cqw; }
@@ -144,6 +144,8 @@
 .directory-upload-official .directory-official-list > button, .directory-presets-official .directory-official-list > button { height: 6.375cqw; }
 .directory-upload-official .directory-official-list > button { height: 6.375cqw; padding-right: 1cqw; }
 .directory-upload-official .directory-official-list > button { border-bottom: 0; }
+.directory-upload-official .directory-official-list > button.is-selected { color: #2df36a; }
+.directory-upload-official .directory-official-list > button.is-muted { color: #8b8f8b; }
 
 }
 

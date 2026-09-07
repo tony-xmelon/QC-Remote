@@ -17,6 +17,7 @@
 // `capture-connect-input-2` and `capture-routing` are the evidence here.
 
 import type { ReactNode } from "react";
+import { QcUiIcon } from "./theme-icons";
 import "./coros-capture-connections.css";
 
 export type CaptureConnectionView =
@@ -119,11 +120,17 @@ const ORDER: CaptureConnectionView[] = [
   "capture-routing"
 ];
 
+function CaptureConnectionNavGlyph({ kind }: { kind: "back" | "next" | "skip" }) {
+  const path = kind === "back" ? "M20 12H4m7-7-7 7 7 7" : kind === "next" ? "M4 12h16m-7-7 7 7-7 7" : "m6 5 7 7-7 7m6-14 7 7-7 7";
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d={path} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+}
+
 function JackGlyph({ kind }: { kind: JackKind }) {
-  if (kind === "usb") return <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="9" width="24" height="14" rx="2" /><rect x="10" y="14" width="12" height="4" rx="1" className="jack-core" /></svg>;
-  if (kind === "din") return <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" />{[[16, 7], [7, 14], [25, 14], [11, 24], [21, 24]].map(([cx, cy]) => <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="2.6" className="jack-core" />)}</svg>;
-  if (kind === "xlr") return <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" />{[[16, 10], [11, 20], [21, 20]].map(([cx, cy]) => <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="2.8" className="jack-core" />)}</svg>;
-  return <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" /><path d="M16 7.5 23.4 11.75 23.4 20.25 16 24.5 8.6 20.25 8.6 11.75Z" className="jack-core" /><circle cx="16" cy="16" r="3.2" className="jack-pin" /></svg>;
+  if (kind === "usb") return <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="2" y="2" width="28" height="28" rx="3" className="jack-shell" /><rect x="7" y="11" width="18" height="10" rx="2" className="jack-core" /></svg>;
+  if (kind === "din") return <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" className="jack-shell" />{[[16, 7], [7, 14], [25, 14], [11, 24], [21, 24]].map(([cx, cy]) => <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="2.6" className="jack-core" />)}</svg>;
+  if (kind === "xlr") return <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" className="jack-outline" /><circle cx="16" cy="16" r="11.5" className="jack-outline" />{[[16, 9], [10, 20], [22, 20]].map(([cx, cy]) => <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="2.8" className="jack-hole" />)}</svg>;
+  if (kind === "input") return <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" className="jack-outline" /><circle cx="16" cy="16" r="10.5" className="jack-core" /><path d="M16 8.5a5 5 0 0 1 4.4 2.7 5 5 0 0 1 2.1 8.6A5 5 0 0 1 16 24a5 5 0 0 1-6.5-4.2 5 5 0 0 1 2.1-8.6A5 5 0 0 1 16 8.5Z" className="jack-input-core" /></svg>;
+  return <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 1 30 9v14l-14 8L2 23V9Z" className="jack-shell" /><circle cx="16" cy="16" r="10.5" className="jack-core" /><circle cx="16" cy="16" r="6.5" className="jack-outline" /></svg>;
 }
 
 export function CorOsCaptureConnections({ view }: { view: CaptureConnectionView }) {
@@ -131,11 +138,11 @@ export function CorOsCaptureConnections({ view }: { view: CaptureConnectionView 
   const index = ORDER.indexOf(view);
   return <section className="qc-screen coros-capture-connections" aria-label={view.replaceAll("-", " ")}>
     <header>
-      <button className="capture-connections-close" aria-label="Close">×</button>
-      <button className="capture-connections-skip" aria-label="Skip">»</button>
+      <button className="capture-connections-close" aria-label="Close"><QcUiIcon kind="close" /></button>
+      <button className="capture-connections-skip" aria-label="Skip"><CaptureConnectionNavGlyph kind="skip" /></button>
       <span />
-      {index > 0 && <button className="capture-connections-back" aria-label="Back">←</button>}
-      <button className={`capture-connections-next${index === 0 ? " is-wide" : ""}`} aria-label="Next">→</button>
+      {index > 0 && <button className="capture-connections-back" aria-label="Back"><CaptureConnectionNavGlyph kind="back" /></button>}
+      <button className={`capture-connections-next${index === 0 ? " is-wide" : ""}`} aria-label="Next"><CaptureConnectionNavGlyph kind="next" /></button>
     </header>
     <p className="capture-connections-caption">{step.caption}</p>
     <div className="capture-connections-panel">

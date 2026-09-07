@@ -441,7 +441,7 @@
 .directory-copy-dialog { left: 20.5%; top: 4.8%; width: 59%; text-align: center; }
 /* directory-copy.png: title cap rows 60..78, body 101..140, option rows
    181..225 - the type is about half again the size this had. */
-.directory-copy-dialog > header { border-bottom: 0; padding: 7.2% 5% 3.5%; font-size: 2.5cqw; }
+.directory-copy-dialog > header { border-bottom: 0; padding: 6.55% 5% 3.5%; font-size: 2.5cqw; }
 .directory-copy-dialog > p { margin: 0 0 7.7%; padding: 0 6%; color: #d6d9d7; font-size: 2.25cqw; line-height: 1.35; }
 .directory-copy-dialog > button { width: 88%; margin: 0 auto 2%; height: auto; min-height: 5.625cqw; display: flex; align-items: center; gap: .8cqw; padding: 1cqw 2cqw; border-bottom: 0; border-radius: .8cqw; background: #333834; text-align: left; font-size: 2.25cqw; }
 .directory-copy-dialog > button.is-active { background: #f2f4f2; color: #101310; }
@@ -903,10 +903,10 @@
 .coros-directory-fixture .directory-copy-dialog footer { padding: .375cqw 0 0; }
 .coros-directory-fixture .directory-copy-dialog footer button { background: #000; }
 
-/* directory-sort.png: the menu is 231x312 at (371, 57) - a 39px "Sort By"
-   caption over five 52px rows, black, no border. */
+/* directory-sort.png: the menu is 231px wide at (371, 57), with the captured
+   52px title pitch followed by five 52px rows, black and borderless. */
 .coros-directory-fixture .directory-tool-menu { left: 371px; right: auto; top: 57px; width: 231px; padding: 0; border-radius: 8px; }
-.coros-directory-fixture .directory-tool-menu > strong { padding: 0 16px; color: #949694; font: 16px Arial,sans-serif; line-height: 39px; }
+.coros-directory-fixture .directory-tool-menu > strong { padding: 0 16px; color: #949694; font: 16px Arial,sans-serif; line-height: 52px; }
 .coros-directory-fixture .directory-tool-menu button { box-sizing: border-box; height: 52px; justify-content: flex-start; padding: 0 16px; border-top: 0; color: #f0f0f0; font: 18px Arial,sans-serif; }
 .coros-directory-fixture .directory-tool-menu button.is-active { color: #42fb63; }
 
