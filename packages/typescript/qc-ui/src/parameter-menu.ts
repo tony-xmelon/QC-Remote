@@ -1,4 +1,4 @@
-import type { BlockDetails } from "@ndsp-qc/client";
+import type { BlockDetails } from "@qc-remote/client";
 
 export type ParameterEditorContextAction =
   | "save-device-preset" | "change-device" | "copy-device" | "paste-device"

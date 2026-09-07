@@ -1,4 +1,4 @@
-import { parseAssistantAccessMode, type AssistantAccessMode } from "@ndsp-qc/core";
+import { parseAssistantAccessMode, type AssistantAccessMode } from "@qc-remote/core";
 
 export const ASSISTANT_ACCESS_MODE_STORAGE_KEY = "qc.control.assistant-access-mode.v1";
 

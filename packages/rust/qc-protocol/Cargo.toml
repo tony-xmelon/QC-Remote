@@ -1,6 +1,7 @@
 [package]
 name = "qc-protocol"
 version = "0.1.0"
+publish = false
 edition = "2021"
 license = "MIT"
 description = "Shared native Quad Cortex USB framing and protobuf protocol"

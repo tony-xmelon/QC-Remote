@@ -48,6 +48,7 @@ try {
     Invoke-Checked "Quad Cortex reference corpus integrity" { npm run verify:qc-corpora }
     Invoke-Checked "Windows and Android screen coverage" { npm run verify:qc-coverage }
     Invoke-Checked "Dependency security policy" { npm run security:audit }
+    Invoke-Checked "Locked third-party legal inventory" { npm run legal:notices }
     Invoke-Checked "TypeScript typecheck" { npm run typecheck }
     Invoke-Checked "TypeScript and UI tests" { npm test }
     Invoke-Checked "Generated protocol consistency" { npm run protocol:check }

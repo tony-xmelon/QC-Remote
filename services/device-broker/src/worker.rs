@@ -455,7 +455,7 @@ impl DeviceController {
 
             let wake_at = std::cmp::min(deadline, next_request);
             match events.recv_timeout(wake_at.saturating_duration_since(Instant::now())) {
-                Ok(message) if message.message_type == 4 => {
+                Ok(message) if message.message_type == qc_protocol::profile::MESSAGE_TYPE_FILE => {
                     let Ok(Some(listing)) = decode_preset_folder(&message.payload) else {
                         continue;
                     };
@@ -582,7 +582,7 @@ impl DeviceController {
                 return folders;
             }
             match events.recv_timeout(deadline.saturating_duration_since(Instant::now())) {
-                Ok(message) if message.message_type == 4 => {}
+                Ok(message) if message.message_type == qc_protocol::profile::MESSAGE_TYPE_FILE => {}
                 Ok(_) => continue,
                 Err(_) => return self.preset_folders(),
             }
@@ -600,7 +600,7 @@ impl DeviceController {
                 return None;
             }
             match events.recv_timeout(deadline.saturating_duration_since(Instant::now())) {
-                Ok(message) if message.message_type == 4 => {}
+                Ok(message) if message.message_type == qc_protocol::profile::MESSAGE_TYPE_FILE => {}
                 Ok(_) => continue,
                 Err(_) => return self.preset_list(key),
             }
@@ -707,7 +707,7 @@ impl DeviceController {
             ));
         }
         let state_events = self.subscribe_state_events();
-        let message = commands::read(17);
+        let message = commands::read(qc_protocol::profile::MESSAGE_TYPE_MASTER_VOLUME);
         self.request(
             message.message_type,
             message.payload,
@@ -1122,7 +1122,7 @@ fn ingest_incoming(
         state_generation,
         message.clone(),
     ));
-    if message.message_type == 4 {
+    if message.message_type == qc_protocol::profile::MESSAGE_TYPE_FILE {
         if let Ok(Some(listing)) = decode_preset_folder(&message.payload) {
             preset_library.lock_recover().ingest(listing);
         }
@@ -1336,7 +1336,7 @@ fn run(
                         // and deadlock the device loop against an RPC thread.
                         let initial = connected.initial_messages.clone();
                         for message in &initial {
-                            if message.message_type == 4 {
+                            if message.message_type == qc_protocol::profile::MESSAGE_TYPE_FILE {
                                 if let Ok(Some(listing)) = decode_preset_folder(&message.payload) {
                                     preset_library.lock_recover().ingest(listing);
                                 }
@@ -1382,7 +1382,7 @@ fn run(
                         session_clock.elapsed().as_millis() as u64,
                         connected.synchronized,
                     );
-                    if message.message_type == qc_protocol::profile::MESSAGE_TYPE_BACKUP
+                    if message.message_type == qc_protocol::profile::MESSAGE_TYPE_LOCAL_BACKUP
                         && backup.is_some()
                     {
                         let outcome = backup
@@ -1633,12 +1633,12 @@ fn update_message(
     message: IncomingMessage,
 ) {
     let message_type = message.message_type;
-    let preset_name = if message_type == 15 {
+    let preset_name = if message_type == qc_protocol::profile::MESSAGE_TYPE_RECALL_PRESET {
         crate::usb::preset_name(&message.payload)
     } else {
         None
     };
-    let active_scene = if message_type == 13 {
+    let active_scene = if message_type == qc_protocol::profile::MESSAGE_TYPE_SCENE {
         crate::usb::scene_value(&message.payload)
     } else {
         None
@@ -1652,7 +1652,7 @@ fn update_message(
         .or_default();
     *count = count.saturating_add(1);
     status.last_message_type = Some(message_type);
-    if message_type == 15 {
+    if message_type == qc_protocol::profile::MESSAGE_TYPE_RECALL_PRESET {
         status.phase = "ready".into();
         status.detail = "Active preset synchronized".into();
         status.synchronized = true;

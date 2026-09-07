@@ -101,7 +101,6 @@
   --qc-font-mono: "DM Mono", "Cascadia Mono", Consolas, monospace;
   --qc-screen-aspect: 1.6666667;
   --qc-chassis-aspect: 1.4871795;
-  --qc-asset-chassis-overlay: url("/qc-overview-001.svg");
 
   /* Exact legacy surface shades. Kept here to preserve the captured rendering while
      ensuring application styles consume one shared visual contract. */

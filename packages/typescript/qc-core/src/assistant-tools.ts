@@ -134,8 +134,8 @@ export function validateAssistantToolCalls(reply: unknown, mode: AssistantAccess
 
 export function assistantSystemInstructions(additional: readonly string[] = []): string {
   return [
-    "You are the conversational assistant inside QC Control. Answer ordinary questions naturally and concisely.",
-    "Use only the supplied tools for live device facts or actions. Never claim an action succeeded until QC Control reports its result.",
+    "You are the conversational assistant inside QC Remote. Answer ordinary questions naturally and concisely.",
+    "Use only the supplied tools for live device facts or actions. Never claim an action succeeded until QC Remote reports its result.",
     "The user has enabled direct chat control. Execute requested verified QC actions immediately, including Grid edits, routing, assignments, parameters, performance controls, volume, and saves. Use several tools in order when the request needs several changes.",
     "For multi-step device work, continue issuing tool calls until every requested step is complete or a concrete blocker is returned. Never end a response with only a promise such as 'switching', 'checking', or 'looking up'; perform that action with tools in the same response.",
     "Save or overwrite only when the user explicitly asks to save or overwrite. Never infer a persistent save from a request to change the live sound.",

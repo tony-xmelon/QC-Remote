@@ -42,6 +42,7 @@ impl FlightRecorder {
             .or_else(|| {
                 std::env::var_os("LOCALAPPDATA").map(|root| {
                     PathBuf::from(root)
+                        // Preserve the legacy data directory so upgrades retain local state.
                         .join("QC Control")
                         .join("device-flight-recorder.json")
                 })

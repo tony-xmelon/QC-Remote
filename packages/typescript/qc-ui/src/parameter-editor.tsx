@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type WheelEvent } from "react";
-import type { BlockDetails, BlockParameter } from "@ndsp-qc/client";
-import { sceneLetter } from "@ndsp-qc/core";
-import { QC_COLORS } from "@ndsp-qc/theme";
+import type { BlockDetails, BlockParameter } from "@qc-remote/client";
+import { sceneLetter } from "@qc-remote/core";
+import { QC_COLORS } from "@qc-remote/theme";
 import { parameterControlKind, parameterDisplay, parameterEditorAccent, parameterEditorFamily, parameterEditorIsFullScreen, parameterEditorPageCount, parameterEditorPageSize, parameterEditorPageSlots, parameterEditorTabs, parameterNormalizedValue, parameterRealValue, parameterStep, type ParameterEditorFamily } from "./parameter-model";
 import { parameterContextMenuItems, type ParameterEditorContextAction } from "./parameter-menu";
 import { QcEditorIcon, QcPresetStackIcon, QcUiIcon } from "./theme-icons";

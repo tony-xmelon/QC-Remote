@@ -62,7 +62,7 @@ def redact(corpus: Path, capture_id: str) -> None:
     for left, top, right, bottom in profile["boxes"]:
         # The upper-left corner is measured clear background in every capture
         # region. Sampling it preserves the device's exact native color without
-        # introducing a second authored palette outside @ndsp-qc/theme.
+        # introducing a second authored palette outside @qc-remote/theme.
         draw.rectangle((left, top, right, bottom), fill=image.getpixel((left, top)))
     image.save(image_path, format="PNG", optimize=True)
 

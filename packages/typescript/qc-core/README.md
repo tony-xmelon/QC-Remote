@@ -1,4 +1,4 @@
-# `@ndsp-qc/core`
+# `@qc-remote/core`
 
 Platform-neutral Quad Cortex application behavior shared by the Windows and Android clients.
 

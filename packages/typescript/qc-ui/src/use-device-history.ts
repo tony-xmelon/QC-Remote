@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import type { DeviceActionResult, GatewayTransport, PresetSnapshot } from "@ndsp-qc/client";
+import type { DeviceActionResult, GatewayTransport, PresetSnapshot } from "@qc-remote/client";
 import { useCommandJournal } from "./use-command-journal";
 
 export interface DeviceHistoryEntry {

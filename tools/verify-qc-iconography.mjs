@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 const root = process.cwd();
 const manifest = JSON.parse(readFileSync(join(root, "references/qc-ui-iconography/coros-4.1.0/manifest.json"), "utf8"));
 const iconsSource = readFileSync(join(root, "packages/typescript/qc-ui/src/theme-icons.tsx"), "utf8");
+const deviceGlyphSource = readFileSync(join(root, "packages/typescript/qc-ui/src/device-glyph.tsx"), "utf8");
 const fixtureSource = readFileSync(join(root, "packages/typescript/qc-ui/src/coros-screen-fixtures.tsx"), "utf8");
 const colors = JSON.parse(readFileSync(join(root, "packages/typescript/qc-theme/src/colors.json"), "utf8"));
 const detailsRoot = join(root, "references/qc-ui-official-details/coros-4.1.0");
@@ -31,16 +32,16 @@ for (const family of manifest.families) {
 }
 
 for (const exact of manifest.exactOfficialVectors) {
-  const sourceRoot = exact.sourceRoot === "theme-assets"
-    ? join(root, "packages/typescript/qc-theme/assets")
-    : detailsRoot;
-  const source = readFileSync(join(sourceRoot, exact.source), "utf8").toLowerCase();
+  const source = readFileSync(join(detailsRoot, exact.source), "utf8").toLowerCase();
   for (const color of exact.colors) {
     const namedColor = color === `#${"f".repeat(6)}` ? 'fill="white"' : color === `#${"0".repeat(6)}` ? 'fill="black"' : null;
     if (!source.includes(color.toLowerCase()) && !(namedColor && source.includes(namedColor))) failures.push(`${exact.icon} source lacks ${color}`);
   }
   for (const path of exact.paths) if (!source.includes(path.toLowerCase())) failures.push(`${exact.icon} source lacks vector ${path}`);
 }
+
+if (!deviceGlyphSource.includes("export function QcDeviceGlyph")) failures.push("missing canonical code-drawn device glyph owner");
+if (/<image\b|qc-block-samples|QC_VISUAL_ASSETS/.test(deviceGlyphSource)) failures.push("device glyphs must not depend on removed reference artwork");
 
 for (const measurement of manifest.screenMeasurements) {
   const measuredTokens = measurement.paletteTokens.map((paletteToken) => token(paletteToken)?.toLowerCase());

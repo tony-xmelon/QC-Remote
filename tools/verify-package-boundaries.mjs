@@ -5,16 +5,16 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const sourceRoots = ["packages/typescript", "apps/android/src", "apps/windows/src"];
 const internalPackageName = {
-  "qc-client": "@ndsp-qc/client",
-  "qc-core": "@ndsp-qc/core",
-  "qc-form-factors": "@ndsp-qc/form-factors",
-  "qc-ui": "@ndsp-qc/ui"
+  "qc-client": "@qc-remote/client",
+  "qc-core": "@qc-remote/core",
+  "qc-form-factors": "@qc-remote/form-factors",
+  "qc-ui": "@qc-remote/ui"
 };
 const allowedInternalImports = {
-  "@ndsp-qc/client": new Set(),
-  "@ndsp-qc/core": new Set(["@ndsp-qc/client"]),
-  "@ndsp-qc/form-factors": new Set(),
-  "@ndsp-qc/ui": new Set(["@ndsp-qc/client", "@ndsp-qc/core", "@ndsp-qc/form-factors"])
+  "@qc-remote/client": new Set(),
+  "@qc-remote/core": new Set(["@qc-remote/client"]),
+  "@qc-remote/form-factors": new Set(),
+  "@qc-remote/ui": new Set(["@qc-remote/client", "@qc-remote/core", "@qc-remote/form-factors"])
 };
 
 function sourceFiles(directory) {
@@ -58,10 +58,10 @@ export function boundaryViolations(file, specifier) {
   }
 
   const resolvedImport = specifier.startsWith(".") ? resolve(dirname(file), specifier).replaceAll("\\", "/") : "";
-  if (normalizedFile.startsWith("apps/android/src/") && (specifier.startsWith("@ndsp-qc/windows") || resolvedImport.includes("/apps/windows/"))) {
+  if (normalizedFile.startsWith("apps/android/src/") && (specifier.startsWith("@qc-remote/windows") || resolvedImport.includes("/apps/windows/"))) {
     failures.push("Android cannot import the Windows application");
   }
-  if (normalizedFile.startsWith("apps/windows/src/") && (specifier.startsWith("@ndsp-qc/android") || resolvedImport.includes("/apps/android/"))) {
+  if (normalizedFile.startsWith("apps/windows/src/") && (specifier.startsWith("@qc-remote/android") || resolvedImport.includes("/apps/android/"))) {
     failures.push("Windows cannot import the Android application");
   }
   return failures;

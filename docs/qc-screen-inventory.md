@@ -34,7 +34,7 @@ Status vocabulary:
   means both independent references exist.
 
 Android refers to the buildable responsive React application in this checkout,
-which embeds the same `@ndsp-qc/ui` surface as Windows. Its rows are verified
+which embeds the same `@qc-remote/ui` surface as Windows. Its rows are verified
 from that shared renderer and the Android build rather than inferred from a
 placeholder or a separate prototype.
 

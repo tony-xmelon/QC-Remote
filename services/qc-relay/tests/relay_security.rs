@@ -212,6 +212,54 @@ async fn reconnect_can_reach_a_connected_phone_while_usb_is_not_ready() {
 }
 
 #[tokio::test]
+async fn concurrent_calls_are_serialized_through_each_physical_device_response() {
+    let credentials = DeviceCredentialStore::new();
+    let pairing = PairingManager::new(credentials.clone());
+    let (principal, credential) = paired("alice", "phone-a", &credentials, &pairing).await;
+    let device = DeviceId("phone-a".into());
+    let hub = RelayHub::with_timeout(credentials, Duration::from_secs(1));
+    let mut phone = hub.connect(credential).await;
+    phone.set_ready(true);
+
+    let first = {
+        let hub = hub.clone();
+        let principal = principal.clone();
+        let device = device.clone();
+        tokio::spawn(async move {
+            hub.dispatch_validated_rpc(&principal, device, "device.selectModeSlot", json!({"slot": 0})).await
+        })
+    };
+    let DeviceFrame::Invoke { id: first_id, .. } = phone.outbound.recv().await.unwrap() else {
+        panic!("first invoke expected")
+    };
+    let second = {
+        let hub = hub.clone();
+        let principal = principal.clone();
+        tokio::spawn(async move {
+            hub.dispatch_validated_rpc(&principal, device, "device.selectModeSlot", json!({"slot": 1})).await
+        })
+    };
+    assert!(tokio::time::timeout(Duration::from_millis(20), phone.outbound.recv()).await.is_err());
+    phone.accept(DeviceFrame::Result {
+        id: first_id,
+        ok: true,
+        result: Some(json!({"accepted": true, "verified": false, "verification": "accepted_unverified", "detail": "first"})),
+        error: None,
+    }).await;
+    let DeviceFrame::Invoke { id: second_id, .. } = phone.outbound.recv().await.unwrap() else {
+        panic!("second invoke expected")
+    };
+    phone.accept(DeviceFrame::Result {
+        id: second_id,
+        ok: true,
+        result: Some(json!({"accepted": true, "verified": false, "verification": "accepted_unverified", "detail": "second"})),
+        error: None,
+    }).await;
+    first.await.unwrap().unwrap();
+    second.await.unwrap().unwrap();
+}
+
+#[tokio::test]
 async fn backup_can_outlive_the_ordinary_relay_request_window() {
     let credentials = DeviceCredentialStore::new();
     let pairing = PairingManager::new(credentials.clone());

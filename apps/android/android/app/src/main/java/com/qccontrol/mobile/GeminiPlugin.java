@@ -7,6 +7,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.ai.FirebaseAI;
 import com.google.firebase.ai.GenerativeModel;
 import com.google.firebase.ai.java.GenerativeModelFutures;
@@ -15,6 +16,8 @@ import com.google.firebase.ai.type.GenerateContentResponse;
 import com.google.firebase.ai.type.GenerativeBackend;
 import com.google.firebase.ai.type.GenerationConfig;
 import com.google.firebase.ai.type.UsageMetadata;
+import com.google.firebase.appcheck.FirebaseAppCheck;
+import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory;
 import androidx.core.content.ContextCompat;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -35,6 +38,7 @@ public class GeminiPlugin extends Plugin {
     ));
     private final Map<String, GenerativeModelFutures> models = new ConcurrentHashMap<>();
     private GenerationConfig generationConfig;
+    private boolean appCheckConfigured;
 
     @Override
     public void load() {
@@ -46,11 +50,22 @@ public class GeminiPlugin extends Plugin {
     }
 
     private GenerativeModelFutures modelFor(String modelName) {
+        ensureAppCheckConfigured();
         return models.computeIfAbsent(modelName, name -> {
             GenerativeModel nativeModel = FirebaseAI.getInstance(GenerativeBackend.googleAI())
                 .generativeModel(name, generationConfig);
             return GenerativeModelFutures.from(nativeModel);
         });
+    }
+
+    /** Called only from generate(), after the web UI has verified stored user opt-in. */
+    private synchronized void ensureAppCheckConfigured() {
+        if (appCheckConfigured) return;
+        FirebaseApp.initializeApp(getContext());
+        FirebaseAppCheck.getInstance().installAppCheckProviderFactory(
+            PlayIntegrityAppCheckProviderFactory.getInstance()
+        );
+        appCheckConfigured = true;
     }
 
     @com.getcapacitor.PluginMethod
@@ -66,7 +81,7 @@ public class GeminiPlugin extends Plugin {
         }
         String modelName = call.getString("model", DEFAULT_MODEL).trim();
         if (!ALLOWED_MODELS.contains(modelName)) {
-            call.reject("That Gemini model is not enabled in QC Control.", "INVALID_MODEL");
+            call.reject("That Gemini model is not enabled in QC Remote.", "INVALID_MODEL");
             return;
         }
         Content content = new Content.Builder().addText(prompt).build();

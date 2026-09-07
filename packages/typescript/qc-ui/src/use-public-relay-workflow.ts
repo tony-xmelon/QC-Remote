@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { AssistantAccessMode, PublicRelayPort, PublicRelayState, PublicRelayStatus } from "@ndsp-qc/core";
+import type { AssistantAccessMode, PublicRelayPort, PublicRelayState, PublicRelayStatus } from "@qc-remote/core";
 
 export interface PublicRelaySubscription {
   remove(): void | Promise<void>;

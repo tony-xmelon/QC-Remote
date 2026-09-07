@@ -77,7 +77,7 @@ Contains versioned, language-neutral schemas for commands, results, snapshots, e
 
 Five protocol manifests currently prevent platform drift:
 
-- `qc-usb-profile.v1.json` owns USB identity, handshake/sync timing, subscriptions, frame limits, keepalive policy, and performance MIDI mappings.
+- `ProductionAutomation.proto` owns every numeric `CortexMessageType` wire ID. `qc-usb-profile.v1.json` owns USB identity, handshake/sync timing, named subscriptions, frame limits, keepalive policy, and performance MIDI mappings; generation resolves its subscription names through that protobuf enum.
 - `qc-domain.v1.json` owns Grid/scene/tempo limits, scene colors, route IDs/labels/groups, and IPC frame limits.
 - `gateway-methods.v1.json` owns every gateway RPC, TypeScript client method,
   generated Rust allowlist, generated Android dispatch class, and the identical
@@ -130,8 +130,9 @@ which applies the shared sequence guard, preserves the device-boundary
 observation timestamp, and derives the same tempo-pulse epoch before live state
 reduction. Tauri and Capacitor therefore own only event subscription mechanics.
 
-Cross-native transport policy lives in `contracts/qc-usb-profile.v1.json` and
-generates Java/Rust constants. Runtime reconnect cadence, handshake attempts,
+Cross-native transport policy lives in `contracts/qc-usb-profile.v1.json`; its
+generated Java/Rust/Python constants take message IDs from
+`ProductionAutomation.proto`. Runtime reconnect cadence, handshake attempts,
 keepalive scheduling, outbound-idle tracking, and read-error tolerance live in
 `qc-protocol::session::SessionMachine`, called by both native hosts. Native
 adapters may differ in OS lifecycle and endpoint APIs, but they do not

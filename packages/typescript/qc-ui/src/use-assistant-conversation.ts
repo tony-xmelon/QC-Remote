@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { appendConversationMessage, type ConversationMessage, type ConversationRole } from "@ndsp-qc/core";
+import { appendConversationMessage, type ConversationMessage, type ConversationRole } from "@qc-remote/core";
 
 export interface AssistantSubmission<TAttachment> {
   token: number;

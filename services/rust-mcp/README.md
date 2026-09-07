@@ -1,6 +1,6 @@
 # QC Remote MCP (Rust)
 
-Production MCP protocol surface for QC Control. It publishes only the typed,
+Production MCP protocol surface for QC Remote. It publishes only the typed,
 intent-level actions in `contracts/qc-actions.v1.json` through rmcp Streamable
 HTTP and delegates execution to a principal-scoped `QcBackend`.
 

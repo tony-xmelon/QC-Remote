@@ -1,4 +1,4 @@
-import { QC_INPUT_ROUTES, QC_OUTPUT_ROUTES, type PresetSnapshot } from "@ndsp-qc/client";
+import { QC_INPUT_ROUTES, QC_OUTPUT_ROUTES, type PresetSnapshot } from "@qc-remote/client";
 
 export type RouteSide = "input" | "output";
 export type RouteOption = readonly [value: number, label: string];

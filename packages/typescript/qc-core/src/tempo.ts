@@ -1,4 +1,4 @@
-import { QC_MAXIMUM_TEMPO_BPM, QC_MINIMUM_TEMPO_BPM } from "@ndsp-qc/client";
+import { QC_MAXIMUM_TEMPO_BPM, QC_MINIMUM_TEMPO_BPM } from "@qc-remote/client";
 
 export interface TapTempoResult {
   taps: number[];

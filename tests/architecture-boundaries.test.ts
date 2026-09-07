@@ -14,8 +14,8 @@ test("boundary checker recognizes static, side-effect, and dynamic imports", () 
 test("shared core cannot acquire native APIs or depend upward on UI", () => {
   const coreFile = resolve("packages/typescript/qc-core/src/example.ts");
   assert.ok(boundaryViolations(coreFile, "@capacitor/core").length);
-  assert.ok(boundaryViolations(coreFile, "@ndsp-qc/ui").length);
-  assert.deepEqual(boundaryViolations(coreFile, "@ndsp-qc/client"), []);
+  assert.ok(boundaryViolations(coreFile, "@qc-remote/ui").length);
+  assert.deepEqual(boundaryViolations(coreFile, "@qc-remote/client"), []);
 });
 
 test("application composition roots cannot import one another", () => {

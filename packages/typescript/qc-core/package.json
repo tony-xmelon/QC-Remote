@@ -1,5 +1,5 @@
 {
-  "name": "@ndsp-qc/core",
+  "name": "@qc-remote/core",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -13,8 +13,8 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@ndsp-qc/client": "0.1.0",
-    "@ndsp-qc/theme": "0.1.0"
+    "@qc-remote/client": "0.1.0",
+    "@qc-remote/theme": "0.1.0"
   },
   "devDependencies": {
     "typescript": "^7.0.2"

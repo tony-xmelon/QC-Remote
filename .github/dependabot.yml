@@ -1,0 +1,45 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+
+  - package-ecosystem: gradle
+    directory: /apps/android/android
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: pip
+    directories:
+      - /packages/python/qc-gateway-client
+      - /services/mcp-server
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: cargo
+    directories:
+      - /apps/windows/src-tauri
+      - /packages/rust/qc-android
+      - /packages/rust/qc-device-runtime
+      - /packages/rust/qc-protocol
+      - /packages/rust/qc-relay-client
+      - /packages/rust/qc-relay-protocol
+      - /packages/rust/qc-windows-midi
+      - /services/device-broker
+      - /services/qc-relay
+      - /services/qc-remote
+      - /services/rust-mcp
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5

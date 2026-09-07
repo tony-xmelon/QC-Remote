@@ -1,6 +1,6 @@
 import { useCallback, useRef } from "react";
-import type { GatewayTransport, GridBlock } from "@ndsp-qc/client";
-import { assistantCommandDetail, recordTempoTap, sceneLetter, type QcAssistantDeviceCommand, type QcDeviceTransport } from "@ndsp-qc/core";
+import type { GatewayTransport, GridBlock } from "@qc-remote/client";
+import { assistantCommandDetail, recordTempoTap, sceneLetter, type QcAssistantDeviceCommand, type QcDeviceTransport } from "@qc-remote/core";
 import type { DeviceHistoryEntry } from "./use-device-history";
 import type { QcController } from "./use-qc-controller";
 

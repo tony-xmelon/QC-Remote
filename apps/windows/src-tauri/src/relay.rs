@@ -3,6 +3,7 @@ use serde::Serialize;
 use std::sync::{Arc, Mutex};
 use tokio::sync::watch;
 
+// Keep the legacy service key so upgrades retain access to saved relay credentials.
 const CREDENTIAL_SERVICE: &str = "QC Control";
 const CREDENTIAL_ACCOUNT: &str = "outbound-public-relay-v1";
 const ACCESS_MODE_ACCOUNT: &str = "outbound-public-relay-access-v1";

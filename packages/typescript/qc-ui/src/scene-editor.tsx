@@ -1,4 +1,4 @@
-import type { PresetSnapshot } from "@ndsp-qc/client";
+import type { PresetSnapshot } from "@qc-remote/client";
 
 export interface SceneEditorProps {
   snapshot: PresetSnapshot;

@@ -15,7 +15,7 @@ type AndroidAttachment = { name: string; mediaType: "image/png"; data: string };
 const formFactor = formFactors[0];
 const skin = skins.find((entry) => entry.id === formFactor.defaultSkinId) ?? skins[0];
 const { enabled: corpusFixtureEnabled, screenView: fixtureScreenView, initialSnapshot: fixtureInitialSnapshot } =
-  corosFixtureConfiguration(window.location.search, demoSnapshot);
+  corosFixtureConfiguration(import.meta.env.DEV ? window.location.search : "", demoSnapshot);
 const sceneFootswitches = Array.from({ length: QC_SCENE_COUNT }, (_, index) => ({ index, label: sceneLetter(index) }));
 const androidGeminiModels: ReadonlyArray<{ id: AndroidGeminiModel; label: string }> = [
   { id: "gemini-3.7-flash", label: "Gemini 3.7 Flash" },

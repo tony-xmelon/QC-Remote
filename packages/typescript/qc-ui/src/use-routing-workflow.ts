@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState, type Dispatch, type SetStateAction } from "react";
-import type { GatewayTransport } from "@ndsp-qc/client";
-import { inputRouteOptions, outputRouteOptions, routeDraftsFromSnapshot, routeOptionValue, routeOptionsForRow, type RouteDrafts } from "@ndsp-qc/core";
+import type { GatewayTransport } from "@qc-remote/client";
+import { inputRouteOptions, outputRouteOptions, routeDraftsFromSnapshot, routeOptionValue, routeOptionsForRow, type RouteDrafts } from "@qc-remote/core";
 import type { CorOsRoutingPickerState } from "./quad-cortex-surface";
 import type { DeviceMutationWorkflowOptions } from "./workflow-options";
 

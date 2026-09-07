@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "corosVersion": "4.1.0",
-  "description": "Authoritative evidence ledger for every typed glyph exposed by the shared QC UI. official-vector entries have exact path and palette evidence; screen-frame glyph entries require crop-level structural scoring; device-category *-tile entries are exact screen-palette anchors for the surrounding icon outline.",
+  "description": "Authoritative evidence ledger for every typed glyph exposed by the shared QC UI. Retained official-detail vectors have exact path and palette evidence; original code-drawn device glyphs use screen-frame evidence; device-category *-tile entries are exact screen-palette anchors for the surrounding icon outline.",
   "qualityGates": { "exactColorMatchPercent": 100, "minimumMeanStructuralMatchPercent": 99.9, "minimumIndividualStructuralMatchPercent": 98 },
   "families": [
     {
@@ -63,8 +63,8 @@
     {
       "type": "DeviceCategoryGlyph",
       "variants": ["Plugins", "Amp", "Neural Capture", "Cab", "Overdrive", "Delay", "Reverb", "Compressor", "Pitch", "Modulation", "Morph", "Synth", "Filter", "Equalizer", "IR Loader", "Wah", "FX Loop", "Looper", "Utility"],
-      "evidence": "official-sprite+screen-frame",
-      "sources": ["qc-block-samples.svg", "device-browser-models", "official-device-browser-amp"],
+      "evidence": "code-drawn+screen-frame",
+      "sources": ["packages/typescript/qc-ui/src/device-glyph.tsx", "device-browser-models", "device-browser-base", "device-browser-top", "device-browser-middle-deep", "device-browser-middle-reverb"],
       "paletteTokens": ["captured.primaryText", "browserCategory.plugin", "browserCategory.amp", "browserCategory.capture", "browserCategory.cab", "browserCategory.overdrive", "browserCategory.delay", "browserCategory.reverb", "browserCategory.compressor", "browserCategory.pitch", "browserCategory.modulation", "browserCategory.morph", "browserCategory.synth", "browserCategory.filter", "browserCategory.equalizer", "browserCategory.irLoader", "browserCategory.wah", "browserCategory.fxLoop", "browserCategory.looper", "browserCategory.utility"]
     }
   ],
@@ -74,14 +74,7 @@
     { "icon": "directory.filter", "source": "official-detail-directory-filter.svg", "colors": ["#ffffff"], "paths": ["M53 14.2538C53 14.5132"] },
     { "icon": "directory.search", "source": "official-detail-directory-search.svg", "colors": ["#ffffff"], "paths": ["M41 12C36.5817 12 33 15.5817 33 20"] },
     { "icon": "interface.refresh", "source": "official-detail-plugin-refresh.svg", "colors": ["#ffffff"], "paths": ["M37.8818 16.6924C36.0746 18.2179"] },
-    { "icon": "directory.new-folder", "source": "official-detail-directory-new-folder.svg", "colors": ["#000000"], "paths": ["M20 20C20.3788 20 20.7251 20.214", "M16 35H20V37H16V41"] },
-    { "icon": "device-category.fx-loop", "sourceRoot": "theme-assets", "source": "qc-block-samples.svg", "colors": ["#ffffff"], "paths": ["M37.9244 43L37.8791 46L32 41.9008", "M32.0454 29H27.8261"] },
-    { "icon": "device-category.pitch", "sourceRoot": "theme-assets", "source": "qc-block-samples.svg", "colors": ["#ffffff", "#959595"], "paths": ["M22 116H36.6006L35.5332 118", "M22 129C36 129 36 105 50 105"] },
-    { "icon": "device-category.modulation", "sourceRoot": "theme-assets", "source": "qc-block-samples.svg", "colors": ["#ffffff"], "paths": ["M195.075 33.554L195.225 34.3225"] },
-    { "icon": "device-category.filter", "sourceRoot": "theme-assets", "source": "qc-block-samples.svg", "colors": ["#ffffff"], "paths": ["M259 30H281.099L290 45"] },
-    { "icon": "device-category.synth", "sourceRoot": "theme-assets", "source": "qc-block-samples.svg", "colors": ["#ffffff"], "paths": ["M504 124C504 124.552 504.448 125 505 125"] },
-    { "icon": "device-category.morph", "sourceRoot": "theme-assets", "source": "qc-block-samples.svg", "colors": ["#ffffff"], "paths": ["M675 103C677.795 103 680.823 104.185", "M674.1 123C674.1 123 670.407"] },
-    { "icon": "device-category.reverb", "sourceRoot": "theme-assets", "source": "qc-block-samples.svg", "colors": ["#ffffff", "#959595"], "paths": ["M262 131.615L271.454 121L289 121.037", "M290 120.5V103H271.407L262 112.716"] }
+    { "icon": "directory.new-folder", "source": "official-detail-directory-new-folder.svg", "colors": ["#000000"], "paths": ["M20 20C20.3788 20 20.7251 20.214", "M16 35H20V37H16V41"] }
   ],
   "screenMeasurements": [
     { "icon": "directory.grid", "variant": "grid", "screen": "official-directory-presets", "crop": [20, 18, 24, 24], "referenceBackground": "#282c28", "rendererBackground": "#282c28", "expectedColors": ["#f8fcf8"], "paletteTokens": ["captured.iconPrimary"] },

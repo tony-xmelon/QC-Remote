@@ -1,5 +1,5 @@
-import type { BlockDetails, ModelEntry, PresetSnapshot } from "@ndsp-qc/client";
-import { sceneLetter } from "@ndsp-qc/core";
+import type { BlockDetails, ModelEntry, PresetSnapshot } from "@qc-remote/client";
+import { sceneLetter } from "@qc-remote/core";
 
 export interface GridManagementPanelProps {
   snapshot: PresetSnapshot;

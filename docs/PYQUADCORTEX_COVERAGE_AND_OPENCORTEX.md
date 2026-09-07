@@ -48,7 +48,7 @@ The upstream manual audit contains 105 feature rows:
 
 Of 93 features that a host might plausibly drive, 65 are complete, 8 are partial,
 and 20 remain untouched. This measures pyquadcortex itself, not how much of its
-API QC Control currently exposes through its contracts, gateway, MCP tools and
+API QC Remote currently exposes through its contracts, gateway, MCP tools and
 clients.
 
 The covered core is already broad: live preset and scene state, grid topology,
@@ -183,7 +183,7 @@ readback semantics and a native contract test before it becomes public.
 The vendored protobuf schema names many more messages and fields than the
 high-level API can safely drive. Decoding a message, subscribing to it, or seeing
 a candidate field does not mean its operation, units, sequencing, side effects or
-failure behavior are understood. QC Control must expose only verified behavior
+failure behavior are understood. QC Remote must expose only verified behavior
 through typed contracts and keep unsupported operations explicit.
 
 The live ModelRepo parser resolves clone inheritance and replacements and
@@ -198,7 +198,7 @@ Revisit this document when any of the following happens:
 1. pyquadcortex adds or changes a capability in its manual-coverage audit;
 2. a CorOS release changes the protocol or introduces an official remote API;
 3. Neural DSP provides a non-root screen-mirroring or remote-control route;
-4. QC Control needs capture creation, file import, library management, cloud, or
+4. QC Remote needs capture creation, file import, library management, cloud, or
    diagnostics as an immediate product feature;
 5. an OpenCortex component is considered for distribution, which requires a
    fresh compatibility, security and licence review.

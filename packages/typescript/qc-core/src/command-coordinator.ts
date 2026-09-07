@@ -1,4 +1,4 @@
-import type { PresetSnapshot } from "@ndsp-qc/client";
+import type { PresetSnapshot } from "@qc-remote/client";
 import { applyFootswitchPreview } from "./footswitch.ts";
 import {
   applyQcStateUpdate,

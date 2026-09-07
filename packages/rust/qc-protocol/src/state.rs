@@ -2,7 +2,7 @@
 //!
 //! USB enumeration, permissions, and endpoint I/O remain platform concerns.
 //! This module owns the device-independent mapping from QC protobuf messages to
-//! the small camelCase state-event contract consumed by `@ndsp-qc/core`.
+//! the small camelCase state-event contract consumed by `@qc-remote/core`.
 
 use crate::compression::{maybe_gunzip, InflateError};
 pub use crate::generated_payloads::{
@@ -167,7 +167,7 @@ pub fn decode_preset_folder(
 ) -> Result<Option<PresetFolderListing>, StateDecodeError> {
     validate_wire_payload(payload)?;
     let decoded = maybe_gunzip(payload)?;
-    let message = decode::<pa::FileMessage>(4, &decoded)?;
+    let message = decode::<pa::FileMessage>(profile::MESSAGE_TYPE_FILE, &decoded)?;
     let Some(pa::file_message::Folder::Folder(folder)) = message.folder else {
         return Ok(None);
     };
@@ -641,7 +641,7 @@ impl StateDecoder {
     }
 
     fn decode_io_settings(&self, payload: &[u8]) -> Result<Vec<StateUpdate>, StateDecodeError> {
-        let message: pa::IoSettingsMessage = decode(3, payload)?;
+        let message: pa::IoSettingsMessage = decode(profile::MESSAGE_TYPE_IO_SETTINGS, payload)?;
         let Some(pa::io_settings_message::Settings::Settings(settings)) = message.settings else {
             return Ok(Vec::new());
         };
@@ -950,7 +950,7 @@ impl StateDecoder {
     }
 
     fn decode_scene(&mut self, payload: &[u8]) -> Result<Vec<StateUpdate>, StateDecodeError> {
-        let message = decode::<pa::SceneMessage>(13, payload)?;
+        let message = decode::<pa::SceneMessage>(profile::MESSAGE_TYPE_SCENE, payload)?;
         let Some(pa::scene_message::SelectedScene::SelectedScene(scene)) = message.selected_scene
         else {
             return Ok(Vec::new());
@@ -962,7 +962,8 @@ impl StateDecoder {
     }
 
     fn decode_position(&mut self, payload: &[u8]) -> Result<Vec<StateUpdate>, StateDecodeError> {
-        let message = decode::<pa::SetlistPositionMessage>(2, payload)?;
+        let message =
+            decode::<pa::SetlistPositionMessage>(profile::MESSAGE_TYPE_SETLIST_POSITION, payload)?;
         if let Some(pa::setlist_position_message::FolderKey::FolderKey(value)) = message.folder_key
         {
             self.setlist_key = Some(value);
@@ -985,7 +986,8 @@ impl StateDecoder {
         &mut self,
         payload: &[u8],
     ) -> Result<Vec<StateUpdate>, StateDecodeError> {
-        let message = decode::<pa::RecallPresetMessage>(15, payload)?;
+        let message =
+            decode::<pa::RecallPresetMessage>(profile::MESSAGE_TYPE_RECALL_PRESET, payload)?;
         let Some(pa::recall_preset_message::Preset::Preset(preset)) = message.preset else {
             return Ok(Vec::new());
         };
@@ -995,7 +997,7 @@ impl StateDecoder {
     }
 
     fn decode_grid(&mut self, payload: &[u8]) -> Result<Vec<StateUpdate>, StateDecodeError> {
-        let message = decode::<pa::GridMessage>(1, payload)?;
+        let message = decode::<pa::GridMessage>(profile::MESSAGE_TYPE_GRID, payload)?;
         let Some(pa::grid_message::Preset::Preset(preset)) = message.preset else {
             return Ok(Vec::new());
         };
@@ -1071,7 +1073,7 @@ impl StateDecoder {
     }
 
     fn decode_mode(&self, payload: &[u8]) -> Result<Vec<StateUpdate>, StateDecodeError> {
-        let message = decode::<pa::ModeMessage>(14, payload)?;
+        let message = decode::<pa::ModeMessage>(profile::MESSAGE_TYPE_MODE, payload)?;
         let Some(pa::mode_message::Mode::Mode(value)) = message.mode else {
             return Ok(Vec::new());
         };
@@ -1106,7 +1108,8 @@ impl StateDecoder {
     }
 
     fn decode_master_volume(&self, payload: &[u8]) -> Result<Vec<StateUpdate>, StateDecodeError> {
-        let message = decode::<pa::MasterVolumeMessage>(17, payload)?;
+        let message =
+            decode::<pa::MasterVolumeMessage>(profile::MESSAGE_TYPE_MASTER_VOLUME, payload)?;
         let Some(pa::master_volume_message::Volume::Volume(value)) = message.volume else {
             return Ok(Vec::new());
         };
@@ -1116,14 +1119,15 @@ impl StateDecoder {
     }
 
     fn decode_dirty(&self, payload: &[u8]) -> Result<Vec<StateUpdate>, StateDecodeError> {
-        let message = decode::<pa::PresetDirtyMessage>(34, payload)?;
+        let message =
+            decode::<pa::PresetDirtyMessage>(profile::MESSAGE_TYPE_PRESET_DIRTY, payload)?;
         let mut update = StateUpdate::new("dirty");
         update.dirty = Some(message.is_dirty);
         Ok(vec![update])
     }
 
     fn decode_scene_label(&self, payload: &[u8]) -> Result<Vec<StateUpdate>, StateDecodeError> {
-        let message = decode::<pa::SceneLabelMessage>(23, payload)?;
+        let message = decode::<pa::SceneLabelMessage>(profile::MESSAGE_TYPE_SCENE_LABEL, payload)?;
         if message.index < 0 {
             return Ok(Vec::new());
         }
@@ -1134,7 +1138,7 @@ impl StateDecoder {
     }
 
     fn decode_scene_color(&self, payload: &[u8]) -> Result<Vec<StateUpdate>, StateDecodeError> {
-        let message = decode::<pa::SceneColorMessage>(48, payload)?;
+        let message = decode::<pa::SceneColorMessage>(profile::MESSAGE_TYPE_SCENE_COLOR, payload)?;
         if message.index < 0 {
             return Ok(Vec::new());
         }
@@ -2088,7 +2092,7 @@ mod tests {
     fn public_state_decoders_reject_oversized_wire_payloads_before_copying() {
         let oversized = vec![0_u8; profile::MAX_FRAME_BYTES + 1];
         assert!(matches!(
-            StateDecoder::new().decode(15, &oversized),
+            StateDecoder::new().decode(profile::MESSAGE_TYPE_RECALL_PRESET, &oversized),
             Err(StateDecodeError::PayloadLimit)
         ));
         assert!(matches!(
@@ -2200,7 +2204,9 @@ mod tests {
         }
         .encode_to_vec();
         let mut decoder = StateDecoder::new();
-        let states = decoder.decode(15, &raw).unwrap();
+        let states = decoder
+            .decode(profile::MESSAGE_TYPE_RECALL_PRESET, &raw)
+            .unwrap();
         assert!(
             (decoder
                 .lane_control_details(0, "inputGate")
@@ -2263,13 +2269,22 @@ mod tests {
             ..Default::default()
         }
         .encode_to_vec();
-        assert_eq!(decoder.decode(13, &scene).unwrap()[0].active_scene, Some(6));
+        assert_eq!(
+            decoder.decode(profile::MESSAGE_TYPE_SCENE, &scene).unwrap()[0].active_scene,
+            Some(6)
+        );
         let dirty = pa::PresetDirtyMessage {
             is_dirty: true,
             ..Default::default()
         }
         .encode_to_vec();
-        assert_eq!(decoder.decode(34, &dirty).unwrap()[0].dirty, Some(true));
+        assert_eq!(
+            decoder
+                .decode(profile::MESSAGE_TYPE_PRESET_DIRTY, &dirty)
+                .unwrap()[0]
+                .dirty,
+            Some(true)
+        );
     }
 
     #[test]
@@ -2284,7 +2299,7 @@ mod tests {
             ..Default::default()
         };
         let states = StateDecoder::new()
-            .decode(14, &mode.encode_to_vec())
+            .decode(profile::MESSAGE_TYPE_MODE, &mode.encode_to_vec())
             .unwrap();
         let json = serde_json::to_value(&states[0]).unwrap();
         assert_eq!(json["kind"], "mode");
@@ -2329,7 +2344,9 @@ mod tests {
         }
         .encode_to_vec();
 
-        let states = StateDecoder::new().decode(3, &payload).unwrap();
+        let states = StateDecoder::new()
+            .decode(profile::MESSAGE_TYPE_IO_SETTINGS, &payload)
+            .unwrap();
         let ports = states[0].io_ports.as_ref().unwrap();
         assert_eq!(states[0].kind, "ioPorts");
         assert!(ports
@@ -2432,7 +2449,7 @@ mod tests {
         decoder.install_catalog(catalog);
         decoder
             .decode(
-                15,
+                profile::MESSAGE_TYPE_RECALL_PRESET,
                 &pa::RecallPresetMessage {
                     preset: Some(pa::recall_preset_message::Preset::Preset(preset)),
                     ..Default::default()
@@ -2510,7 +2527,7 @@ mod tests {
         decoder.install_catalog(catalog);
         decoder
             .decode(
-                15,
+                profile::MESSAGE_TYPE_RECALL_PRESET,
                 &pa::RecallPresetMessage {
                     preset: Some(pa::recall_preset_message::Preset::Preset(preset)),
                     ..Default::default()

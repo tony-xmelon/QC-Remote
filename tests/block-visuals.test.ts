@@ -1,10 +1,8 @@
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { demoSnapshot, type GridBlock } from "../packages/typescript/qc-client/src/index.ts";
 import { blockUsesActiveFill, OFFICIAL_BLOCK_CATEGORIES, officialBlockVisual, pluginBadge, PUBLISHED_PLUGIN_BADGES, type OfficialBlockVisualKey } from "../packages/typescript/qc-ui/src/block-visuals.ts";
-import { REFERENCE_BLOCK_ICONS } from "../packages/typescript/qc-theme/src/reference-block-icons.ts";
 
 const block = (name: string, category: string, kind = "utility"): GridBlock => ({ id: name, name, category, kind, row: 0, column: 0 });
 
@@ -196,23 +194,10 @@ test("official System brightness values remain right-aligned", () => {
   assert.match(css, /\.settings-system-detail > div strong \{ position: absolute; right: 1\.75cqw; top: 1\.375cqw; \}/);
 });
 
-test("vendored block sprite remains byte-identical to the verified Neural DSP SVG", () => {
-  const canonical = readFileSync("packages/typescript/qc-theme/assets/qc-block-samples.svg", "utf8").replaceAll("\r\n", "\n");
-  assert.equal(createHash("sha256").update(canonical).digest("hex"), "aa32a2304e05fc62a783df4ed94c31780c18ff7c1e5f34a73aa1371f748919fc");
-});
-
-test("isolated reference assets cannot silently fall back to unrelated sprite tiles", () => {
-  const hashes = {
-    delay: "dee665d53bfd3f7ed33c5f0185424390d5b9639087881c5dd8624c7018c5283e",
-    compressor: "ca7d1c3842f5cc3784e34c23c4567c788fa597ad9db6bd05647cf54d3dec2faa"
-  } as const;
-  for (const [name, source] of Object.entries(REFERENCE_BLOCK_ICONS).filter(([name]) => name === "delay" || name === "compressor")) {
-    const bytes = Buffer.from(source.slice(source.indexOf(",") + 1), "base64");
-    assert.equal(createHash("sha256").update(bytes).digest("hex"), hashes[name as keyof typeof hashes]);
-  }
-  assert.equal(officialBlockVisual(block("Digital Delay", "Delay")).referenceAsset, "delay");
-  assert.equal(officialBlockVisual(block("Jewel Comp", "Compressor")).referenceAsset, "compressor");
-  assert.equal(officialBlockVisual(block("Transpose", "Pitch")).referenceAsset, "pitch");
+test("runtime block glyphs are original code-drawn marks without reference artwork", () => {
+  const renderer = readFileSync("packages/typescript/qc-ui/src/device-glyph.tsx", "utf8");
+  assert.match(renderer, /const mark = \(\{ plugin: "PLG"/);
+  assert.doesNotMatch(renderer, /<image\b|QC_VISUAL_ASSETS|REFERENCE_BLOCK_ICONS|data:image/);
 });
 
 test("Morph, Filter, Utility Gate, and Pitch remain attached to their verified vector glyphs", () => {

@@ -444,7 +444,7 @@ impl QcUsb {
     ) -> Result<bool, UsbError> {
         while Instant::now() < deadline {
             if let Some(message) = self.read_message(read_timeout_ms)? {
-                let is_preset = message.message_type == 15;
+                let is_preset = message.message_type == profile::MESSAGE_TYPE_RECALL_PRESET;
                 record_initial(initial_messages, message_counts, latest_messages, message);
                 if is_preset {
                     return Ok(true);
@@ -556,6 +556,7 @@ impl Drop for QcUsb {
 #[cfg(test)]
 mod tests {
     use super::{record_initial, IncomingMessage, UsbTelemetry, MAX_INITIAL_MESSAGES};
+    use qc_protocol::profile;
     use std::collections::HashMap;
 
     fn message(sequence: u64, message_type: u16, payload: &[u8]) -> IncomingMessage {
@@ -590,7 +591,7 @@ mod tests {
         assert_eq!(counts.get(&4), Some(&3));
         let folders: Vec<&[u8]> = initial
             .iter()
-            .filter(|entry| entry.message_type == 4)
+            .filter(|entry| entry.message_type == profile::MESSAGE_TYPE_FILE)
             .map(|entry| entry.payload.as_slice())
             .collect();
         assert_eq!(

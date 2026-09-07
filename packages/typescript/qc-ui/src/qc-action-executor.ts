@@ -1,11 +1,11 @@
 import type {
   BlockDetails, ConnectionState, DeviceImage, GatewayTransport, LaneControl, MidiOutMessage, PresetSnapshot,
   SavePresetResult
-} from "@ndsp-qc/client";
+} from "@qc-remote/client";
 import {
   assistantAccessPermitsTool, formatSnapshotSummary, isSharedQcAssistantTool,
   type AssistantAccessMode, type AssistantToolCall
-} from "@ndsp-qc/core";
+} from "@qc-remote/core";
 import { parameterNormalizedValue } from "./parameter-model.ts";
 
 export interface QcActionExecutionContext {

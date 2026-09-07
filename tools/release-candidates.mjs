@@ -37,8 +37,8 @@ function packageVersion(platform) {
 }
 
 export function releaseCandidateFileName(platform, version) {
-  if (platform === "android") return `QC-Control-Android-${version}-debug.apk`;
-  if (platform === "windows") return `QC-Control-Windows-${version}-x64-setup.exe`;
+  if (platform === "android") return `QC-Remote-Android-${version}-debug.apk`;
+  if (platform === "windows") return `QC-Remote-Windows-${version}-x64-setup.exe`;
   throw new Error(`Unsupported release platform: ${platform}`);
 }
 

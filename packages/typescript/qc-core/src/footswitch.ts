@@ -1,5 +1,5 @@
-import { QC_PRESET_SLOT_COLORS, QC_SCENE_COLORS, QC_SCENE_COUNT, type GridBlock, type PresetSnapshot } from "@ndsp-qc/client";
-import { QC_COLORS } from "@ndsp-qc/theme";
+import { QC_PRESET_SLOT_COLORS, QC_SCENE_COLORS, QC_SCENE_COUNT, type GridBlock, type PresetSnapshot } from "@qc-remote/client";
+import { QC_COLORS } from "@qc-remote/theme";
 import { sceneLetter } from "./state.ts";
 
 export interface FootswitchLed {

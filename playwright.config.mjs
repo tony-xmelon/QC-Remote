@@ -39,12 +39,12 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: `npm run dev --workspace @ndsp-qc/android -- --host 127.0.0.1 --port ${androidPort} --strictPort`,
+      command: `npm run dev --workspace @qc-remote/android -- --host 127.0.0.1 --port ${androidPort} --strictPort`,
       url: `http://127.0.0.1:${androidPort}`,
       reuseExistingServer: false
     },
     {
-      command: `npm run dev --workspace @ndsp-qc/windows -- --port ${windowsPort} --strictPort`,
+      command: `npm run dev --workspace @qc-remote/windows -- --port ${windowsPort} --strictPort`,
       url: `http://127.0.0.1:${windowsPort}`,
       reuseExistingServer: false
     }

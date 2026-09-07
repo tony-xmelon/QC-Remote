@@ -167,7 +167,9 @@ pub fn gateway_write_retryable(method: &str) -> bool {
             | "device.reloadPreset"
             | "device.selectScene"
             | "device.toggleBypass"
+            | "device.previewParameter"
             | "device.setParameter"
+            | "device.previewLaneControlParameter"
             | "device.setLaneControlParameter"
             | "device.setLaneControlSceneMode"
             | "device.setParameterSceneMode"
@@ -201,6 +203,8 @@ pub fn gateway_write_is_realtime(method: &str) -> bool {
             | "device.command.scene"
             | "device.toggleBypass"
             | "device.command.bypass"
+            | "device.previewParameter"
+            | "device.previewLaneControlParameter"
             | "device.setTempo"
             | "device.command.tempo"
             | "device.setMasterVolume"
@@ -1198,55 +1202,55 @@ pub fn plan_gateway_read(
     match method {
         "device.identity" => Ok(GatewayReadPlan {
             operation: DeviceOperation::ReadVersion,
-            response_type: 10,
+            response_type: profile::MESSAGE_TYPE_VERSION,
             timeout_ms: 5_000,
             projection: GatewayResponseProjection::DeviceIdentity,
         }),
         "device.tunerSettings" => Ok(GatewayReadPlan {
             operation: DeviceOperation::ReadTuner,
-            response_type: 6,
+            response_type: profile::MESSAGE_TYPE_TUNER,
             timeout_ms: 5_000,
             projection: GatewayResponseProjection::TunerSettings,
         }),
         "device.generalSettings" => Ok(GatewayReadPlan {
             operation: DeviceOperation::ReadGeneralSettings,
-            response_type: 9,
+            response_type: profile::MESSAGE_TYPE_GENERAL_SETTINGS,
             timeout_ms: 5_000,
             projection: GatewayResponseProjection::GeneralSettings,
         }),
         "device.ioSettings" => Ok(GatewayReadPlan {
             operation: DeviceOperation::ReadIoSettings,
-            response_type: 3,
+            response_type: profile::MESSAGE_TYPE_IO_SETTINGS,
             timeout_ms: 10_000,
             projection: GatewayResponseProjection::IoSettings,
         }),
         "device.globalEq" => Ok(GatewayReadPlan {
             operation: DeviceOperation::ReadGlobalEq,
-            response_type: 38,
+            response_type: profile::MESSAGE_TYPE_GLOBAL_EQ,
             timeout_ms: 5_000,
             projection: GatewayResponseProjection::GlobalEq,
         }),
         "device.modeCycle" => Ok(GatewayReadPlan {
             operation: DeviceOperation::ReadModeCycle,
-            response_type: 14,
+            response_type: profile::MESSAGE_TYPE_MODE,
             timeout_ms: 5_000,
             projection: GatewayResponseProjection::ModeCycle,
         }),
         "device.globalTempoSettings" => Ok(GatewayReadPlan {
             operation: DeviceOperation::ReadGlobalTempo,
-            response_type: 33,
+            response_type: profile::MESSAGE_TYPE_GLOBAL_TEMPO,
             timeout_ms: 30_000,
             projection: GatewayResponseProjection::GlobalTempoSettings,
         }),
         "device.presetTempoSettings" => Ok(GatewayReadPlan {
             operation: DeviceOperation::ReadCurrentPreset { request_id },
-            response_type: 15,
+            response_type: profile::MESSAGE_TYPE_RECALL_PRESET,
             timeout_ms: 15_000,
             projection: GatewayResponseProjection::PresetTempoSettings { request_id },
         }),
         "device.looperStatus" => Ok(GatewayReadPlan {
             operation: DeviceOperation::ReadLooperStatus,
-            response_type: 28,
+            response_type: profile::MESSAGE_TYPE_LOOPER,
             timeout_ms: 5_000,
             projection: GatewayResponseProjection::LooperStatus,
         }),
@@ -1255,7 +1259,7 @@ pub fn plan_gateway_read(
                 favorites: method == "device.favorites",
                 request_id,
             },
-            response_type: 20,
+            response_type: profile::MESSAGE_TYPE_RECENTS_FAVORITES,
             timeout_ms: if method == "device.favorites" {
                 20_000
             } else {
@@ -1265,7 +1269,7 @@ pub fn plan_gateway_read(
         }),
         "device.pinnedModels" => Ok(GatewayReadPlan {
             operation: DeviceOperation::ReadPinnedModels,
-            response_type: 54,
+            response_type: profile::MESSAGE_TYPE_PINNED_MODELS,
             timeout_ms: 8_000,
             projection: GatewayResponseProjection::PinnedModels,
         }),
@@ -1287,7 +1291,7 @@ pub fn plan_gateway_read(
                     file_type: (method == "device.irs").then_some(1),
                     request_id: (method == "device.irs").then_some(request_id),
                 },
-                response_type: 4,
+                response_type: profile::MESSAGE_TYPE_FILE,
                 timeout_ms: 30_000,
                 projection: GatewayResponseProjection::LibraryFiles {
                     request_id: (method == "device.irs").then_some(request_id),
@@ -1297,7 +1301,7 @@ pub fn plan_gateway_read(
         }
         "device.inhibitedModules" => Ok(GatewayReadPlan {
             operation: DeviceOperation::ReadInhibitedModules,
-            response_type: 42,
+            response_type: profile::MESSAGE_TYPE_COMPILER_INHIBITED_MODULES,
             timeout_ms: 5_000,
             projection: GatewayResponseProjection::InhibitedModules,
         }),
@@ -1320,7 +1324,7 @@ pub fn plan_gateway_read(
                     is_factory,
                     request_id,
                 },
-                response_type: 25,
+                response_type: profile::MESSAGE_TYPE_SCREENSHOT,
                 timeout_ms: 10_000,
                 projection: GatewayResponseProjection::PresetScreenshot {
                     request_id,
@@ -1332,13 +1336,13 @@ pub fn plan_gateway_read(
         }
         "device.captureScreen" => Ok(GatewayReadPlan {
             operation: DeviceOperation::CaptureScreen,
-            response_type: 72,
+            response_type: profile::MESSAGE_TYPE_REMOTE_CONTROL,
             timeout_ms: 10_000,
             projection: GatewayResponseProjection::CapturedScreen,
         }),
         "device.graphicsTree" => Ok(GatewayReadPlan {
             operation: DeviceOperation::ReadGraphicsTree,
-            response_type: 72,
+            response_type: profile::MESSAGE_TYPE_REMOTE_CONTROL,
             timeout_ms: 5_000,
             projection: GatewayResponseProjection::GraphicsTree,
         }),
@@ -3741,6 +3745,8 @@ mod tests {
         for method in [
             "device.recallPreset",
             "device.selectScene",
+            "device.previewParameter",
+            "device.previewLaneControlParameter",
             "device.setParameter",
             "device.setTempo",
             "device.showTuner",
@@ -3849,6 +3855,8 @@ mod tests {
         for method in [
             "device.selectScene",
             "device.toggleBypass",
+            "device.previewParameter",
+            "device.previewLaneControlParameter",
             "device.setTempo",
             "device.setMasterVolume",
             "device.pressFootswitch",

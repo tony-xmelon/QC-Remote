@@ -3023,7 +3023,7 @@ class PyQuadCortexDevice:
         if abs(actual - expected_value) > 1:
             raise RuntimeError(
                 f"Master Volume changed on the Quad Cortex: expected {expected_value}, found {actual}. "
-                "The current device value has been restored in QC Control."
+                "The current device value has been restored in QC Remote."
             )
         if actual == value:
             return {"detail": f"Master Volume is already {value}", "snapshot": self.snapshot()}

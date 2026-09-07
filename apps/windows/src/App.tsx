@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ClipboardEvent as ReactClipboardEvent } from "react";
-import { demoSnapshot, type ConnectionState, type DeviceActionResult, type DiagnosticsReport, type PresetSnapshot, type RuntimeStatus, type WorkspaceDocument } from "@ndsp-qc/client";
-import { assistantHelp, demoBlockDetails, parseAssistantIntent, recentModelConversation, runToolConversation, sceneLetter, type AssistantAccessMode as ControlAccessMode, type ConversationMessage } from "@ndsp-qc/core";
-import { formFactors, skins } from "@ndsp-qc/form-factors";
-import { QC_BRAND } from "@ndsp-qc/theme";
-import { AddBlockPanel, applyPreparedOfflineAssistantAction, AssistantAccessSelect, browserWorkflowPrompts, corosFixtureConfiguration, corOsUnavailableContextActionMessage, executeAndReconcileQcAction, GridManagementPanel, qcParameterEditorBindings, QcUiIcon, QuadCortexSurface, readAssistantAccessMode, RoutingEditor, runOfflineAssistantIntent, SceneEditor, useAssistantAutoScroll, useAssistantConversation, useBlockEditorSession, useContinuousControlWorkflow, usePublicRelayWorkflow, useQcConnectionWorkflow, useQcController, useQcLiveState, useQcSurfaceActions, useQcWorkflows, writeAssistantAccessMode, type CorOsContextAction, type PreparedOfflineAssistantAction } from "@ndsp-qc/ui";
-import { assistantAccessPermitsChatTool, booleanArgument, chatCredentialInputProps, chatCredentialStatus, chatInstructions, chatProviderDefaults, isChatUnavailable, isLoopbackChatUrl, numericArgument, qcChatTools, type AntigravityModel, type ChatAttachment, type ChatQuota, type ChatSettings, type ChatToolCall, type ChatUsage, type GoogleProject } from "./model-chat";
+import { demoSnapshot, type ConnectionState, type DeviceActionResult, type DiagnosticsReport, type PresetSnapshot, type RuntimeStatus, type WorkspaceDocument } from "@qc-remote/client";
+import { assistantHelp, demoBlockDetails, parseAssistantIntent, recentModelConversation, runToolConversation, sceneLetter, type AssistantAccessMode as ControlAccessMode, type ConversationMessage } from "@qc-remote/core";
+import { formFactors, skins } from "@qc-remote/form-factors";
+import { QC_BRAND, QC_LEGAL } from "@qc-remote/theme";
+import { AddBlockPanel, applyPreparedOfflineAssistantAction, AssistantAccessSelect, browserWorkflowPrompts, corosFixtureConfiguration, corOsUnavailableContextActionMessage, executeAndReconcileQcAction, GridManagementPanel, qcParameterEditorBindings, QcUiIcon, QuadCortexSurface, readAssistantAccessMode, RoutingEditor, runOfflineAssistantIntent, SceneEditor, useAssistantAutoScroll, useAssistantConversation, useBlockEditorSession, useContinuousControlWorkflow, usePublicRelayWorkflow, useQcConnectionWorkflow, useQcController, useQcLiveState, useQcSurfaceActions, useQcWorkflows, writeAssistantAccessMode, type CorOsContextAction, type PreparedOfflineAssistantAction } from "@qc-remote/ui";
+import { assistantAccessPermitsChatTool, chatCredentialInputProps, chatCredentialStatus, chatInstructions, chatProviderDefaults, isChatUnavailable, isLoopbackChatUrl, qcChatTools, type AntigravityModel, type ChatAttachment, type ChatQuota, type ChatSettings, type ChatToolCall, type ChatUsage, type GoogleProject } from "./model-chat";
 import { diagnosticsFiles, modelChat, publicRelay, reportVoiceCapability, reportVoiceEvent, tauriTransport, workspaceFiles } from "./tauri-transport";
 import { createWindowsQcTransport } from "./qc-transport";
 import { createSpeechRecognition, speechRecognitionAvailable, speechRecognitionErrorMessage, type SpeechRecognitionLike } from "./voice";
@@ -15,7 +15,7 @@ import { isQcConnectionFailure, qcConnectionIsVerified, qcVisibleStatusNotice, r
 import appPackage from "../package.json";
 
 const { enabled: corpusFixtureEnabled, screenView: fixtureScreenView, initialSnapshot: fixtureInitialSnapshot } =
-  corosFixtureConfiguration(window.location.search, demoSnapshot);
+  corosFixtureConfiguration(import.meta.env.DEV ? window.location.search : "", demoSnapshot);
 
 type DialogName = "settings" | "about" | "device-info" | "shortcuts" | "privacy" | "legal" | "notices" | "guide" | "feedback" | "parameters" | "add-block" | "routing" | "scenes" | "workspace" | null;
 type SettingsTab = "model" | "providers" | "voice" | "general";
@@ -28,6 +28,16 @@ const initialConnection: ConnectionState = {
 
 const voiceDisclosureKey = "qc.voice.azure-disclosure.v1";
 const remoteChatDisclosureKey = "qc.chat.remote-disclosure.v1";
+const remoteChatConsentTarget = (settings: Pick<ChatSettings, "provider" | "baseUrl">) => {
+  let endpoint = settings.baseUrl.trim().toLowerCase().replace(/\/+$/, "");
+  try {
+    const parsed = new URL(settings.baseUrl);
+    endpoint = `${parsed.protocol}//${parsed.host}${parsed.pathname.replace(/\/+$/, "")}`.toLowerCase();
+  } catch { /* Preserve the normalized literal so malformed endpoints never share consent. */ }
+  return `${settings.provider}|${endpoint}`;
+};
+const remoteChatConsentAllows = (settings: Pick<ChatSettings, "provider" | "baseUrl">, consent: string) =>
+  isLoopbackChatUrl(settings.baseUrl) || consent === remoteChatConsentTarget(settings);
 const storedAccessMode = (): ControlAccessMode => readAssistantAccessMode(localStorage);
 const appVersion = appPackage.version;
 const fallbackAntigravityModels: AntigravityModel[] = [
@@ -89,11 +99,12 @@ export function App() {
   const [chatUsage, setChatUsage] = useState<ChatUsage>();
   const [chatQuota, setChatQuota] = useState<ChatQuota>();
   const [antigravityModels, setAntigravityModels] = useState<AntigravityModel[]>(fallbackAntigravityModels);
-  const [remoteChatAllowed, setRemoteChatAllowed] = useState(() => localStorage.getItem(remoteChatDisclosureKey) !== "declined");
+  const [remoteChatConsent, setRemoteChatConsent] = useState(() => localStorage.getItem(remoteChatDisclosureKey) ?? "");
   const [assistantAccessMode, setAssistantAccessMode] = useState<ControlAccessMode>(storedAccessMode);
   const [relayEndpoint, setRelayEndpoint] = useState("");
   const [relayPairingCode, setRelayPairingCode] = useState("");
   const [chatSettingsDraft, setChatSettingsDraft] = useState({ provider: "openai-responses" as ChatSettings["provider"], model: "", baseUrl: "", timeoutMs: 30000 });
+  const remoteChatAllowed = Boolean(chatSettings && remoteChatConsentAllows(chatSettings, remoteChatConsent));
   const [chatApiKey, setChatApiKey] = useState("");
   const [googleOauthClientId, setGoogleOauthClientId] = useState("");
   const [googleOauthClientSecret, setGoogleOauthClientSecret] = useState("");
@@ -439,9 +450,10 @@ export function App() {
       setChatSettings(settings);
       setChatSettingsDraft({ provider: settings.provider, model: settings.model, baseUrl: settings.baseUrl, timeoutMs: settings.timeoutMs });
       const antigravityConfigured = settings.available && settings.provider === "antigravity-cli";
-      setChatStatus(settings.available ? (antigravityConfigured ? "checking" : "online") : "offline");
-      void modelChat.quota().then(setChatQuota).catch(() => setChatQuota({ available: false, label: "Quota unavailable" }));
-      if (antigravityConfigured) {
+      const sharingAllowed = remoteChatConsentAllows(settings, remoteChatConsent);
+      setChatStatus(settings.available && sharingAllowed ? (antigravityConfigured ? "checking" : "online") : "offline");
+      if (sharingAllowed) void modelChat.quota().then(setChatQuota).catch(() => setChatQuota({ available: false, label: "Quota unavailable" }));
+      if (antigravityConfigured && sharingAllowed) {
         setModelWarming(true);
         setNotice("Starting the Google subscription model in the background…");
         const warmup = modelChat.warm()
@@ -1175,15 +1187,6 @@ export function App() {
     if (!assistantAccessPermitsChatTool(assistantAccessMode, call.name)) {
       throw new Error(`Assistant ${assistantAccessMode} access does not permit ${call.name}; no device change was made.`);
     }
-    if (call.name === "fetch_youtube_reference_audio") {
-      const url = typeof call.arguments.url === "string" ? call.arguments.url.trim() : "";
-      const startSeconds = numericArgument(call, "start_seconds");
-      const durationSeconds = numericArgument(call, "duration_seconds");
-      const userConfirmedRights = booleanArgument(call, "user_confirmed_rights");
-      const result = await modelChat.fetchYoutubeReferenceAudio(url, startSeconds, durationSeconds, userConfirmedRights);
-      appendMessage("tool", result.detail, [result.attachment]);
-      return result;
-    }
     const liveSnapshot = snapshotRef.current;
     if (call.name === "save_current_unsaved_preset") {
       const name = typeof call.arguments.name === "string" ? call.arguments.name.trim() : "";
@@ -1221,7 +1224,9 @@ export function App() {
     try {
       if (chatStatus === "online") {
         if (chatSettings && !isLoopbackChatUrl(chatSettings.baseUrl) && !remoteChatAllowed) {
-          appendMessage("assistant", "Online model sharing is disabled. Enable it under Settings → General to use conversational chat; recognized offline QC commands remain available.");
+          const intent = parseAssistantIntent(promptText);
+          appendMessage("assistant", `Online model sharing is disabled, so no data was sent. ${intent.kind === "help" ? `Enable it under Settings → General to use conversational chat. ${assistantHelp}` : "I will try this as a recognized offline QC command."}`);
+          if (intent.kind !== "help") await executeImmediateAssistantIntent(intent);
           setNotice("Online model sharing is disabled; no data was sent.");
           return;
         }
@@ -1295,8 +1300,9 @@ export function App() {
       const settings = await modelChat.updateSettings(chatSettingsDraft);
       setChatSettings(settings);
       setChatSettingsDraft({ provider: settings.provider, model: settings.model, baseUrl: settings.baseUrl, timeoutMs: settings.timeoutMs });
-      setChatStatus(settings.available ? "online" : "offline");
-      setNotice(settings.available ? `Conversational model ${settings.model} is ready.` : "Chat settings saved, but the provider is not available.");
+      const sharingAllowed = remoteChatConsentAllows(settings, remoteChatConsent);
+      setChatStatus(settings.available && sharingAllowed ? "online" : "offline");
+      setNotice(settings.available && !sharingAllowed ? `Conversational model ${settings.model} was saved. Review and enable sharing for this provider before use.` : settings.available ? `Conversational model ${settings.model} is ready.` : "Chat settings saved, but the provider is not available.");
     } catch (error) {
       setChatStatus("error");
       actionFailed(error);
@@ -1312,7 +1318,7 @@ export function App() {
       const settings = await modelChat.updateSettings({ provider: chatSettings.provider, model, baseUrl: chatSettings.baseUrl, timeoutMs: chatSettings.timeoutMs });
       setChatSettings(settings);
       setChatSettingsDraft({ provider: settings.provider, model: settings.model, baseUrl: settings.baseUrl, timeoutMs: settings.timeoutMs });
-      setChatStatus(settings.available ? "online" : "offline");
+      setChatStatus(settings.available && remoteChatConsentAllows(settings, remoteChatConsent) ? "online" : "offline");
       setNotice(`Conversational model changed to ${settings.model}.`);
     } catch (error) {
       setChatStatus("error");
@@ -1334,7 +1340,7 @@ export function App() {
       }
       const settings = await modelChat.setApiKey(apiKey);
       setChatSettings(settings);
-      setChatStatus(settings.available ? "online" : "offline");
+      setChatStatus(settings.available && remoteChatConsentAllows(settings, remoteChatConsent) ? "online" : "offline");
       setNotice("Model credential saved securely in Windows Credential Manager.");
     } catch (error) {
       actionFailed(error);
@@ -1359,13 +1365,17 @@ export function App() {
   };
 
   const testChatConnection = async () => {
+    if (!remoteChatConsentAllows(chatSettingsDraft, remoteChatConsent)) {
+      setNotice("Enable online model sharing for this provider before sending a connection test.");
+      return;
+    }
     setCommandPending(true);
     setNotice("Testing the selected model provider…");
     try {
       const settings = await modelChat.updateSettings(chatSettingsDraft);
       setChatSettings(settings);
       const response = await modelChat.testConnection();
-      setChatStatus("online");
+      setChatStatus(settings.available && remoteChatConsentAllows(settings, remoteChatConsent) ? "online" : "offline");
       setNotice(`${settings.providerName} is ready: ${response}`);
     } catch (error) {
       setChatStatus("error");
@@ -1405,7 +1415,7 @@ export function App() {
       if (result.selectedProject) {
         const settings = await modelChat.selectGoogleProject(result.selectedProject);
         setChatSettings(settings);
-        setChatStatus("online");
+        setChatStatus(remoteChatConsentAllows(settings, remoteChatConsent) ? "online" : "offline");
         setNotice(`Google connected. Gemini will use project ${result.selectedProject}.`);
       } else if (result.projects.length) {
         setNotice("Google connected. Select the Cloud project whose Gemini quota should be used.");
@@ -1425,7 +1435,7 @@ export function App() {
     try {
       const settings = await modelChat.selectGoogleProject(projectId);
       setChatSettings(settings);
-      setChatStatus(settings.available ? "online" : "offline");
+      setChatStatus(settings.available && remoteChatConsentAllows(settings, remoteChatConsent) ? "online" : "offline");
       setNotice(`Gemini will use Google Cloud project ${projectId}.`);
     } catch (error) {
       actionFailed(error);
@@ -1440,7 +1450,7 @@ export function App() {
       const settings = await modelChat.disconnectGoogle();
       setChatSettings(settings);
       setGoogleProjects([]);
-      setChatStatus(settings.available ? "online" : "offline");
+      setChatStatus(settings.available && remoteChatConsentAllows(settings, remoteChatConsent) ? "online" : "offline");
       setNotice("Google authorization removed from Windows Credential Manager.");
     } catch (error) {
       actionFailed(error);
@@ -1649,12 +1659,12 @@ export function App() {
 
           {settingsTab === "model" && <section className="settings-panel model-settings-panel">
             <div className="model-settings-heading"><div><strong>Google AI subscription</strong><small>{chatSettingsDraft.provider === "antigravity-cli" ? chatCredentialStatus(chatSettings) : `Currently using ${chatSettings?.providerName ?? "another provider"}`}</small></div><span className={chatSettings?.available && chatSettingsDraft.provider === "antigravity-cli" ? "model-ready" : "model-offline"}>{chatSettings?.available && chatSettingsDraft.provider === "antigravity-cli" ? "READY" : "SETUP NEEDED"}</span></div>
-            {chatSettingsDraft.provider !== "antigravity-cli" && <div className="primary-provider-card"><div><strong>Use the Google account subscription</strong><small>Runs through Google's supported Antigravity CLI so eligible Google AI subscription quota applies. No API key is needed.</small></div><button className="primary" onClick={() => { const defaults = chatProviderDefaults["antigravity-cli"]; setChatApiKey(""); setChatSettingsDraft((current) => ({ ...current, provider: "antigravity-cli", model: defaults.model, baseUrl: defaults.baseUrl })); }}>Use Google subscription</button></div>}
+            {chatSettingsDraft.provider !== "antigravity-cli" && <div className="primary-provider-card"><div><strong>Use a separate Antigravity installation</strong><small>Uses the account and any eligible quota exposed by Antigravity. QC Remote does not provide or guarantee access, quota, or subscription benefits.</small></div><button className="primary" onClick={() => { const defaults = chatProviderDefaults["antigravity-cli"]; setChatApiKey(""); setChatSettingsDraft((current) => ({ ...current, provider: "antigravity-cli", model: defaults.model, baseUrl: defaults.baseUrl })); }}>Use Antigravity</button></div>}
             {chatSettingsDraft.provider === "antigravity-cli" && <>
               <label className="primary-model-choice"><span>Model<small>Live catalog from Antigravity</small></span><select value={chatSettingsDraft.model} onChange={(event) => setChatSettingsDraft((current) => ({ ...current, model: event.target.value }))}>{!antigravityModels.some((model) => model.id === chatSettingsDraft.model) && <option value={chatSettingsDraft.model}>Custom · {chatSettingsDraft.model} — {modelQuotaLabel(chatSettingsDraft.model, chatQuota)}</option>}{["Google", "Anthropic", "OpenAI"].map((vendor) => <optgroup label={vendor} key={vendor}>{antigravityModels.filter((model) => antigravityModelVendor(model) === vendor).map((model) => <option value={model.id} key={model.id}>{model.label} — {modelQuotaLabel(model.id, chatQuota)}</option>)}</optgroup>)}</select></label>
               <div className="google-account-card"><div><strong>Google account</strong><small>Antigravity stores its Google sign-in in Windows Credential Manager. Opening account settings stops the existing chat worker so it cannot retain the previous login.</small></div><button className="primary" disabled={commandPending} onClick={() => { setChatStatus("checking"); setChatQuota(undefined); void modelChat.openGoogleSubscriptionSetup().then(() => setNotice("Antigravity opened and the previous chat session was stopped. Change or confirm the Google account; the next chat request will start with that account.")).catch(actionFailed); }}>Open Google sign-in / switch account</button></div>
               {chatQuota?.available && <div className="quota-settings-card"><div><strong>{chatQuota.label}</strong><small>{chatQuota.remainingFraction !== undefined ? `${Math.round(chatQuota.remainingFraction * 100)}% remaining` : "Remaining quota unavailable"}{quotaResetLabel(chatQuota.resetTime) ? ` · resets ${quotaResetLabel(chatQuota.resetTime)}` : ""}</small></div><button disabled={commandPending} onClick={refreshChatQuota}>Refresh quota</button></div>}
-              <p className="settings-hint">The sign-in window is shown only for setup or changing accounts. Normal QC chat runs silently in the background through the official CLI.</p>
+              <p className="settings-hint">Antigravity is separate software with its own terms and privacy practices. Its sign-in window is shown only for setup or changing accounts; later requests use that installation in the background.</p>
               <div className="dialog-actions settings-primary-actions"><button disabled={commandPending || !chatSettingsDraft.model.trim()} onClick={() => void testChatConnection()}>Test model</button><button className="primary" disabled={commandPending || !chatSettingsDraft.model.trim()} onClick={() => void saveChatSettings()}>Save model</button></div>
             </>}
           </section>}
@@ -1691,7 +1701,8 @@ export function App() {
                 <div className="compact-actions"><button className="primary" disabled={relayPending || !relayEndpoint.trim() || !relayPairingCode.trim()} onClick={() => void pairPublicRelay()}>Pair this computer</button></div>
               </>}
             </div>
-            <label className="setting-row privacy-toggle"><span>Allow online conversational models<small>Send chat messages and current QC context to {chatSettings?.providerName ?? "the configured provider"}. Disable this to keep chat commands local.</small></span><input type="checkbox" checked={remoteChatAllowed} onChange={(event) => { const allowed = event.target.checked; setRemoteChatAllowed(allowed); localStorage.setItem(remoteChatDisclosureKey, allowed ? "accepted" : "declined"); setNotice(allowed ? "Online conversational models enabled." : "Online conversational models disabled; chat data will remain local."); }} /></label>
+            <label className="setting-row privacy-toggle"><span>Allow online conversational models<small>Send chat messages, selected attachments, and relevant QC context to {chatSettings?.providerName ?? "the configured provider"} at the configured endpoint. Consent applies only to this provider and endpoint.</small></span><input type="checkbox" checked={remoteChatAllowed} disabled={!chatSettings || isLoopbackChatUrl(chatSettings.baseUrl)} onChange={(event) => { if (!chatSettings) return; const allowed = event.target.checked; const consent = allowed ? remoteChatConsentTarget(chatSettings) : "declined"; setRemoteChatConsent(consent); localStorage.setItem(remoteChatDisclosureKey, consent); setChatStatus(chatSettings.available && (allowed || isLoopbackChatUrl(chatSettings.baseUrl)) ? "online" : "offline"); setNotice(allowed ? `Online sharing enabled for ${chatSettings.providerName} at this endpoint.` : "Online conversational models disabled; chat data will remain local."); }} /></label>
+            <div className="setting-row"><span>Conversation data<small>Messages and pending attachments are kept only in this running app session.</small></span><button onClick={() => { conversation.setMessages([]); setChatAttachments([]); setPendingAssistantAction(undefined); setNotice("Local conversation data cleared."); }}>Clear conversation</button></div>
           </section>}
         </>}
         {dialog === "parameters" && <GridManagementPanel snapshot={snapshot} details={blockDetails} loading={blockDetailsLoading} pending={commandPending} moveDestination={moveDestination} setMoveDestination={setMoveDestination} footswitchDraft={footswitchDraft} setFootswitchDraft={setFootswitchDraft} move={() => void moveSelectedBlock()} assignFootswitch={() => void applyFootswitchAssignment()} remove={() => void removeSelectedBlock()} />}
@@ -1701,11 +1712,11 @@ export function App() {
         {dialog === "workspace" && loadedWorkspace && <><div className="dialog-kicker">LOCAL WORKSPACE</div><h2 id="dialog-title">{workspaceName ?? "QC Workspace"}</h2><dl><dt>Saved</dt><dd>{new Date(loadedWorkspace.savedAt).toLocaleString()}</dd><dt>Source</dt><dd>{loadedWorkspace.source.setlistName} · {loadedWorkspace.source.presetLocation}</dd><dt>Preset</dt><dd>{loadedWorkspace.source.presetName}</dd><dt>Scene</dt><dd>{sceneLetter(loadedWorkspace.snapshot.activeScene)}</dd><dt>Blocks</dt><dd>{loadedWorkspace.snapshot.blocks.length}</dd><dt>Device state</dt><dd>{loadedWorkspace.snapshot.dirty ? "Captured with unsaved changes" : "Clean at capture"}</dd></dl><p>The workspace is a local reference snapshot. Opening it never writes to the connected Quad Cortex.</p><div className="dialog-actions"><button onClick={() => setDialog(null)}>Keep Live Device</button><button className="primary" onClick={() => void saveWorkspace(true)}>Save Copy As…</button></div></>}
         {dialog === "shortcuts" && <><div className="dialog-kicker">INPUT REFERENCE</div><h2 id="dialog-title">Keyboard and mouse</h2><dl><dt>1–8</dt><dd>Press Footswitches A–H in the current QC mode</dd><dt>Ctrl+1–8</dt><dd>Select Scenes A–H directly</dd><dt>[ / ]</dt><dd>Bank down / up</dd><dt>Arrow keys / Enter</dt><dd>Select the nearest Grid block / open its live parameters</dd><dt>T / Shift+T</dt><dd>Tap tempo / open tuner</dd><dt>B</dt><dd>Toggle the selected block</dd><dt>Delete</dt><dd>Review temporary removal of the selected block</dd><dt>Ctrl+S</dt><dd>Save the local workspace</dd><dt>Ctrl+Shift+S</dt><dd>Review a separate device Save As</dd><dt>Ctrl+L</dt><dd>Focus the assistant</dd><dt>Escape</dt><dd>Cancel voice, a pending edit, or the open dialog</dd><dt>Click block</dt><dd>Open live parameters</dd><dt>Tempo encoder</dt><dd>Turn to adjust; press repeatedly to tap</dd></dl><p>Grid and performance shortcuts are suspended while an input or the chat composer has focus.</p></>}
         {dialog === "guide" && <><div className="dialog-kicker">USER GUIDE</div><h2 id="dialog-title">Safe QC control</h2><p>Connect the QC by USB and close Cortex Control, which otherwise owns the interface. Click Grid blocks to inspect parameters, move them, assign STOMP switches, or review removal. Add blocks and edit routing from the Device menu; temporary edits mark the preset unsaved.</p><p>Use the preset browser or Bank controls only when the preset is clean. “Save Workspace” writes a local reference file. “Save Preset to Quad Cortex” is the separate persistent operation and always asks for a destination and confirmation.</p><p>Typed or spoken commands use the same guarded controls. Bypass and parameter edits show a preview before application.</p></>}
-        {dialog === "privacy" && <><div className="dialog-kicker">PRIVACY</div><h2 id="dialog-title">Local controls, optional model</h2><p>Manual control, recognized offline commands, workspaces, and diagnostics operate locally. The desktop configuration binds no network listener and does not collect analytics.</p><p>The “Allow online conversational models” checkbox under Settings → General controls whether conversation text and current QC context may be sent to a configured non-local provider. It is enabled by default and can be changed at any time. Conversation text is never included in diagnostics.</p><p>Push-to-talk uses Microsoft Edge speech recognition only after separate disclosure and consent; that service may send microphone audio to Microsoft Azure.</p></>}
-        {dialog === "legal" && <><div className="dialog-kicker">LEGAL</div><h2 id="dialog-title">Unofficial controller</h2><p>{QC_BRAND.appName} is not affiliated with, endorsed by, or supported by Neural DSP Technologies. “Neural DSP” and “Quad Cortex” are trademarks of their respective owner and are used only to describe compatibility.</p><p>No project source license has been granted. Third-party components retain their own licenses.</p></>}
-        {dialog === "notices" && <><div className="dialog-kicker">THIRD-PARTY NOTICES</div><h2 id="dialog-title">Runtime components</h2><p>This build includes Tauri, React, WebView2 integration, and the project&apos;s native Rust QC protocol and USB stack. Their respective licenses and notices remain with those projects.</p><p>The Rust protocol schema is derived from the MIT-licensed community pyquadcortex project, which is retained as a development reference but is not included as a runtime dependency. {QC_BRAND.appName} uses the device&apos;s existing USB protocol and does not modify device firmware.</p></>}
+        {dialog === "privacy" && <><div className="dialog-kicker">PRIVACY</div><h2 id="dialog-title">Local control, optional services</h2><p>{QC_LEGAL.privacy.local}</p><p>{QC_LEGAL.privacy.models}</p><p>{QC_LEGAL.privacy.voice}</p><p>Diagnostics exclude conversation content, device serial numbers, usernames, filesystem paths, and preset or setlist names.</p></>}
+        {dialog === "legal" && <><div className="dialog-kicker">LEGAL</div><h2 id="dialog-title">Independent companion</h2><p>{QC_LEGAL.independence}</p><p>{QC_LEGAL.trademarks}</p><p>{QC_LEGAL.productSafety}</p><p>{QC_LEGAL.copyright}</p></>}
+        {dialog === "notices" && <><div className="dialog-kicker">THIRD-PARTY NOTICES</div><h2 id="dialog-title">Runtime components</h2>{QC_LEGAL.thirdParty.map((notice) => <p key={notice}>{notice}</p>)}<p><a href="./legal/THIRD_PARTY-NOTICES.md" target="_blank" rel="noreferrer">Open the complete locked dependency notices</a></p><p><a href="./legal/THIRD_PARTY-LICENSE-TEXTS.txt" target="_blank" rel="noreferrer">Open bundled license and NOTICE texts</a></p><p><a href="./legal/THIRD_PARTY-SOURCE-OFFER.md" target="_blank" rel="noreferrer">Open exact-version third-party source availability</a></p><p><a href="./legal/THIRD_PARTY-LICENSE-INVENTORY.json" target="_blank" rel="noreferrer">Open the machine-readable license inventory</a></p></>}
         {dialog === "feedback" && <><div className="dialog-kicker">REPORT A PROBLEM</div><h2 id="dialog-title">Prepare a safe report</h2><p>Export the diagnostic report and attach it through your preferred support channel. The export contains app/runtime state and lifecycle event names while omitting serial numbers, MAC addresses, usernames, filesystem paths, preset/setlist names, and conversation content.</p><div className="dialog-actions"><button className="primary" onClick={() => void exportDiagnostics()}>Export redacted diagnostics…</button></div></>}
-        {dialog === "about" && <><div className="dialog-kicker">ABOUT</div><h2 id="dialog-title">{QC_BRAND.appName} <span>{appVersion}</span></h2><p>An unofficial, hardware-familiar desktop controller built around a reusable QC core and standalone MCP service.</p><p className="legal-note">Not affiliated with or endorsed by Neural DSP. Product names are used only to describe compatibility.</p><div className="dialog-actions"><button onClick={() => setDialog("privacy")}>Privacy</button><button onClick={() => setDialog("legal")}>Legal notices</button><button onClick={() => setDialog("notices")}>Third-party notices</button></div></>}
+        {dialog === "about" && <><div className="dialog-kicker">ABOUT</div><h2 id="dialog-title">{QC_BRAND.appName} <span>{appVersion}</span></h2><p>An independent desktop companion for controlling a connected Quad Cortex.</p><p className="legal-note">{QC_LEGAL.independence}</p><p>{QC_LEGAL.copyright}</p><div className="dialog-actions"><button onClick={() => setDialog("privacy")}>Privacy</button><button onClick={() => setDialog("legal")}>Legal notices</button><button onClick={() => setDialog("notices")}>Third-party notices</button></div></>}
       </section>
     </div>}
   </div>;

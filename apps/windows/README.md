@@ -1,10 +1,10 @@
-# QC Control
+# QC Remote
 
 Tauri 2 desktop composition root for the large Quad Cortex surface, application menus, keyboard/mouse input, chat, voice capture, settings, and gateway sidecar lifecycle.
 
 Allowed dependencies: TypeScript client/UI/form-factor packages and platform adapters. It must not import `pyquadcortex`, implement device rules, or define cross-process contracts.
 
-The same `@ndsp-qc/ui` screen and `@ndsp-qc/core` behavior package are used by
+The same `@qc-remote/ui` screen and `@qc-remote/core` behavior package are used by
 Android. Windows-specific code is limited to desktop lifecycle, menus,
 workspace/credential integration, the conversational-model provider, and an
 adapter from the stable `GatewayTransport` to the shared device port.

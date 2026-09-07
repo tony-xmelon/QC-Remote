@@ -1,6 +1,6 @@
 import { useCallback, type Dispatch, type SetStateAction } from "react";
-import type { GatewayTransport, PresetSnapshot } from "@ndsp-qc/client";
-import type { QcDeviceTransport } from "@ndsp-qc/core";
+import type { GatewayTransport, PresetSnapshot } from "@qc-remote/client";
+import type { QcDeviceTransport } from "@qc-remote/core";
 import type { BlockEditorSessionController } from "./use-block-editor-session";
 import { useDeviceHistory } from "./use-device-history";
 import { useGridWorkflow } from "./use-grid-workflow";

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
-import type { GatewayTransport, PresetEntry, PresetList, PresetSnapshot, SavePresetResult } from "@ndsp-qc/client";
+import type { GatewayTransport, PresetEntry, PresetList, PresetSnapshot, SavePresetResult } from "@qc-remote/client";
 import type { PresetDirectoryState } from "./quad-cortex-surface";
 import type { WorkflowPrompts } from "./workflow-options";
 

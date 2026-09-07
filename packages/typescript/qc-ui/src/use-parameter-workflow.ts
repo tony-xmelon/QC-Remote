@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import type { BlockDetails, BlockParameter, GatewayTransport, PresetSnapshot } from "@ndsp-qc/client";
+import type { BlockDetails, BlockParameter, GatewayTransport, PresetSnapshot } from "@qc-remote/client";
 import type { BlockEditorSessionController } from "./use-block-editor-session";
 import type { DeviceMutationWorkflowOptions } from "./workflow-options";
 import { PARAMETER_ENCODER_ROLES, parameterEditorControlSlots, parameterEditorPageSize, parameterStep } from "./parameter-model";

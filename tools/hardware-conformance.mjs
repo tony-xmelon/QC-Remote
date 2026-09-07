@@ -135,6 +135,7 @@ class McpHttpTransport {
     const headers = {
       Authorization: `Bearer ${bearer}`,
       Accept: "application/json, text/event-stream",
+      Connection: "close",
       "Content-Type": "application/json",
       "MCP-Protocol-Version": this.config.protocolVersion ?? "2025-03-26"
     };
@@ -148,15 +149,73 @@ class McpHttpTransport {
     if (!response.ok) throw new Error(`MCP ${method} returned HTTP ${response.status}: ${await response.text()}`);
     this.sessionId ??= response.headers.get("mcp-session-id") ?? undefined;
     if (notification) return undefined;
-    const text = await response.text();
-    const messages = response.headers.get("content-type")?.includes("text/event-stream")
-      ? text.split(/\r?\n/)
-        .filter((line) => line.startsWith("data:") && line.slice(5).trim())
-        .map((line) => JSON.parse(line.slice(5).trim()))
-      : [JSON.parse(text)];
-    const message = messages.find((candidate) => candidate.id === id) ?? messages.at(-1);
+    const message = response.headers.get("content-type")?.includes("text/event-stream")
+      ? await this.readSseMessage(response, id)
+      : await response.json();
     if (message?.error) throw new Error(`${message.error.code}: ${message.error.message}`);
     return message?.result;
+  }
+
+  async readSseMessage(response, id) {
+    if (!response.body) throw new Error("MCP SSE response has no body.");
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffered = "";
+    let data = [];
+    const matchingMessage = () => {
+      if (data.length === 0) return undefined;
+      try {
+        const message = JSON.parse(data.join("\n"));
+        return message.id === id ? message : undefined;
+      } catch {
+        return undefined;
+      }
+    };
+    const consumeEvent = () => {
+      if (data.length === 0) return undefined;
+      const message = JSON.parse(data.join("\n"));
+      data = [];
+      return message.id === id ? message : undefined;
+    };
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        buffered += decoder.decode(value, { stream: !done });
+        let newline;
+        while ((newline = buffered.indexOf("\n")) >= 0) {
+          const line = buffered.slice(0, newline).replace(/\r$/, "");
+          buffered = buffered.slice(newline + 1);
+          if (line === "") {
+            const message = consumeEvent();
+            if (message) {
+              await reader.cancel().catch(() => {});
+              return message;
+            }
+          } else if (line.startsWith("data:")) {
+            const payload = line.slice(5).replace(/^ /, "");
+            if (payload.trim()) {
+              data.push(payload);
+              const message = matchingMessage();
+              if (message) {
+                await reader.cancel().catch(() => {});
+                return message;
+              }
+            }
+          }
+        }
+        if (done) {
+          if (buffered.startsWith("data:")) {
+            const payload = buffered.slice(5).replace(/^ /, "");
+            if (payload.trim()) data.push(payload);
+          }
+          const message = consumeEvent();
+          if (message) return message;
+          throw new Error(`MCP SSE stream ended before response ${id}.`);
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
   }
 
   async start() {
@@ -169,11 +228,16 @@ class McpHttpTransport {
   }
 
   async call(name, args) {
-    const invoke = () => this.post("tools/call", { name, arguments: args ?? {} });
+    const invoke = async () => {
+      const result = await this.post("tools/call", { name, arguments: args ?? {} });
+      if (result?.isError) {
+        throw new Error(result.content?.map((item) => item.text).filter(Boolean).join("\n") || `${name} failed.`);
+      }
+      return result;
+    };
     const result = CASES[name]?.hazard === "read"
       ? await retryTransientRead(invoke)
       : await invoke();
-    if (result?.isError) throw new Error(result.content?.map((item) => item.text).filter(Boolean).join("\n") || `${name} failed.`);
     if (result?.structuredContent !== undefined) return result.structuredContent;
     const text = result?.content?.find((item) => item.type === "text")?.text;
     try { return text ? JSON.parse(text) : result; } catch { return { detail: text ?? `${name} completed.` }; }
@@ -237,7 +301,7 @@ async function readReleaseCandidate(path, platform) {
 async function main() {
   validateCoverage(contract);
   const config = JSON.parse(await readFile(configPath, "utf8"));
-  const missingFixtures = validateConfig(config, { requireAll });
+  const missingFixtures = validateConfig(config, { requireAll, requireStress: stressEnabled });
   const plan = actionPlan(contract, enabledHazards).map((item) => item.name === "create_device_backup"
     ? { ...item, enabled: item.enabled && backupEnabled }
     : item);
@@ -463,6 +527,7 @@ async function main() {
   let deviceAuthorized = false;
   let firstScreenTapSent = false;
   const performed = new Set();
+  const restorationGroups = new Set();
 
   const recordTransportHealth = async (stage) => {
     const status = await transport.status();
@@ -580,6 +645,9 @@ async function main() {
   };
   const latestStateSequence = async () => {
     const value = await transport.call("get_state_events", { after_sequence: 0, limit: 256 });
+    if (Number.isSafeInteger(value.latestSequence) && value.latestSequence >= 0) {
+      return value.latestSequence;
+    }
     return value.frames?.at(-1)?.sequence ?? 0;
   };
   const waitForOrderedStateFrames = async (afterSequence, predicates, timeoutMs = 2000) => {
@@ -589,9 +657,10 @@ async function main() {
           after_sequence: afterSequence,
           limit: 256
         });
+        const receivedAt = Date.now();
         const matched = [];
         for (const frame of value.frames ?? []) {
-          if (predicates[matched.length]?.(frame)) matched.push(frame);
+          if (predicates[matched.length]?.(frame)) matched.push({ frame, receivedAt });
           if (matched.length === predicates.length) break;
         }
         return matched;
@@ -722,9 +791,11 @@ async function main() {
     "footswitch_e", "footswitch_f", "footswitch_g", "footswitch_h",
     "up", "down", "mode", "scene", "tempo", "master_volume"
   ].map((control) => [control, []]));
+  const performanceTimingDiagnostics = [];
   const exerciseRealtime = async (control, operations, rapidPair = false) => {
     const afterSequence = await latestStateSequence();
     const attempts = [];
+    let failureStage = "dispatch";
     for (const { name, args, predicate } of operations) {
       const startedAt = Date.now();
       attempts.push({
@@ -739,18 +810,40 @@ async function main() {
     }
     try {
       const completed = await Promise.all(attempts.map((attempt) => attempt.promise));
+      failureStage = "state-event observation";
       const frames = await waitForOrderedStateFrames(
         afterSequence,
-        attempts.map((attempt) => (frame) =>
-          Number(frame.observedAt) >= attempt.startedAt && attempt.predicate(frame))
+        attempts.map((attempt, index) => (frame) => {
+          const rawHostStartedAt = completed[index].value?.hostStartedAtUnixMs;
+          const hostStartedAt = typeof rawHostStartedAt === "number" && Number.isFinite(rawHostStartedAt)
+            ? rawHostStartedAt
+            : undefined;
+          return (hostStartedAt === undefined || Number(frame.observedAt) >= hostStartedAt)
+            && attempt.predicate(frame);
+        })
       );
       attempts.forEach((attempt, index) => {
         const result = completed[index];
         const sendLatencyMs = Number.isFinite(result.value?.dispatchLatencyMs)
           ? result.value.dispatchLatencyMs
           : result.completedAt - attempt.startedAt;
-        const eventLatencyMs = Number(frames[index].observedAt) - attempt.startedAt;
-        assert(eventLatencyMs >= 0, `${control} state event predates its physical send.`);
+        const rawHostStartedAt = result.value?.hostStartedAtUnixMs;
+        const hostStartedAt = typeof rawHostStartedAt === "number" && Number.isFinite(rawHostStartedAt)
+          ? rawHostStartedAt
+          : undefined;
+        const eventLatencyMs = hostStartedAt !== undefined
+          ? Number(frames[index].frame.observedAt) - hostStartedAt
+          : frames[index].receivedAt - attempt.startedAt;
+        assert(eventLatencyMs >= 0, `${control} state event predates its host-side send.`);
+        performanceTimingDiagnostics.push({
+          control,
+          source: hostStartedAt !== undefined ? "native-host" : "runner-receipt",
+          hostStartedAt: hostStartedAt ?? null,
+          frameObservedAt: frames[index].frame.observedAt,
+          runnerStartedAt: attempt.startedAt,
+          runnerReceivedAt: frames[index].receivedAt,
+          eventLatencyMs
+        });
         performanceSamples[control].push({
           sendLatencyMs,
           eventLatencyMs,
@@ -762,7 +855,25 @@ async function main() {
       for (let index = 0; index < operations.length; index += 1) {
         performanceSamples[control].push({ rapidPair, failed: true });
       }
-      throw new Error(`${control} physical performance sample failed: ${error instanceof Error ? error.message : error}`);
+      const eventProbe = await transport.call("get_state_events", {
+        after_sequence: afterSequence,
+        limit: 256
+      }).catch(() => null);
+      report.performanceFailureEvents = {
+        control,
+        stage: failureStage,
+        afterSequence,
+        operations: operations.map(({ name, args }) => ({ name, args: redactEvidence(args) })),
+        latestSequence: eventProbe?.latestSequence,
+        frames: (eventProbe?.frames ?? []).map((frame) => ({
+          sequence: frame.sequence,
+          observedAt: frame.observedAt,
+          stateKinds: frame.states?.map((state) => state.kind) ?? [],
+          bypassUpdates: frame.states?.flatMap((state) => state.bypassUpdates ?? []) ?? [],
+          tempoClock: Boolean(frame.tempoClock)
+        }))
+      };
+      throw new Error(`${control} physical performance ${failureStage} failed: ${error instanceof Error ? error.message : error}`);
     }
   };
   const exerciseNavigation = async (control, direction, rapidPair) => {
@@ -831,6 +942,7 @@ async function main() {
       assert(originalTunerSettings.muted === false,
         "Tuner mutation testing requires mute-while-tuning to start disabled; disable it and physically close the tuner first.");
       const testInput = originalTunerSettings.inputPortId === 1 ? 2 : 1;
+      restorationGroups.add("tuner-settings");
       await call("set_tuner_input", {
         input_port_id: testInput,
         confirm_tuner_activation: true,
@@ -888,6 +1000,7 @@ async function main() {
         await transport.call("show_tuner", { shown: false });
         delete report.manualActionRequired;
       }
+      restorationGroups.delete("tuner-settings");
     }
     originalGeneralSettings = await call("get_general_settings", {}, (value) => assert(
       Number.isInteger(value.sceneBypassBehavior === "alwaysOverwrite" ? 0 : value.sceneBypassBehavior === "nonstompOverwrite" ? 1 : value.sceneBypassBehavior === "neverOverwrite" ? 2 : NaN),
@@ -933,7 +1046,10 @@ async function main() {
       position: config.presetScreenshot.position,
       is_factory: Boolean(config.presetScreenshot.isFactory)
     }, (value) => assert(pngSignatureIsValid(value, 800, 384), "Preset screenshot PNG is invalid."));
-    presetFolders = await call("list_preset_folders", { refresh: true }, (value) => assert(Array.isArray(value.folders), "Preset folder list is invalid."));
+    presetFolders = await call("list_preset_folders", { refresh: true }, (value) => assert(
+      Array.isArray(value.folders) && value.folders.length > 0,
+      "Preset folder list is empty."
+    ));
     await call("list_presets", { refresh: false, setlist_key: config.scratchPreset.setlistKey }, (value) => assert(Array.isArray(value.presets), "Preset list is invalid."));
     await call("list_preset_slots", {}, (value) => assert(Array.isArray(value.slots), "Preset slot list is invalid."));
     await call("list_models", { query: null }, (value) => assert(Array.isArray(value.models) && value.models.length > 0, "Model list is empty."));
@@ -960,6 +1076,7 @@ async function main() {
         await recall(config.scratchPreset);
       }
       assert(currentSnapshot.presetName.startsWith(config.scratchPreset.requiredNamePrefix), "Refusing mutations: active preset is not the configured scratch preset.");
+      if (!stressOnly) {
       const block = currentSnapshot.blocks.find((candidate) => candidate.row === config.parameter.row && candidate.column === config.parameter.column);
       assert(block, "Configured parameter block is not occupied in the scratch preset.");
       const details = await call("get_block_details", { row: block.row, column: block.column, expected_preset_name: currentSnapshot.presetName });
@@ -1016,6 +1133,7 @@ async function main() {
         await waitForLaneControlDetails(config.parameter.row, "inputGate", (value) =>
           value.parameters?.find((candidate) => candidate.index === laneParameter.index)?.sceneMode === laneOriginalSceneMode);
       }
+      }
     } else {
       const block = originalSnapshot.blocks.find((candidate) => candidate.modelId !== undefined);
       if (block) await call("get_block_details", { row: block.row, column: block.column, expected_preset_name: originalSnapshot.presetName }, (value) => assert(Array.isArray(value.parameters), "Block details are invalid."));
@@ -1035,8 +1153,9 @@ async function main() {
       await transport.call("select_scene", { scene: originalScene, expected_preset_name: currentSnapshot.presetName });
       currentSnapshot = await waitForSnapshot((value) => value.activeScene === originalScene);
 
-      const sceneDestination = config.performance.sceneCopyDestination;
-      assert(sceneDestination !== originalScene, "sceneCopyDestination must differ from the starting scene.");
+      const sceneDestination = config.performance.sceneCopyDestination === originalScene
+        ? (originalScene + 1) % 8
+        : config.performance.sceneCopyDestination;
       await call("copy_scene", { from_scene: originalScene, to_scene: sceneDestination, swap: true, expected_preset_name: currentSnapshot.presetName });
       await transport.call("copy_scene", { from_scene: originalScene, to_scene: sceneDestination, swap: true, expected_preset_name: currentSnapshot.presetName });
       currentSnapshot = await snapshot();
@@ -1073,6 +1192,9 @@ async function main() {
       const modeBySlot = new Map(
         (currentSnapshot.modeSlots ?? []).map((entry) => [entry.slot, entry.mode])
       );
+      const slotByMode = new Map(
+        (currentSnapshot.modeSlots ?? []).map((entry) => [entry.mode, entry.slot])
+      );
       const selectedMode = modeBySlot.get(config.performance.modeSlot);
       const restoredMode = modeBySlot.get(config.performance.restoreModeSlot);
       assert(selectedMode, `The QC did not report configured mode slot ${config.performance.modeSlot}.`);
@@ -1102,6 +1224,7 @@ async function main() {
         `High-volume screen verification changed Master Volume by more than one quantization step (${originalMasterVolume} to ${volumeAfterScreenRecovery.value}).`);
 
       const originalVolume = volumeAfterScreenRecovery.value;
+      restorationGroups.add("master-volume");
       await call("set_master_volume", { value: config.performance.masterVolume, expected_value: originalVolume, confirm_risky_operation: true });
       const changedVolume = await waitForMasterVolume(config.performance.masterVolume);
       assert(changedVolume?.value === config.performance.masterVolume, "Master volume did not reach the configured test value.");
@@ -1109,6 +1232,7 @@ async function main() {
       await transport.call("set_master_volume", { value: originalMasterVolume, expected_value: config.performance.masterVolume, confirm_risky_operation: true });
       const restoredVolume = await waitForMasterVolume(originalMasterVolume);
       assert(restoredVolume?.value === originalMasterVolume, "Master volume did not restore to its authoritative starting value.");
+      restorationGroups.delete("master-volume");
 
       const originalTempo = currentSnapshot.tempo;
       await call("set_tempo", { bpm: config.performance.tempo, expected_tempo: originalTempo, expected_preset_name: currentSnapshot.presetName });
@@ -1353,8 +1477,10 @@ async function main() {
 
       const modeBeforeFootswitch = currentSnapshot.mode;
       if (modeBeforeFootswitch !== "STOMP") {
+        const stompSlot = slotByMode.get("STOMP");
+        assert(Number.isInteger(stompSlot), "The QC did not report a mode slot assigned to STOMP.");
         await transport.call("select_mode_slot", {
-          slot: modeBySlot.indexOf("STOMP"), expected_preset_name: currentSnapshot.presetName
+          slot: stompSlot, expected_preset_name: currentSnapshot.presetName
         });
         currentSnapshot = await waitForSnapshot((value) => value.mode === "STOMP");
       }
@@ -1418,8 +1544,10 @@ async function main() {
         block.row === assignedFootswitchBlock.row && block.column === assignedFootswitchBlock.column
           && Boolean(block.bypassed) === assignedFootswitchBypass));
       if (modeBeforeFootswitch !== "STOMP") {
+        const restoreSlot = slotByMode.get(modeBeforeFootswitch);
+        assert(Number.isInteger(restoreSlot), `The QC did not report a mode slot assigned to ${modeBeforeFootswitch}.`);
         await transport.call("select_mode_slot", {
-          slot: modeBySlot.indexOf(modeBeforeFootswitch), expected_preset_name: currentSnapshot.presetName
+          slot: restoreSlot, expected_preset_name: currentSnapshot.presetName
         });
         currentSnapshot = await waitForSnapshot((value) => value.mode === modeBeforeFootswitch);
       }
@@ -1496,17 +1624,49 @@ async function main() {
         state.kind === "bypassBatch" && state.bypassUpdates?.some((update) =>
           update.row === block.row && update.column === block.column
             && Boolean(update.bypassed) === bypassed));
+      report.performanceFixture = {
+        mode: currentSnapshot.mode,
+        blocks: stressBlocks.map((block, footswitch) => ({ ...block, footswitch })),
+        footswitchStates: currentSnapshot.footswitchStates?.map((state) => ({
+          index: state.index,
+          assigned: state.assigned,
+          momentary: state.momentary,
+          active: state.active
+        }))
+      };
       for (let footswitch = 0; footswitch < 8; footswitch += 1) {
         const control = `footswitch_${String.fromCharCode(97 + footswitch)}`;
         const block = stressBlocks[footswitch];
         let bypassed = block.bypassed;
         for (let repetition = 0; repetition < 10; repetition += 1) {
           bypassed = !bypassed;
-          await exerciseRealtime(control, [{
-            name: "press_footswitch",
-            args: { index: footswitch, expected_mode: "STOMP", expected_preset_name: currentSnapshot.presetName },
-            predicate: bypassFrame(block, bypassed)
-          }]);
+          try {
+            await exerciseRealtime(control, [{
+              name: "press_footswitch",
+              args: { index: footswitch, expected_mode: "STOMP", expected_preset_name: currentSnapshot.presetName },
+              predicate: bypassFrame(block, bypassed)
+            }]);
+          } catch (error) {
+            const observed = await snapshot().catch(() => null);
+            const observedBlock = observed?.blocks?.find((candidate) =>
+              candidate.row === block.row && candidate.column === block.column);
+            report.performanceFailureEvidence = {
+              control,
+              repetition,
+              footswitch,
+              block,
+              expectedBypassed: bypassed,
+              observedBlock: observedBlock ? {
+                row: observedBlock.row,
+                column: observedBlock.column,
+                footswitch: observedBlock.footswitch,
+                bypassed: observedBlock.bypassed,
+                modelId: observedBlock.modelId
+              } : null,
+              footswitchState: observed?.footswitchStates?.find((state) => state.index === footswitch) ?? null
+            };
+            throw error;
+          }
         }
         for (let pair = 0; pair < 5; pair += 1) {
           const first = !bypassed;
@@ -1568,7 +1728,8 @@ async function main() {
         values: [baseScene, alternateScene],
         args: (scene) => ({ scene, expected_preset_name: currentSnapshot.presetName }),
         predicate: (scene) => (frame) => frame.states?.some((state) =>
-          state.kind === "scene" && state.activeScene === scene)
+          state.kind === "scene" && state.activeScene === scene),
+        guardedPair: true
       });
 
       const distinctModes = currentSnapshot.modeSlots
@@ -1586,7 +1747,8 @@ async function main() {
         values: [distinctModes[0].slot, distinctModes[1].slot],
         args: (slot) => ({ slot, expected_preset_name: currentSnapshot.presetName }),
         predicate: (slot) => (frame) => frame.states?.some((state) =>
-          state.kind === "mode" && state.mode === modeBySlot.get(slot))
+          state.kind === "mode" && state.mode === modeBySlot.get(slot)),
+        guardedPair: true
       });
 
       currentSnapshot = await snapshot();
@@ -1607,6 +1769,7 @@ async function main() {
       });
 
       const originalStressVolume = (await transport.call("get_master_volume", {})).value;
+      restorationGroups.add("master-volume");
       const safeVolumes = [1, 2];
       if (originalStressVolume !== safeVolumes[0]) {
         await transport.call("set_master_volume", {
@@ -1635,6 +1798,7 @@ async function main() {
         confirm_risky_operation: true
       });
       await waitForMasterVolume(originalStressVolume);
+      restorationGroups.delete("master-volume");
 
       await transport.call("set_tempo", {
         bpm: originalStressTempo,
@@ -1656,6 +1820,7 @@ async function main() {
           navigation: "UP/DOWN preset recalls are measured separately from realtime controls"
         }
       };
+      report.performanceTimingDiagnostics = performanceTimingDiagnostics;
       const performanceErrors = validatePerformanceEvidence(config.target, report.performanceEvidence);
       assert(performanceErrors.length === 0, performanceErrors.join("; "));
       console.log("PASS");
@@ -1670,6 +1835,7 @@ async function main() {
         "Restorable global tempo mode and LED settings are required."
       );
       const testTempoLed = !originalGlobalTempoSettings.ledEnabled;
+      restorationGroups.add("global-tempo-settings");
       await call("set_tempo_metronome", {
         led_enabled: testTempoLed,
         volume_db: null,
@@ -1749,10 +1915,12 @@ async function main() {
           (value) => value.mode === originalGlobalTempoSettings.mode
         );
       }
+      restorationGroups.delete("global-tempo-settings");
 
       const originalHold = originalGeneralSettings.holdTimingIndex;
       assert(Number.isInteger(originalHold) && originalHold >= 0 && originalHold <= 5, "A restorable hold timing is required.");
       const testHold = originalHold === 5 ? 4 : originalHold + 1;
+      restorationGroups.add("general-settings");
       await call("set_general_integer", { setting: "holdTiming", value: testHold, confirm_persistent_write: true });
       let settings = await waitForGeneralSettings((value) => value.holdTimingIndex === testHold);
       assert(settings.holdTimingIndex === testHold, "Hold timing setting did not read back.");
@@ -1788,10 +1956,12 @@ async function main() {
       settings = await waitForGeneralSettings((value) => value.globalBypassCab?.row1 === testCab[0]);
       assert(settings.globalBypassCab?.row1 === testCab[0], "Global Cab bypass did not read back.");
       await transport.call("set_global_bypass", { cab, ir, confirm_persistent_write: true });
+      restorationGroups.delete("general-settings");
 
       const input = originalIoSettings.inputs.find((port) => Number.isFinite(port.levelDb));
       assert(input, "A restorable input gain is required for I/O conformance.");
       const testInputDb = input.levelDb > 58 ? input.levelDb - 1 : input.levelDb + 1;
+      restorationGroups.add("io-settings");
       await call("set_input_port", {
         input_port_id: input.inputPortId, level_db: testInputDb,
         impedance: null, input_type: null, ground_lift: null,
@@ -1850,8 +2020,10 @@ async function main() {
         xlr12_linked: originalIoSettings.xlr12Linked, out34_linked: null,
         confirm_persistent_write: true
       });
+      restorationGroups.delete("io-settings");
 
       assert(typeof originalGlobalEq.bypassed === "boolean", "A restorable Global EQ bypass state is required.");
+      restorationGroups.add("global-eq");
       await call("set_global_eq_bypassed", {
         bypassed: !originalGlobalEq.bypassed, confirm_persistent_write: true
       });
@@ -1887,14 +2059,17 @@ async function main() {
       await transport.call("set_global_eq_output", {
         level: originalOutputLevel, out12: null, out34: null, confirm_persistent_write: true
       });
+      restorationGroups.delete("global-eq");
 
       const testCycle = originalModeCycle.slots.length > 1
         ? [...originalModeCycle.slots].reverse()
         : [originalModeCycle.slots[0], originalModeCycle.slots[0] === 0 ? 1 : 0];
+      restorationGroups.add("mode-cycle");
       await call("set_mode_cycle", { slots: testCycle, confirm_persistent_write: true });
       const modeCycle = await waitForModeCycle((value) => JSON.stringify(value.slots) === JSON.stringify(testCycle));
       assert(JSON.stringify(modeCycle.slots) === JSON.stringify(testCycle), "Mode cycle did not read back.");
       await transport.call("set_mode_cycle", { slots: originalModeCycle.slots, confirm_persistent_write: true });
+      restorationGroups.delete("mode-cycle");
 
       const scratchFolder = presetFolders.folders.find(
         (folder) => folder.key?.replace(/\/$/, "") === config.scratchPreset.setlistKey.replace(/\/$/, ""));
@@ -2051,15 +2226,19 @@ async function main() {
 
     if (enabledHazards.has("system")) {
       await restoreScratch();
+      restorationGroups.add("device-name");
       await call("set_device_name", { name: config.system.temporaryDeviceName, confirm_persistent_write: true });
       const originalDeviceName = identity.customName?.trim() || originalSnapshot.deviceName;
       assert(originalDeviceName && originalDeviceName !== config.system.temporaryDeviceName, "A distinct original device name is required for the restore check.");
       await transport.call("set_device_name", { name: originalDeviceName, confirm_persistent_write: true });
+      restorationGroups.delete("device-name");
+      restorationGroups.add("connection");
       await call("reset_device_session", { confirm_risky_operation: true });
       currentSnapshot = await snapshot();
       await call("disconnect_device", { confirm_risky_operation: true });
       await call("reconnect_device", { confirm_risky_operation: true });
       currentSnapshot = await snapshot();
+      restorationGroups.delete("connection");
     }
 
     if (enabledHazards.has("screen")) {
@@ -2134,6 +2313,7 @@ async function main() {
     }
   } catch (error) {
     report.failure = error instanceof Error ? error.message : String(error);
+    if (error instanceof Error && error.stack) report.failureStack = error.stack;
   } finally {
     if (transportStarted && deviceAuthorized && originalSnapshot && [...enabledHazards].some((value) => value !== "read")) {
       const restoration = [];
@@ -2155,12 +2335,14 @@ async function main() {
           }
         });
       }
-      if (enabledHazards.has("system")) {
+      if (restorationGroups.has("connection")) {
         await restoreAttempt("connection", () => transport.call("reconnect_device", { confirm_risky_operation: true }));
+      }
+      if (restorationGroups.has("device-name")) {
         const originalDeviceName = identity?.customName?.trim() || originalSnapshot.deviceName;
         if (originalDeviceName) await restoreAttempt("device-name", () => transport.call("set_device_name", { name: originalDeviceName, confirm_persistent_write: true }));
       }
-      if (enabledHazards.has("live") && Number.isFinite(originalMasterVolume)) {
+      if (restorationGroups.has("master-volume") && Number.isFinite(originalMasterVolume)) {
         await restoreAttempt("master-volume", async () => {
           const current = await transport.call("get_master_volume", {});
           if (current.value !== originalMasterVolume) {
@@ -2168,7 +2350,7 @@ async function main() {
           }
         });
       }
-      if (enabledHazards.has("tuner") && originalTunerSettings) {
+      if (restorationGroups.has("tuner-settings") && originalTunerSettings) {
         await restoreAttempt("tuner-settings", async () => {
           await transport.call("set_tuner_input", {
             input_port_id: originalTunerSettings.inputPortId,
@@ -2191,7 +2373,7 @@ async function main() {
           });
         });
       }
-      if (enabledHazards.has("persistent") && originalGeneralSettings) {
+      if (restorationGroups.has("general-settings") && originalGeneralSettings) {
         await restoreAttempt("general-settings", async () => {
           const settings = originalGeneralSettings;
           if (Number.isInteger(settings.holdTimingIndex)) await transport.call("set_general_integer", { setting: "holdTiming", value: settings.holdTimingIndex, confirm_persistent_write: true });
@@ -2204,7 +2386,7 @@ async function main() {
           }
         });
       }
-      if (enabledHazards.has("persistent") && originalIoSettings) {
+      if (restorationGroups.has("io-settings") && originalIoSettings) {
         await restoreAttempt("io-settings", async () => {
           for (const input of originalIoSettings.inputs ?? []) {
             if (!Number.isFinite(input.levelDb)) continue;
@@ -2237,7 +2419,7 @@ async function main() {
           }
         });
       }
-      if (enabledHazards.has("persistent") && originalGlobalEq) {
+      if (restorationGroups.has("global-eq") && originalGlobalEq) {
         await restoreAttempt("global-eq", async () => {
           if (typeof originalGlobalEq.bypassed === "boolean") {
             await transport.call("set_global_eq_bypassed", {
@@ -2262,12 +2444,12 @@ async function main() {
           });
         });
       }
-      if (enabledHazards.has("persistent") && originalModeCycle?.slots) {
+      if (restorationGroups.has("mode-cycle") && originalModeCycle?.slots) {
         await restoreAttempt("mode-cycle", () => transport.call("set_mode_cycle", {
           slots: originalModeCycle.slots, confirm_persistent_write: true
         }));
       }
-      if (enabledHazards.has("persistent") && originalGlobalTempoSettings) {
+      if (restorationGroups.has("global-tempo-settings") && originalGlobalTempoSettings) {
         await restoreAttempt("global-tempo-settings", async () => {
           let currentTempoSettings = await transport.call("get_global_tempo_settings", {});
           if (Number.isInteger(originalGlobalTempoSettings.globalBpm)) {

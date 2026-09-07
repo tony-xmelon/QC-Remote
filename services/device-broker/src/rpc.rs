@@ -296,7 +296,11 @@ fn ready_connection_state(controller: &DeviceController, detail: &str) -> Value 
 
 fn gateway_state_events(controller: &DeviceController, params: &Value) -> Result<Value, String> {
     let frames = state_events(controller, params)?;
-    Ok(json!({"native": true, "frames": frames}))
+    Ok(json!({
+        "native": true,
+        "latestSequence": controller.latest_state_sequence(),
+        "frames": frames
+    }))
 }
 
 fn gateway_list_models(controller: &DeviceController) -> Result<Value, String> {
@@ -550,6 +554,7 @@ fn gateway_performance_midi(
     let PlannedWrite::MidiControlChange { controller, value } = plan.write else {
         return Err(format!("{method} did not produce a host MIDI write"));
     };
+    let host_started_at_unix_ms = unix_ms();
     let receipt = performance_midi
         .lock()
         .map_err(|_| "Performance MIDI lock was poisoned".to_string())?
@@ -565,9 +570,21 @@ fn gateway_performance_midi(
             "dispatchLatencyMs".into(),
             json!(receipt.dispatch_latency_ms),
         );
+        object.insert(
+            "hostStartedAtUnixMs".into(),
+            json!(host_started_at_unix_ms),
+        );
         object.insert("throttleDelayMs".into(), json!(receipt.throttle_delay_ms));
     }
     Ok(result)
+}
+
+fn unix_ms() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis()
+        .min(u128::from(u64::MAX)) as u64
 }
 
 fn wait_for_transaction_event(
@@ -679,7 +696,7 @@ fn refresh_current_preset_state(controller: &DeviceController) -> Result<(), Str
     request_command(
         controller,
         qc_protocol::commands::read_current_preset(request_id),
-        profile::MESSAGE_TYPE_PRESET,
+        profile::MESSAGE_TYPE_RECALL_PRESET,
         Some(request_id),
         Duration::from_secs(15),
     )?;

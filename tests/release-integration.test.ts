@@ -88,19 +88,9 @@ test("packaged Windows gateway verification follows the generated contract", () 
   assert.doesNotMatch(verifier, /expectedApiVersion\s*=\s*\d/);
 });
 
-test("Windows installer verifies every downloaded executable dependency", () => {
+test("Windows installer does not download or package streaming-media executables", () => {
   const build = script("build-windows-installer.ps1");
-  const contract = JSON.parse(readFileSync(new URL("../contracts/windows-sidecars.v1.json", import.meta.url), "utf8"));
-  assert.match(build, /function Get-VerifiedDownload/);
-  assert.match(build, /System\.Security\.Cryptography\.SHA256\]::Create\(\)/);
-  assert.match(build, /System\.IO\.File\]::OpenRead\(\$Path\)/);
-  assert.match(build, /\$hashAlgorithm\.ComputeHash\(\$downloadStream\)/);
-  assert.doesNotMatch(build, /\$sha256\s*=/i);
-  assert.equal((build.match(/Get-VerifiedDownload -Uri/g) ?? []).length, 3);
-  assert.equal(contract.components.length, 3);
-  assert.ok(contract.components.every((component: { sha256: string }) => /^[a-f0-9]{64}$/.test(component.sha256)));
-  assert.doesNotMatch(build, /https:\/\/github\.com/);
-  assert.equal((build.match(/Invoke-WebRequest/g) ?? []).length, 1, "downloads must only occur inside the checksum-enforcing helper");
+  assert.doesNotMatch(build, /Get-VerifiedDownload|Invoke-WebRequest|yt-dlp|qc-media-(?:fetch|ffmpeg|deno)/);
 });
 
 test("both distribution paths require a clean full software parity preflight", () => {
@@ -134,6 +124,17 @@ test("software parity lint-checks all Rust targets without release sidecars", ()
   assert.match(parity, /LOCALAPPDATA.*QCControlBuild\\software-parity-target/s);
   assert.match(parity, /\$env:CARGO_TARGET_DIR = \$previousCargoTargetDirectory/);
   assert.match(readFileSync(new URL("../packages/rust/qc-windows-midi/Cargo.lock", import.meta.url), "utf8"), /name = "qc-windows-midi"/);
+});
+
+test("release preflight regenerates notices and Android rejects missing legal assets", () => {
+  const parity = script("verify-software-parity.ps1");
+  const android = script("build-android-debug.ps1");
+  assert.match(parity, /Locked third-party legal inventory" \{ npm run legal:notices \}/);
+  assert.match(android, /assets\/public\/legal\/THIRD_PARTY-NOTICES\.md/);
+  assert.match(android, /assets\/public\/legal\/THIRD_PARTY-LICENSE-INVENTORY\.json/);
+  assert.match(android, /assets\/public\/legal\/THIRD_PARTY-LICENSE-TEXTS\.txt/);
+  assert.match(android, /assets\/public\/legal\/THIRD_PARTY-SOURCE-OFFER\.md/);
+  assert.match(android, /assets\/public\/legal\/COMMUNITY-PROTOCOL-LICENSE\.txt/);
 });
 
 test("focused native backup verification does not require a Python runtime", () => {
@@ -181,8 +182,8 @@ test("CI packages the Android app with pinned native prerequisites and provenanc
   assert.match(workflow, /secrets\.QC_ANDROID_KEY_PASSWORD/);
   assert.match(workflow, /QC_ANDROID_KEYSTORE=\$keystore/);
   assert.match(workflow, /npm run android:build:debug/);
-  assert.match(workflow, /artifacts\/android\/QC-Control-Android-\*\.apk/);
-  assert.match(workflow, /QC-Control-Android-\*\.apk\.source\.json/);
+  assert.match(workflow, /artifacts\/android\/QC-Remote-Android-\*\.apk/);
+  assert.match(workflow, /QC-Remote-Android-\*\.apk\.source\.json/);
   assert.match(workflow, /artifacts\/release-manifest\.json/);
   assert.match(workflow, /artifacts\/sbom\.cdx\.json/);
 });
@@ -206,8 +207,8 @@ test("CI packages the Windows installer in parallel and preserves release proven
   assert.match(workflow, /windows-package:/);
   assert.doesNotMatch(windowsJob, /\r?\n\s+needs:/);
   assert.match(workflow, /build-windows-installer\.ps1 -SkipPreflight/);
-  assert.match(workflow, /artifacts\/windows\/QC-Control-Windows-\*\.exe/);
-  assert.match(workflow, /QC-Control-Windows-\*\.exe\.source\.json/);
+  assert.match(workflow, /artifacts\/windows\/QC-Remote-Windows-\*\.exe/);
+  assert.match(workflow, /QC-Remote-Windows-\*\.exe\.source\.json/);
   assert.match(build, /\[switch\]\$SkipPreflight/);
   assert.match(build, /if \(-not \$SkipPreflight\)[\s\S]*verify-software-parity\.ps1/);
 });

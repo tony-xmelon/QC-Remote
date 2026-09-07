@@ -1,8 +1,8 @@
 import { registerPlugin, type PluginListenerHandle } from "@capacitor/core";
-import { createGatewayClientTransport, type GatewayTransport, type NativeStateFrame, type PresetSnapshot } from "@ndsp-qc/client";
-import { createQcGatewayTransport, type AssistantAccessMode, type PublicRelayPort, type PublicRelayState, type PublicRelayStatus, type QcDeviceTransport, type QcStateUpdate } from "@ndsp-qc/core";
+import { createGatewayClientTransport, type GatewayTransport, type NativeStateFrame, type PresetSnapshot } from "@qc-remote/client";
+import { createQcGatewayTransport, type AssistantAccessMode, type PublicRelayPort, type PublicRelayState, type PublicRelayStatus, type QcDeviceTransport, type QcStateUpdate } from "@qc-remote/core";
 
-export type { QcStateUpdate } from "@ndsp-qc/core";
+export type { QcStateUpdate } from "@qc-remote/core";
 
 export type QcUsbDevice = {
   deviceId: number;
@@ -67,7 +67,7 @@ export const subscribeRelayState = (listener: (state: PublicRelayState) => void)
 
 export const publicRelay: PublicRelayPort = {
   status: () => QcRelayNative.status(),
-  async pair(endpoint, pairingCode, deviceName = "QC Control on Android") {
+  async pair(endpoint, pairingCode, deviceName = "QC Remote on Android") {
     await QcRelayNative.pair({ endpoint, pairingCode, deviceName });
     return QcRelayNative.status();
   },

@@ -56,6 +56,15 @@ test("physical HTTP reads retry transient relay disconnects without retrying ord
   assert.equal(attempts, 2);
 
   attempts = 0;
+  const recoveredRelayRead = await retryTransientRead(async () => {
+    attempts += 1;
+    if (attempts < 3) throw new Error('{"code":"device_unavailable","message":"paired device is offline","retryable":true}');
+    return "catalog";
+  }, { attempts: 3, intervalMs: 0 });
+  assert.equal(recoveredRelayRead, "catalog");
+  assert.equal(attempts, 3);
+
+  attempts = 0;
   await assert.rejects(
     retryTransientRead(async () => {
       attempts += 1;
@@ -64,6 +73,20 @@ test("physical HTTP reads retry transient relay disconnects without retrying ord
     /device rejected request/
   );
   assert.equal(attempts, 1);
+
+  const runner = readFileSync(new URL("../tools/hardware-conformance.mjs", import.meta.url), "utf8");
+  assert.match(runner, /const invoke = async \(\) => \{[\s\S]{0,320}result\?\.isError[\s\S]{0,320}retryTransientRead\(invoke\)/);
+});
+
+test("physical HTTP transport consumes a matching SSE result without waiting for stream shutdown", () => {
+  const runner = readFileSync(new URL("../tools/hardware-conformance.mjs", import.meta.url), "utf8");
+  assert.match(runner, /async readSseMessage\(response, id\)/);
+  assert.match(runner, /response\.body\.getReader\(\)/);
+  assert.match(runner, /Connection: "close"/);
+  assert.match(runner, /message\.id === id/);
+  assert.match(runner, /data\.push\(payload\)[\s\S]{0,120}matchingMessage\(\)/);
+  assert.match(runner, /await reader\.cancel\(\)\.catch/);
+  assert.doesNotMatch(runner, /const text = await response\.text\(\);[\s\S]{0,180}text\/event-stream/);
 });
 
 const contract = JSON.parse(readFileSync(new URL("../contracts/qc-actions.v1.json", import.meta.url), "utf8"));
@@ -83,10 +106,44 @@ test("physical runner executes every contract action instead of only registering
   );
 });
 
+test("physical latency sampling starts from the authoritative state-event tail", () => {
+  const runner = readFileSync(new URL("../tools/hardware-conformance.mjs", import.meta.url), "utf8");
+  assert.match(runner, /const latestStateSequence[\s\S]{0,240}Number\.isSafeInteger\(value\.latestSequence\)[\s\S]{0,120}return value\.latestSequence/);
+});
+
+test("physical latency sampling uses sequence order and a single-host clock", () => {
+  const runner = readFileSync(new URL("../tools/hardware-conformance.mjs", import.meta.url), "utf8");
+  assert.match(runner, /const receivedAt = Date\.now\(\)[\s\S]{0,240}matched\.push\(\{ frame, receivedAt \}\)/);
+  assert.match(runner, /rawHostStartedAt[\s\S]{0,360}Number\(frame\.observedAt\) >= hostStartedAt/);
+  assert.match(runner, /hostStartedAtUnixMs[\s\S]{0,420}frames\[index\]\.frame\.observedAt[\s\S]{0,120}frames\[index\]\.receivedAt - attempt\.startedAt/);
+  assert.doesNotMatch(runner, /Number\(frame\.observedAt\) >= attempt\.startedAt/);
+  assert.doesNotMatch(runner, /Number\(frames\[index\]\.observedAt\) - attempt\.startedAt/);
+});
+
 test("physical mode-slot verification follows the device-reported assignment order", () => {
   const runner = readFileSync(new URL("../tools/hardware-conformance.mjs", import.meta.url), "utf8");
   assert.match(runner, /currentSnapshot\.modeSlots/);
   assert.doesNotMatch(runner, /const modeBySlot = \[/);
+  assert.doesNotMatch(runner, /modeBySlot\.indexOf/);
+  assert.match(runner, /const slotByMode = new Map/);
+  assert.match(runner, /sceneCopyDestination === originalScene[\s\S]{0,100}\(originalScene \+ 1\) % 8/);
+});
+
+test("physical inverse pairs require both scene and mode states instead of accepting coalesced telemetry", () => {
+  const runner = readFileSync(new URL("../tools/hardware-conformance.mjs", import.meta.url), "utf8");
+  const stress = runner.slice(runner.indexOf('control: "scene"'), runner.indexOf("const originalStressVolume"));
+  assert.match(stress, /control: "scene"[\s\S]{0,500}guardedPair: true/);
+  assert.match(stress, /control: "mode"[\s\S]{0,500}guardedPair: true/);
+});
+
+test("stress-only bypasses functional parameter and lane-control setup", () => {
+  const runner = readFileSync(new URL("../tools/hardware-conformance.mjs", import.meta.url), "utf8");
+  const guardedSetup = runner.slice(
+    runner.indexOf("if (!stressOnly) {", runner.indexOf("Refusing mutations: active preset")),
+    runner.indexOf('if (enabledHazards.has("live") && !stressOnly)')
+  );
+  assert.match(guardedSetup, /config\.parameter\.row/);
+  assert.match(guardedSetup, /set_lane_control_scene_mode/);
 });
 
 test("physical discovery completes the loadable IR fixture with its model and slot", () => {
@@ -122,6 +179,10 @@ test("full execution requires explicit fixtures and distinct disposable slots", 
   );
   assert.doesNotThrow(() => assertDisposableSlots(example, [example.persistent.slotA, example.persistent.slotB]));
   assert.throws(() => assertDisposableSlots(example, [example.persistent.slotA, example.persistent.slotA]), /distinct/);
+  assert.throws(
+    () => validateConfig({ ...example, routing: { ...example.routing, row: 3 } }),
+    /parallel split routing is available only on rows 0 and 2/
+  );
 });
 
 test("partial configs expose missing physical fixtures without weakening the full gate", () => {
@@ -131,6 +192,15 @@ test("partial configs expose missing physical fixtures without weakening the ful
     "library.ir.key", "library.ir.name", "library.ir.modelId", "library.ir.slot"
   ]);
   assert.throws(() => validateConfig(partial, { requireAll: true }), /library\.ir\.key/);
+});
+
+test("stress execution rejects missing temporary-block fixtures before touching hardware", () => {
+  const partial = structuredClone(example);
+  delete partial.temporaryBlock.modelId;
+  assert.throws(
+    () => validateConfig(partial, { requireStress: true }),
+    /Physical performance stress requires config values: temporaryBlock\.modelId/
+  );
 });
 
 test("the disposable physical IR fixture is deterministic QC-sized PCM", () => {
@@ -162,7 +232,7 @@ test("the disposable physical IR fixture is deterministic QC-sized PCM", () => {
 test("full dry run validates and identifies the exact staged candidate", () => {
   const directory = mkdtempSync(join(tmpdir(), "qc-hardware-candidate-"));
   try {
-    const candidate = join(directory, "QC-Control-Windows-test.exe");
+    const candidate = join(directory, "QC-Remote-Windows-test.exe");
     const bytes = Buffer.from("immutable release candidate");
     const sha256 = createHash("sha256").update(bytes).digest("hex");
     writeFileSync(candidate, bytes);
@@ -280,8 +350,8 @@ test("release gate requires complete Windows and Android evidence for the curren
   const manifest = {
     source: { commit: "abc123", dirty: false },
     artifacts: [
-      { path: "artifacts/windows/QC-Control-Windows.exe", size: 10, sha256: "win" },
-      { path: "artifacts/android/QC-Control-Android.apk", size: 20, sha256: "android" }
+      { path: "artifacts/windows/QC-Remote-Windows.exe", size: 10, sha256: "win" },
+      { path: "artifacts/android/QC-Remote-Android.apk", size: 20, sha256: "android" }
     ]
   };
   const windowsHealth = ["before-system-recovery", "final"].map((stage) => ({
@@ -389,7 +459,7 @@ test("physical performance evidence enforces repetitions, rapid pairs, and laten
   broken.controls.footswitch_a = { repetitions: 19, rapidPairs: 4, failures: 1 };
   broken.sendLatencyMs.p95 = 21;
   broken.sendLatencyMs.sampleCount = 239;
-  broken.eventLatencyMs = { sampleCount: 239, median: 51, p95: 101 };
+  broken.eventLatencyMs = { sampleCount: 239, median: 801, p95: 1_001 };
   broken.navigationLatencyMs = { sampleCount: 39, median: 1_000, p95: 2_001 };
   const errors = validatePerformanceEvidence("android", broken);
   assert.ok(errors.some((error) => error.includes("footswitch_a was not exercised")));

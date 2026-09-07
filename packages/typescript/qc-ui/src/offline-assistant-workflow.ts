@@ -1,11 +1,11 @@
-import type { BlockDetails, BlockParameter, GatewayTransport, GridBlock, PresetSnapshot } from "@ndsp-qc/client";
+import type { BlockDetails, BlockParameter, GatewayTransport, GridBlock, PresetSnapshot } from "@qc-remote/client";
 import {
   resolveOfflineAssistantIntent,
   sceneLetter,
   type AssistantAccessMode,
   type AssistantIntent,
   type QcAssistantDeviceCommand
-} from "@ndsp-qc/core";
+} from "@qc-remote/core";
 import { prepareAssistantParameterEdit } from "./assistant-parameter-edit.ts";
 
 export type PreparedOfflineAssistantAction =

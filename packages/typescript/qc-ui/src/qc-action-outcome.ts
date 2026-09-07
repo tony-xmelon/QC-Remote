@@ -1,5 +1,5 @@
-import type { BlockDetails, ConnectionState, PresetSnapshot, SavePresetResult } from "@ndsp-qc/client";
-import type { AssistantToolCall } from "@ndsp-qc/core";
+import type { BlockDetails, ConnectionState, PresetSnapshot, SavePresetResult } from "@qc-remote/client";
+import type { AssistantToolCall } from "@qc-remote/core";
 import { executeQcAction, type QcActionExecutionContext, type QcActionExecutionResult } from "./qc-action-executor.ts";
 
 export interface QcActionImageAttachment {

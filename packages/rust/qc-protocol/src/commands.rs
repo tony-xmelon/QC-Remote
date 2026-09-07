@@ -494,9 +494,9 @@ impl DeviceOperation {
                 parameter_index,
                 enabled,
             )],
-            Self::ListPresetFolders => vec![read(4)],
+            Self::ListPresetFolders => vec![read(profile::MESSAGE_TYPE_FILE)],
             Self::ReadCurrentPreset { request_id } => vec![read_current_preset(request_id)],
-            Self::ReadGeneralSettings => vec![read(9)],
+            Self::ReadGeneralSettings => vec![read(profile::MESSAGE_TYPE_GENERAL_SETTINGS)],
             Self::SetGeneralInteger { setting, value } => {
                 vec![set_general_integer(&setting, value)]
             }
@@ -527,7 +527,7 @@ impl DeviceOperation {
             Self::SetTunerMute(muted) => vec![set_tuner_mute(muted)],
             Self::SetTunerMeter(enabled) => vec![set_tuner_meter(enabled)],
             Self::SetTunerReference(offset_hz) => vec![set_tuner_reference(offset_hz)],
-            Self::ReadIoSettings => vec![read(3)],
+            Self::ReadIoSettings => vec![read(profile::MESSAGE_TYPE_IO_SETTINGS)],
             Self::ReadGlobalEq => vec![read_global_eq()],
             Self::SetGlobalEqBypassed(bypassed) => vec![set_global_eq_bypassed(bypassed)],
             Self::SetGlobalEqParameters(parameters) => vec![set_global_eq_parameters(&parameters)],
@@ -765,7 +765,7 @@ pub fn reset_comms(request_id: u64, session_id: impl Into<String>) -> OutboundMe
 
 pub fn version_hello() -> OutboundMessage {
     OutboundMessage::encoded(
-        10,
+        profile::MESSAGE_TYPE_VERSION,
         pa::VersionMessage {
             action: pa::message_action::Enum::Update as i32,
             cortex_control_version: Some(
@@ -783,12 +783,12 @@ pub fn read(message_type: u16) -> OutboundMessage {
 }
 
 pub fn read_global_eq() -> OutboundMessage {
-    read(38)
+    read(profile::MESSAGE_TYPE_GLOBAL_EQ)
 }
 
 pub fn set_global_eq_bypassed(bypassed: bool) -> OutboundMessage {
     OutboundMessage::encoded(
-        38,
+        profile::MESSAGE_TYPE_GLOBAL_EQ,
         pa::GlobalEqMessage {
             action: pa::message_action::Enum::Update as i32,
             bypassed: Some(pa::global_eq_message::Bypassed::Bypassed(bypassed)),
@@ -799,7 +799,7 @@ pub fn set_global_eq_bypassed(bypassed: bool) -> OutboundMessage {
 
 pub fn set_global_eq_parameters(parameters: &[(i32, f32)]) -> OutboundMessage {
     OutboundMessage::encoded(
-        38,
+        profile::MESSAGE_TYPE_GLOBAL_EQ,
         pa::GlobalEqMessage {
             action: pa::message_action::Enum::Update as i32,
             parameters: parameters
@@ -815,12 +815,12 @@ pub fn set_global_eq_parameters(parameters: &[(i32, f32)]) -> OutboundMessage {
 }
 
 pub fn read_mode_cycle() -> OutboundMessage {
-    read(14)
+    read(profile::MESSAGE_TYPE_MODE)
 }
 
 pub fn set_mode_cycle(slots: &[u32]) -> OutboundMessage {
     OutboundMessage::encoded(
-        14,
+        profile::MESSAGE_TYPE_MODE,
         pa::ModeMessage {
             action: pa::message_action::Enum::Update as i32,
             available_modes: Some(pa::mode_message::AvailableModes::AvailableModes(
@@ -834,12 +834,12 @@ pub fn set_mode_cycle(slots: &[u32]) -> OutboundMessage {
 }
 
 pub fn read_looper_status() -> OutboundMessage {
-    read(28)
+    read(profile::MESSAGE_TYPE_LOOPER)
 }
 
 pub fn read_recents_favorites(favorites: bool, request_id: u64) -> OutboundMessage {
     OutboundMessage::encoded(
-        20,
+        profile::MESSAGE_TYPE_RECENTS_FAVORITES,
         pa::RecentsFavoritesMessage {
             action: pa::message_action::Enum::Read as i32,
             request_id: Some(pa::recents_favorites_message::RequestId::RequestId(
@@ -859,7 +859,7 @@ pub fn set_favorite(
     favorite: bool,
 ) -> OutboundMessage {
     OutboundMessage::encoded(
-        20,
+        profile::MESSAGE_TYPE_RECENTS_FAVORITES,
         pa::RecentsFavoritesMessage {
             action: if favorite {
                 pa::message_action::Enum::Create as i32
@@ -880,12 +880,12 @@ pub fn set_favorite(
 }
 
 pub fn read_pinned_models() -> OutboundMessage {
-    read(54)
+    read(profile::MESSAGE_TYPE_PINNED_MODELS)
 }
 
 pub fn set_model_pinned(model_id: u32, pinned: bool) -> OutboundMessage {
     OutboundMessage::encoded(
-        54,
+        profile::MESSAGE_TYPE_PINNED_MODELS,
         pa::PinnedModelsMessage {
             action: if pinned {
                 pa::message_action::Enum::Create as i32
@@ -904,7 +904,7 @@ pub fn read_library_files(
     request_id: Option<u64>,
 ) -> OutboundMessage {
     OutboundMessage::encoded(
-        4,
+        profile::MESSAGE_TYPE_FILE,
         pa::FileMessage {
             action: pa::message_action::Enum::Read as i32,
             request_id: request_id.map(pa::file_message::RequestId::RequestId),
@@ -917,7 +917,7 @@ pub fn read_library_files(
 pub fn create_setlist(name: String) -> OutboundMessage {
     let key = format!("/media/p4/Presets/{name}");
     OutboundMessage::encoded(
-        4,
+        profile::MESSAGE_TYPE_FILE,
         pa::FileMessage {
             action: pa::message_action::Enum::Create as i32,
             r#type: Some(pa::file_message::Type::Type(0)),
@@ -935,7 +935,7 @@ pub fn create_setlist(name: String) -> OutboundMessage {
 pub fn delete_setlist(name: String) -> OutboundMessage {
     let key = format!("/media/p4/Presets/{name}");
     OutboundMessage::encoded(
-        4,
+        profile::MESSAGE_TYPE_FILE,
         pa::FileMessage {
             action: pa::message_action::Enum::Delete as i32,
             r#type: Some(pa::file_message::Type::Type(0)),
@@ -952,7 +952,7 @@ pub fn delete_setlist(name: String) -> OutboundMessage {
 pub fn delete_preset(setlist_key: String, name: String) -> OutboundMessage {
     let file_key = format!("{setlist_key}/{name}.pb");
     OutboundMessage::encoded(
-        4,
+        profile::MESSAGE_TYPE_FILE,
         pa::FileMessage {
             action: pa::message_action::Enum::Delete as i32,
             r#type: Some(pa::file_message::Type::Type(0)),
@@ -973,7 +973,7 @@ pub fn delete_preset(setlist_key: String, name: String) -> OutboundMessage {
 pub fn move_preset(setlist_key: String, name: String, position: u32) -> OutboundMessage {
     let source_key = format!("{setlist_key}/{name}.pb");
     OutboundMessage::encoded(
-        4,
+        profile::MESSAGE_TYPE_FILE,
         pa::FileMessage {
             action: pa::message_action::Enum::Move as i32,
             r#type: Some(pa::file_message::Type::Type(0)),
@@ -1001,7 +1001,7 @@ pub fn move_preset(setlist_key: String, name: String, position: u32) -> Outbound
 
 pub fn connection(connected: bool) -> OutboundMessage {
     OutboundMessage::encoded(
-        49,
+        profile::MESSAGE_TYPE_CONNECTION,
         pa::ConnectionMessage {
             connected: Some(pa::connection_message::Connected::Connected(connected)),
             ..Default::default()
@@ -1061,7 +1061,7 @@ pub fn initialization(now_ms: u64) -> Vec<OutboundMessage> {
 
 pub fn keepalive() -> OutboundMessage {
     OutboundMessage::encoded(
-        32,
+        profile::MESSAGE_TYPE_KEEP_ALIVE,
         pa::KeepAliveMessage {
             action: pa::message_action::Enum::Update as i32,
             ..Default::default()
@@ -1071,7 +1071,7 @@ pub fn keepalive() -> OutboundMessage {
 
 pub fn read_current_preset(request_id: u64) -> OutboundMessage {
     OutboundMessage::encoded(
-        15,
+        profile::MESSAGE_TYPE_RECALL_PRESET,
         pa::RecallPresetMessage {
             action: pa::message_action::Enum::Read as i32,
             request_id: Some(pa::recall_preset_message::RequestId::RequestId(request_id)),
@@ -1083,7 +1083,7 @@ pub fn read_current_preset(request_id: u64) -> OutboundMessage {
 /// Read the active setlist address without recalling or reloading a preset.
 pub fn read_setlist_position(request_id: u64) -> OutboundMessage {
     OutboundMessage::encoded(
-        2,
+        profile::MESSAGE_TYPE_SETLIST_POSITION,
         pa::SetlistPositionMessage {
             action: pa::message_action::Enum::Read as i32,
             request_id: Some(pa::setlist_position_message::RequestId::RequestId(
@@ -1096,7 +1096,7 @@ pub fn read_setlist_position(request_id: u64) -> OutboundMessage {
 
 pub fn select_scene(scene: u32) -> OutboundMessage {
     OutboundMessage::encoded(
-        13,
+        profile::MESSAGE_TYPE_SCENE,
         pa::SceneMessage {
             action: pa::message_action::Enum::Update as i32,
             selected_scene: Some(pa::scene_message::SelectedScene::SelectedScene(scene)),
@@ -1108,7 +1108,7 @@ pub fn select_scene(scene: u32) -> OutboundMessage {
 /// Copy or swap complete scene state, including its label and colour.
 pub fn copy_scene(from_index: u32, to_index: u32, swap: bool) -> OutboundMessage {
     OutboundMessage::encoded(
-        22,
+        profile::MESSAGE_TYPE_SCENE_COPY,
         pa::SceneCopyMessage {
             action: pa::message_action::Enum::Update as i32,
             from_index: from_index as i32,
@@ -1122,7 +1122,7 @@ pub fn copy_scene(from_index: u32, to_index: u32, swap: bool) -> OutboundMessage
 /// Rename a scene. The QC represents an unlabelled scene as one space.
 pub fn set_scene_label(scene: u32, label: Option<String>) -> OutboundMessage {
     OutboundMessage::encoded(
-        23,
+        profile::MESSAGE_TYPE_SCENE_LABEL,
         pa::SceneLabelMessage {
             action: pa::message_action::Enum::Update as i32,
             index: scene as i32,
@@ -1135,7 +1135,7 @@ pub fn set_scene_label(scene: u32, label: Option<String>) -> OutboundMessage {
 /// Set a scene's native ARGB colour value.
 pub fn set_scene_color(scene: u32, color: u32) -> OutboundMessage {
     OutboundMessage::encoded(
-        48,
+        profile::MESSAGE_TYPE_SCENE_COLOR,
         pa::SceneColorMessage {
             action: pa::message_action::Enum::Update as i32,
             index: scene as i32,
@@ -1406,7 +1406,7 @@ pub fn remove_block(row: u32, column: u32) -> OutboundMessage {
         ..Default::default()
     };
     OutboundMessage::encoded(
-        1,
+        profile::MESSAGE_TYPE_GRID,
         pa::GridMessage {
             action: pa::message_action::Enum::Delete as i32,
             preset: Some(pa::grid_message::Preset::Preset(preset)),
@@ -1417,7 +1417,7 @@ pub fn remove_block(row: u32, column: u32) -> OutboundMessage {
 
 pub fn move_block(from_row: u32, from_column: u32, to_row: u32, to_column: u32) -> OutboundMessage {
     OutboundMessage::encoded(
-        12,
+        profile::MESSAGE_TYPE_GRID_MOVE,
         pa::GridMoveMessage {
             r#move: vec![pa::GridMoveElement {
                 from_row,
@@ -1438,7 +1438,7 @@ pub fn set_footswitch(row: u32, column: u32, footswitch: Option<u32>) -> Vec<Out
         stomp_index: footswitch.unwrap_or_default(),
     };
     let delete = OutboundMessage::encoded(
-        1,
+        profile::MESSAGE_TYPE_GRID,
         pa::GridMessage {
             action: pa::message_action::Enum::Delete as i32,
             preset: Some(pa::grid_message::Preset::Preset(BinaryPreset {
@@ -1502,7 +1502,7 @@ pub fn set_midi_out(
         }],
     };
     OutboundMessage::encoded(
-        8,
+        profile::MESSAGE_TYPE_MIDI_SETTINGS,
         pa::MidiSettingsMessage {
             action: pa::message_action::Enum::Update as i32,
             preset_load_messages: preset_load.then_some(
@@ -1613,7 +1613,7 @@ pub fn save_preset(
     instrument: i32,
 ) -> OutboundMessage {
     OutboundMessage::encoded(
-        4,
+        profile::MESSAGE_TYPE_FILE,
         pa::FileMessage {
             r#type: Some(pa::file_message::Type::Type(0)),
             folder: Some(pa::file_message::Folder::Folder(pa::FolderInfo {
@@ -1637,14 +1637,14 @@ pub fn show_tuner(show: bool) -> OutboundMessage {
     // otherwise omit it, which makes a hide command indistinguishable from a
     // message whose sender never supplied the `show` field.
     OutboundMessage {
-        message_type: 27,
+        message_type: profile::MESSAGE_TYPE_SHOW_TUNER,
         payload: vec![0x08, 0x01, 0x18, u8::from(show)],
     }
 }
 
 pub fn show_gig_view(show: bool) -> OutboundMessage {
     OutboundMessage {
-        message_type: 24,
+        message_type: profile::MESSAGE_TYPE_SHOW_GIG_VIEW,
         payload: vec![0x08, 0x01, 0x18, u8::from(show)],
     }
 }
@@ -1657,7 +1657,7 @@ pub fn show_gig_view(show: bool) -> OutboundMessage {
 /// implements the recorder, trainer, refiner, calibration, A/B, and save UI.
 pub fn acknowledge_capture_dialog(shown: bool) -> OutboundMessage {
     OutboundMessage::encoded(
-        36,
+        profile::MESSAGE_TYPE_NEURAL_CAPTURE,
         pa::NeuralCaptureMessage {
             action: pa::message_action::Enum::Update as i32,
             show_dialog: Some(pa::neural_capture_message::ShowDialog::ShowDialog(shown)),
@@ -1668,7 +1668,7 @@ pub fn acknowledge_capture_dialog(shown: bool) -> OutboundMessage {
 
 pub fn read_version() -> OutboundMessage {
     OutboundMessage::encoded(
-        10,
+        profile::MESSAGE_TYPE_VERSION,
         pa::VersionMessage {
             action: pa::message_action::Enum::Read as i32,
             ..Default::default()
@@ -1678,7 +1678,7 @@ pub fn read_version() -> OutboundMessage {
 
 pub fn read_tuner() -> OutboundMessage {
     OutboundMessage::encoded(
-        6,
+        profile::MESSAGE_TYPE_TUNER,
         pa::TunerMessage {
             action: pa::message_action::Enum::Read as i32,
             ..Default::default()
@@ -1690,7 +1690,7 @@ pub fn read_tuner() -> OutboundMessage {
 /// measured firmware; callers must surface that hazard before sending it.
 pub fn set_tuner_input(input_port_id: i32) -> OutboundMessage {
     OutboundMessage::encoded(
-        6,
+        profile::MESSAGE_TYPE_TUNER,
         pa::TunerMessage {
             action: pa::message_action::Enum::Update as i32,
             input_port_id: Some(pa::tuner_message::InputPortId::InputPortId(input_port_id)),
@@ -1703,7 +1703,7 @@ pub fn set_tuner_input(input_port_id: i32) -> OutboundMessage {
 /// the tuner invisibly; `true` can therefore silence every output immediately.
 pub fn set_tuner_mute(muted: bool) -> OutboundMessage {
     OutboundMessage::encoded(
-        6,
+        profile::MESSAGE_TYPE_TUNER,
         pa::TunerMessage {
             action: pa::message_action::Enum::Update as i32,
             mute: Some(pa::tuner_message::Mute::Mute(muted)),
@@ -1728,7 +1728,7 @@ pub fn set_tuner_mute(muted: bool) -> OutboundMessage {
 /// unmeasured and this stack does not yet interpret it.
 pub fn set_tuner_meter(enabled: bool) -> OutboundMessage {
     OutboundMessage::encoded(
-        6,
+        profile::MESSAGE_TYPE_TUNER,
         pa::TunerMessage {
             action: pa::message_action::Enum::Update as i32,
             enable_meter: Some(pa::tuner_message::EnableMeter::EnableMeter(enabled)),
@@ -1741,7 +1741,7 @@ pub fn set_tuner_meter(enabled: bool) -> OutboundMessage {
 /// wire representation (for example `2.0` means 442 Hz).
 pub fn set_tuner_reference(offset_hz: f32) -> OutboundMessage {
     OutboundMessage::encoded(
-        6,
+        profile::MESSAGE_TYPE_TUNER,
         pa::TunerMessage {
             action: pa::message_action::Enum::Update as i32,
             frequency: Some(pa::tuner_message::Frequency::Frequency(offset_hz)),
@@ -1752,7 +1752,7 @@ pub fn set_tuner_reference(offset_hz: f32) -> OutboundMessage {
 
 pub fn read_general_settings() -> OutboundMessage {
     OutboundMessage::encoded(
-        9,
+        profile::MESSAGE_TYPE_GENERAL_SETTINGS,
         pa::GeneralSettingsMessage {
             action: pa::message_action::Enum::Read as i32,
             ..Default::default()
@@ -1789,7 +1789,7 @@ pub fn set_general_integer(setting: &str, value: i32) -> OutboundMessage {
         }
         _ => panic!("unsupported validated GeneralSettings integer: {setting}"),
     }
-    OutboundMessage::encoded(9, message)
+    OutboundMessage::encoded(profile::MESSAGE_TYPE_GENERAL_SETTINGS, message)
 }
 
 pub fn set_general_toggle(setting: &str, enabled: bool) -> OutboundMessage {
@@ -1830,12 +1830,12 @@ pub fn set_general_toggle(setting: &str, enabled: bool) -> OutboundMessage {
         ),
         _ => panic!("unsupported validated GeneralSettings toggle: {setting}"),
     }
-    OutboundMessage::encoded(9, message)
+    OutboundMessage::encoded(profile::MESSAGE_TYPE_GENERAL_SETTINGS, message)
 }
 
 pub fn set_scene_bypass_behavior(behavior: i32) -> OutboundMessage {
     OutboundMessage::encoded(
-        9,
+        profile::MESSAGE_TYPE_GENERAL_SETTINGS,
         pa::GeneralSettingsMessage {
             action: pa::message_action::Enum::Update as i32,
             scene_block_bypass: Some(
@@ -1848,7 +1848,7 @@ pub fn set_scene_bypass_behavior(behavior: i32) -> OutboundMessage {
 
 fn io_update(settings: pa::PortSettings) -> OutboundMessage {
     OutboundMessage::encoded(
-        3,
+        profile::MESSAGE_TYPE_IO_SETTINGS,
         pa::IoSettingsMessage {
             action: pa::message_action::Enum::Update as i32,
             settings: Some(pa::io_settings_message::Settings::Settings(settings)),
@@ -1864,7 +1864,7 @@ pub fn set_master_volume_assignment(
     headphones: bool,
 ) -> OutboundMessage {
     OutboundMessage::encoded(
-        9,
+        profile::MESSAGE_TYPE_GENERAL_SETTINGS,
         pa::GeneralSettingsMessage {
             action: pa::message_action::Enum::Update as i32,
             master_volume_assignment: Some(
@@ -1890,7 +1890,7 @@ pub fn set_global_bypass(cab: [bool; 4], ir: [bool; 4]) -> OutboundMessage {
         row4: values[3],
     };
     OutboundMessage::encoded(
-        9,
+        profile::MESSAGE_TYPE_GENERAL_SETTINGS,
         pa::GeneralSettingsMessage {
             action: pa::message_action::Enum::Update as i32,
             global_bypass_cab: Some(
@@ -2037,7 +2037,7 @@ pub fn set_output_pairing(
     out34_linked: Option<bool>,
 ) -> OutboundMessage {
     OutboundMessage::encoded(
-        3,
+        profile::MESSAGE_TYPE_IO_SETTINGS,
         pa::IoSettingsMessage {
             action: pa::message_action::Enum::Update as i32,
             xlr1_2_linked: xlr12_linked.map(pa::io_settings_message::Xlr12Linked::Xlr12Linked),
@@ -2049,7 +2049,7 @@ pub fn set_output_pairing(
 
 pub fn set_device_name(name: impl Into<String>) -> OutboundMessage {
     OutboundMessage::encoded(
-        10,
+        profile::MESSAGE_TYPE_VERSION,
         pa::VersionMessage {
             action: pa::message_action::Enum::Update as i32,
             custom_name: Some(pa::version_message::CustomName::CustomName(name.into())),
@@ -2060,7 +2060,7 @@ pub fn set_device_name(name: impl Into<String>) -> OutboundMessage {
 
 pub fn undo() -> OutboundMessage {
     OutboundMessage::encoded(
-        21,
+        profile::MESSAGE_TYPE_UNDO_REDO,
         pa::UndoRedoMessage {
             action: pa::message_action::Enum::Update as i32,
             undo: Some(pa::undo_redo_message::Undo::Undo(true)),
@@ -2071,7 +2071,7 @@ pub fn undo() -> OutboundMessage {
 
 pub fn redo() -> OutboundMessage {
     OutboundMessage::encoded(
-        21,
+        profile::MESSAGE_TYPE_UNDO_REDO,
         pa::UndoRedoMessage {
             action: pa::message_action::Enum::Update as i32,
             redo: Some(pa::undo_redo_message::Redo::Redo(true)),
@@ -2082,7 +2082,7 @@ pub fn redo() -> OutboundMessage {
 
 pub fn read_inhibited_modules() -> OutboundMessage {
     OutboundMessage::encoded(
-        42,
+        profile::MESSAGE_TYPE_COMPILER_INHIBITED_MODULES,
         pa::CompilerInhibitedModulesMessage {
             action: pa::message_action::Enum::Read as i32,
             ..Default::default()
@@ -2097,7 +2097,7 @@ pub fn preset_screenshot(
     request_id: u64,
 ) -> OutboundMessage {
     OutboundMessage::encoded(
-        25,
+        profile::MESSAGE_TYPE_SCREENSHOT,
         pa::ScreenshotMessage {
             action: pa::message_action::Enum::Read as i32,
             request_id: Some(pa::screenshot_message::RequestId::RequestId(request_id)),
@@ -2111,7 +2111,7 @@ pub fn preset_screenshot(
 
 pub fn capture_screen() -> OutboundMessage {
     OutboundMessage::encoded(
-        72,
+        profile::MESSAGE_TYPE_REMOTE_CONTROL,
         pa::RemoteControlMessage {
             action: pa::message_action::Enum::Read as i32,
             screenshot: Some(pa::RemoteControlScreenshot::default()),
@@ -2145,7 +2145,7 @@ pub fn capture_screen() -> OutboundMessage {
 /// is what a pixel diff cannot tell you.
 pub fn read_graphics_tree() -> OutboundMessage {
     OutboundMessage::encoded(
-        72,
+        profile::MESSAGE_TYPE_REMOTE_CONTROL,
         pa::RemoteControlMessage {
             action: pa::message_action::Enum::Read as i32,
             graphics_tree: Some(pa::RemoteControlGraphicsTree::default()),
@@ -2168,8 +2168,14 @@ pub fn screen_tap(x: f32, y: f32) -> [OutboundMessage; 2] {
     [
         // CorOS' runtime semantics are inverted against the recovered enum
         // labels: RELEASE (wire value 1) begins the touch and PRESS (0) ends it.
-        OutboundMessage::encoded(72, mouse(pa::remote_control_mouse::Type::Release as i32)),
-        OutboundMessage::encoded(72, mouse(pa::remote_control_mouse::Type::Press as i32)),
+        OutboundMessage::encoded(
+            profile::MESSAGE_TYPE_REMOTE_CONTROL,
+            mouse(pa::remote_control_mouse::Type::Release as i32),
+        ),
+        OutboundMessage::encoded(
+            profile::MESSAGE_TYPE_REMOTE_CONTROL,
+            mouse(pa::remote_control_mouse::Type::Press as i32),
+        ),
     ]
 }
 
@@ -2179,7 +2185,7 @@ pub fn screen_tap(x: f32, y: f32) -> [OutboundMessage; 2] {
 pub fn screen_drag(x: f32, y: f32, to_x: f32, to_y: f32) -> [OutboundMessage; 3] {
     let mouse = |x, y, r#type, drag_target: Option<(f32, f32)>| {
         OutboundMessage::encoded(
-            72,
+            profile::MESSAGE_TYPE_REMOTE_CONTROL,
             pa::RemoteControlMessage {
                 action: pa::message_action::Enum::Update as i32,
                 mouse: Some(pa::RemoteControlMouse {
@@ -2214,7 +2220,7 @@ pub fn screen_drag(x: f32, y: f32, to_x: f32, to_y: f32) -> [OutboundMessage; 3]
 
 pub fn create_local_backup() -> OutboundMessage {
     OutboundMessage::encoded(
-        profile::MESSAGE_TYPE_BACKUP,
+        profile::MESSAGE_TYPE_LOCAL_BACKUP,
         pa::LocalBackupMessage {
             action: pa::message_action::Enum::Create as i32,
             ..Default::default()
@@ -2242,7 +2248,7 @@ pub fn setlist_position_with_request_id(
     request_id: Option<u64>,
 ) -> OutboundMessage {
     OutboundMessage::encoded(
-        2,
+        profile::MESSAGE_TYPE_SETLIST_POSITION,
         pa::SetlistPositionMessage {
             action: pa::message_action::Enum::Update as i32,
             request_id: request_id.map(pa::setlist_position_message::RequestId::RequestId),
@@ -2357,11 +2363,11 @@ pub fn set_global_tempo(bpm: u32) -> OutboundMessage {
 }
 
 /// Set the downstream master level. The QC wire value is normalized while the
-/// hardware and QC Control display it as 0-100. Never include `calibrate` in a
+/// hardware and QC Remote display it as 0-100. Never include `calibrate` in a
 /// level write: on the device that field opens the calibration workflow.
 pub fn set_master_volume(volume: f32) -> OutboundMessage {
     OutboundMessage::encoded(
-        17,
+        profile::MESSAGE_TYPE_MASTER_VOLUME,
         pa::MasterVolumeMessage {
             action: pa::message_action::Enum::Update as i32,
             volume: Some(pa::master_volume_message::Volume::Volume(
@@ -2374,7 +2380,7 @@ pub fn set_master_volume(volume: f32) -> OutboundMessage {
 
 fn grid_update(preset: BinaryPreset) -> OutboundMessage {
     OutboundMessage::encoded(
-        1,
+        profile::MESSAGE_TYPE_GRID,
         pa::GridMessage {
             action: pa::message_action::Enum::Update as i32,
             preset: Some(pa::grid_message::Preset::Preset(preset)),
@@ -2392,7 +2398,7 @@ mod tests {
         let now_ms = 1_788_711_237_617;
         let messages = initialization(now_ms);
         assert_eq!(messages[0].message_type, 10);
-        assert_eq!(messages[1], read(51));
+        assert_eq!(messages[1], read(profile::MESSAGE_TYPE_MODEL_REPO));
         assert_eq!(messages[2], connection(true));
         let (subscriptions, tail) = messages[3..].split_at(profile::LIVE_SUBSCRIPTIONS.len());
         assert_eq!(
@@ -2437,7 +2443,7 @@ mod tests {
             [0x08, 0x01, 0x28, 0x00]
         );
         assert_eq!(keepalive().payload, [0x08, 0x01]);
-        assert_eq!(read(51).payload, [0x08, 0x03]);
+        assert_eq!(read(profile::MESSAGE_TYPE_MODEL_REPO).payload, [0x08, 0x03]);
         assert_eq!(read_version().payload, [0x08, 0x03]);
         assert_eq!(read_tuner().message_type, 6);
         assert_eq!(read_tuner().payload, [0x08, 0x03]);

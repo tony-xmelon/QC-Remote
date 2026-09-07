@@ -1,4 +1,4 @@
-import type { BlockDetails } from "@ndsp-qc/client";
+import type { BlockDetails } from "@qc-remote/client";
 
 export interface BlockEditorSession {
   details?: BlockDetails;

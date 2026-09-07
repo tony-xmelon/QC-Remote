@@ -3,10 +3,10 @@ import colorTheme from "./colors.json" with { type: "json" };
 import visualAssets from "./assets.json" with { type: "json" };
 import brand from "./brand.json" with { type: "json" };
 
-export { REFERENCE_BLOCK_ICONS } from "./reference-block-icons.ts";
+export { QC_LEGAL } from "./legal.ts";
 
 /**
- * Shared visual contract for the Windows and Android QC Control apps.
+ * Shared visual contract for the Windows and Android QC Remote apps.
  *
  * `captured` values are measured from the native 800×480 Quad Cortex PNGs in
  * artifacts/hardware-ui. Category colors come from the CorOS 4.1 device

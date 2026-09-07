@@ -21,7 +21,7 @@ from urllib.request import Request, urlopen
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 MANUAL_URL = "https://neuraldsp.com/manual/quad-cortex"
-USER_AGENT = "ndsp-qc-ui-detail-corpus/1.0"
+USER_AGENT = "qc-remote-ui-detail-corpus/1.0"
 
 # label -> (stable id, evidence scope, canonical screen/state ids)
 DETAILS: dict[str, tuple[str, str, list[str]]] = {

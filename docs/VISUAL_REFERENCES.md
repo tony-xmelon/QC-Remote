@@ -1,6 +1,6 @@
 # Visual references
 
-The large Quad Cortex skin is based on official Neural DSP reference material current on 2026-08-30. These sources are design references only; the application does not bundle their photography, screenshots, logos, fonts, or extracted image assets.
+The large Quad Cortex skin is based on official Neural DSP reference material current on 2026-08-30. Most captures are retained as design and QA references, but the current private test build also contains identified official-reference artwork in its visual asset package. Those assets are a public-release blocker and must be removed or licensed before distribution.
 
 ## Hardware
 

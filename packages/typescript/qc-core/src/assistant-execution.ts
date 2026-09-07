@@ -1,4 +1,4 @@
-import { QC_GRID_COLUMNS, QC_MAXIMUM_TEMPO_BPM, QC_MINIMUM_TEMPO_BPM, type GridBlock } from "@ndsp-qc/client";
+import { QC_GRID_COLUMNS, QC_MAXIMUM_TEMPO_BPM, QC_MINIMUM_TEMPO_BPM, type GridBlock } from "@qc-remote/client";
 import type { AssistantIntent, ValidatedAssistantAction } from "./assistant.ts";
 import type { QcCommandResult } from "./transport.ts";
 import { sceneLetter } from "./state.ts";

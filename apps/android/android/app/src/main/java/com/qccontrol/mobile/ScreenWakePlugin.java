@@ -7,7 +7,7 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
-/** Holds the display awake only while the QC Control activity is visible. */
+/** Holds the display awake only while the QC Remote activity is visible. */
 @CapacitorPlugin(name = "ScreenWake")
 public class ScreenWakePlugin extends Plugin {
     @PluginMethod

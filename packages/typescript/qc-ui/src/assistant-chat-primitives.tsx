@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { AssistantAccessMode } from "@ndsp-qc/core";
+import type { AssistantAccessMode } from "@qc-remote/core";
 import { QcUiIcon } from "./theme-icons";
 
 export interface AssistantAttachment {

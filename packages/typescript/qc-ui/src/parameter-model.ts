@@ -1,5 +1,5 @@
-import type { BlockParameter } from "@ndsp-qc/client";
-import { QC_COLORS } from "@ndsp-qc/theme";
+import type { BlockParameter } from "@qc-remote/client";
+import { QC_COLORS } from "@qc-remote/theme";
 
 export const PARAMETER_ENCODER_ROLES = [
   "footswitch:A", "footswitch:B", "footswitch:C", "footswitch:D", "footswitch:E",

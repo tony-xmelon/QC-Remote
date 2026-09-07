@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState, type Dispatch, type SetStateAction } from "react";
-import type { ConnectionPhase, ConnectionState } from "@ndsp-qc/client";
-import type { PublicRelayStatus } from "@ndsp-qc/core";
+import type { ConnectionPhase, ConnectionState } from "@qc-remote/client";
+import type { PublicRelayStatus } from "@qc-remote/core";
 
 export type QcConnectionTransition = "absent" | "available" | "connecting" | "syncing" | "connected" | "error";
 

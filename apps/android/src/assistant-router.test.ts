@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { parseAssistantReply, validateAssistantActions } from "@ndsp-qc/core";
+import { parseAssistantReply, validateAssistantActions } from "@qc-remote/core";
 
 test("parses fenced JSON and validates a scene", () => {
   const reply = parseAssistantReply('```json\n{"reply":"Done","actions":[{"name":"select_scene","args":{"scene":2}},{"name":"set_tempo","args":{"bpm":96}}]}\n```');

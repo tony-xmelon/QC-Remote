@@ -50,6 +50,14 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.key
+*service-account*.json
+*service_account*.json
 *.log
 diagnostics/
 *.qcw

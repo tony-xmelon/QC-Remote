@@ -12,6 +12,7 @@ use qc_device_runtime::request::{
 use qc_device_runtime::{GatewaySnapshot, PresetLibrary};
 use qc_protocol::commands::{self, OutboundMessage};
 use qc_protocol::framing;
+use qc_protocol::profile;
 use qc_protocol::responses::{decode_tempo_clock, BackupAssembler};
 use qc_protocol::session::{FrameAssembler, SessionMachine};
 use qc_protocol::state::decode_preset_folder;
@@ -1050,7 +1051,7 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeDeco
         let bytes = env
             .convert_byte_array(payload)
             .map_err(|error| error.to_string())?;
-        if message_type == 4 {
+        if message_type == i32::from(profile::MESSAGE_TYPE_FILE) {
             if let Some(listing) =
                 decode_preset_folder(&bytes).map_err(|error| error.to_string())?
             {

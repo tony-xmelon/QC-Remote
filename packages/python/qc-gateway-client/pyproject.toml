@@ -3,9 +3,10 @@ requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
-name = "ndsp-qc-gateway-client"
+name = "qc-remote-gateway-client"
 version = "0.1.0"
-description = "Typed Python client for the NDSP QC Gateway v1 contract"
+description = "Typed Python client for the QC Remote gateway v1 contract"
+classifiers = ["Private :: Do Not Upload"]
 requires-python = ">=3.10"
 dependencies = []
 

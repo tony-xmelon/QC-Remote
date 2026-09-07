@@ -1,9 +1,9 @@
 import { useCallback } from "react";
-import type { BlockDetails, GridBlock, PresetSnapshot } from "@ndsp-qc/client";
+import type { BlockDetails, GridBlock, PresetSnapshot } from "@qc-remote/client";
 import {
   blockSelectionIntent, dispatchSurfaceCommand, surfaceCommand,
   type QcSurfaceAction
-} from "@ndsp-qc/core";
+} from "@qc-remote/core";
 import type { useGridWorkflow } from "./use-grid-workflow";
 import type { usePerformanceWorkflow } from "./use-performance-workflow";
 

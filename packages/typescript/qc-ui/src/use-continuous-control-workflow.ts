@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import type { DeviceActionResult, GatewayTransport, PresetSnapshot } from "@ndsp-qc/client";
+import type { DeviceActionResult, GatewayTransport, PresetSnapshot } from "@qc-remote/client";
 import type { DeviceHistoryEntry } from "./use-device-history";
 import type { QcController } from "./use-qc-controller";
 

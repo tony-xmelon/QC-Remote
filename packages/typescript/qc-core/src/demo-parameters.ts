@@ -1,4 +1,4 @@
-import type { BlockDetails, BlockParameter, GridBlock } from "@ndsp-qc/client";
+import type { BlockDetails, BlockParameter, GridBlock } from "@qc-remote/client";
 
 type ParameterSeed = [name: string, value: number, minimum?: number, maximum?: number, units?: string, options?: string[], type?: BlockParameter["type"], displayPrecision?: number];
 

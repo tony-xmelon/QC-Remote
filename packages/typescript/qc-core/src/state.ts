@@ -1,5 +1,5 @@
-import { QC_MAXIMUM_TEMPO_BPM, QC_MINIMUM_TEMPO_BPM, type GridBlock, type GridRoute, type PresetSnapshot, type QcStateUpdate } from "@ndsp-qc/client";
-export type { QcStateUpdate } from "@ndsp-qc/client";
+import { QC_MAXIMUM_TEMPO_BPM, QC_MINIMUM_TEMPO_BPM, type GridBlock, type GridRoute, type PresetSnapshot, type QcStateUpdate } from "@qc-remote/client";
+export type { QcStateUpdate } from "@qc-remote/client";
 
 export type PendingBypassIntent = { bypassed: boolean; issuedAt: number; commandId?: number };
 export type PendingBypassIntents = Map<string, PendingBypassIntent>;

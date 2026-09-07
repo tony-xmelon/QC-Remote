@@ -1,5 +1,5 @@
 {
-  "name": "@ndsp-qc/android",
+  "name": "@qc-remote/android",
   "version": "0.3.23",
   "private": true,
   "type": "module",
@@ -17,11 +17,11 @@
     "@capacitor/android": "^8.5.0",
     "@capacitor/core": "^8.5.0",
     "@capacitor/status-bar": "^8.0.0",
-    "@ndsp-qc/client": "0.1.0",
-    "@ndsp-qc/core": "0.1.0",
-    "@ndsp-qc/form-factors": "0.1.0",
-    "@ndsp-qc/theme": "0.1.0",
-    "@ndsp-qc/ui": "0.1.0",
+    "@qc-remote/client": "0.1.0",
+    "@qc-remote/core": "0.1.0",
+    "@qc-remote/form-factors": "0.1.0",
+    "@qc-remote/theme": "0.1.0",
+    "@qc-remote/ui": "0.1.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },

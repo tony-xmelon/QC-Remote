@@ -1,10 +1,11 @@
 [package]
 name = "qc-remote-service"
 version = "0.1.0"
+publish = false
 edition = "2024"
 rust-version = "1.88"
 license = "Apache-2.0"
-description = "Authenticated public MCP and Android relay composition for QC Control"
+description = "Authenticated public MCP and Android relay composition for QC Remote"
 
 [dependencies]
 async-trait = "0.1"

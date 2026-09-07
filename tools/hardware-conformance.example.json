@@ -48,7 +48,7 @@
     }
   },
   "routing": {
-    "row": 3,
+    "row": 2,
     "testInputId": 1,
     "testOutputId": 1,
     "testSplitColumn": 2,

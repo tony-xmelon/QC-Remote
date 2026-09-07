@@ -87,7 +87,7 @@ test("theme CSS mirrors the typed tokens and is loaded by both apps", () => {
   const css = read("packages/typescript/qc-theme/src/theme.css");
   for (const color of Object.values(QC_COLORS.captured)) assert.ok(css.toLowerCase().includes(color), "CSS theme needs " + color);
   for (const entry of ["--qc-screen", "--qc-route-pill", "--qc-unsaved", "--qc-route-rail", "--qc-route-text", "--qc-utility-mark", "--qc-font-device", "--qc-font-app"]) assert.ok(css.includes(entry), "CSS theme needs " + entry);
-  for (const entry of ["apps/windows/src/main.tsx", "apps/android/src/main.tsx"]) assert.match(read(entry), /@ndsp-qc\/theme\/theme\.css/, entry + " must load the shared theme");
+  for (const entry of ["apps/windows/src/main.tsx", "apps/android/src/main.tsx"]) assert.match(read(entry), /@qc-remote\/theme\/theme\.css/, entry + " must load the shared theme");
 });
 
 test("core behavior and UI artwork consume one category palette", () => {
@@ -116,7 +116,7 @@ test("shared glyph registry covers hardware, routing, directory, editing, and co
 
 test("production and comparison screens cannot select alternate icon artwork", () => {
   const sourceFiles = execFileSync("git", ["ls-files", "--", "apps", "packages", "tests"], { encoding: "utf8" })
-    .trim().split(/\r?\n/).filter((file) => /\.(?:ts|tsx)$/.test(file));
+    .trim().split(/\r?\n/).filter((file) => /\.(?:ts|tsx)$/.test(file) && existsSync(file));
   const fixtureOnlyVariant = new RegExp(["official", "Raster"].join(""));
   for (const file of sourceFiles) {
     assert.doesNotMatch(read(file), fixtureOnlyVariant, `${file} must use the same canonical artwork in production and comparisons`);
@@ -150,7 +150,7 @@ test("all canonical visual assets match the theme fingerprints", () => {
 
 test("every tracked visual, font, audio, or video asset is owned by the theme manifest", () => {
   const visualFiles = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "--", "*.png", "*.svg", "*.ico", "*.webp", "*.jpg", "*.jpeg", "*.gif", "*.avif", "*.woff", "*.woff2", "*.ttf", "*.otf", "*.mp3", "*.wav", "*.ogg", "*.mp4", "*.webm"], { encoding: "utf8" })
-    .trim().split(/\r?\n/).filter(Boolean).map((file) => file.replaceAll("\\", "/"));
+    .trim().split(/\r?\n/).filter(Boolean).map((file) => file.replaceAll("\\", "/")).filter(existsSync);
   const exact = new Set<string>();
   const prefixes: string[] = [];
   for (const asset of Object.values(QC_VISUAL_ASSETS)) {
@@ -163,7 +163,7 @@ test("every tracked visual, font, audio, or video asset is owned by the theme ma
 test("product visual assets have no byte-for-byte duplicates", () => {
   const visualFiles = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "--", "*.png", "*.svg", "*.ico", "*.webp", "*.jpg", "*.jpeg", "*.gif", "*.avif", "*.woff", "*.woff2", "*.ttf", "*.otf", "*.mp3", "*.wav", "*.ogg", "*.mp4", "*.webm"], { encoding: "utf8" })
     .trim().split(/\r?\n/).filter(Boolean).map((file) => file.replaceAll("\\", "/"))
-    .filter((file) => !file.startsWith("references/"));
+    .filter((file) => existsSync(file) && !file.startsWith("references/"));
   const owners = new Map<string, string>();
   for (const file of visualFiles) {
     const fingerprint = sha256(file);
@@ -174,7 +174,7 @@ test("product visual assets have no byte-for-byte duplicates", () => {
 
 test("authored vector geometry has one owner", () => {
   const sourceFiles = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "--", "apps/**/*.tsx", "packages/**/*.tsx"], { encoding: "utf8" })
-    .trim().split(/\r?\n/).filter(Boolean);
+    .trim().split(/\r?\n/).filter((file) => Boolean(file) && existsSync(file));
   const owners = new Map<string, string>();
   for (const file of sourceFiles) {
     for (const match of read(file).matchAll(/\bd="([^"]{8,})"/g)) {
@@ -193,7 +193,7 @@ test("every declared icon is wired outside its registry and audit gallery", () =
   const fixtureFile = "packages/typescript/qc-ui/src/coros-screen-fixtures.tsx";
   const fixtureSource = read(fixtureFile).split("function IconographyAuditFixture")[0];
   const authoredSource = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "--", "apps/**/*.ts", "apps/**/*.tsx", "packages/**/*.ts", "packages/**/*.tsx"], { encoding: "utf8" })
-    .trim().split(/\r?\n/).filter((file) => file !== iconFile && file !== fixtureFile && !file.endsWith(".test.ts") && !file.endsWith(".test.tsx"))
+    .trim().split(/\r?\n/).filter((file) => existsSync(file) && file !== iconFile && file !== fixtureFile && !file.endsWith(".test.ts") && !file.endsWith(".test.tsx"))
     .map(read).concat(fixtureSource).join("\n");
   for (const union of iconSource.matchAll(/export type \w+(?:IconName|GlyphName)\s*=\s*([^;]+);/g)) {
     for (const variant of union[1].matchAll(/"([^"]+)"/g)) {
@@ -203,11 +203,11 @@ test("every declared icon is wired outside its registry and audit gallery", () =
 });
 
 test("product branding has one shared owner across web and native hosts", () => {
-  assert.equal(QC_BRAND.appName, "QC Control");
+  assert.equal(QC_BRAND.appName, "QC Remote");
   assert.equal(QC_BRAND.deviceName, "Quad Cortex");
   for (const file of ["apps/windows/src/main.tsx", "apps/android/src/main.tsx", "apps/android/src/App.tsx", "packages/typescript/qc-ui/src/quad-cortex-surface.tsx"]) {
     assert.match(read(file), /QC_BRAND/, `${file} must consume shared branding`);
-    assert.doesNotMatch(read(file), /["'>]QC Control(?:[<"']|\ssettings)/, `${file} must not duplicate the app name`);
+    assert.doesNotMatch(read(file), /["'>]QC Remote(?:[<"']|\ssettings)/, `${file} must not duplicate the app name`);
   }
   for (const file of ["apps/windows/index.html", "apps/android/index.html"]) assert.match(read(file), /<title><\/title>/);
   const tauri = JSON.parse(read("apps/windows/src-tauri/tauri.conf.json"));
@@ -226,6 +226,18 @@ test("product branding has one shared owner across web and native hosts", () => 
   assert.ok(strings.includes(`<string name="app_font_family">${QC_NATIVE_THEME.android.appFontFamily}</string>`));
   assert.match(read("apps/android/android/app/src/main/res/values/styles.xml"), /android:fontFamily">@string\/app_font_family/);
   assert.match(read("scripts/generate-android-branding.ps1"), /brand\.appWordmark/);
+});
+
+test("release apps default to the independent hardware skin", () => {
+  const formFactors = read("packages/typescript/qc-form-factors/src/index.ts");
+  const android = read("apps/android/src/App.tsx");
+  assert.match(formFactors, /defaultSkinId: "obsidian"/);
+  assert.doesNotMatch(formFactors, /defaultSkinId: "official-svg"/);
+  assert.match(android, /entry\.id === formFactor\.defaultSkinId/);
+  assert.doesNotMatch(android, /entry\.id === "official-svg"/);
+  assert.doesNotMatch(formFactors, /Official SVG Overlay|qc-overview-001/);
+  const assets = read("packages/typescript/qc-theme/src/assets.json");
+  assert.doesNotMatch(assets, /Neural DSP|qc-block-samples|qc-overview-001/);
 });
 
 test("authored app and device sources cannot bypass the shared visual contract", () => {
@@ -250,9 +262,9 @@ test("authored app and device sources cannot bypass the shared visual contract",
     const fullSource = read(file);
     if (/Generated by scripts\//.test(fullSource.slice(0, 300))) continue;
     const source = file.endsWith(".rs") ? fullSource.split("#[cfg(test)]")[0] : fullSource;
-    assert.doesNotMatch(source, colorLiteral, `${file} must use @ndsp-qc/theme colors`);
-    assert.doesNotMatch(source, deployedAssetUrl, `${file} must use @ndsp-qc/theme asset tokens`);
-    assert.doesNotMatch(source, literalFontStack, `${file} must use @ndsp-qc/theme typography`);
+    assert.doesNotMatch(source, colorLiteral, `${file} must use @qc-remote/theme colors`);
+    assert.doesNotMatch(source, deployedAssetUrl, `${file} must use @qc-remote/theme asset tokens`);
+    assert.doesNotMatch(source, literalFontStack, `${file} must use @qc-remote/theme typography`);
     if (file.endsWith(".css")) assert.doesNotMatch(source.replaceAll("--qc-transparent", ""), /\btransparent\b/i, `${file} must use the shared transparent token`);
     if (/\.tsx?$/.test(file) && !file.endsWith("theme-icons.tsx")) assert.doesNotMatch(source, iconCharacter, `${file} must reference a shared vector glyph instead of an icon character literal`);
   }
