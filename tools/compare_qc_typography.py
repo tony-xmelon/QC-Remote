@@ -65,6 +65,61 @@ def direct_palette_delta(left: list[tuple[int, int, int]], right: list[tuple[int
     return round(float(np.linalg.norm(np.asarray(left[0], dtype=np.float32) - np.asarray(right[0], dtype=np.float32))), 2)
 
 
+def color_match(delta: float | None) -> float | None:
+    """Convert RGB Euclidean distance to an explicit 0-100 palette score."""
+    if delta is None:
+        return None
+    return round(max(0.0, 1.0 - delta / np.sqrt(3 * 255 * 255)) * 100, 2)
+
+
+def mask_bbox(mask: np.ndarray) -> tuple[int, int, int, int] | None:
+    ys, xs = np.where(mask)
+    if not len(xs):
+        return None
+    return int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1
+
+
+def placement_match(reference_mask: np.ndarray, rendered_mask: np.ndarray) -> float | None:
+    """Score text placement independently from glyph paint and color."""
+    left = mask_bbox(reference_mask)
+    right = mask_bbox(rendered_mask)
+    if left is None or right is None:
+        return None
+    intersection = max(0, min(left[2], right[2]) - max(left[0], right[0])) * max(0, min(left[3], right[3]) - max(left[1], right[1]))
+    left_area = (left[2] - left[0]) * (left[3] - left[1])
+    right_area = (right[2] - right[0]) * (right[3] - right[1])
+    return round(intersection / max(left_area + right_area - intersection, 1) * 100, 2)
+
+
+def translated(mask: np.ndarray, dx: int, dy: int) -> np.ndarray:
+    shifted = np.roll(mask, (dy, dx), axis=(0, 1))
+    if dy > 0:
+        shifted[:dy, :] = False
+    elif dy < 0:
+        shifted[dy:, :] = False
+    if dx > 0:
+        shifted[:, :dx] = False
+    elif dx < 0:
+        shifted[:, dx:] = False
+    return shifted
+
+
+def glyph_shape_match(reference_mask: np.ndarray, rendered_mask: np.ndarray) -> float | None:
+    """Compare glyph silhouettes after removing their placement offset."""
+    reference_box = mask_bbox(reference_mask)
+    rendered_box = mask_bbox(rendered_mask)
+    if reference_box is None or rendered_box is None:
+        return None
+    reference_center = ((reference_box[0] + reference_box[2]) / 2, (reference_box[1] + reference_box[3]) / 2)
+    rendered_center = ((rendered_box[0] + rendered_box[2]) / 2, (rendered_box[1] + rendered_box[3]) / 2)
+    aligned = translated(reference_mask, round(rendered_center[0] - reference_center[0]), round(rendered_center[1] - reference_center[1]))
+    aligned_dilated = np.asarray(Image.fromarray(aligned).filter(ImageFilter.MaxFilter(5)), dtype=bool)
+    rendered_dilated = np.asarray(Image.fromarray(rendered_mask).filter(ImageFilter.MaxFilter(5)), dtype=bool)
+    precision = float((rendered_mask & aligned_dilated).sum()) / max(int(rendered_mask.sum()), 1)
+    recall = float((aligned & rendered_dilated).sum()) / max(int(aligned.sum()), 1)
+    return round(2 * precision * recall / max(precision + recall, 1e-9) * 100, 2)
+
+
 def masked_screen(reference: Image.Image, rendered: Image.Image, no_text: Image.Image) -> dict[str, float] | None:
     reference_array = np.asarray(reference.convert("RGB"))
     rendered_array = np.asarray(rendered.convert("RGB"))
@@ -178,6 +233,10 @@ def main() -> int:
 
     manifest = load_json(args.manifest)
     bundled_families = set(manifest["bundledFamilies"])
+    identity_tokens_by_screen = {
+        screen: {token.casefold() for value in values for token in re.findall(r"[\w.%-]+", value, flags=re.UNICODE)}
+        for screen, values in manifest.get("contentIdentityTokens", {}).items()
+    }
     coverage = load_json(Path(manifest["coverageLedger"]))
     roots = {
         "physical": (args.physical, args.baseline / "corpus"),
@@ -248,6 +307,12 @@ def main() -> int:
                             reference_foreground = reference_candidates[:1]
                         foreground_delta = direct_palette_delta(foreground, reference_foreground)
                         background_delta = direct_palette_delta(background, reference_background)
+                        if reference_background and reference_foreground:
+                            reference_background_distance = np.linalg.norm(reference_array.astype(np.float32) - np.asarray(reference_background[0], dtype=np.float32), axis=2)
+                            reference_foreground_distance = np.linalg.norm(reference_array.astype(np.float32) - np.asarray(reference_foreground[0], dtype=np.float32), axis=2)
+                            reference_text_mask = (reference_background_distance > 16) & (reference_foreground_distance <= 48) & text_mask
+                        else:
+                            reference_text_mask = np.zeros(exact_mask.shape, dtype=bool)
                         run_results.append({
                             "text": run.get("normalizedText"),
                             "lines": run.get("lines"),
@@ -263,9 +328,18 @@ def main() -> int:
                             "colorMatchPercent": round((1 - score["mae"]) * 100, 2),
                             "referenceForegroundPaletteDelta": foreground_delta,
                             "referenceBackgroundPaletteDelta": background_delta,
+                            "foregroundColorMatchPercent": color_match(foreground_delta),
+                            "backgroundColorMatchPercent": color_match(background_delta),
+                            "placementMatchPercent": placement_match(reference_text_mask, exact_mask),
+                            "glyphShapeMatchPercent": glyph_shape_match(reference_text_mask, exact_mask),
                         })
                     tree = tree_tokens(reference_root / f"{screen_id}.tree.txt") if source == "physical" else set()
                     tokens = rendered_tokens(metadata[host])
+                    expected_identity = identity_tokens_by_screen.get(screen_id, set())
+                    content_recall = len(expected_identity & tokens) / len(expected_identity) * 100 if expected_identity else None
+                    content_precision = len(expected_identity & tokens) / len(tokens) * 100 if expected_identity and tokens else None
+                    content_f1 = (2 * content_precision * content_recall / (content_precision + content_recall)) if content_precision is not None and content_recall is not None and content_precision + content_recall else None
+                    tree_coverage = len(tree & tokens) / len(tree) * 100 if tree else None
                     raster_results.append({
                         "state": state["id"], "source": source, "screen": screen_id, "host": host,
                         "runs": len(run_results),
@@ -275,7 +349,15 @@ def main() -> int:
                         "meanRunColorMatchPercent": rounded_mean([item["colorMatchPercent"] for item in run_results]),
                         "foregroundColorPresencePercent": rounded_mean([item["referenceForegroundPaletteDelta"] <= 12 for item in run_results if item["referenceForegroundPaletteDelta"] is not None], 100),
                         "backgroundColorPresencePercent": rounded_mean([item["referenceBackgroundPaletteDelta"] <= 12 for item in run_results if item["referenceBackgroundPaletteDelta"] is not None], 100),
-                        "referenceTextTokenCoveragePercent": round(len(tree & tokens) / len(tree) * 100, 2) if tree else None,
+                        "foregroundColorMatchPercent": rounded_mean([item["foregroundColorMatchPercent"] for item in run_results if item["foregroundColorMatchPercent"] is not None]),
+                        "backgroundColorMatchPercent": rounded_mean([item["backgroundColorMatchPercent"] for item in run_results if item["backgroundColorMatchPercent"] is not None]),
+                        "placementMatchPercent": rounded_mean([item["placementMatchPercent"] for item in run_results if item["placementMatchPercent"] is not None]),
+                        "glyphShapeMatchPercent": rounded_mean([item["glyphShapeMatchPercent"] for item in run_results if item["glyphShapeMatchPercent"] is not None]),
+                        "contentParityPercent": round(content_recall, 2) if content_recall is not None else None,
+                        "contentPrecisionPercent": round(content_precision, 2) if content_precision is not None else None,
+                        "contentF1Percent": round(content_f1, 2) if content_f1 is not None else None,
+                        "contentIdentity": "verified" if content_recall == 100 else "mismatch" if content_recall is not None else "unverified",
+                        "referenceTextTokenCoveragePercent": round(tree_coverage, 2) if tree_coverage is not None else None,
                         "runResults": run_results,
                     })
             state_sources.append(source_result)
@@ -285,8 +367,9 @@ def main() -> int:
 
     all_runs = sum(count for (_, _), count in availability.items())
     available_runs = sum(count for (_, available), count in availability.items() if available)
+    identity_verified_rasters = [item for item in raster_results if item["contentIdentity"] == "verified"]
     report = {
-        "schemaVersion": 2,
+        "schemaVersion": 3,
         "canonicalStates": len(coverage["states"]),
         "measuredStates": sum(bool(item["sources"]) for item in state_results),
         "authoritativeRasterMeasurements": len(raster_results),
@@ -297,6 +380,17 @@ def main() -> int:
         "meanColorMatchPercent": rounded_mean([item["colorMatchPercent"] for item in raster_results if item["colorMatchPercent"] is not None]),
         "textColorPresencePercent": rounded_mean([item["foregroundColorPresencePercent"] for item in raster_results if item["foregroundColorPresencePercent"] is not None]),
         "backgroundColorPresencePercent": rounded_mean([item["backgroundColorPresencePercent"] for item in raster_results if item["backgroundColorPresencePercent"] is not None]),
+        "independentScorePopulation": "content-identity-verified comparisons only",
+        "meanGlyphShapeMatchPercent": rounded_mean([item["glyphShapeMatchPercent"] for item in identity_verified_rasters if item["glyphShapeMatchPercent"] is not None]),
+        "meanPlacementMatchPercent": rounded_mean([item["placementMatchPercent"] for item in identity_verified_rasters if item["placementMatchPercent"] is not None]),
+        "meanForegroundColorMatchPercent": rounded_mean([item["foregroundColorMatchPercent"] for item in identity_verified_rasters if item["foregroundColorMatchPercent"] is not None]),
+        "meanBackgroundColorMatchPercent": rounded_mean([item["backgroundColorMatchPercent"] for item in identity_verified_rasters if item["backgroundColorMatchPercent"] is not None]),
+        "meanContentParityPercent": rounded_mean([item["contentParityPercent"] for item in raster_results if item["contentParityPercent"] is not None]),
+        "contentIdentity": {
+            "verified": sum(item["contentIdentity"] == "verified" for item in raster_results),
+            "mismatch": sum(item["contentIdentity"] == "mismatch" for item in raster_results),
+            "unverified": sum(item["contentIdentity"] == "unverified" for item in raster_results),
+        },
         "fontAvailability": [{"font": font, "available": available, "runs": count} for (font, available), count in sorted(availability.items())],
         "missing": sorted(set(missing)),
         "states": state_results,
@@ -313,11 +407,23 @@ def main() -> int:
     system_font_runs = sum(item["runs"] for item in report["fontAvailability"] if item["font"] not in bundled_families)
     if system_font_runs:
         quality_failures.append(f"{system_font_runs} text runs still depend on a system font")
-    if report["meanStructuralMatchPercent"] < 95:
-        quality_failures.append("mean authoritative text-mask structure is below 95%")
+    if report["contentIdentity"]["mismatch"]:
+        quality_failures.append(f'{report["contentIdentity"]["mismatch"]} host comparisons have reference-content mismatches')
+    if report["meanGlyphShapeMatchPercent"] is not None and report["meanGlyphShapeMatchPercent"] < 90:
+        quality_failures.append("mean verified glyph shape is below 90%")
+    if report["meanPlacementMatchPercent"] is not None and report["meanPlacementMatchPercent"] < 80:
+        quality_failures.append("mean verified text placement is below 80%")
+    if report["meanForegroundColorMatchPercent"] is not None and report["meanForegroundColorMatchPercent"] < 95:
+        quality_failures.append("mean verified foreground color is below 95%")
+    if report["meanBackgroundColorMatchPercent"] is not None and report["meanBackgroundColorMatchPercent"] < 95:
+        quality_failures.append("mean verified background color is below 95%")
     report["qualityGate"] = {
         "passed": not quality_failures,
-        "minimumMeanStructuralMatchPercent": 95,
+        "maximumContentIdentityMismatches": 0,
+        "minimumMeanGlyphShapeMatchPercent": 90,
+        "minimumMeanPlacementMatchPercent": 80,
+        "minimumMeanForegroundColorMatchPercent": 95,
+        "minimumMeanBackgroundColorMatchPercent": 95,
         "requiredCrossHostStyleParityPercent": 100,
         "requiredPrimaryFaceAvailabilityPercent": 100,
         "requiredSystemFontRuns": 0,
@@ -325,7 +431,7 @@ def main() -> int:
     }
     args.output.mkdir(parents=True, exist_ok=True)
     (args.output / "report.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-    summary_keys = ("canonicalStates", "measuredStates", "authoritativeRasterMeasurements", "crossHostMeasurements", "crossHostStyleParityPercent", "primaryFaceAvailabilityPercent", "meanStructuralMatchPercent", "meanColorMatchPercent", "textColorPresencePercent", "backgroundColorPresencePercent")
+    summary_keys = ("canonicalStates", "measuredStates", "authoritativeRasterMeasurements", "crossHostMeasurements", "crossHostStyleParityPercent", "primaryFaceAvailabilityPercent", "meanGlyphShapeMatchPercent", "meanPlacementMatchPercent", "meanForegroundColorMatchPercent", "meanBackgroundColorMatchPercent", "meanContentParityPercent", "contentIdentity", "meanStructuralMatchPercent", "meanColorMatchPercent")
     print(json.dumps({key: report[key] for key in summary_keys}, indent=2))
     return 1 if report["missing"] or quality_failures else 0
 

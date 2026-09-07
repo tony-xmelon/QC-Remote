@@ -64,6 +64,7 @@
 .coros-global-eq .global-eq-graph { height: 52.5%; }
 .coros-global-eq .global-eq-tabs { height: 10.42%; }
 .global-eq-graph .eq-axis-labels text { fill: #303330; font-size: 12px; }
+.global-eq-graph circle.is-active + text { fill: #0a74e0; }
 .global-eq-graph circle { r: 20px; }
 .global-eq-graph circle.is-active { r: 26px; }
 .global-eq-graph svg > g:last-child > g:nth-child(1) { transform: translate(1px, 1px); }

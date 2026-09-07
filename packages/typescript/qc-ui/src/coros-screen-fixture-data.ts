@@ -26,15 +26,15 @@ function officialBrit2203Snapshot(base: PresetSnapshot): PresetSnapshot {
 function captureTypeSnapshot(base: PresetSnapshot): PresetSnapshot {
   return {
     ...base,
-    presetLocation: "2E",
-    presetPosition: 12,
+    presetLocation: "2F",
+    presetPosition: 13,
     presetName: "QC MCP TEST",
     mode: "PRESET",
     footswitchModes: ["PRESET", "PRESET"],
     activeScene: 0,
     sceneColors: [QC_SCENE_COLORS[6], ...QC_SCENE_COLORS.slice(1)],
     dirty: false,
-    blocks: [{ id: "capture-type", name: "Neural Capture", kind: "capture", category: "Neural Capture", row: 0, column: 0 }],
+    blocks: [{ id: "capture-type", name: "Neural Capture", kind: "capture", category: "Neural Capture", color: QC_COLORS.captured.captureModelAccent, glyph: "capture-wave", row: 0, column: 0 }],
     routes: [
       { row: 0, inputId: 1, outputId: 19, input: "In 1", output: "Multi Out", splitMuted: false },
       { row: 1, inputId: 0, outputId: 0, input: "", output: "", splitMuted: false },

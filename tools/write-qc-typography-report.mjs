@@ -23,7 +23,7 @@ const availability = report.fontAvailability
   .join("\n");
 const table = rows.map((item) => {
   const parity = mean(hostParity.get(item.state) ?? []);
-  return `| ${escapeCell(item.state)} | ${escapeCell(item.source)} | ${escapeCell(item.screen)} | ${item.runs} | ${percent(item.structuralMatchPercent)} | ${percent(item.colorMatchPercent)} | ${percent(item.foregroundColorPresencePercent)} | ${percent(item.backgroundColorPresencePercent)} | ${percent(parity)} |`;
+  return `| ${escapeCell(item.state)} | ${escapeCell(item.source)} | ${escapeCell(item.screen)} | ${item.runs} | ${escapeCell(item.contentIdentity)} | ${percent(item.contentParityPercent)} | ${percent(item.glyphShapeMatchPercent)} | ${percent(item.placementMatchPercent)} | ${percent(item.foregroundColorMatchPercent)} | ${percent(item.backgroundColorMatchPercent)} | ${percent(parity)} |`;
 }).join("\n");
 
 const markdown = `# Quad Cortex typography parity — CorOS 4.1.0
@@ -37,14 +37,18 @@ Generated from the complete ${report.canonicalStates}-state canonical screen man
 - Windows/Android paired measurements: ${report.crossHostMeasurements}
 - Cross-host computed-style parity: ${percent(report.crossHostStyleParityPercent)}
 - Primary face availability: ${percent(report.primaryFaceAvailabilityPercent)}
-- Mean text-mask structural match: ${percent(report.meanStructuralMatchPercent)}
-- Mean text-region color match: ${percent(report.meanColorMatchPercent)}
-- Exact reference foreground-palette presence: ${percent(report.textColorPresencePercent)}
-- Exact reference local-background-palette presence: ${percent(report.backgroundColorPresencePercent)}
+- Independent-score population: ${report.independentScorePopulation}
+- Content identity: ${report.contentIdentity.verified} verified / ${report.contentIdentity.mismatch} mismatch / ${report.contentIdentity.unverified} unverified
+- Mean reference-content coverage: ${percent(report.meanContentParityPercent)}
+- Mean glyph-shape match (placement normalized): ${percent(report.meanGlyphShapeMatchPercent)}
+- Mean placement match: ${percent(report.meanPlacementMatchPercent)}
+- Mean foreground-color match: ${percent(report.meanForegroundColorMatchPercent)}
+- Mean local-background-color match: ${percent(report.meanBackgroundColorMatchPercent)}
 - Missing canonical states: ${report.missing.length}
 - Quality gate: ${report.qualityGate?.passed ? "PASS" : "FAIL"}
+${report.qualityGate?.failures?.length ? `- Gate failures: ${report.qualityGate.failures.join("; ")}` : ""}
 
-The structural and color scores compare only text-bearing regions, using the paired no-text render to isolate typography from iconography and controls. Palette-presence values are stricter diagnostics: antialiasing and the lack of source metadata in physical screenshots can lower them even when the perceived text color is correct.
+These dimensions are intentionally independent. Content identity uses screenshot-verified anchor tokens from the manifest; screens without explicit anchors are marked unverified. ZenUI object-tree token coverage remains a separate diagnostic because the tree can contain hidden labels. Glyph shape is scored after normalizing position, placement compares text bounds, and foreground/background color scores compare their palettes separately. The older combined masked-region scores remain in the JSON only for historical trend continuity and are not presented as fidelity scores.
 
 ## Bundled font availability
 
@@ -52,8 +56,8 @@ ${availability}
 
 ## Every authoritative screen
 
-| State | Source | Screen | Runs | Structure | Region color | Foreground present | Background present | Host parity |
-|---|---|---|---:|---:|---:|---:|---:|---:|
+| State | Source | Screen | Runs | Identity | Content | Glyph shape | Placement | Foreground | Background | Host parity |
+|---|---|---|---:|---|---:|---:|---:|---:|---:|---:|
 ${table}
 
 ## Reproduce

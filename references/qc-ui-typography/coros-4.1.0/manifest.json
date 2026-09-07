@@ -45,6 +45,15 @@
     "bold": "IBMPlexSans-Bold.ttf"
   },
   "bundledFamilies": ["QC CorOS IBM Plex Sans"],
+  "contentIdentityTokens": {
+    "capture-type": ["2", "F", "QC", "MCP", "TEST", "PRESET", "Multi", "Out"],
+    "fixture-editor-capture": ["1", "D", "Fender", "Deluxe", "Reverb", "Neural", "Capture", "Keeley", "BD-2", "Gain", "Bass", "Mid", "Treble", "Volume"],
+    "device-search-entry": ["Search", "Recently", "searched", "gary", "whammy", "still", "Space", "Done"],
+    "io-headphones": ["I/O", "Settings", "Headphones", "HP", "Level", "Multi", "Out"],
+    "official-gig-view-preset": ["1", "A", "Brit", "2203", "B", "Plexi100", "Normal", "H", "D-Cell", "Ch3"],
+    "official-global-eq": ["Global", "EQ", "Parametric-5", "Gain", "Freq", "Bypass"],
+    "official-settings-system": ["System", "Brightness", "Screen", "LEDs", "Dimmed", "Power", "Functions", "Factory", "Reset"]
+  },
   "qualityGates": {
     "canonicalStateCoveragePercent": 100,
     "dualHostMetadataPercent": 100,

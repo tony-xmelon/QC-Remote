@@ -21,7 +21,10 @@
 .gig-official.is-preset .gig-official-tiles article:first-child { background: #36f45f; color: #050505; }
 .gig-official.is-preset .gig-official-tiles article:first-child strong { font-weight: 700; }
 .gig-official.is-preset .gig-official-tiles article { padding-top: .625cqw; }
-.gig-official.is-preset .gig-official-tiles article > strong { margin-top: 1.5cqw; }
+.gig-official.is-preset .gig-official-tiles article > small { position: relative; top: -.75cqw; }
+.gig-official.is-preset .gig-official-tiles article > small b { font: inherit; }
+.gig-official.is-preset .gig-official-tiles article:first-child > small b { color: #050505 !important; }
+.gig-official.is-preset .gig-official-tiles article > strong { margin-top: .5cqw; }
 .gig-official.is-preset > header button:first-of-type { transform: translateX(-1.25cqw); }
 .gig-official.is-scene .gig-official-tiles article { display: grid; place-items: center; padding: 4cqw 2cqw 1cqw; text-align: center; }
 .gig-official.is-scene .gig-official-tiles article > small { position: absolute; inset: 1.5cqw 2cqw auto; color: #a8aaa8; font-size: 3cqw; text-align: left; }

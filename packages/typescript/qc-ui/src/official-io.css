@@ -38,7 +38,8 @@
 .io-ports button.is-square > i { width: 4.5cqw; height: 4.5cqw; margin-left: -2.25cqw; }
 .coros-io-settings:not(.is-usb) .io-ports button:nth-child(1) > i { color: #f8fcf8; }
 .io-ports button.is-input > i { top: 6.5cqw; width: 8.25cqw; height: 8.25cqw; margin-left: -4.125cqw; }
-.io-ports button.is-input > span { top: 2.5cqw; color: #eee; font-size: 1.5cqw; }
+.io-ports button.is-input > span { top: 2.5cqw; color: #808480; font-size: 1.5cqw; }
+.io-ports button.is-input.is-active > span { color: #eee; }
 .io-ports button.is-combo > i:first-of-type { top: 3.25cqw; width: 7.25cqw; height: 7.25cqw; margin-left: -3.625cqw; }
 .io-ports .io-input-selectors { position: absolute; right: 1.5cqw; bottom: .5cqw; width: 17cqw; height: 6cqw; display: grid; grid-template-columns: 1fr 1fr; gap: .75cqw; }
 .io-ports .io-input-selectors button { height: 6cqw; border-radius: 1cqw; background: #282c28; color: #eee; font-size: 2cqw; text-align: center; }

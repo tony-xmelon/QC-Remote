@@ -53,6 +53,20 @@ test("typography references render the captured state instead of a generic subst
   const browser = corosFixtureConfiguration("?fixture=coros410&variant=reference-browser", demoSnapshot).initialSnapshot;
   assert.equal(browser.presetLocation, "2F");
   assert.equal(browser.presetName, "QC MCP TEST");
+  const capture = corosFixtureConfiguration("?fixture=coros410&variant=capture-type", demoSnapshot).initialSnapshot;
+  assert.equal(capture.presetLocation, "2F");
+  assert.equal(capture.presetPosition, 13);
+  assert.equal(capture.blocks[0]?.glyph, "capture-wave");
+});
+
+test("typography audit keeps content, glyphs, placement, and colors independent", () => {
+  const comparator = readFileSync(new URL("../tools/compare_qc_typography.py", import.meta.url), "utf8");
+  const reportWriter = readFileSync(new URL("../tools/write-qc-typography-report.mjs", import.meta.url), "utf8");
+  for (const field of ["contentIdentity", "glyphShapeMatchPercent", "placementMatchPercent", "foregroundColorMatchPercent", "backgroundColorMatchPercent"]) {
+    assert.match(comparator, new RegExp(field));
+    assert.match(reportWriter, new RegExp(field));
+  }
+  assert.match(comparator, /content-identity-verified comparisons only/);
 });
 
 test("native frame ordering, timestamps, and tempo clocks are host-independent", () => {

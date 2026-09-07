@@ -65,6 +65,7 @@ test("shared theme retains every measured native QC color", () => {
     captureStripeMuted: "#586058",
     captureStripeSoft: "#c0c0c0",
     captureStripeLight: "#c8c8c8",
+    captureModelAccent: "#00f05a",
     headerUndo: "#f6f8f6",
     headerSave: "#eceeec",
     headerMenu: "#ffffff",
