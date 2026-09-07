@@ -167,6 +167,40 @@ generates the constant rather than one language hand-writing it.
 None of those are needed to control a device; the untouched set is
 manufacturing, telemetry, and Cortex Cloud plumbing.
 
+### Every declared type is implemented at the protocol layer
+
+Describing the protocol correctly is not the same as implementing it. Until the
+registry existed, the crate could only encode or decode the types someone had
+hand-wired, so 26 of the 72 had no code path at all.
+
+`packages/rust/qc-protocol/src/message_registry.rs` is generated from the same
+`CortexMessageType` table lifted out of the binary and gives every declared type
+a variant, a decoder and an encoder:
+
+```rust
+pub const MESSAGE_TYPES: [(u16, &str); 72];
+pub enum DecodedMessage { Grid(pa::GridMessage), /* ... 72 variants */ }
+pub fn decode_any(message_type: u16, payload: &[u8])
+    -> Option<Result<DecodedMessage, prost::DecodeError>>;
+pub fn message_name(message_type: u16) -> Option<&'static str>;
+```
+
+`decode_any` returns `None` for a type the binary does not declare, which is how
+an unknown push is told apart from a corrupt one. A generated test round-trips
+all 72. Because it is generated, a type added by a future Cortex Control appears
+the moment the descriptors are refreshed, and
+`verify_cortex_protocol_message_types.py` treats an undecodable type as a hard
+failure - a hole in the reimplementation rather than a product decision.
+
+That leaves two separate questions, and the coverage map now reports both:
+
+```
+decodable by the protocol layer: 72 of 72
+observed on the wire: 32 | driven by the application: 47 of 72
+```
+
+### Which types the application drives
+
 That claim is checked rather than asserted.
 `references/cortex-protocol/message-type-plan.json` lists every type this stack
 does not speak, each with a category and, where it matters, what is known about
@@ -179,15 +213,39 @@ PASS 46 of 72 message types are exercised; the remaining 26 each carry a
 reviewed reason (cloud=8, factory=8, telemetry=5, unestablished=5)
 ```
 
-The five `unestablished` entries are the honest ones - types whose bytes are
-known but whose contract is not. **71 ModelPreset** is the one worth finishing:
-it is how a block's parameters are saved under a name, which the device reaches
-from the block menu's *Save Current Parameters as...*, and newer firmware
-threads it through `GridMessage.model_preset_to_load`,
-`IOSettingsMessage.preset_to_load`, `GlobalEQMessage.model_preset_to_load` and
-`NeuralCaptureMessage.model_ab_preset`. Captured traffic shows DELETE then
-CREATE either side of a save. Since a misunderstood DELETE can destroy a saved
-preset, it waits for a deliberate session against a disposable one.
+#### ModelPreset (71), established by reading
+
+This was the one worth finishing. It is how a block's parameters are saved under
+a name - the device reaches it from a block menu's *Save Current Parameters
+as...* - and newer firmware threads it through
+`GridMessage.model_preset_to_load`, `IOSettingsMessage.preset_to_load`,
+`GlobalEQMessage.model_preset_to_load` and `NeuralCaptureMessage.model_ab_preset`.
+
+Captured traffic only ever showed DELETE then CREATE around a save, which is why
+the contract was recorded as bytes without meaning. READ is the safe half of the
+same message, and asking the unit settles it:
+
+```
+-> ModelPresetMessage { action: READ, request_id: 9001 }        080310a946
+<- 25,023 bytes, gzipped, inflating to 101,142
+   action: UPDATE
+   request_id: 9001
+   presets { id { value: "1",  is_factory: true, hash: 1 } name: "Crunch"       }
+   presets { id { value: "12", is_factory: true, hash: 1 } name: "Lead Boost"   }
+   presets { id { value: "13", is_factory: true, hash: 1 } name: "Medium Drive" }
+```
+
+So the reply is an ordinary correlated read: `action: UPDATE`, the request id
+echoed, one `presets` entry per saved preset, and a body large enough that the
+device gzips it. `commands::read_model_presets` and
+`responses::decode_model_presets` implement that half, with tests pinned to the
+shape above.
+
+The write half stays unbuilt on purpose. A misunderstood DELETE destroys a
+user's saved preset, and nothing observed so far distinguishes "delete this
+preset" from "tear down the subscription for the block being edited". It is
+listed as unfinished rather than guessed at, which is the same standard the
+other four `unestablished` entries are held to.
 
 ## Impulse responses
 

@@ -763,6 +763,30 @@ pub fn read_global_eq() -> OutboundMessage {
     read(38)
 }
 
+/// List the model presets on the device: a block's parameters saved under a
+/// name, which the unit reaches from a block menu's *Save Current Parameters
+/// as...*.
+///
+/// The reply is a `ModelPresetMessage` with `action: UPDATE`, the request id
+/// echoed, and one `presets` entry per saved preset. It is gzipped - roughly
+/// 25 KiB on the wire for 101 KiB of listing on a stock unit - so it arrives
+/// through the same inflate path as a full preset push.
+///
+/// Only the read half is built. Captured traffic shows Cortex Control sending
+/// DELETE then CREATE around a save, and a misunderstood DELETE destroys a
+/// saved preset, so the write half stays unbuilt until its contract is
+/// established the same way this one was.
+pub fn read_model_presets(request_id: u64) -> OutboundMessage {
+    OutboundMessage::encoded(
+        71,
+        pa::ModelPresetMessage {
+            action: pa::message_action::Enum::Read as i32,
+            request_id: Some(request_id),
+            ..Default::default()
+        },
+    )
+}
+
 pub fn set_global_eq_bypassed(bypassed: bool) -> OutboundMessage {
     OutboundMessage::encoded(
         38,

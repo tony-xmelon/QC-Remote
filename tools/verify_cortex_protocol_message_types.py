@@ -5,8 +5,11 @@ of the 72 real `CortexMessageType` values, which ones this stack actually
 speaks, and - for the ones it does not - whether there is a reviewed reason
 rather than an oversight.
 
-A type must be either exercised (encoded or decoded here, or seen on the wire
-during a hardware conformance run) or listed in
+Two things are checked. Every declared type must be decodable through
+`message_registry.rs` - a type the transport cannot handle is a hole in the
+reimplementation. Beyond that, a type must be either driven by the application
+(a command builder, a state decoder, or seen on the wire during a hardware
+conformance run) or listed in
 `references/cortex-protocol/message-type-plan.json` with a category. Anything
 else fails, so a type discovered in a future Cortex Control cannot sit
 unexamined, and a gap cannot quietly become permanent.
@@ -36,6 +39,15 @@ def main() -> int:
     categories = set(plan["categories"])
     excused = {entry["number"]: entry for entry in plan["types"]}
     problems: list[str] = []
+
+    # The protocol layer must handle every declared type. This is the hard
+    # requirement: a type the transport cannot decode is a hole in the
+    # reimplementation, not a product decision.
+    for row in coverage["rows"]:
+        if not row.get("decodable"):
+            problems.append(
+                f"{row['number']} {row['name']}: the protocol layer cannot decode it; "
+                f"run tools/generate_cortex_message_registry.py")
 
     exercised = set()
     for row in coverage["rows"]:
@@ -76,8 +88,9 @@ def main() -> int:
     for number, entry in excused.items():
         counts[entry["category"]] = counts.get(entry["category"], 0) + 1
     breakdown = ", ".join(f"{category}={count}" for category, count in sorted(counts.items()))
-    print(f"PASS {len(exercised)} of {len(coverage['rows'])} message types are exercised; "
-          f"the remaining {len(excused)} each carry a reviewed reason ({breakdown})")
+    print(f"PASS all {len(coverage['rows'])} declared message types are decodable by "
+          f"the protocol layer; {len(exercised)} are driven by the application and the "
+          f"remaining {len(excused)} each carry a reviewed reason ({breakdown})")
     return 0
 
 

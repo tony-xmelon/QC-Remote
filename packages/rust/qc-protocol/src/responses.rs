@@ -101,6 +101,23 @@ pub struct PinnedModels {
     pub captures: Vec<String>,
 }
 
+/// One model preset: a block's parameters saved under a name.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModelPresetEntry {
+    pub id: Option<String>,
+    pub name: Option<String>,
+    pub is_factory: bool,
+    pub is_default: bool,
+    pub hash: Option<u32>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModelPresets {
+    pub presets: Vec<ModelPresetEntry>,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct PngImage {
     pub bytes: Vec<u8>,
@@ -295,6 +312,46 @@ pub fn decode_pinned_models(payload: &[u8]) -> Result<PinnedModels, ResponseDeco
     Ok(PinnedModels {
         models: message.models,
         captures: message.captures,
+    })
+}
+
+/// Decode the model-preset listing a `read_model_presets` request returns.
+///
+/// The device answers with `action: UPDATE` and echoes the request id, so the
+/// correlation check is the same one the other typed reads use. The body
+/// arrives gzipped; `decode_reply` inflates it.
+pub fn decode_model_presets(
+    payload: &[u8],
+    request_id: Option<u64>,
+) -> Result<ModelPresets, ResponseDecodeError> {
+    let message: pa::ModelPresetMessage = decode_reply(payload)?;
+    if message.action != pa::message_action::Enum::Update as i32 {
+        return Err(ResponseDecodeError::Mismatch(
+            "model preset action is not UPDATE",
+        ));
+    }
+    if let Some(request_id) = request_id {
+        if message.request_id != Some(request_id) {
+            return Err(ResponseDecodeError::Mismatch(
+                "model preset reply is for another request",
+            ));
+        }
+    }
+    Ok(ModelPresets {
+        presets: message
+            .presets
+            .into_iter()
+            .map(|preset| {
+                let id = preset.id.unwrap_or_default();
+                ModelPresetEntry {
+                    id: id.value,
+                    name: preset.name,
+                    is_factory: id.is_factory.unwrap_or_default(),
+                    is_default: preset.is_default.unwrap_or_default(),
+                    hash: id.hash,
+                }
+            })
+            .collect(),
     })
 }
 
@@ -1344,6 +1401,70 @@ mod tests {
         assert_eq!(looper.progress, Some(0.5));
         assert_eq!(looper.in_reverse, Some(1));
         assert_eq!(looper.one_shot_play, Some(true));
+    }
+
+    #[test]
+    fn model_preset_listing_matches_what_the_device_answered() {
+        // Shape taken from a live ModelPreset READ against CorOS 4.1.0: the
+        // device replies UPDATE, echoes the request id, and returns factory
+        // presets whose id carries value, is_factory and hash.
+        let reply = pa::ModelPresetMessage {
+            action: pa::message_action::Enum::Update as i32,
+            request_id: Some(9001),
+            presets: vec![
+                pa::ModelPreset {
+                    id: Some(pa::ModelPresetId {
+                        value: Some("1".into()),
+                        is_factory: Some(true),
+                        hash: Some(1),
+                    }),
+                    name: Some("Crunch".into()),
+                    is_default: Some(false),
+                    ..Default::default()
+                },
+                pa::ModelPreset {
+                    id: Some(pa::ModelPresetId {
+                        value: Some("12".into()),
+                        is_factory: Some(true),
+                        hash: Some(1),
+                    }),
+                    name: Some("Lead Boost".into()),
+                    is_default: Some(false),
+                    ..Default::default()
+                },
+            ],
+            ..Default::default()
+        }
+        .encode_to_vec();
+
+        let listing = decode_model_presets(&reply, Some(9001)).unwrap();
+        assert_eq!(listing.presets.len(), 2);
+        assert_eq!(listing.presets[0].name.as_deref(), Some("Crunch"));
+        assert_eq!(listing.presets[0].id.as_deref(), Some("1"));
+        assert!(listing.presets[0].is_factory);
+        assert_eq!(listing.presets[0].hash, Some(1));
+        assert_eq!(listing.presets[1].name.as_deref(), Some("Lead Boost"));
+
+        // A reply for someone else's request must not be accepted as ours.
+        assert!(matches!(
+            decode_model_presets(&reply, Some(9002)),
+            Err(ResponseDecodeError::Mismatch(_))
+        ));
+    }
+
+    #[test]
+    fn model_preset_read_asks_for_a_listing_without_changing_anything() {
+        let command = crate::commands::read_model_presets(9001);
+        assert_eq!(command.message_type, 71);
+        let decoded = pa::ModelPresetMessage::decode(command.payload.as_slice()).unwrap();
+        assert_eq!(decoded.action, pa::message_action::Enum::Read as i32);
+        assert_eq!(decoded.request_id, Some(9001));
+        // Nothing else is set: a READ that carried a preset or a row would be
+        // asking the device to do something.
+        assert!(decoded.presets.is_empty());
+        assert_eq!(decoded.loaded_row, None);
+        assert_eq!(decoded.loaded_column, None);
+        assert_eq!(decoded.create_from_row, None);
     }
 
     #[test]

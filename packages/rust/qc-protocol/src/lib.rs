@@ -9,6 +9,7 @@ mod compression;
 pub mod domain;
 pub mod framing;
 pub mod generated_payloads;
+pub mod message_registry;
 pub mod profile;
 pub mod responses;
 pub mod session;

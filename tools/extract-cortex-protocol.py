@@ -206,6 +206,12 @@ def main() -> int:
     for block in re.findall(r"REQUEST_ID_FIELD_ONE_TYPES[^=]*=\s*\[([0-9,\s]+)\]", rust):
         known |= {int(n) for n in re.findall(r"\d+", block)}
 
+    registry = REPOSITORY_ROOT / "packages/rust/qc-protocol/src/message_registry.rs"
+    decodable: set[int] = set()
+    if registry.is_file():
+        decodable = {int(number) for number in re.findall(
+            r"^\s{8}(\d+) => pa::", registry.read_text(encoding="utf-8"), re.MULTILINE)}
+
     sent, received = set(), set()
     if args.evidence.is_file():
         report = json.loads(args.evidence.read_text(encoding="utf-8"))
@@ -216,6 +222,7 @@ def main() -> int:
     rows = [{
         "number": number,
         "name": name,
+        "decodable": number in decodable,
         "implemented": number in known,
         "sentOnWire": number in sent,
         "receivedOnWire": number in received,
@@ -224,17 +231,23 @@ def main() -> int:
 
     covered = [row for row in rows if row["implemented"] or row["sentOnWire"] or row["receivedOnWire"]]
     observed = [row for row in rows if row["sentOnWire"] or row["receivedOnWire"]]
+    undecodable = [row for row in rows if not row["decodable"]]
     (OUTPUT / "coverage.json").write_text(json.dumps({
         "messageTypes": len(rows),
+        "decodable": len(rows) - len(undecodable),
         "observedOnWire": len(observed),
         "implementedOrObserved": len(covered),
         "evidence": str(args.evidence) if args.evidence.is_file() else None,
         "rows": rows,
     }, indent=2) + "\n", encoding="utf-8")
 
-    print(f"observed on the wire: {len(observed)} | implemented or observed: {len(covered)} of {len(rows)}")
-    print("never touched: " + ", ".join(f"{row['number']} {row['name']}"
-                                        for row in rows if row not in covered))
+    print(f"decodable by the protocol layer: {len(rows) - len(undecodable)} of {len(rows)}")
+    if undecodable:
+        print("NOT decodable: " + ", ".join(f"{row['number']} {row['name']}"
+                                            for row in undecodable))
+    print(f"observed on the wire: {len(observed)} | driven by the application: {len(covered)} of {len(rows)}")
+    print("not driven: " + ", ".join(f"{row['number']} {row['name']}"
+                                     for row in rows if row not in covered))
     print(f"\nwrote {OUTPUT}")
     return 0
 

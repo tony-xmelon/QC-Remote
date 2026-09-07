@@ -1,12 +1,14 @@
 {
   "messageTypes": 72,
+  "decodable": 72,
   "observedOnWire": 32,
-  "implementedOrObserved": 46,
+  "implementedOrObserved": 47,
   "evidence": "E:\\Users\\anton\\OneDrive\\Documents\\ChatGPT\\Neural DSP QC MCP\\.claude\\worktrees\\windows-ui-items\\artifacts\\hardware-conformance\\windows.json",
   "rows": [
     {
       "number": 1,
       "name": "Grid",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": true,
       "receivedOnWire": true
@@ -14,6 +16,7 @@
     {
       "number": 2,
       "name": "SetlistPosition",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": true,
       "receivedOnWire": true
@@ -21,6 +24,7 @@
     {
       "number": 3,
       "name": "IOSettings",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": true,
       "receivedOnWire": true
@@ -28,6 +32,7 @@
     {
       "number": 4,
       "name": "File",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": true,
       "receivedOnWire": true
@@ -35,6 +40,7 @@
     {
       "number": 5,
       "name": "IOMeter",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -42,6 +48,7 @@
     {
       "number": 6,
       "name": "Tuner",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": true,
       "receivedOnWire": true
@@ -49,6 +56,7 @@
     {
       "number": 7,
       "name": "Diagnostics",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -56,6 +64,7 @@
     {
       "number": 8,
       "name": "MIDISettings",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -63,6 +72,7 @@
     {
       "number": 9,
       "name": "GeneralSettings",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": true,
       "receivedOnWire": true
@@ -70,6 +80,7 @@
     {
       "number": 10,
       "name": "Version",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": true,
       "receivedOnWire": true
@@ -77,6 +88,7 @@
     {
       "number": 11,
       "name": "ProductionAutomationMode",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -84,6 +96,7 @@
     {
       "number": 12,
       "name": "GridMove",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -91,6 +104,7 @@
     {
       "number": 13,
       "name": "Scene",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": true,
       "receivedOnWire": true
@@ -98,6 +112,7 @@
     {
       "number": 14,
       "name": "Mode",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": true,
       "receivedOnWire": true
@@ -105,6 +120,7 @@
     {
       "number": 15,
       "name": "RecallPreset",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": true,
       "receivedOnWire": true
@@ -112,6 +128,7 @@
     {
       "number": 16,
       "name": "EnableCaptureOut",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -119,6 +136,7 @@
     {
       "number": 17,
       "name": "MasterVolume",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": true,
       "receivedOnWire": true
@@ -126,6 +144,7 @@
     {
       "number": 18,
       "name": "CloudLogin",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -133,6 +152,7 @@
     {
       "number": 19,
       "name": "DefaultParameters",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": true,
       "receivedOnWire": true
@@ -140,6 +160,7 @@
     {
       "number": 20,
       "name": "RecentsFavorites",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": true,
       "receivedOnWire": true
@@ -147,6 +168,7 @@
     {
       "number": 21,
       "name": "UndoRedo",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": true,
       "receivedOnWire": true
@@ -154,6 +176,7 @@
     {
       "number": 22,
       "name": "SceneCopy",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -161,6 +184,7 @@
     {
       "number": 23,
       "name": "SceneLabel",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -168,6 +192,7 @@
     {
       "number": 24,
       "name": "ShowGigView",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": true,
       "receivedOnWire": true
@@ -175,6 +200,7 @@
     {
       "number": 25,
       "name": "Screenshot",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -182,6 +208,7 @@
     {
       "number": 26,
       "name": "CPULoad",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -189,6 +216,7 @@
     {
       "number": 27,
       "name": "ShowTuner",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -196,6 +224,7 @@
     {
       "number": 28,
       "name": "Looper",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -203,6 +232,7 @@
     {
       "number": 29,
       "name": "ProductForward",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -210,6 +240,7 @@
     {
       "number": 30,
       "name": "BackupsForward",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -217,6 +248,7 @@
     {
       "number": 31,
       "name": "LogsForward",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -224,6 +256,7 @@
     {
       "number": 32,
       "name": "KeepAlive",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": true,
       "receivedOnWire": false
@@ -231,6 +264,7 @@
     {
       "number": 33,
       "name": "GlobalTempo",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": true,
       "receivedOnWire": true
@@ -238,6 +272,7 @@
     {
       "number": 34,
       "name": "PresetDirty",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": true,
       "receivedOnWire": true
@@ -245,6 +280,7 @@
     {
       "number": 35,
       "name": "ModuleStats",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": true,
       "receivedOnWire": true
@@ -252,6 +288,7 @@
     {
       "number": 36,
       "name": "NeuralCapture",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -259,6 +296,7 @@
     {
       "number": 37,
       "name": "GridModelMeter",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -266,6 +304,7 @@
     {
       "number": 38,
       "name": "GlobalEQ",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": true,
       "receivedOnWire": true
@@ -273,6 +312,7 @@
     {
       "number": 39,
       "name": "RecentSearches",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -280,6 +320,7 @@
     {
       "number": 40,
       "name": "LocalBackup",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": true,
       "receivedOnWire": false
@@ -287,6 +328,7 @@
     {
       "number": 41,
       "name": "CloudBackup",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -294,6 +336,7 @@
     {
       "number": 42,
       "name": "CompilerInhibitedModules",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": true,
       "receivedOnWire": true
@@ -301,6 +344,7 @@
     {
       "number": 43,
       "name": "SystemTimeSync",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -308,6 +352,7 @@
     {
       "number": 44,
       "name": "Logs",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -315,6 +360,7 @@
     {
       "number": 45,
       "name": "ProcessDownloadsQueue",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -322,6 +368,7 @@
     {
       "number": 46,
       "name": "CloudProduct",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -329,6 +376,7 @@
     {
       "number": 47,
       "name": "Confirmation",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -336,6 +384,7 @@
     {
       "number": 48,
       "name": "SceneColor",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -343,6 +392,7 @@
     {
       "number": 49,
       "name": "Connection",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": true,
       "receivedOnWire": false
@@ -350,6 +400,7 @@
     {
       "number": 50,
       "name": "NewModels",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": true,
       "receivedOnWire": true
@@ -357,6 +408,7 @@
     {
       "number": 51,
       "name": "ModelRepo",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": true,
       "receivedOnWire": true
@@ -364,6 +416,7 @@
     {
       "number": 52,
       "name": "ResetCommsBuffers",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": true,
       "receivedOnWire": false
@@ -371,6 +424,7 @@
     {
       "number": 53,
       "name": "SuspendConnection",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": false,
       "receivedOnWire": true
@@ -378,6 +432,7 @@
     {
       "number": 54,
       "name": "PinnedModels",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": true,
       "receivedOnWire": true
@@ -385,6 +440,7 @@
     {
       "number": 55,
       "name": "GigViewButton",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -392,6 +448,7 @@
     {
       "number": 56,
       "name": "GenericError",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": false,
       "receivedOnWire": true
@@ -399,6 +456,7 @@
     {
       "number": 57,
       "name": "BulkOperation",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": true,
       "receivedOnWire": true
@@ -406,6 +464,7 @@
     {
       "number": 58,
       "name": "License",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": true,
       "receivedOnWire": true
@@ -413,6 +472,7 @@
     {
       "number": 59,
       "name": "PresetSpeedTest",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -420,6 +480,7 @@
     {
       "number": 60,
       "name": "Updater",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": true,
       "receivedOnWire": true
@@ -427,6 +488,7 @@
     {
       "number": 61,
       "name": "UpdaterForward",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -434,6 +496,7 @@
     {
       "number": 62,
       "name": "GainCalibration",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -441,6 +504,7 @@
     {
       "number": 63,
       "name": "NeuralCapture2",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -448,6 +512,7 @@
     {
       "number": 64,
       "name": "Serialization",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -455,6 +520,7 @@
     {
       "number": 65,
       "name": "TestFarm",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -462,6 +528,7 @@
     {
       "number": 66,
       "name": "ProductionTest",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -469,6 +536,7 @@
     {
       "number": 67,
       "name": "LoadAutomatedTestPreset",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -476,6 +544,7 @@
     {
       "number": 68,
       "name": "SetTestPresetInputOutputPorts",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -483,6 +552,7 @@
     {
       "number": 69,
       "name": "SetTestPresetSplitMixPoints",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -490,6 +560,7 @@
     {
       "number": 70,
       "name": "GenerateTestPreset",
+      "decodable": true,
       "implemented": false,
       "sentOnWire": false,
       "receivedOnWire": false
@@ -497,13 +568,15 @@
     {
       "number": 71,
       "name": "ModelPreset",
-      "implemented": false,
+      "decodable": true,
+      "implemented": true,
       "sentOnWire": false,
       "receivedOnWire": false
     },
     {
       "number": 72,
       "name": "RemoteControl",
+      "decodable": true,
       "implemented": true,
       "sentOnWire": false,
       "receivedOnWire": false

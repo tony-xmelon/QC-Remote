@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "corosVersion": "4.1.0",
-  "description": "Every CortexMessageType the shipped Cortex Control binary declares, and what this stack does about it. A type is either exercised - encoded or decoded here, or seen on the wire during a hardware conformance run - or it carries a reason it is not. tools/verify_cortex_protocol_message_types.py fails if a type is neither, so a newly discovered type cannot sit unexamined and a gap cannot quietly become permanent.",
+  "description": "Every CortexMessageType the shipped Cortex Control binary declares, and what this stack does about it. The protocol layer decodes and encodes all of them through packages/rust/qc-protocol/src/message_registry.rs, which is generated from the same table; this file records which types the application does not drive, and why. tools/verify_cortex_protocol_message_types.py fails if a type is undecodable, if it is neither driven nor explained here, or if a type listed here starts being driven - so a newly discovered type cannot sit unexamined and a closed gap cannot linger as a stale excuse.",
   "categories": {
     "factory": "Manufacturing and production test. Reaching these from a controller is meaningless outside Neural DSP's line, and several write calibration or serialization data that must not be guessed at.",
     "cloud": "Cortex Cloud account, product entitlement and download plumbing. Needs Neural DSP account credentials and a server contract that is not in the binary's descriptors; the device-side half alone is not usable.",
@@ -9,31 +9,143 @@
     "unestablished": "Observed or declared, but the contract is not understood well enough to send safely. Recorded with what is known so it can be finished rather than forgotten."
   },
   "types": [
-    { "number": 5, "name": "IOMeter", "category": "telemetry", "note": "Input and output level meters. The I/O screens we drive read levels from the settings replies instead." },
-    { "number": 7, "name": "Diagnostics", "category": "telemetry", "note": "SOC2ARM comms diagnostics counters, including the four USB-audio counters newer firmware added." },
-    { "number": 18, "name": "CloudLogin", "category": "cloud", "note": "Its trailer flags a non-protobuf body, so even the framing differs from the rest." },
-    { "number": 26, "name": "CPULoad", "category": "telemetry", "note": "The CPU monitor screen is reconstructed from state we already hold." },
-    { "number": 29, "name": "ProductForward", "category": "cloud" },
-    { "number": 30, "name": "BackupsForward", "category": "cloud", "note": "Cloud backup forwarding. Local backup over type 40 is implemented and is the path a controller needs." },
-    { "number": 31, "name": "LogsForward", "category": "cloud" },
-    { "number": 37, "name": "GridModelMeter", "category": "telemetry", "note": "Per-block meter feed. Observed around block edits alongside ModelPreset; see type 71." },
-    { "number": 39, "name": "RecentSearches", "category": "unestablished", "note": "Device-side search history. We render the search screens from the device's own scene graph and never write history back, deliberately: it is the user's data." },
-    { "number": 41, "name": "CloudBackup", "category": "cloud" },
-    { "number": 44, "name": "Logs", "category": "telemetry" },
-    { "number": 45, "name": "ProcessDownloadsQueue", "category": "cloud" },
-    { "number": 46, "name": "CloudProduct", "category": "cloud" },
-    { "number": 55, "name": "GigViewButton", "category": "unestablished", "note": "Gig View button presses. We drive Gig View through the RemoteControl surface (type 72) instead, which is what the screen corpus is captured with." },
-    { "number": 59, "name": "PresetSpeedTest", "category": "unestablished", "note": "Benchmark harness, not a control path." },
-    { "number": 61, "name": "UpdaterForward", "category": "cloud", "note": "Firmware update forwarding. ST-06 is marked do-not-trigger in the capture plan for the same reason: starting an update is not reversible." },
-    { "number": 62, "name": "GainCalibration", "category": "factory", "note": "Writes calibration data. Guessing at this changes how the unit measures its own inputs." },
-    { "number": 63, "name": "NeuralCapture2", "category": "unestablished", "note": "A second-generation capture message. The wizard we drove end to end on hardware uses NeuralCapture (42); nothing on CorOS 4.1.0 was observed using this one." },
-    { "number": 64, "name": "Serialization", "category": "factory", "note": "Writes device serial identity." },
-    { "number": 65, "name": "TestFarm", "category": "factory" },
-    { "number": 66, "name": "ProductionTest", "category": "factory" },
-    { "number": 67, "name": "LoadAutomatedTestPreset", "category": "factory" },
-    { "number": 68, "name": "SetTestPresetInputOutputPorts", "category": "factory" },
-    { "number": 69, "name": "SetTestPresetSplitMixPoints", "category": "factory" },
-    { "number": 70, "name": "GenerateTestPreset", "category": "factory" },
-    { "number": 71, "name": "ModelPreset", "category": "unestablished", "note": "Model presets: a block's parameters saved under a name, reached on the device by the block menu's 'Save Current Parameters as...'. Newer firmware threads it through GridMessage.model_preset_to_load, IOSettingsMessage.preset_to_load, GlobalEQMessage.model_preset_to_load and NeuralCaptureMessage.model_ab_preset. Captured traffic shows DELETE then CREATE either side of a save, which reads as teardown and re-subscription of the edited block's feeds, but only the bytes are established, not the contract. Sending a DELETE we do not understand can destroy a user's saved preset, so this waits for a deliberate session against a disposable preset." }
+    {
+      "number": 5,
+      "name": "IOMeter",
+      "category": "telemetry",
+      "note": "Input and output level meters. The I/O screens we drive read levels from the settings replies instead."
+    },
+    {
+      "number": 7,
+      "name": "Diagnostics",
+      "category": "telemetry",
+      "note": "SOC2ARM comms diagnostics counters, including the four USB-audio counters newer firmware added."
+    },
+    {
+      "number": 18,
+      "name": "CloudLogin",
+      "category": "cloud",
+      "note": "Its trailer flags a non-protobuf body, so even the framing differs from the rest."
+    },
+    {
+      "number": 26,
+      "name": "CPULoad",
+      "category": "telemetry",
+      "note": "The CPU monitor screen is reconstructed from state we already hold."
+    },
+    {
+      "number": 29,
+      "name": "ProductForward",
+      "category": "cloud"
+    },
+    {
+      "number": 30,
+      "name": "BackupsForward",
+      "category": "cloud",
+      "note": "Cloud backup forwarding. Local backup over type 40 is implemented and is the path a controller needs."
+    },
+    {
+      "number": 31,
+      "name": "LogsForward",
+      "category": "cloud"
+    },
+    {
+      "number": 37,
+      "name": "GridModelMeter",
+      "category": "telemetry",
+      "note": "Per-block meter feed. Observed around block edits alongside ModelPreset; see type 71."
+    },
+    {
+      "number": 39,
+      "name": "RecentSearches",
+      "category": "unestablished",
+      "note": "Device-side search history. We render the search screens from the device's own scene graph and never write history back, deliberately: it is the user's data."
+    },
+    {
+      "number": 41,
+      "name": "CloudBackup",
+      "category": "cloud"
+    },
+    {
+      "number": 44,
+      "name": "Logs",
+      "category": "telemetry"
+    },
+    {
+      "number": 45,
+      "name": "ProcessDownloadsQueue",
+      "category": "cloud"
+    },
+    {
+      "number": 46,
+      "name": "CloudProduct",
+      "category": "cloud"
+    },
+    {
+      "number": 55,
+      "name": "GigViewButton",
+      "category": "unestablished",
+      "note": "Gig View button presses. We drive Gig View through the RemoteControl surface (type 72) instead, which is what the screen corpus is captured with."
+    },
+    {
+      "number": 59,
+      "name": "PresetSpeedTest",
+      "category": "unestablished",
+      "note": "Benchmark harness, not a control path."
+    },
+    {
+      "number": 61,
+      "name": "UpdaterForward",
+      "category": "cloud",
+      "note": "Firmware update forwarding. ST-06 is marked do-not-trigger in the capture plan for the same reason: starting an update is not reversible."
+    },
+    {
+      "number": 62,
+      "name": "GainCalibration",
+      "category": "factory",
+      "note": "Writes calibration data. Guessing at this changes how the unit measures its own inputs."
+    },
+    {
+      "number": 63,
+      "name": "NeuralCapture2",
+      "category": "unestablished",
+      "note": "A second-generation capture message. The wizard we drove end to end on hardware uses NeuralCapture (42); nothing on CorOS 4.1.0 was observed using this one."
+    },
+    {
+      "number": 64,
+      "name": "Serialization",
+      "category": "factory",
+      "note": "Writes device serial identity."
+    },
+    {
+      "number": 65,
+      "name": "TestFarm",
+      "category": "factory"
+    },
+    {
+      "number": 66,
+      "name": "ProductionTest",
+      "category": "factory"
+    },
+    {
+      "number": 67,
+      "name": "LoadAutomatedTestPreset",
+      "category": "factory"
+    },
+    {
+      "number": 68,
+      "name": "SetTestPresetInputOutputPorts",
+      "category": "factory"
+    },
+    {
+      "number": 69,
+      "name": "SetTestPresetSplitMixPoints",
+      "category": "factory"
+    },
+    {
+      "number": 70,
+      "name": "GenerateTestPreset",
+      "category": "factory"
+    }
   ]
 }
