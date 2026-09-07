@@ -12,6 +12,7 @@
 .coros-io-settings.is-input > header .io-global-eq { width: 13.625cqw; height: 5.5cqw; border-radius: 1cqw; }
 .coros-io-settings.is-usb > header .io-global-eq { width: 13.625cqw; height: 5.5cqw; border-radius: 1cqw; }
 .coros-io-settings > header button:last-child { background: #282c28; }
+.coros-io-settings > header button:last-child > svg { width: 3.75cqw; height: 3cqw; display: block; margin: auto; }
 .coros-io-settings .io-ports { background: #101010; }
 .coros-io-settings .io-editor { background: #282c28; }
 .io-ports { position: relative; grid-template-columns: repeat(12, 1fr); align-items: stretch; padding: 0 1cqw; }

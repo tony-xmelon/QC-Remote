@@ -16,13 +16,13 @@ type ReferenceRasterName = keyof typeof QC_REFERENCE_ICON_RASTERS;
 function QcReferenceRaster({ icon, color, className, crisp = true }: { icon: ReferenceRasterName; color: string; className?: string; crisp?: boolean }) {
   const raster = QC_REFERENCE_ICON_RASTERS[icon];
   const path = (raster.paths as Record<string, string>)[color];
-  return <svg className={className} viewBox={`0 0 ${raster.width} ${raster.height}`} shapeRendering={crisp ? "crispEdges" : "auto"} aria-hidden="true"><path d={path} fill={color} stroke="none" /></svg>;
+  return <svg className={className} width={raster.width} height={raster.height} viewBox={`0 0 ${raster.width} ${raster.height}`} shapeRendering={crisp ? "crispEdges" : "auto"} aria-hidden="true"><path d={path} fill={color} stroke="none" /></svg>;
 }
 
 function QcReferenceRasterLayers({ icon, className }: { icon: ReferenceRasterName; className?: string }) {
   const raster = QC_REFERENCE_ICON_RASTERS[icon];
   const shapeRendering = icon === "editor.scene-previous" || icon === "editor.scene-next" ? "auto" : "crispEdges";
-  return <svg className={className} viewBox={`0 0 ${raster.width} ${raster.height}`} shapeRendering={shapeRendering} aria-hidden="true">{Object.entries(raster.paths).map(([color, path]) => <path key={color} d={path} fill={color} stroke="none" />)}</svg>;
+  return <svg className={className} width={raster.width} height={raster.height} viewBox={`0 0 ${raster.width} ${raster.height}`} shapeRendering={shapeRendering} aria-hidden="true">{Object.entries(raster.paths).map(([color, path]) => <path key={color} d={path} fill={color} stroke="none" />)}</svg>;
 }
 
 function referencePath(icon: ReferenceRasterName, index = 0) {
@@ -381,16 +381,11 @@ export function QcDirectoryIcon({ kind, number }: { kind: QcDirectoryIconName; n
         <path fillRule="evenodd" clipRule="evenodd" d="M10 2a8 8 0 1 0 4.914 14.314L19.6 21 21 19.6l-4.686-4.686A8 8 0 0 0 10 2Zm-6 8a6 6 0 1 1 12 0 6 6 0 0 1-12 0Z" fill={QC_COLORS.captured.iconPrimary} stroke="none" />
       </svg>
     );
-  return (
-      <svg className={classes} viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 6h16M8 3h8M5 8h14v14H5ZM9 12l6 7m0-7-6 7" fill="none" />
-      </svg>
-    );
-  return (
-    <svg className={classes} viewBox="0 0 24 24" aria-hidden="true">
-      <path d="m4 13 5 5L20 6" fill="none" />
-    </svg>
-  );
+  if (kind === "done") return <QcReferenceRasterLayers icon="interface.check" className={classes} />;
+  // `trash` is handled by directoryReferenceIcon above; all directory icon
+  // variants must resolve explicitly so a new variant cannot silently render
+  // as an unrelated glyph.
+  return null;
 }
 
 export function QcLibraryIcon({ kind, className }: { kind: QcLibraryIconName; className?: string }) {
@@ -455,14 +450,10 @@ export function QcEditorIcon({ kind }: { kind: QcEditorIconName }) {
         <path d="M6 18h12l-1.6-8.4H8.1L6 18Zm2.2-8.4 1-3.6h5.7l1.5 3.6M9 21h6" />
       </svg>
     );
-  return (
-      <svg viewBox="0 0 32 32" aria-hidden="true">
-        <path d="m8 16.5 5.2 5.1L24.5 10" />
-      </svg>
-    );
-  return (
+  if (kind === "waveform") return (
     <svg viewBox="0 0 80 32" aria-hidden="true">
       <path d="M2 16h11l7-12 14 24L48 4l7 12h23" />
     </svg>
   );
+  return null;
 }

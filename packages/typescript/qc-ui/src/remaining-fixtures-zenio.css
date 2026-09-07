@@ -155,7 +155,6 @@
 .coros-io-settings.is-headphones > header .io-heading > i svg { width: 3cqw; height: 3cqw; }
 .coros-io-settings.is-headphones > header .io-heading strong { transform: translateY(.625cqw); }
 .coros-io-settings.is-headphones > header .io-global-eq { white-space: nowrap; }
-.coros-io-settings.is-headphones > header > button:last-child svg { width: 3.75cqw; height: 3cqw; }
 .coros-io-settings .io-ports button > i { top: 4cqw; width: 6cqw; height: 6cqw; margin-left: -3cqw; border: 0; border-radius: 0; background: transparent; box-shadow: none !important; }
 .coros-io-settings .io-ports button.is-square > i,
 .coros-io-settings .io-ports button.is-midi > i { top: 4cqw; width: 6cqw; height: 6cqw; margin-left: -3cqw; }

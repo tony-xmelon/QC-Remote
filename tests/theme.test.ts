@@ -129,6 +129,10 @@ test("shared glyph registry covers hardware, routing, directory, editing, and co
     assert.ok(manifest.canonicalRasterIcons.includes(icon), `${icon} must be generated from its canonical device crop`);
   }
   assert.match(icons, /const icon = `mode\.\$\{mode\.toLowerCase\(\)\}`/);
+  assert.match(icons, /if \(kind === "done"\) return <QcReferenceRasterLayers icon="interface\.check"/, "Directory Done must use the canonical CorOS checkmark");
+  assert.doesNotMatch(icons, /return \([^]*?trash[^]*?\);\s*return \([^]*?m4 13 5 5/i, "a fallback icon must not make the canonical Done branch unreachable");
+  assert.match(icons, /width=\{raster\.width\} height=\{raster\.height\}/, "reference icons must preserve their measured native aspect ratio");
+  assert.match(icons, /if \(kind === "waveform"\) return \(/, "the waveform renderer must remain reachable instead of falling through to Confirm");
   const modeGlyph = icons.slice(icons.indexOf("export function QcModeGlyph"), icons.indexOf("export function QcDirectoryIcon"));
   assert.doesNotMatch(modeGlyph, /\[0, 8, 16\]\.map\(\(y\)/, "mode glyphs must not duplicate measured device artwork");
   const deviceGlyph = read("packages/typescript/qc-ui/src/device-glyph.tsx");
