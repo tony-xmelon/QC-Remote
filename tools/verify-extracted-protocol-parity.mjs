@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
 const manifest = JSON.parse(await readFile(resolve(root, "contracts/extracted-protocol-parity.v1.json"), "utf8"));
+const gateway = JSON.parse(await readFile(resolve(root, "contracts/gateway-methods.v1.json"), "utf8"));
 const schema = await readFile(resolve(root, "packages/rust/qc-protocol/proto/ProductionAutomation.proto"), "utf8");
 const ids = new Set();
 
@@ -40,6 +41,16 @@ for (const extension of manifest.extensions) {
       assert.match(source, functionPattern(language, symbol),
         `${extension.id}: ${language} parity symbol ${symbol} is absent from ${evidence.path}`);
     }
+  }
+  if (extension.gatewayRpc) {
+    const method = gateway.methods.find(({ rpc }) => rpc === extension.gatewayRpc);
+    assert.ok(method, `${extension.id}: gateway RPC ${extension.gatewayRpc} is absent`);
+    assert.notEqual(method.python, false,
+      `${extension.id}: gateway RPC ${extension.gatewayRpc} is incorrectly marked Rust-only`);
+    assert.ok(gateway.capabilities.includes(extension.capability),
+      `${extension.id}: Rust capability ${extension.capability} is absent`);
+    assert.ok(gateway.pythonCapabilities.includes(extension.capability),
+      `${extension.id}: Python capability ${extension.capability} is absent`);
   }
 }
 

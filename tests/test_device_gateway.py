@@ -22,6 +22,7 @@ from qc_device_gateway.device import PyQuadCortexDevice, _block_color, _catalog_
 from qc_device_gateway.native_transport import NativeBrokerError, NativeBrokerTransport, _broker_result, _gunzip_bounded
 from qc_device_gateway.protocol_extensions import (
     global_tempo_message,
+    read_global_tempo,
     send_global_tempo,
     send_tuner_meter,
     system_time_sync_message,
@@ -88,6 +89,72 @@ class ExtractedProtocolParityTests(unittest.TestCase):
         self.assertEqual(registry._TYPE_BY_CLASS[type(sent[0])], 6)
         self.assertEqual(registry._TYPE_BY_CLASS[type(sent[1])], 33)
         self.assertEqual(registry._TYPE_BY_CLASS[type(system_time_sync_message(1))], 43)
+
+    def test_global_tempo_reader_projects_bpm_and_mode(self):
+        from pyquadcortex.proto import Preset_pb2 as preset
+        from pyquadcortex.proto import ProductionAutomation_pb2 as automation
+
+        reply = automation.GlobalTempoMessage(params=[
+            preset.Param(index=0, param_values=[preset.ParamValue(float_value=0.175)]),
+            preset.Param(index=1, param_values=[preset.ParamValue(float_value=1.0)]),
+        ])
+
+        class Session:
+            def _read_state(self, message_type, match, timeout):
+                self.request = (message_type, match(reply), timeout)
+                return reply
+
+        session = Session()
+        self.assertEqual(read_global_tempo(session), {"mode": "GLOBAL", "globalBpm": 75})
+        self.assertEqual(session.request, (automation.GlobalTempoMessage, True, 10.0))
+
+    def test_python_gateway_executes_extracted_operations_without_native_broker(self):
+        sent = []
+        session = SimpleNamespace(_t=SimpleNamespace(send=sent.append))
+        device = PyQuadCortexDevice()
+        device._qc = session
+
+        with patch("qc_device_gateway.protocol_extensions.read_global_tempo", side_effect=[
+            {"mode": "GLOBAL", "globalBpm": 75},
+            {"mode": "GLOBAL", "globalBpm": 120},
+        ]):
+            result = device.set_global_tempo(120, "GLOBAL", 75)
+        self.assertIn("verified", result["detail"])
+        self.assertAlmostEqual(sent.pop().params[0].param_values[0].float_value, 0.4)
+
+        result = device.set_tuner_meter(True, True)
+        self.assertIn("enabled", result["detail"])
+        self.assertEqual(sent.pop().SerializeToString(), b"\x08\x01\x30\x01")
+
+        with patch("qc_device_gateway.remote_control.capture_graphics_tree", return_value="widget-tree"):
+            self.assertEqual(device.graphics_tree(), {"tree": "widget-tree"})
+
+    def test_python_gateway_preserves_global_tempo_and_tuner_safety_guards(self):
+        device = PyQuadCortexDevice()
+        device._qc = SimpleNamespace(_t=SimpleNamespace(send=lambda _: self.fail("unexpected write")))
+        with self.assertRaisesRegex(ValueError, "confirmTunerActivation"):
+            device.set_tuner_meter(True, False)
+        with self.assertRaisesRegex(ValueError, "boolean"):
+            device.set_tuner_meter(1, True)
+        with patch("qc_device_gateway.protocol_extensions.read_global_tempo", return_value={
+            "mode": "PRESET", "globalBpm": 75,
+        }):
+            with self.assertRaisesRegex(RuntimeError, "GLOBAL tempo mode"):
+                device.set_global_tempo(120, "PRESET", 75)
+            with self.assertRaisesRegex(RuntimeError, "changed"):
+                device.set_global_tempo(120, "GLOBAL", 75)
+
+    def test_extracted_operations_delegate_to_native_gateway_when_available(self):
+        calls = []
+        request = lambda method, params: calls.append((method, params)) or {"native": True}
+        device = PyQuadCortexDevice()
+        device._qc = SimpleNamespace(_t=SimpleNamespace(gateway_request=request))
+        self.assertEqual(device.set_tuner_meter(False, True), {"native": True})
+        self.assertEqual(device.set_global_tempo(100, "GLOBAL", 90), {"native": True})
+        self.assertEqual(device.graphics_tree(), {"native": True})
+        self.assertEqual([method for method, _ in calls], [
+            "device.setTunerMeter", "device.setGlobalTempo", "device.graphicsTree",
+        ])
 
 
 class PositionState:

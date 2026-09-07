@@ -3,6 +3,8 @@
   "extensions": [
     {
       "id": "tuner-meter",
+      "gatewayRpc": "device.setTunerMeter",
+      "capability": "nativeTunerMeter",
       "messageType": 6,
       "schemaMessage": "TunerMessage",
       "schemaFields": ["enable_meter", "meter"],
@@ -11,11 +13,13 @@
     },
     {
       "id": "global-tempo",
+      "gatewayRpc": "device.setGlobalTempo",
+      "capability": "nativeGlobalTempoWrite",
       "messageType": 33,
       "schemaMessage": "GlobalTempoMessage",
       "schemaFields": ["params"],
       "rust": { "path": "packages/rust/qc-protocol/src/commands.rs", "symbols": ["set_global_tempo"] },
-      "python": { "path": "services/device-gateway/src/qc_device_gateway/protocol_extensions.py", "symbols": ["global_tempo_message", "send_global_tempo"] }
+      "python": { "path": "services/device-gateway/src/qc_device_gateway/protocol_extensions.py", "symbols": ["global_tempo_message", "send_global_tempo", "read_global_tempo"] }
     },
     {
       "id": "system-time-sync",
@@ -27,6 +31,8 @@
     },
     {
       "id": "remote-graphics-tree",
+      "gatewayRpc": "device.graphicsTree",
+      "capability": "nativeGraphicsTree",
       "messageType": 72,
       "schemaMessage": "RemoteControlMessage",
       "schemaFields": ["graphics_tree"],

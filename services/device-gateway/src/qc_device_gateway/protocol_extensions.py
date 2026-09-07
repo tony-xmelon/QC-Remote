@@ -58,5 +58,27 @@ def send_global_tempo(qc: Any, bpm: int) -> None:
     qc._t.send(global_tempo_message(bpm))
 
 
+def read_global_tempo(qc: Any, timeout: float = 10.0) -> dict[str, Any]:
+    """Read and strictly project GlobalTempo parameters 0 (BPM) and 1 (mode)."""
+    automation, _ = _protos()
+    message = qc._read_state(
+        automation.GlobalTempoMessage,
+        lambda reply: len(reply.params) >= 2,
+        timeout,
+    )
+    values: dict[int, float] = {}
+    for position, parameter in enumerate(message.params):
+        index = int(parameter.index) if parameter.HasField("index") else position
+        if not parameter.param_values:
+            continue
+        value = parameter.param_values[0]
+        if value.WhichOneof("value") == "float_value":
+            values[index] = float(value.float_value)
+    if 0 not in values or 1 not in values or not all(0.0 <= value <= 1.0 for value in values.values()):
+        raise RuntimeError("The Quad Cortex global-tempo reply was incomplete or invalid.")
+    bpm = round(MINIMUM_TEMPO_BPM + values[0] * (MAXIMUM_TEMPO_BPM - MINIMUM_TEMPO_BPM))
+    return {"mode": "GLOBAL" if values[1] >= 0.5 else "PRESET", "globalBpm": bpm}
+
+
 def sync_system_time(qc: Any, ms_since_epoch: int) -> None:
     qc._t.send(system_time_sync_message(ms_since_epoch))
