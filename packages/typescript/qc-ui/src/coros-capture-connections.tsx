@@ -157,7 +157,8 @@ export function CorOsCaptureConnections({ view }: { view: CaptureConnectionView 
           {jack.label && <small className={jack.labelAbove ? "is-above" : undefined}>{jack.label}</small>}
         </span>;
       })}
-      <svg className="capture-phones-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15v-3a8 8 0 0 1 16 0v3" /><rect x="2.5" y="14" width="5" height="7" rx="2" /><rect x="16.5" y="14" width="5" height="7" rx="2" /></svg>
+      {view === "capture-monitoring" && <span className="capture-phones-label">Headphones</span>}
+      <svg className="capture-phones-glyph" viewBox="0 0 24 24" aria-hidden="true">{view === "capture-monitoring" && <path className="capture-phones-arrow" d="M12 -44v28m-3-4 3 4 3-4" />}<path d="M4 15v-3a8 8 0 0 1 16 0v3" /><rect x="2.5" y="14" width="5" height="7" rx="2" /><rect x="16.5" y="14" width="5" height="7" rx="2" /></svg>
       {step.annotations?.map((annotation) => <span
         key={annotation.text}
         className={`capture-annotation is-${annotation.direction}`}

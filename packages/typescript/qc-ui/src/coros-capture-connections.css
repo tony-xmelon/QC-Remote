@@ -45,7 +45,7 @@
   position: absolute;
   left: 4cqw;
   right: 4cqw;
-  top: 8.5cqw;
+  top: 8.875cqw;
   margin: 0;
   text-align: center;
   /* The frame's three lines start at 73, 94 and 115: a 21px pitch. */
@@ -113,7 +113,7 @@
 .capture-jack small {
   position: absolute;
   left: 50%;
-  top: calc(100% + .75cqw);
+  top: calc(100% + 1.625cqw);
   transform: translateX(-50%);
   white-space: pre;
   text-align: center;
@@ -124,21 +124,36 @@
 
 .capture-jack small.is-above {
   top: auto;
-  bottom: calc(100% + .75cqw);
+  bottom: calc(100% + 1.25cqw);
 }
 
 .capture-jack.is-green small, .capture-jack.is-white small { color: #f4f6f4; }
 
+.capture-phones-label {
+  position: absolute;
+  left: 52.25cqw;
+  top: 13.75cqw;
+  transform: translateX(-50%);
+  color: #929692;
+  font-size: 1.625cqw;
+}
+
 .capture-phones-glyph {
   position: absolute;
   left: 52.25cqw;
-  top: 19.5cqw;
+  top: 21cqw;
   width: 2.25cqw;
   height: 2.25cqw;
   transform: translate(-50%, -50%);
+  overflow: visible;
   fill: none;
   stroke: #e8eae8;
   stroke-width: 1.8;
+}
+
+.capture-phones-glyph .capture-phones-arrow {
+  stroke: #929692;
+  stroke-width: 1;
 }
 
 .capture-annotation {

@@ -2105,7 +2105,7 @@ function CorOsIoSettings({
               <span key={meter}>
                 <b>{meter}</b>
                 <i>i</i>
-                <small>-40.0 dB　　　-40.0</small>
+                <small>-40.0 dB　　　0.00</small>
                 <em />
                 <em />
               </span>
