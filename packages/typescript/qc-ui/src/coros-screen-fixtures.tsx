@@ -446,7 +446,7 @@ const IO_PORTS: Array<{ id: IoView; label: string; sub: string; kind?: "square" 
 ];
 
 function IoDial({ value }: { value: string }) {
-  return <span className="io-dial-wrap"><i className="io-dial"><b /></i><strong>{value}</strong></span>;
+  return <div className="io-dial-wrap"><i className="io-dial"><b /></i><strong>{value}</strong></div>;
 }
 
 function IoPortGlyph({ kind = "jack", active = false }: { kind?: "square" | "midi" | "input" | "combo" | "jack"; active?: boolean }) {

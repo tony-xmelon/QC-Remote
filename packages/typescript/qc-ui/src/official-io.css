@@ -110,4 +110,10 @@
 .io-editor.is-analog .io-level-meter strong { position: relative; top: .5cqw; }
 .io-editor.is-analog .io-level-meter > i { width: 17.625%; }
 
+.io-output-row .io-dial { right: -.375cqw; width: 9cqw; height: 9cqw; border: .25cqw solid #101010; background: conic-gradient(from 220deg, #42fb63 0 63.3%, #101010 63.3%); transform: translateY(-.375cqw); }
+.io-editor.is-output-stereo .io-output-row:nth-child(2) .io-dial { transform: translateY(-.25cqw); }
+.io-output-row .io-dial::before { position: absolute; inset: .75cqw; border-radius: 50%; background: #000; content: ""; }
+.io-output-row .io-dial::after { position: absolute; inset: 1.25cqw; border-radius: 50%; background: #212421; content: ""; }
+.io-output-row .io-dial b { position: absolute; z-index: 1; left: calc(50% + .875cqw); top: 50%; width: 2cqw; height: .25cqw; margin: 0; background: #f8fcf8; transform: rotate(-15deg); transform-origin: left center; }
+
 }

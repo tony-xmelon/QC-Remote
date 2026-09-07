@@ -142,8 +142,12 @@ test("official low-score refinements retain their measured geometry and glyphs",
   assert.match(ioCss, /\.coros-io-settings > header \{[^}]*background: #101010;/);
   assert.match(fixture, /<span className="io-control-label">HP LEVEL<\/span><IoDial value="0\.0 dB" \/>/);
   assert.match(ioCss, /\.io-editor\.is-headphones > section > \.io-control-label,/);
+  assert.match(fixture, /return <div className="io-dial-wrap"><i className="io-dial"><b \/><\/i><strong>\{value\}<\/strong><\/div>;/);
   assert.match(zenIoCss, /\.io-editor\.is-headphones \.io-dial \{ width: 8\.875cqw; height: 8\.875cqw;/);
   assert.match(zenIoCss, /\.io-editor\.is-headphones \.io-dial \{ transform: translateY\(-\.375cqw\); \}/);
+  assert.match(ioCss, /\.io-output-row \.io-dial \{ right: -\.375cqw; width: 9cqw; height: 9cqw; border: \.25cqw solid #101010;[^}]*translateY\(-\.375cqw\)/);
+  assert.match(ioCss, /\.io-output-row \.io-dial::before \{[^}]*inset: \.75cqw;[^}]*background: #000;/);
+  assert.match(ioCss, /\.io-output-row \.io-dial::after \{[^}]*inset: 1\.25cqw;[^}]*background: #212421;/);
   assert.doesNotMatch(ioCss, /\.io-editor\.is-headphones > section > span,/);
   assert.match(fixture, /className="capture-level-label"><IoHeadphonesGlyph \/>LEVEL/);
   assert.match(captureCss, /\.capture-official-result \.capture-result-actions \.capture-target-icon \{ transform: translateY\(-1\.625cqw\); \}/);

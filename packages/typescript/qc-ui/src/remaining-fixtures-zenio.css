@@ -143,11 +143,6 @@
 .capture-editor-panel > main span,
 .capture-editor-panel > main strong { font-size: 2cqw; font-weight: 400; }
 
-.io-output-row .io-dial {
-  width: 8.125cqw;
-  height: 8.125cqw;
-  border-width: .625cqw;
-}
 .io-output-row .io-dial-wrap > strong { bottom: 1.95cqw; }
 .io-inline-meter strong { margin-top: 2cqw; }
 .io-inline-meter > i { margin-top: 1.75cqw; }
