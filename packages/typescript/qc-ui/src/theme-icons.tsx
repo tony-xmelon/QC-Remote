@@ -303,57 +303,11 @@ export function QcRouteGlyph({ side, label }: { side: "input" | "output"; label:
 }
 
 export function QcModeGlyph({ mode }: { mode: PresetSnapshot["mode"] }) {
-  if (mode === "PRESET")
-    return (
-      <g fill="currentColor">
-        {[0, 8, 16].map((y) => (
-          <g key={y} transform={`translate(0 ${y})`}>
-            <rect x="0" y="1" width="6" height="6" rx=".8" />
-            <rect x="9" y="1" width="6" height="6" rx=".8" />
-            <rect x="18" y="1" width="6" height="6" rx=".8" />
-            <rect x="5" y="3" width="5" height="2" />
-            <rect x="14" y="3" width="5" height="2" />
-          </g>
-        ))}
-      </g>
-    );
-  if (mode === "SCENE")
-    return (
-      <g fill="currentColor" fontFamily={QC_TYPOGRAPHY.devicePlain} fontWeight="800" fontSize="7.5" textAnchor="middle">
-        <rect x="0" y="0" width="11" height="11" />
-        <rect x="13" y="0" width="11" height="11" />
-        <rect x="0" y="13" width="11" height="11" />
-        <rect x="13" y="13" width="11" height="11" />
-        <text x="5.5" y="8" fill={QC_COLORS.device.panel}>
-          A
-        </text>
-        <text x="18.5" y="8" fill={QC_COLORS.device.panel}>
-          B
-        </text>
-        <text x="5.5" y="21" fill={QC_COLORS.device.panel}>
-          C
-        </text>
-        <text x="18.5" y="21" fill={QC_COLORS.device.panel}>
-          D
-        </text>
-      </g>
-    );
-  if (mode === "HYBRID")
-    return (
-      <g>
-        <g transform="scale(.68)">
-          <QcModeGlyph mode="SCENE" />
-        </g>
-        <g transform="translate(9 8) scale(.62)">
-          <QcModeGlyph mode="STOMP" />
-        </g>
-      </g>
-    );
-  return (
-    <g transform="translate(-525 -78)" fill="currentColor">
-      <path d="M535.723 79.2008C532.977 81.2508 530.778 82.8924 529.127 84.1255L528.27 84.7656C527.385 85.4269 526.705 85.9358 526.228 86.2924C525.319 86.9726 524.915 87.9041 525.015 89.087L542.055 84.521C541.833 83.0083 542.929 81.2361 545.255 79.1766C544.988 78.8037 544.691 78.4115 544.363 78C542.639 80.0488 540.862 81.2219 539.031 81.5192C537.2 81.8165 536.097 81.0437 535.723 79.2008ZM543.102 84.2407L547.01 83.1933C547.096 82.4398 546.701 81.3799 545.825 80.0139C543.899 81.7499 543.016 83.1667 543.102 84.2407ZM547.559 85.3468L525.619 91.2257C525.399 90.7294 525.237 90.2624 525.135 89.8246L525.201 90.0724L547.243 84.1663L547.559 85.3468ZM529.966 92.3084L533.966 91.2257V94.675L536.966 94.675V98.675H526.966V94.675L529.966 94.675V92.3084Z" />
-    </g>
-  );
+  const icon = `mode.${mode.toLowerCase()}` as ReferenceRasterName;
+  const raster = QC_REFERENCE_ICON_RASTERS[icon];
+  return <svg width="24" height="24" viewBox={`0 0 ${raster.width} ${raster.height}`} className={`qc-mode-glyph qc-mode-glyph-${mode.toLowerCase()}`} shapeRendering="crispEdges" aria-hidden="true">
+    {Object.entries(raster.paths).map(([color, path]) => <path key={color} d={path} fill={color} stroke="none" />)}
+  </svg>;
 }
 
 export function QcDirectoryIcon({ kind, number }: { kind: QcDirectoryIconName; number?: number }) {

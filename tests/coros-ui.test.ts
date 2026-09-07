@@ -114,11 +114,13 @@ test("neutral Grid colors match the native QC capture", () => {
   assert.match(surfaceSource, /QC_COLORS/);
   assert.match(themeSource, /"unsaved": "#313031"/);
   assert.match(themeSource, /"routePill": "#101010"/);
-  assert.match(themeSource, /"routeText": "#dedfde"/);
+  assert.match(themeSource, /"routeText": "#ffffff"/);
   assert.match(themeSource, /"routeRail": "#c6c3c6"/);
   assert.match(themeSource, /"utilityMark": "#949694"/);
   assert.match(surfaceSource, /fill=\{QC_COLORS\.captured\.routePill\}/);
   assert.match(surfaceSource, /stroke=\{QC_COLORS\.captured\.utilityMark\}/);
+  assert.match(surfaceSource, /compactCaptureRoute && row === 0 \? 170 : 748/, "Capture Type must retain the device's compact output endpoint");
+  assert.match(surfaceSource, /strokeWidth="2"/, "route rails and endpoint marks must retain their measured two-pixel weight");
   assert.doesNotMatch(surfaceSource, /titlePresentation\.dimmed \? "#29292b"/);
 });
 
