@@ -355,11 +355,11 @@ test("Android ADB diagnostics discover the app WebView independently of product 
   assert.doesNotMatch(adbGatewayHelperSource, /candidate\.title\s*===/);
 });
 
-test("Android refreshes authoritative preset state before projecting lane controls like Windows", () => {
-  assert.match(javaSource, /case "BLOCK_DETAILS":[\s\S]{0,180}relayLaneControlDetails\(params\)/);
-  assert.match(javaSource, /relayLaneControlDetails[\s\S]{0,1200}currentPresetCommand\(requestIds\.getAndIncrement\(\)\)/);
-  assert.match(javaSource, /PendingLaneControlRead[\s\S]{0,800}afterSequence/);
-  assert.match(javaSource, /resolvePendingLaneControlReads[\s\S]{0,900}"preset"\.equals[\s\S]{0,900}stateDecoder\.laneControlDetails/);
+test("Android refreshes authoritative preset state before projecting block details", () => {
+  assert.match(javaSource, /case "BLOCK_DETAILS": return relayBlockDetails\(method, params\)/);
+  assert.match(javaSource, /relayBlockDetails[\s\S]{0,1600}currentPresetCommand\(requestIds\.getAndIncrement\(\)\)/);
+  assert.match(javaSource, /PendingBlockDetailsRead[\s\S]{0,900}afterSequence/);
+  assert.match(javaSource, /resolvePendingBlockDetailsReads[\s\S]{0,1200}"preset"\.equals[\s\S]{0,1200}stateDecoder\.blockDetails[\s\S]{0,500}stateDecoder\.laneControlDetails/);
   assert.match(deviceBrokerRpcSource, /fn gateway_lane_control_details[\s\S]{0,500}refresh_current_preset_state\(controller\)/);
 });
 

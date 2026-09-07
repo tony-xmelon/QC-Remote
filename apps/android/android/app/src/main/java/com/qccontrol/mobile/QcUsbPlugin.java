@@ -543,10 +543,7 @@ public class QcUsbPlugin extends Plugin {
                 case "MASTER_VOLUME":
                     if (currentMasterVolume < 0) return failedRelay("STATE_UNAVAILABLE", "The Quad Cortex has not reported master volume yet.");
                     return CompletableFuture.completedFuture(new org.json.JSONObject().put("value", currentMasterVolume).put("observedAt", lastStateAt));
-                case "BLOCK_DETAILS": return "device.laneControlDetails".equals(method)
-                    ? relayLaneControlDetails(params)
-                    : CompletableFuture.completedFuture(
-                        stateDecoder.blockDetails(params.getInt("row"), params.getInt("column")));
+                case "BLOCK_DETAILS": return relayBlockDetails(method, params);
                 case "SET_DEVICE_NAME": return relaySetDeviceName(params);
                 case "TAP_SCREEN": return relayScreenGesture(method, params);
                 case "BACKUP": return relayCreateBackup(params);
@@ -757,19 +754,21 @@ public class QcUsbPlugin extends Plugin {
         return relayGatewayReadWithRecovery(method, readParams);
     }
 
-    private CompletableFuture<org.json.JSONObject> relayLaneControlDetails(
-        org.json.JSONObject params
+    private CompletableFuture<org.json.JSONObject> relayBlockDetails(
+        String method, org.json.JSONObject params
     ) throws Exception {
         int row = params.getInt("row");
-        String control = params.getString("control");
-        // CorOS does not reliably include row-control values in sparse Grid
-        // echoes. Match the Windows broker by refreshing the authoritative
-        // current preset before projecting Input Gate or Lane Output details.
+        boolean laneControl = "device.laneControlDetails".equals(method);
+        String control = laneControl ? params.getString("control") : null;
+        int column = laneControl ? -1 : params.getInt("column");
+        // CorOS does not reliably push a complete parameter snapshot after
+        // history changes, and sparse Grid echoes omit row-control values.
+        // One shared refresh keeps both detail projections authoritative.
         long afterSequence;
         synchronized (stateEventLock) { afterSequence = nextStateSequence - 1; }
         CompletableFuture<org.json.JSONObject> result = new CompletableFuture<>();
-        QcPendingOperations.Entry<PendingLaneControlRead> pending = pendingOperations.register(
-            new PendingLaneControlRead(row, control, afterSequence), result);
+        QcPendingOperations.Entry<PendingBlockDetailsRead> pending = pendingOperations.register(
+            new PendingBlockDetailsRead(row, column, control, afterSequence), result);
         commandIo.execute(() -> {
             try {
                 if (!isReady()) throw new RelayException(
@@ -1669,13 +1668,15 @@ public class QcUsbPlugin extends Plugin {
         }
     }
 
-    private static final class PendingLaneControlRead {
+    private static final class PendingBlockDetailsRead {
         final int row;
+        final int column;
         final String control;
         final long afterSequence;
 
-        PendingLaneControlRead(int row, String control, long afterSequence) {
+        PendingBlockDetailsRead(int row, int column, String control, long afterSequence) {
             this.row = row;
+            this.column = column;
             this.control = control;
             this.afterSequence = afterSequence;
         }
@@ -1738,16 +1739,18 @@ public class QcUsbPlugin extends Plugin {
         }
     }
 
-    private void resolvePendingLaneControlReads(
+    private void resolvePendingBlockDetailsReads(
         long observationSequence, List<JSObject> decodedStates
     ) {
         if (!decodedStates.stream().anyMatch(state -> "preset".equals(state.getString("kind", "")))) return;
-        for (QcPendingOperations.Entry<PendingLaneControlRead> entry
-            : pendingOperations.entries(PendingLaneControlRead.class)) {
-            PendingLaneControlRead pending = entry.operation;
+        for (QcPendingOperations.Entry<PendingBlockDetailsRead> entry
+            : pendingOperations.entries(PendingBlockDetailsRead.class)) {
+            PendingBlockDetailsRead pending = entry.operation;
             if (observationSequence <= pending.afterSequence || !pendingOperations.remove(entry)) continue;
             try {
-                entry.result.complete(stateDecoder.laneControlDetails(pending.row, pending.control));
+                entry.result.complete(pending.control == null
+                    ? stateDecoder.blockDetails(pending.row, pending.column)
+                    : stateDecoder.laneControlDetails(pending.row, pending.control));
             } catch (Exception error) {
                 entry.result.completeExceptionally(error);
             }
@@ -1861,7 +1864,7 @@ public class QcUsbPlugin extends Plugin {
         }
         stateDecoder.sessionStateObserved(observedAt, presetSynchronized);
         resolvePendingReady();
-        resolvePendingLaneControlReads(sequence, decodedStates);
+        resolvePendingBlockDetailsReads(sequence, decodedStates);
         resolvePendingGatewayTransactions(sequence, monotonicMillis());
         JSObject frame = new JSObject();
         frame.put("observedAt", observedAt);
