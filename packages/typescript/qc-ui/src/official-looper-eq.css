@@ -20,7 +20,7 @@
 .coros-looper > header button:last-child > svg { width: 3.5cqw; height: 3.5cqw; transform: translate(1px, 3px); }
 .coros-looper > header span small { font-size: 1.75cqw; }
 .coros-looper > header span strong { font-size: 2cqw; }
-.looper-timeline { gap: 2.5cqw; padding: 1cqw; border: 0; background: linear-gradient(to bottom, #292c29 0 52%, #181c18 52% 100%); font-size: 2cqw; }
+.qc-screen.coros-looper > .looper-timeline { gap: 2.5cqw; padding: 1cqw; border: 0; background: linear-gradient(to bottom, #292c29 0 52%, #181c18 52% 100%); font-size: 2cqw; }
 .looper-actions { background: #101010; }
 .looper-actions button { background: #292c29; }
 .looper-timeline span:first-child b { display: inline-block; width: 2.25cqw; height: 2.25cqw; border-radius: 50%; background: #f82420; color: transparent; vertical-align: -.35cqw; }

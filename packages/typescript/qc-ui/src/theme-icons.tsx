@@ -7,6 +7,7 @@ export type QcEqIconName = "high-pass";
 export type QcHardwareIconName = "power" | "brand-pulse";
 export type QcIoIconName = "header" | "usb" | "jack" | "midi" | "combo" | "headphone-active" | "input" | "headphones-symbol" | "linked";
 export type QcLibraryIconName = "capture-library" | "capture-header" | "heart" | "clock" | "binoculars" | "broken-heart" | "neural-mark";
+export type QcCaptureFilterIconName = "Default" | "Amp" | "Combo Amp" | "Amp + Cab" | "Cab" | "Overdrive" | "Fuzz" | "Compressor";
 export type QcScreenHeaderGlyphName = "undo" | "save" | "export" | "menu";
 export type QcSettingsIconName = "connection" | "updates" | "brightness" | "power" | "volume" | "storage" | "factory-reset";
 export type QcUiIconName = "add" | "subtract" | "previous" | "next" | "cab-previous" | "cab-next" | "up" | "down" | "more" | "check" | "close" | "refresh" | "backspace" | "microphone" | "attachment" | "file" | "send" | "stop" | "save-as" | "edit" | "midi" | "favorite" | "delete" | "capture" | "modes" | "tempo" | "cpu" | "settings";
@@ -424,6 +425,18 @@ export function QcLibraryIcon({ kind, className }: { kind: QcLibraryIconName; cl
       <path d={heartPath} fill="none" />
     </svg>
   );
+}
+
+/** Canonical capture-type glyphs used by the Neural Capture directory filter. */
+export function QcCaptureFilterIcon({ kind }: { kind: QcCaptureFilterIconName }) {
+  if (kind === "Default") return <QcLibraryIcon kind="capture-header" />;
+  if (kind === "Amp") return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="20" height="10" /><path d="M4 11h16" /></svg>;
+  if (kind === "Combo Amp") return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="20" /><path d="M4 7h16" /><circle cx="12" cy="14" r="5" /><circle cx="12" cy="14" r="1.5" /></svg>;
+  if (kind === "Amp + Cab") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h3l1.5-3h7L17 6h3a2 2 0 0 1 2 2v12H2V8a2 2 0 0 1 2-2Z" /><circle cx="12" cy="13" r="5" /><circle cx="12" cy="13" r="1.5" /></svg>;
+  if (kind === "Cab") return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="2" fill="currentColor" />{[[2, 2], [22, 2], [2, 22], [22, 22]].map(([x, y]) => <circle key={`${x}-${y}`} cx={x} cy={y} r="1" fill="currentColor" />)}</svg>;
+  if (kind === "Overdrive") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m1 13 4-10h4l7 19h3l4-9" /></svg>;
+  if (kind === "Fuzz") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 2v20M5 2l1 4-1 4 1 4-1 4 1 4M9 2v20M12 2l1 3-1 3 1 3-1 3 1 3-1 5M16 2v20M19 2l1 4-1 4 1 4-1 4 1 4M23 2v20" /></svg>;
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12c0-3-2.5-5-5.5-5S1 9 1 12m11 0c0 3 2.5 5 5.5 5s5.5-2 5.5-5" /><path d="m12 6-3-4h6Zm0 12 3 4H9Z" fill="currentColor" /></svg>;
 }
 
 export function QcEditorIcon({ kind }: { kind: QcEditorIconName }) {

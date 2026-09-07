@@ -64,6 +64,20 @@
 .directory-captures-official .directory-official-list > button { padding-right: 6.625cqw; }
 .directory-captures-official nav button.is-child { grid-template-columns: 4.75cqw 1fr 0; }
 .directory-captures-official .directory-capture-index { position: absolute; right: 0; top: 0; bottom: 0; width: 4.625cqw; display: flex; flex-direction: column; align-items: center; justify-content: space-around; border-left: 1px solid #171918; background: #292c29; color: #929692; font-size: 1cqw; }
+.directory-filter-official > header .directory-filter-back { width: 12.25cqw; }
+.directory-filter-official > header .directory-filter-back svg { width: 3cqw; height: 3cqw; fill: none; }
+.directory-filter-official > header .directory-official-category { width: 18.75cqw; }
+.directory-filter-official > header > span { flex: 1; }
+.directory-filter-official > header .is-filter-active { background: #000; }
+.directory-filter-official nav button.is-filter-root { height: 7.5cqw; grid-template-columns: 4.75cqw 1fr; color: var(--qc-icon-primary); }
+.directory-filter-official nav button.is-filter-root span { line-height: 1.25; }
+.directory-filter-official nav button.is-filter-root span small { display: block; color: #2df36a; }
+.directory-filter-official nav button.is-filter-child { position: relative; width: calc(100% - 2cqw); margin-left: 2cqw; grid-template-columns: 4.75cqw 1fr; }
+.directory-filter-official nav button.is-filter-child::before { content: ""; position: absolute; left: 0; top: 0; width: 1.75cqw; height: 3.75cqw; border-left: 2px solid #59605a; border-bottom: 2px solid #59605a; border-radius: 0 0 0 1cqw; }
+.directory-filter-official nav button.is-filter-child:not(:last-child)::after { content: ""; position: absolute; left: 0; top: 3.75cqw; bottom: -3.75cqw; border-left: 2px solid #59605a; }
+.directory-filter-official nav button.is-filter-root b svg,
+.directory-filter-official nav button.is-filter-child b svg { fill: none; }
+.directory-filter-official .directory-official-list > button { height: 7.5cqw; }
 .directory-nested-official > header .directory-nested-back { width: 12.25cqw; }
 .directory-nested-official > header .directory-official-category { width: 18.75cqw; }
 .directory-nested-official > header button:last-child { margin-left: 1.25cqw; }

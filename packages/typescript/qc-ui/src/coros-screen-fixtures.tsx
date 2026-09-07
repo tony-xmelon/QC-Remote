@@ -4,7 +4,7 @@ import { QC_COLORS } from "@qc-remote/theme";
 import { officialBlockVisual } from "./block-visuals";
 import { openSplitPath } from "./coros-ui";
 import { QcDeviceGlyph } from "./device-glyph";
-import { QcDirectoryIcon, QcEditorIcon, QcEqIcon, QcHardwareIcon, QcIoIcon, QcLibraryIcon, QcModeGlyph, QcPresetStackIcon, QcScreenHeaderGlyph, QcSettingsIcon, QcUiIcon, type QcIoIconName, type QcSettingsIconName } from "./theme-icons";
+import { QcCaptureFilterIcon, QcDirectoryIcon, QcEditorIcon, QcEqIcon, QcHardwareIcon, QcIoIcon, QcLibraryIcon, QcModeGlyph, QcPresetStackIcon, QcScreenHeaderGlyph, QcSettingsIcon, QcUiIcon, type QcIoIconName, type QcSettingsIconName } from "./theme-icons";
 import { QcRotaryDial, type QcRotaryDialProps } from "./qc-rotary-dial";
 import "./fixture-live-surface.css";
 import "./remaining-fixtures.css";
@@ -79,7 +79,7 @@ function FavoriteIcon({ kind }: { kind: "heart" | "clock" | "binoculars" | "brok
 type DirectoryFixtureView = "directory-presets" | "directory-categories" | "directory-captures" | "directory-irs" | "directory-plugins" | "directory-favorites" | "directory-search" | "directory-search-results" | "directory-sort" | "directory-filter" | "directory-arrange" | "directory-copy" | "directory-nested" | "directory-new-folder" | "directory-item-context" | "directory-cloud-upload";
 type OfficialDirectoryView = "directory-presets" | "directory-captures" | "directory-irs" | "directory-plugins" | "directory-favorites" | "directory-search-results" | "directory-nested" | "directory-cloud-upload";
 
-const CAPTURE_FILTERS = ["Default", "Amp", "Combo Amp", "Amp + Cab", "Cab", "Overdrive", "Fuzz", "Compressor"];
+const CAPTURE_FILTERS = ["Default", "Amp", "Combo Amp", "Amp + Cab", "Cab", "Overdrive", "Fuzz", "Compressor"] as const;
 
 function CorOsOfficialDirectory({
   view,
@@ -355,9 +355,12 @@ function CorOsOfficialDirectory({
   }
   const favorite = view === "directory-favorites";
   const captures = view === "directory-captures";
+  const filteredCaptures = captures && filter;
   const irs = view === "directory-irs";
   const category = favorite
     ? "Favorites and Recent"
+    : filteredCaptures
+      ? "Captures"
     : captures
       ? "Neural Captures"
       : irs
@@ -365,6 +368,15 @@ function CorOsOfficialDirectory({
         : "Plugin Presets";
   const rows = favorite
     ? ["Fender Deluxe 212"]
+    : filteredCaptures
+      ? [
+          "Beehive Wasp Fuzz",
+          "Iba Basic Fuzz",
+          "Love Believer",
+          "Love Bender Mk3",
+          "Love Fuzz Lord III",
+          "MKK Bass Lord",
+        ]
     : captures
       ? [
           "4-Comp Custom 1",
@@ -382,6 +394,16 @@ function CorOsOfficialDirectory({
         ["◉", "Neural Captures", ""],
         ["≋", "Impulse Responses", ""],
       ]
+    : filteredCaptures
+      ? [
+          ["□", "Captures Library", "filter-root"],
+          ["□", "Beehive Wasp Fuzz", "filter-child"],
+          ["□", "Iba Basic Fuzz", "filter-child"],
+          ["□", "Love Believer", "filter-child"],
+          ["□", "Love Bender Mk3", "filter-child"],
+          ["□", "Love Fuzz Lord III", "filter-child"],
+          ["□", "MKK Bass Lord", "filter-child"],
+        ]
     : captures
       ? [
           ["⇩", "Downloads", ""],
@@ -400,29 +422,30 @@ function CorOsOfficialDirectory({
             ["□", "New Folder", "child muted"],
           ]
         : [
-            ["□", "Archetype: Cory Wong X", ""],
-            ["□", "Archetype: Gojira X", ""],
-            ["□", "Archetype: Nolly X", ""],
-            ["□", "Archetype: Plini X", ""],
-            ["□", "Fortin Nameless Suite X", ""],
-            ["□", "Parallax X", ""],
-            ["□", "Soldano SLO-100 X", ""],
+            ["□", "Archetype: Plini X", "active"],
+            ["lock", "Archetype: Cory Wong X", "muted"],
+            ["lock", "Archetype: Gojira X", "muted"],
+            ["lock", "Archetype: John Mayer X", "muted"],
+            ["lock", "Archetype: Misha Mansoor X", "muted"],
+            ["lock", "Archetype: Nolly X", "muted"],
+            ["lock", "Archetype: Petrucci X", "muted"],
           ];
   return (
     <section
-      className={`qc-screen directory-official${view === "directory-plugins" ? " is-plugins" : ""}${favorite ? " directory-favorites-official" : ""}${captures ? " directory-captures-official" : ""}${irs ? " directory-irs-official" : ""}`}
+      className={`qc-screen directory-official${view === "directory-plugins" ? " is-plugins" : ""}${favorite ? " directory-favorites-official" : ""}${captures ? " directory-captures-official" : ""}${filteredCaptures ? " directory-filter-official" : ""}${irs ? " directory-irs-official" : ""}`}
     >
       <header>
+        {filteredCaptures && <button className="directory-filter-back"><QcUiIcon kind="previous" /></button>}
         <button className="directory-official-category">
           {view === "directory-plugins" ? (
             <>
               <DeviceCategoryGlyph label="Plugins" fallback="" />
-              <span>{category}</span>
+              <span>{filteredCaptures ? "Captures" : category}</span>
             </>
           ) : captures ? (
             <>
               <CaptureHeaderIcon />
-              <span>{category}</span>
+              <span>{filteredCaptures ? "Captures" : category}</span>
             </>
           ) : favorite ? (
             <>
@@ -469,6 +492,15 @@ function CorOsOfficialDirectory({
             <button>
               <DirectoryIcon kind="done" />
             </button>
+          </>
+        ) : filteredCaptures ? (
+          <>
+            <span />
+            <button><DirectoryIcon kind="sort" /></button>
+            <button className="is-filter-active"><DirectoryIcon kind="filter" /></button>
+            <button><DirectoryIcon kind="arrange" /></button>
+            <button><DirectoryIcon kind="search" /></button>
+            <button><DirectoryIcon kind="done" /></button>
           </>
         ) : captures ? (
           <>
@@ -542,14 +574,17 @@ function CorOsOfficialDirectory({
               <b>
                 {glyph === "□" ? (
                   <DirectoryIcon kind="folder" />
+                ) : glyph === "lock" ? (
+                  <PluginLockIcon />
                 ) : captures && label === "Captures Library" ? (
                   <CaptureLibraryIcon />
                 ) : (
                   glyph
                 )}
               </b>
-              <span>{label}</span>
+              <span>{label}{filteredCaptures && label === "Captures Library" && <small>Fuzz</small>}</span>
               {className?.includes("counted") && <em>3</em>}
+              {captures && !filteredCaptures && label === "Captures Library" && <em>2127</em>}
             </button>
           ))}
         </nav>
@@ -572,7 +607,7 @@ function CorOsOfficialDirectory({
               <button key={name}>
                 <span>
                   {name}
-                  {!favorite && (
+                  {!favorite && !filteredCaptures && (
                     <small>
                       {captures ? "NeuralDSP" : irs ? "✓ On device" : ""}
                     </small>
@@ -597,7 +632,7 @@ function CorOsOfficialDirectory({
                     </b>
                   </i>
                 ) : (
-                  <b>{captures ? "4　⋮" : "⋮"}</b>
+                  <b>{captures ? `${filteredCaptures ? (index === rows.length - 1 ? "I" : "B") : "4"}　⋮` : "⋮"}</b>
                 )}
               </button>
             ))
@@ -620,7 +655,7 @@ function CorOsOfficialDirectory({
             {CAPTURE_FILTERS.map((label) => (
               <button key={label}>
                 <b>
-                  <DeviceCategoryGlyph label={label} fallback="◈" />
+                  <QcCaptureFilterIcon kind={label} />
                 </b>
                 {label}
               </button>
@@ -642,6 +677,7 @@ function CorOsDirectoryFixture({ view, physicalContext = false }: { view: Direct
   // `physicalContext` is only raised for the cloud-upload overwrite dialog,
   // and that frame shows the directory in upload mode.
   const upload = physicalContext;
+  const categoryMenu = view === "directory-categories";
   // The frames were all taken in bank 4 of My Presets. `directory-item-context`
   // and `cloud-upload-overwrite` have 4E selected; the later captures have 4F.
   const currentRow = view === "directory-item-context" || physicalContext ? 4 : 5;
@@ -658,11 +694,11 @@ function CorOsDirectoryFixture({ view, physicalContext = false }: { view: Direct
       : <header><button className="directory-fixture-category">
       {itemContext ? <DirectoryIcon kind="grid" /> : <span>{icons[category]}</span>}<strong>{category}</strong><b>⌄</b></button><button className={view === "directory-cloud-upload" || upload ? "is-cloud" : ""}>{itemContext ? <DirectoryIcon kind="cloud-upload" /> : "☁"}</button><i />{!upload && <button>{itemContext ? <DirectoryIcon kind="sort" /> : "☷"}</button>}{!upload && <button>{itemContext ? <DirectoryIcon kind="arrange" /> : "↕"}</button>}<button>{itemContext ? <DirectoryIcon kind={upload ? "sort" : "search"} /> : "⌕"}</button><em /><button>{itemContext ? <DirectoryIcon kind="done" /> : "✓"}</button></header>}
     <main>
-      <nav className="directory-fixture-folders">{itemContext ? <>{!upload && <button><b><DirectoryIcon kind="download" /></b><span>Downloads</span></button>}{!upload && <button><b><DirectoryIcon kind="cloud" /></b><span>Cloud Presets</span></button>}{!upload && <button><b><DirectoryIcon kind="folder" number={0} /></b><span>Factory Presets</span></button>}<button className="is-active"><b><DirectoryIcon kind="folder" number={1} /></b><span>My Presets</span><b>⋮</b></button><button className="is-child"><b><DirectoryIcon kind="folder" number={2} /></b><span>ALI Live</span><b>⋮</b></button><button className="is-child"><b><DirectoryIcon kind="folder" number={3} /></b><span>ALI Rec</span><b>⋮</b></button><button className="is-child"><b><DirectoryIcon kind="folder" number={4} /></b><span>ALI AcousticLive</span><b>⋮</b></button>{upload && <button className="is-child"><b><DirectoryIcon kind="folder" number={5} /></b><span>Downloaded</span><b>⋮</b></button>}{upload && <button className="is-child"><b><DirectoryIcon kind="folder" number={6} /></b><span>Downloaded2</span><b>⋮</b></button>}{upload && <button className="is-child"><b><DirectoryIcon kind="folder" number={7} /></b><span>QC-MCP-TEST-mtos3yws-copy</span><b>⋮</b></button>}</> : <><button>⇩ <span>Downloads</span></button><button>☁ <span>Cloud {category}</span></button><button>▰ <span>Factory {category}</span></button><button className="is-active">▰ <span>My {category}</span><b>⋮</b></button>{view === "directory-nested" ? <><button className="is-child">└ ▰ <span>ALI Live</span></button><button className="is-child is-active">　└ ▰ <span>Festival</span></button></> : <button className="is-child">└ ▰ <span>ALI Live</span></button>}<button className="is-new">▰＋ <span>New {category === "Presets" ? "Setlist" : "Folder"}</span></button></>}</nav>
+      <nav className="directory-fixture-folders">{itemContext ? <>{!upload && <button><b><DirectoryIcon kind="download" /></b><span>Downloads</span></button>}{!upload && <button><b><DirectoryIcon kind="cloud" /></b><span>Cloud Presets</span></button>}{!upload && <button><b><DirectoryIcon kind="folder" number={0} /></b><span>Factory Presets</span></button>}<button className="is-active"><b><DirectoryIcon kind="folder" number={1} /></b><span>My Presets</span><b>⋮</b></button><button className="is-child"><b><DirectoryIcon kind="folder" number={2} /></b><span>ALI Live</span><b>⋮</b></button>{categoryMenu ? <><button className="is-child"><b><DirectoryIcon kind="folder" number={6} /></b><span>Downloaded2</span><b>⋮</b></button><button className="is-child"><b><DirectoryIcon kind="folder" number={7} /></b><span>QC-MCP-TEST-mtos3yws-copy</span><b>⋮</b></button></> : <><button className="is-child"><b><DirectoryIcon kind="folder" number={3} /></b><span>ALI Rec</span><b>⋮</b></button><button className="is-child"><b><DirectoryIcon kind="folder" number={4} /></b><span>ALI AcousticLive</span><b>⋮</b></button></>}{upload && <button className="is-child"><b><DirectoryIcon kind="folder" number={5} /></b><span>Downloaded</span><b>⋮</b></button>}{upload && <button className="is-child"><b><DirectoryIcon kind="folder" number={6} /></b><span>Downloaded2</span><b>⋮</b></button>}{upload && <button className="is-child"><b><DirectoryIcon kind="folder" number={7} /></b><span>QC-MCP-TEST-mtos3yws-copy</span><b>⋮</b></button>}</> : <><button>⇩ <span>Downloads</span></button><button>☁ <span>Cloud {category}</span></button><button>▰ <span>Factory {category}</span></button><button className="is-active">▰ <span>My {category}</span><b>⋮</b></button>{view === "directory-nested" ? <><button className="is-child">└ ▰ <span>ALI Live</span></button><button className="is-child is-active">　└ ▰ <span>Festival</span></button></> : <button className="is-child">└ ▰ <span>ALI Live</span></button>}<button className="is-new">▰＋ <span>New {category === "Presets" ? "Setlist" : "Folder"}</span></button></>}</nav>
       <nav className="directory-fixture-banks">{(itemContext ? Array.from({ length: 14 }, (_, index) => index + 1) : [29, 30, 31, 32, 33, 34, 35]).map((bank) => <button key={bank} className={bank === (itemContext ? 4 : 32) ? "is-active" : ""}>{bank}</button>)}</nav>
       <section className="directory-fixture-items">{search && <div className="directory-search-field"><span>⌕</span><strong>{view === "directory-search-results" ? "Clean" : "Search Directory"}</strong><button>×</button></div>}{(search ? results : names).map((name, index) => itemContext ? <button key={`${name}-${index}`} className={`${index === currentRow ? "is-current" : ""}${name === "Unsaved" ? " is-empty" : ""}`}>{multiSelect && <b className="preset-select" />}<span className="physical-preset-name">{`4${String.fromCharCode(65 + index)} ${name}`}</span>{upload ? <b className="preset-upload"><DirectoryIcon kind="cloud-upload" /></b> : !multiSelect && <b>⋮</b>}</button> : <button key={name} className={index === 0 ? "is-current" : ""}><strong>{category === "Presets" ? `32${String.fromCharCode(65 + index)}` : icons[category]}</strong><span>{name}<small>{category === "Neural Captures" ? "GUITAR · AMP" : category === "Impulse Responses" ? "48 kHz · 1024 samples" : category === "Plugin Presets" ? "NEURAL DSP X" : "USER"}</small></span>{view === "directory-arrange" ? <i>☰</i> : <b>⋮</b>}</button>)}</section>
     </main>
-    {view === "directory-categories" && <><i className="directory-context-scrim" /><aside className="directory-category-menu"><button><span><FavoriteIcon kind="heart" /></span>Favorites and Recent</button><button className="is-active"><span><DirectoryIcon kind="grid" /></span>Presets<b>✓</b></button><button><span><CaptureLibraryIcon /></span>Neural Captures</button><button><span><DeviceCategoryGlyph label="Impulse Response" fallback="≋" /></span>Impulse Responses</button><button><span><DeviceCategoryGlyph label="Plugins" fallback="♜" /></span>Plugin Presets</button></aside></>}
+    {view === "directory-categories" && <><i className="directory-context-scrim" /><aside className="directory-category-menu"><button><span><FavoriteIcon kind="heart" /></span>Favorites and Recent</button><button className="is-active"><span><DirectoryIcon kind="grid" /></span>Presets<b><QcUiIcon kind="check" /></b></button><button><span><CaptureLibraryIcon /></span>Neural Captures</button><button><span><DeviceCategoryGlyph label="Impulse Response" fallback="≋" /></span>Impulse Responses</button><button><span><DeviceCategoryGlyph label="Plugins" fallback="♜" /></span>Plugin Presets</button></aside></>}
     {view === "directory-favorites" && <aside className="directory-favorites-panel"><header><button className="is-active">FAVORITES</button><button>RECENT</button></header>{names.slice(0, 5).map((name) => <button key={name}><span>★</span>{name}<b>⋮</b></button>)}</aside>}
     {/* Title, options and active-item styling taken from the device: the
         CorOS tree for `directory-sort` reads "Sort By" over Banks, Name,

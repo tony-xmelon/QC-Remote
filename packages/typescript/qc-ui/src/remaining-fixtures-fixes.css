@@ -376,7 +376,7 @@
 .io-editor.is-send-physical .io-output-row>*:nth-child(2){grid-column:2}
 .io-editor.is-send-physical .io-output-row>*:nth-child(3){grid-column:3}
 .io-editor.is-headphones{grid-template-columns:19.5cqw 19.875cqw 1fr;grid-template-rows:13.5cqw 13.5cqw}
-.coros-browser-fixture.is-physical-plugin-list .browser-fixture-panel>main>header strong{max-width:26cqw;font-weight:400;line-height:1.25}.coros-browser-fixture.is-physical-plugin-list .browser-fixture-panel>main>header button.is-refreshing svg{animation:qc-plugin-refresh-spin 1.2s linear infinite}@keyframes qc-plugin-refresh-spin{to{transform:rotate(360deg)}}
+.coros-browser-fixture.is-physical-plugin-list .browser-fixture-panel>main>header strong{max-width:26cqw;font-weight:400;line-height:1.25}.coros-browser-fixture.is-physical-plugin-list .browser-fixture-panel>main>header button.is-refreshing{display:grid;place-items:center;animation:none}.coros-browser-fixture.is-physical-plugin-list .browser-fixture-panel>main>header button.is-refreshing svg{display:none}.coros-browser-fixture.is-physical-plugin-list .browser-fixture-panel>main>header button.is-refreshing::before{content:"";box-sizing:border-box;display:block;width:23px;height:23px;border:3px solid #989c98;border-top-color:#252925;border-radius:50%}@keyframes qc-plugin-refresh-spin{to{transform:rotate(360deg)}}
 
 /* device-search-entry.png, directory-search.png and device-search.png are one
    screen: the first two differ only in the caret's phase. Everything here is
