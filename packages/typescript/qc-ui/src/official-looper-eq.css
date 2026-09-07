@@ -14,10 +14,10 @@
 .coros-looper > header .looper-params { display: flex; align-items: center; justify-content: center; gap: 1cqw; }
 .coros-looper > header .looper-params > svg { width: 3.25cqw; height: 3cqw; transform: translate(-5px, 2px); }
 .coros-looper > header .looper-scene { display: flex; align-items: center; justify-content: space-around; }
-.coros-looper > header .looper-scene > svg { width: 3.5cqw; fill: currentColor; stroke: none; }
-.coros-looper > header .looper-scene > svg:first-child { transform: translateX(-1px); }
-.coros-looper > header .looper-scene > svg:last-child { transform: translateX(1px); }
-.coros-looper > header button:last-child > svg { width: 3.5cqw; height: 3.5cqw; transform: translate(1px, 3px); }
+.coros-looper > header .looper-scene > svg { width: 3.75cqw; height: 3cqw; fill: currentColor; stroke: none; }
+.coros-looper > header .looper-scene > svg:first-child { transform: translateX(-2px); }
+.coros-looper > header .looper-scene > svg:last-child { transform: translateX(3px); }
+.coros-looper > header button:last-child > svg { width: 3.75cqw; height: 3cqw; transform: none; }
 .coros-looper > header span small { font-size: 1.75cqw; }
 .coros-looper > header span strong { font-size: 2cqw; }
 .looper-timeline { gap: 2.5cqw; padding: 1cqw; border: 0; background: linear-gradient(to bottom, #282c28 0 52%, #181c18 52% 100%); font-size: 2cqw; }

@@ -18,7 +18,8 @@ function QcReferenceRaster({ icon, color, className, crisp = true }: { icon: Ref
 
 function QcReferenceRasterLayers({ icon, className }: { icon: ReferenceRasterName; className?: string }) {
   const raster = QC_REFERENCE_ICON_RASTERS[icon];
-  return <svg className={className} viewBox={`0 0 ${raster.width} ${raster.height}`} aria-hidden="true">{Object.entries(raster.paths).map(([color, path]) => <path key={color} d={path} fill={color} stroke="none" />)}</svg>;
+  const shapeRendering = icon === "editor.scene-previous" || icon === "editor.scene-next" ? "auto" : "crispEdges";
+  return <svg className={className} viewBox={`0 0 ${raster.width} ${raster.height}`} shapeRendering={shapeRendering} aria-hidden="true">{Object.entries(raster.paths).map(([color, path]) => <path key={color} d={path} fill={color} stroke="none" />)}</svg>;
 }
 
 function referencePath(icon: ReferenceRasterName, index = 0) {
@@ -34,7 +35,8 @@ function editorReferenceIcon(kind: QcEditorIconName): ReferenceRasterName | unde
     change: "editor.change", copy: "editor.copy", paste: "editor.paste", reset: "editor.reset",
     save: "editor.save", expression: "editor.expression", mute: "editor.mute",
     "model-update": "editor.model-update", "model-downgrade": "editor.model-downgrade",
-    remove: "editor.remove", confirm: "editor.confirm"
+    remove: "editor.remove", confirm: "editor.confirm", bypass: "editor.bypass",
+    "scene-previous": "editor.scene-previous", "scene-next": "editor.scene-next"
   } as const;
   return kind in icons ? icons[kind as keyof typeof icons] : undefined;
 }
@@ -483,30 +485,10 @@ export function QcEditorIcon({ kind }: { kind: QcEditorIconName }) {
         <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M18 3h2v1h-2ZM10 4h1v1h-1ZM17 4h3v1h-3ZM8 5h4v1h-4ZM16 5h6v1h-6ZM7 6h15v1h-15ZM6 7h16v1h-16ZM4 8h18v1h-18ZM3 9h14v1h-14ZM18 9h5v1h-5ZM2 10h13v1h-13ZM16 10h7v1h-7ZM1 11h10v1h-10ZM12 11h8v1h-8ZM0 12h7v1h-7ZM8 12h8v1h-8ZM0 13h4v1h-4ZM5 13h7v1h-7ZM1 14h8v1h-8ZM0 15h5v1h-5ZM6 16h3v1h-3ZM5 17h4v1h-4ZM5 18h4v1h-4ZM2 19h10v1h-10ZM2 20h10v1h-10ZM2 21h10v1h-10ZM2 22h10v1h-10ZM2 23h10v1h-10Z" />
       </svg>
     );
-  if (kind === "bypass")
-    return (
-      <svg viewBox="0 0 24 24" shapeRendering="crispEdges" data-qc-icon={kind} aria-hidden="true">
-        <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M10 2h2v1h-2ZM5 3h2v1h-2ZM10 3h2v1h-2ZM15 3h2v1h-2ZM4 4h3v1h-3ZM10 4h2v1h-2ZM15 4h3v1h-3ZM3 5h4v1h-4ZM10 5h2v1h-2ZM15 5h4v1h-4ZM2 6h4v1h-4ZM10 6h2v1h-2ZM16 6h4v1h-4ZM2 7h3v1h-3ZM10 7h2v1h-2ZM17 7h3v1h-3ZM1 8h3v1h-3ZM10 8h2v1h-2ZM18 8h3v1h-3ZM1 9h3v1h-3ZM10 9h2v1h-2ZM18 9h3v1h-3ZM1 10h3v1h-3ZM10 10h2v1h-2ZM18 10h3v1h-3ZM1 11h2v1h-2ZM19 11h2v1h-2ZM1 12h2v1h-2ZM19 12h2v1h-2ZM1 13h3v1h-3ZM18 13h3v1h-3ZM1 14h3v1h-3ZM18 14h3v1h-3ZM1 15h3v1h-3ZM18 15h3v1h-3ZM2 16h3v1h-3ZM17 16h3v1h-3ZM2 17h4v1h-4ZM16 17h4v1h-4ZM3 18h4v1h-4ZM15 18h4v1h-4ZM4 19h6v1h-6ZM12 19h6v1h-6ZM5 20h12v1h-12ZM7 21h8v1h-8Z" />
-      </svg>
-    );
   if (kind === "assignment-expression")
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M6 18h12l-1.6-8.4H8.1L6 18Zm2.2-8.4 1-3.6h5.7l1.5 3.6M9 21h6" />
-      </svg>
-    );
-  if (kind === "scene-previous")
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M11 4 3 12l8 8Z" fill="currentColor" />
-        <path d="M21 4l-8 8 8 8Z" fill={QC_COLORS.captured.sceneControlMuted} />
-      </svg>
-    );
-  if (kind === "scene-next")
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="m13 4 8 8-8 8Z" fill="currentColor" />
-        <path d="M3 4l8 8-8 8Z" fill={QC_COLORS.captured.sceneControlMuted} />
       </svg>
     );
   return (
