@@ -4,7 +4,7 @@ import { QC_COLORS, QC_TYPOGRAPHY } from "@ndsp-qc/theme";
 export type QcDirectoryIconName = "grid" | "download" | "cloud" | "cloud-upload" | "folder" | "new-folder" | "sort" | "filter" | "arrange" | "upload" | "search" | "trash" | "done";
 export type QcEditorIconName = "save" | "change" | "copy" | "paste" | "reset" | "expression" | "looper" | "mute" | "model-update" | "model-downgrade" | "remove" | "assignment-expression" | "band-power" | "footswitch" | "scene-previous" | "scene-next" | "bypass" | "confirm" | "waveform";
 export type QcHardwareIconName = "power" | "brand-pulse";
-export type QcLibraryIconName = "capture-library" | "capture-header" | "heart" | "clock" | "binoculars" | "broken-heart";
+export type QcLibraryIconName = "capture-library" | "capture-header" | "heart" | "clock" | "binoculars" | "broken-heart" | "neural-mark";
 export type QcScreenHeaderGlyphName = "undo" | "save" | "export" | "menu";
 export type QcUiIconName = "add" | "subtract" | "previous" | "next" | "cab-previous" | "cab-next" | "up" | "down" | "more" | "check" | "close" | "refresh" | "backspace" | "microphone" | "attachment" | "file" | "send" | "stop" | "save-as" | "edit" | "midi" | "favorite" | "delete" | "capture" | "modes" | "tempo" | "cpu" | "settings";
 
@@ -460,6 +460,8 @@ export function QcDirectoryIcon({ kind, number }: { kind: QcDirectoryIconName; n
 export function QcLibraryIcon({ kind, className }: { kind: QcLibraryIconName; className?: string }) {
   const classes = `qc-library-icon qc-library-icon-${kind}${className ? ` ${className}` : ""}`;
   const heartPath = "M12 21 4.4 13.7C.5 9.8 3 4 7.4 4c2.1 0 3.4 1.2 4.6 2.7C13.2 5.2 14.5 4 16.6 4 21 4 23.5 9.8 19.6 13.7Z";
+  if (kind === "neural-mark")
+    return <svg className={classes} viewBox="0 0 120 140" aria-hidden="true"><path d="M0 70H18L42 2 75 138 94 70H120" /></svg>;
   if (kind === "capture-library")
     return (
       <svg className={classes} viewBox="0 0 24 24" aria-hidden="true">

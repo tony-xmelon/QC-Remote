@@ -60,6 +60,7 @@ async function capture(host, baseUrl, viewport, css) {
     url.searchParams.set("screen", view);
     await page.goto(url.href, { waitUntil: "networkidle" });
     if (css) await page.addStyleTag({ content: css });
+    await page.evaluate(() => document.fonts.ready);
     await page.locator(".dialog-close").click({ timeout: 1000 }).catch(() => undefined);
     const screen = page.locator(".qc-screen-bezel");
     const box = await screen.boundingBox();

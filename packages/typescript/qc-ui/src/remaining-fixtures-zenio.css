@@ -1,0 +1,107 @@
+/* Final, state-specific measurements from the CorOS 4.1.0 zenUI corpus. */
+.capture-search-keyboard > main {
+  top: 28.5cqw;
+  grid-template-rows: repeat(4, 7.125cqw);
+  gap: 1.125cqw;
+}
+.capture-search-keyboard > main > div { height: 7.125cqw; gap: 1cqw; }
+.capture-search-keyboard > main > div:nth-child(2) { grid-template-columns: repeat(9, 9cqw); }
+.capture-search-keyboard > main > div:nth-child(3) { grid-template-columns: 14.25cqw repeat(7, 1fr) 14.25cqw; }
+.capture-search-keyboard > main > div:nth-child(4) { grid-template-columns: 14.25cqw 9cqw 1fr 9cqw 14.25cqw; }
+.capture-search-keyboard > main button { height: 100%; font-weight: 400; }
+.capture-search-keyboard > main button { position: relative; }
+.capture-search-keyboard > main button small { position: absolute; right: .75cqw; top: .35cqw; color: #737773; font-size: 1.375cqw; font-weight: 400; }
+.capture-search-keyboard > main button svg { width: 2.75cqw; height: 2.75cqw; }
+.capture-recent-searches button { top: -2.75cqw; right: 1cqw; }
+
+.capture-library-browser > aside > button { grid-template-columns: 4.375cqw 1fr 5cqw; }
+.capture-library-browser > aside > button span { padding-left: .25cqw; font-weight: 400; }
+.capture-library-browser > aside > i ~ button { padding-left: 4cqw; grid-template-columns: 4.375cqw 1fr 3cqw; }
+.capture-library-browser > aside > i ~ button b svg { fill: none; stroke: currentColor; }
+.capture-library-browser,
+.capture-library-browser * { font-family: "Roboto Variable", Arial, sans-serif !important; font-weight: 400; }
+.capture-search-results > header button:first-child { width: 23.125cqw; }
+.capture-search-results > header button:nth-last-child(3) { margin-left: 1.75cqw; }
+.capture-search-results > header button,
+.capture-search-results article strong,
+.capture-search-results article small { font-weight: 400; }
+
+.capture-editor-physical > header > strong { font-size: 8cqw; }
+.capture-editor-physical > header { position: relative; }
+.capture-editor-physical > header > nav { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; padding: 0; transform: translateX(.75cqw); }
+.capture-editor-physical > header > nav i { display: block; color: #9da19d; }
+.capture-editor-physical > header > nav i svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.capture-editor-physical > header > em { position: absolute; right: 2cqw; top: 6.75cqw; width: 16cqw; margin: 0; }
+.capture-editor-grid .capture-block { position: absolute; top: 0; margin: 0; }
+.capture-editor-grid { height: 10.75cqw; }
+.capture-editor-grid .capture-block { border: 0; background: transparent; }
+.capture-editor-grid .capture-block.is-gate { left: 8.75cqw; }
+.capture-editor-grid .capture-block.is-capture { left: 19.125cqw; }
+.capture-editor-grid .capture-block:nth-of-type(4) { left: 29.75cqw; }
+.capture-editor-grid .capture-block svg { width: 100%; height: 100%; }
+.capture-editor-panel > header { gap: 1cqw; }
+.capture-editor-panel > header { height: 7.5cqw; }
+.capture-editor-panel > header > span { width: 53.25cqw; }
+.capture-editor-panel > header > nav { width: 16.5cqw; justify-content: space-around; gap: 0; margin-left: 0; }
+.capture-editor-panel > header > nav > * { transform: translateX(1cqw); }
+.capture-editor-panel > header > nav i { width: 4cqw; text-align: center; }
+.capture-editor-panel > header > nav + button,
+.capture-editor-panel > header > nav + button + button { width: 8.25cqw; }
+.capture-editor-panel > header > nav + button { margin-left: 2.25cqw; }
+.capture-editor-panel > main i { right: 1cqw; width: 8cqw; height: 8cqw; border-width: .625cqw; }
+.capture-editor-panel > main span,
+.capture-editor-panel > main strong { font-weight: 400; }
+
+.io-output-row .io-dial {
+  width: 8.125cqw;
+  height: 8.125cqw;
+  border-width: .625cqw;
+}
+.io-output-row .io-dial-wrap > strong { bottom: 1.95cqw; }
+.io-inline-meter strong { margin-top: 2cqw; }
+.io-inline-meter > i { margin-top: 1.75cqw; }
+.coros-io-settings .io-editor.is-headphones {
+  top: 32.125cqw;
+  height: 27cqw;
+  grid-template-rows: 13.5cqw 13.5cqw;
+}
+.coros-io-settings .io-editor.is-headphones .io-dial { width: 8.375cqw; height: 8.375cqw; }
+.coros-io-settings .io-editor.is-headphones .io-dial-wrap > strong { bottom: 1.875cqw; }
+
+.physical-delay-underlay,
+.physical-delay-underlay * { box-sizing: border-box; }
+.physical-delay-underlay { position: absolute; inset: 0; overflow: hidden; background: #020202; color: #eee; }
+.physical-delay-underlay > header { position: relative; height: 12.5cqw; display: grid; grid-template-columns: 14cqw 1fr 30cqw; background: #020202; }
+.physical-delay-underlay > header > strong { padding-left: 1.5cqw; color: #929592; font-size: 7cqw; line-height: 10cqw; }
+.physical-delay-underlay > header > strong span { color: #725020; }
+.physical-delay-underlay > header > h1 { margin: 3.25cqw 0 0; color: #929592; font-size: 4.25cqw; line-height: 5cqw; }
+.physical-delay-underlay > header > nav { display: flex; justify-content: flex-end; align-items: center; gap: 1.75cqw; height: 7cqw; padding-right: 2cqw; }
+.physical-delay-underlay > header > nav i { width: 3cqw; height: 3cqw; color: #999; }
+.physical-delay-underlay > header > nav i svg { width: 100%; height: 100%; }
+.physical-delay-underlay > header > nav b { display: grid; place-items: center; width: 3cqw; height: 3cqw; border-radius: .5cqw; background: #c5a91f; color: #161616; font-size: 2.25cqw; }
+.physical-delay-underlay > header > em { position: absolute; right: 3cqw; top: 7.75cqw; display: flex; align-items: center; gap: 1cqw; color: #929592; font-size: 2.25cqw; font-style: normal; }
+.physical-delay-underlay > header > em svg { width: 3.5cqw; height: 3.5cqw; }
+.delay-context-grid { position: relative; height: 15.75cqw; background: #020202; }
+.delay-context-grid > span { position: absolute; top: 1cqw; width: 5.5cqw; height: 9.5cqw; display: grid; place-items: center; border-radius: 1.5cqw; background: #151715; color: #ddd; text-align: center; font-size: 2cqw; }
+.delay-context-grid > span:first-child { left: 1cqw; }
+.delay-context-grid > span:last-child { right: 1cqw; }
+.delay-context-grid > i { position: absolute; left: 6.5cqw; right: 6.5cqw; top: 5.75cqw; border-top: 1px solid #929592; }
+.physical-delay-underlay > section { position: absolute; left: 1cqw; right: 1cqw; top: 25.5cqw; height: 33.5cqw; border-radius: 1cqw; overflow: hidden; background: #282c29; }
+.physical-delay-underlay > section > header { height: 6.5cqw; display: flex; align-items: center; background: #171a18; }
+.physical-delay-underlay > section > header > button { width: 5.5cqw; height: 5.5cqw; border: 0; border-radius: 1cqw; margin-left: .5cqw; background: #202421; color: #eee; font-size: 3cqw; }
+.physical-delay-underlay > section > header > span { display: grid; margin-left: 1cqw; color: #aaa; }
+.physical-delay-underlay > section > header small { font-size: 1.625cqw; }
+.physical-delay-underlay > section > header strong { color: #897422; font-size: 2.5cqw; font-weight: 400; }
+.physical-delay-underlay > section > header nav { position: absolute; left: 63cqw; right: 1cqw; color: #aaa; font-size: 2.5cqw; }
+.physical-delay-underlay > section > header nav b { display: inline-grid; place-items: center; width: 3cqw; height: 3cqw; border-radius: .5cqw; background: #c5a91f; color: #111; }
+.physical-delay-underlay > section > header nav button { width: 8cqw; height: 5.5cqw; border: 0; border-radius: 1cqw; background: #282c29; color: #eee; font-size: 2.5cqw; }
+.physical-delay-underlay > section > main { position: relative; height: 13.5cqw; }
+.physical-delay-underlay > section > main > div { position: absolute; top: 0; width: 19.5cqw; height: 13.5cqw; padding: 1.25cqw; border-right: 1px solid #151715; }
+.physical-delay-underlay > section > main > div:nth-child(1) { left: 39.75cqw; }
+.physical-delay-underlay > section > main > div:nth-child(2) { left: 59.5cqw; }
+.physical-delay-underlay > section > main > div:nth-child(3) { left: 79cqw; }
+.physical-delay-underlay > section > main span { color: #ddd; font-size: 2cqw; }
+.physical-delay-underlay > section > main i { position: absolute; right: 2cqw; top: 5cqw; width: 7.5cqw; height: 7.5cqw; border: .625cqw solid #3a9b8e; border-right-color: #141615; border-radius: 50%; background: #202321; }
+.physical-delay-underlay > section > main i::after { content: ""; position: absolute; left: 50%; top: .5cqw; width: .3cqw; height: 3cqw; background: #e7e8e7; transform: rotate(15deg); transform-origin: 50% 100%; }
+.physical-delay-underlay > section > main strong { position: absolute; left: 1.25cqw; top: 9.5cqw; color: #ddd; font-size: 1.75cqw; font-weight: 400; }
+.physical-delay-underlay > section::after { content: ""; position: absolute; left: 0; right: 0; top: 19.875cqw; border-top: 2px solid #141615; }

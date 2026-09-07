@@ -1534,28 +1534,48 @@ the gateway now wakes that stream by briefly opening Gig View, captures a frame,
 then restores Grid. This reversible handshake was verified on the device and is
 covered by a gateway test. No preset content was changed.
 
+## Current full-parity pass (2026-09-07)
+
+The corpus and renderer now have complete canonical coverage: 103/103 cataloged
+CorOS states are routed on both Windows and Android. The evidence set contains
+76 physical-device frames, 37 official full-screen references, and 27 official
+SVG detail references. Of the 103 states, 79 have authoritative full-frame
+evidence and 98 have authoritative full-frame or detail evidence.
+
+Fresh 800x480 captures of all 76 physical states produce the same result on
+both hosts: 89.71% mean edge-structural match and 0.0247 mean normalized pixel
+error. This is up from the 86.56% structural baseline at the start of the pass.
+The typography audit covers all 103 states and reports 95.88% mean text-mask
+structure, 98.71% mean text-region color, 100% Windows/Android computed-style
+parity, and 100% bundled primary-face availability. Iconography has complete
+typed coverage for all 105 variants; the shared-asset checks reject duplicate,
+unwired, or comparison-only artwork.
+
+The largest gains came from replacing semantic approximations with dedicated
+Neural Capture, deep/reverb browser, bottom-context, Favorites/Recents, search,
+I/O, and capture-editor states. The lowest remaining physical structural scores
+are Search Results/Error Overlay (73.45%), bottom block context (76.50%), Neural
+Capture editor (79.13%), Recents (80.19%), and Headphones I/O (80.56%). These
+are now localized fidelity work, not missing routes or host divergence.
+
 ## Remaining priorities
 
-1. Expand physical references from 52 toward all 103 cataloged CorOS states,
-   starting with the seven remaining safe-navigation acquisitions.
-2. Rebuild the remaining lowest-scoring authoritative states, beginning with
-   physical Support and Device Information and the lowest official frames.
-3. Replace placeholder glyphs with traced or source-equivalent CorOS icons.
-4. Deepen specialized EQ, Cab, splitter, mixer, Looper X, assignment, Directory,
+1. Expand physical full-frame references from 76 toward all 103 cataloged
+   CorOS states, prioritizing states that currently have only official details.
+2. Rebuild the five lowest-scoring physical states listed above.
+3. Deepen specialized EQ, Cab, splitter, mixer, Looper X, assignment, Directory,
    Settings, Neural Capture, lifecycle, and recovery interactions beyond their
    complete static screen compositions.
-5. Add visual thresholds once deliberately variable content and font rendering
+4. Add visual thresholds once deliberately variable content and font rendering
    have per-family tolerances.
 
-The 13 states with smoke-only evidence have a checked physical-acquisition
+The remaining states without physical full-frame evidence have a checked acquisition
 ledger at
 `references/qc-ui-coverage/coros-4.1.0/physical-capture-plan.json`. It separates
-7 safe navigation captures from 4 controlled transient captures, 1 scheduled
-disruptive Recovery capture, and 1 update-progress state that must be collected
-only during a user-initiated supported update or from an official full-frame
-source. Every entry defines its semantic route, exact capture checkpoint, and
-restoration proof; exact tap coordinates remain intentionally dependent on a
-fresh framebuffer.
+safe navigation captures from controlled transient and disruptive states. Every
+entry defines its semantic route, exact capture checkpoint, and restoration
+proof; exact tap coordinates remain intentionally dependent on a fresh
+framebuffer.
 
 ## Reproduce
 
@@ -1580,9 +1600,8 @@ for capture and comparison only. Legacy layout rules and measured color
 literals are isolated under `.qc-screen-fixture-root`, so they cannot override
 the live Grid.
 
-Fresh 800×480 captures verify all 36 mapped official-manual frames and all 52
-physical-corpus frames on both hosts. The current shared renderer measures
-92.74% structural / 97.27% color against the official full-frame corpus and
-92.16% structural / 97.55% color against the physical corpus on both Windows
-and Android. The remaining visual debt is concentrated in a few detailed icon
-and typography treatments rather than host-specific composition.
+Fresh 800x480 captures verify all 103 canonical routes and all 76
+physical-corpus frames on both hosts. The latest physical score is 89.71% mean
+edge-structural match with 0.0247 mean normalized pixel error on both Windows
+and Android. Earlier figures in this document are retained as historical
+milestones and must not be read as the current corpus size or score.

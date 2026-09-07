@@ -287,4 +287,61 @@
 .capture-editor-grid{height:11.75cqw}
 .capture-editor-panel>main i{right:1.5cqw}
 .capture-editor-panel>main strong{bottom:1.875cqw}
+
+/* Physical zenUI Capture Library states. Keep the rail, directory and keyboard
+   on their native 800x480 pixel grid so the two app hosts render identically. */
+.capture-library-browser button,.capture-search-keyboard button,.capture-directory-list button{font-weight:400}
+.capture-library-browser>header button:last-child{margin-left:2.25cqw}
+.capture-library-browser>main>i{width:15cqw;height:17.5cqw;color:var(--qc-library-mark);transform:none}
+.capture-library-browser>main>i .qc-library-icon-neural-mark{width:100%;height:100%;fill:currentColor;stroke:none}
+.capture-library-browser.is-capture-directory>main{display:block;background:#292c29}
+.capture-directory-list{position:relative;width:100%;height:100%;overflow:hidden;background:#292c29}
+.capture-directory-list>button{position:relative;width:calc(100% - 3.25cqw);height:7.5cqw;display:block;padding:1cqw 2cqw;border-bottom:1px solid #171a18;background:#292c29;color:#eff1ef;text-align:left;font-size:2cqw}
+.capture-directory-list>button span,.capture-directory-list>button small{display:block;font-weight:400}
+.capture-directory-list>button small{margin-top:.5cqw;color:#929692;font-size:1.625cqw}
+.capture-directory-list>button>b{position:absolute;right:2cqw;top:2.625cqw;color:#929692;font-size:1.75cqw;font-weight:400}
+.capture-directory-list>aside{position:absolute;right:0;top:0;width:3.25cqw;height:100%;display:flex;flex-direction:column;justify-content:space-around;align-items:center;color:#929692;font-size:1.25cqw}
+.capture-search-keyboard{position:absolute;padding:0 1cqw 1cqw}
+.capture-search-keyboard>h1{position:absolute;left:0;right:0;top:10.25cqw;height:6cqw;margin:0;transform:none;line-height:6cqw}
+.capture-search-keyboard>small{position:absolute;left:2cqw;top:18.375cqw;height:auto}
+.capture-search-suggestion{position:absolute;left:1cqw;right:1cqw;top:21.875cqw;height:4cqw;padding:0;display:flex;align-items:center}
+.capture-recent-searches{position:absolute;left:1cqw;right:1cqw;top:20.75cqw;height:5.5cqw;padding-top:1.75cqw}
+.capture-search-keyboard>main{position:absolute;left:1cqw;right:1cqw;top:28cqw;margin:0;display:grid;grid-template-rows:repeat(4,7cqw);gap:1cqw}
+.capture-search-keyboard>main>div{height:7cqw;display:grid;gap:1cqw;padding:0!important}
+.capture-search-keyboard>main>div:nth-child(1){grid-template-columns:repeat(10,1fr)}
+.capture-search-keyboard>main>div:nth-child(2){grid-template-columns:repeat(9,8.75cqw);justify-content:center}
+.capture-search-keyboard>main>div:nth-child(3){grid-template-columns:13.875cqw repeat(7,1fr) 13.875cqw}
+.capture-search-keyboard>main>div:nth-child(4){grid-template-columns:13.875cqw 8.875cqw 1fr 8.875cqw 13.875cqw}
+.capture-search-keyboard>main button,.capture-search-keyboard>main button.is-space,.capture-search-keyboard>main button.is-numeric,.capture-search-keyboard>main button.is-done{min-width:0;width:auto;flex:none}
+
+/* The physical I/O captures select individual sockets, not every socket that
+   shares a broad protocol family. */
+.io-ports button.is-active.is-active-primary>i+i,
+.io-ports button.is-active.is-active-secondary>i:first-of-type{border-color:#242825;color:#171a18;box-shadow:inset 0 0 0 .35cqw #030404}
+.coros-io-settings.is-overview .io-editor,
+.coros-io-settings.is-output .io-editor,
+.coros-io-settings.is-send-return .io-editor,
+.coros-io-settings.is-headphones .io-editor{position:absolute;left:1cqw;right:1cqw;top:32.125cqw;height:27cqw;margin:0;transform:none}
+.io-editor.is-output-stereo,.io-editor.is-send-physical{display:block;border-radius:1cqw;background:#282c28}
+.io-output-row{height:13.5cqw;display:grid;grid-template-columns:19.5cqw 19.75cqw 19.5cqw 19.625cqw 1fr;border-bottom:.375cqw solid #101010}
+.io-output-row:last-child{border-bottom:0}
+.io-output-row>section,.io-inline-meter{position:relative;padding:1.125cqw;border-right:1px solid #171918}
+.io-output-row>section>span,.io-inline-meter>span{display:block;color:#eef0ee;font-size:2cqw}
+.io-output-row .io-dial-wrap{inset:4.875cqw 1cqw auto;height:8cqw}
+.io-output-row .io-dial{width:8.125cqw;height:8.125cqw;background:radial-gradient(circle at center,#282c28 0 68%,transparent 70%),conic-gradient(from 220deg,#40f860 0 46%,#101010 46%)}
+.io-output-row .io-dial b{height:3cqw;transform:rotate(-25deg)}
+.io-output-row .io-dial-wrap>strong{bottom:1.525cqw;font-size:1.75cqw}
+.io-output-row .io-switch label{height:3.125cqw;margin-left:1.125cqw;gap:2.125cqw;font-size:2cqw}
+.io-output-row .io-switch label:first-of-type{margin-top:2.5cqw}
+.io-output-row .io-switch label i{width:2.5cqw;height:2.5cqw}
+.io-output-row .io-switch label i.is-active{border-width:.375cqw}
+.io-inline-meter strong{display:block;margin-top:2.5cqw;color:#c7cac7;font-size:2cqw;font-weight:400}
+.io-inline-meter strong small{font-size:1.5cqw}
+.io-inline-meter>i{display:block;height:2cqw;margin-top:2.375cqw;background:linear-gradient(90deg,#151716 88%,#0b0c0c 88%)}
+.io-editor.is-overview .io-output-row>.io-switch{grid-column:5}
+.io-editor.is-send-physical .io-output-row{height:13.5cqw}
+.io-editor.is-send-physical .io-output-row>*:nth-child(1){grid-column:1}
+.io-editor.is-send-physical .io-output-row>*:nth-child(2){grid-column:2}
+.io-editor.is-send-physical .io-output-row>*:nth-child(3){grid-column:3}
+.io-editor.is-headphones{grid-template-columns:19.5cqw 19.875cqw 1fr;grid-template-rows:13.5cqw 13.5cqw}
 .coros-browser-fixture.is-physical-plugin-list .browser-fixture-panel>main>header strong{max-width:26cqw;font-weight:400;line-height:1.25}.coros-browser-fixture.is-physical-plugin-list .browser-fixture-panel>main>header button.is-refreshing svg{animation:qc-plugin-refresh-spin 1.2s linear infinite}@keyframes qc-plugin-refresh-spin{to{transform:rotate(360deg)}}
