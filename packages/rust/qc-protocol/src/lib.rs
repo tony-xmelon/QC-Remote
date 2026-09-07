@@ -7,6 +7,7 @@
 pub mod commands;
 mod compression;
 pub mod domain;
+pub mod firmware;
 pub mod forward;
 pub mod framing;
 pub mod generated_payloads;

@@ -3,20 +3,21 @@
   "requireNativeCoverage": true,
   "upstream": {
     "repository": "https://github.com/stokes-audio/pyquadcortex",
-    "commit": "7cd7efcadc3620bcb8cc3a9974a9baee78e42e12",
-    "clientSha256": "a2a8412c8ae2a9e326ff80880e452480156e00b3ddb10be1f0476fe5195a6f70"
+    "commit": "b2331cc2539870f3b2c338b84416403a6d0e245c",
+    "clientSha256": "f257ff5f98976b9a24e308e5ba8d95441d9d8fbdbb579639a6a155c375b0fb1b"
   },
   "pendingPullRequests": [
-    { "number": 42, "head": "b3cd54cf0e23ab43b0c91b57bc5a0b5de4770ac8", "state": "open", "draft": false, "methods": ["set_device_name", "undo", "redo", "inhibited_modules"] },
-    { "number": 44, "head": "0c9453fa6bf8fce931d8a62a8f2221ea0ed6af16", "state": "open", "draft": true, "methods": [] },
-    { "number": 45, "head": "d33bd359ba7f205436b4b5b7ed8158238606d7c7", "state": "open", "draft": false, "methods": [] },
-    { "number": 46, "head": "2bec0838a2e38c1a7270d3de4136e8d46f36e750", "state": "open", "draft": false, "methods": [] },
-    { "number": 47, "head": "d178851310ca2aaffcd8633ffa7d5a1d415d433f", "state": "open", "draft": false, "methods": ["create_local_backup"] },
-    { "number": 48, "head": "66f9dce112a1b083bb48d3e90879a721ecda0ff8", "state": "open", "draft": false, "methods": [] },
-    { "number": 49, "head": "d7ca426fdab9423c9b9dd2a58e478f79789448c5", "state": "open", "draft": false, "methods": ["preset_screenshot"] },
-    { "number": 50, "head": "9ec95c6e84232ffb3d5400b42eea75c324fe2e53", "state": "open", "draft": false, "methods": ["capture_screen", "tap_screen"] }
+    { "number": 42, "head": "50238a15fbe8ab602a8bd087d692a743bfbc6031", "state": "open", "draft": true, "methods": ["set_device_name", "undo", "redo", "inhibited_modules"] },
+    { "number": 44, "head": "6885db085d529f55bea8e1c97db79178a195d095", "state": "open", "draft": true, "methods": [] },
+    { "number": 45, "head": "e44bd5411d8abd91b1729a17e6b9650ab5b289b8", "state": "open", "draft": true, "methods": [] },
+    { "number": 46, "head": "4a050914ee8c47cc19e08c62b325f17d04cbfedc", "state": "open", "draft": true, "methods": [] },
+    { "number": 47, "head": "736c1d3355abe0b9484b657cdfa4ef1a8f4a86bb", "state": "open", "draft": true, "methods": ["create_local_backup"] },
+    { "number": 48, "head": "d545599381f35ce9cff4dcfee0a42621bb768f5f", "state": "open", "draft": true, "methods": [] },
+    { "number": 49, "head": "0225625e88e4c1732946af9bfc085caf9679932f", "state": "open", "draft": true, "methods": ["preset_screenshot"] },
+    { "number": 50, "head": "644d4d47a6aceb3dbf2d04b91482cd9fc12ea9ab", "state": "open", "draft": true, "methods": ["capture_screen", "tap_screen"] }
   ],
   "upstreamMethods": [
+    "operations", "support", "unverified_operations",
     "catalog", "disconnect", "close", "add_listener", "remove_listener", "version",
     "find_preset", "read_preset", "list_presets", "recall_preset", "switch_scene",
     "copy_scene", "set_scene_label", "set_scene_color", "write_preset", "set_chain_input",
@@ -43,6 +44,7 @@
     "show_capture_dialog", "wait_for_listing", "save_current_preset", "delete_preset", "move_preset"
   ],
   "coverage": [
+    { "status": "native-pure", "methods": ["operations", "support", "unverified_operations"], "evidence": ["qc_protocol::firmware::ProfileSelection exposes support policy, operation verification, and unverified-operation inventory; qc_protocol::firmware::PROFILES resolves the measured firmware profiles."] },
     { "status": "native", "methods": ["catalog"], "rpcs": ["device.listModels"] },
     { "status": "native", "methods": ["disconnect", "close"], "rpcs": ["device.disconnect"] },
     { "status": "native-runtime", "methods": ["add_listener", "remove_listener"], "rpcs": ["device.stateEvents"] },
