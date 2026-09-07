@@ -7,7 +7,7 @@ has. Nothing here is copied into the product: the descriptors are compared with
 the protos this repository already carries, so schema drift is visible rather
 than silently absorbed.
 
-Writes to artifacts/cortex-protocol/:
+Writes to references/cortex-protocol/:
   ProductionAutomation.desc, Preset.desc   the serialized FileDescriptorProto
   extraction.json                          where each blob was found
   message-types.json                       the CortexMessageType table
@@ -30,7 +30,9 @@ from google.protobuf import descriptor_pb2
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_EXE = Path(r"C:\Program Files\Neural DSP\Cortex Control\Cortex Control.exe")
 DEFAULT_EVIDENCE = REPOSITORY_ROOT / "artifacts/hardware-conformance/windows.json"
-OUTPUT = REPOSITORY_ROOT / "artifacts/cortex-protocol"
+# Tracked, not an artifact: the release preflight verifies against these,
+# so a clean checkout has to carry them.
+OUTPUT = REPOSITORY_ROOT / "references/cortex-protocol"
 
 # FileDescriptorProto: field number -> the wire type it must use. Fields 10 and
 # 11 are repeated int32 and may arrive packed or unpacked, so they accept both.

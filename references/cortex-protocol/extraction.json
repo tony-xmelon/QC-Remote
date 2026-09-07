@@ -1,0 +1,28 @@
+{
+  "binary": "C:\\Program Files\\Neural DSP\\Cortex Control\\Cortex Control.exe",
+  "bytes": 67060088,
+  "files": [
+    {
+      "name": "ProductionAutomation.proto",
+      "package": "cortex_protobuf_v2",
+      "offset": "0x33a2310",
+      "bytes": 40172,
+      "syntax": "proto3",
+      "messages": 153,
+      "repoMessages": 153,
+      "inBinaryNotInRepo": [],
+      "inRepoNotInBinary": []
+    },
+    {
+      "name": "Preset.proto",
+      "package": "",
+      "offset": "0x339d2e0",
+      "bytes": 3526,
+      "syntax": "proto3",
+      "messages": 15,
+      "repoMessages": 15,
+      "inBinaryNotInRepo": [],
+      "inRepoNotInBinary": []
+    }
+  ]
+}

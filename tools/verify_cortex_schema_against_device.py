@@ -6,7 +6,7 @@ puts on the wire - only the device can say that.
 
 This listens to a connected unit, keeps the raw payload of every message it
 pushes, and parses each one against a descriptor pool built from
-`artifacts/cortex-protocol/*.desc`. Two things are then reportable:
+`references/cortex-protocol/*.desc`. Two things are then reportable:
 
   * a payload that fails to parse - the schema is wrong about a field's type
   * a payload that parses but leaves unknown fields - the device sends
@@ -34,7 +34,7 @@ sys.path.insert(0, str(REPOSITORY_ROOT / "services" / "device-gateway" / "src"))
 
 from google.protobuf import descriptor_pb2, descriptor_pool, message_factory  # noqa: E402
 
-DESCRIPTORS = REPOSITORY_ROOT / "artifacts/cortex-protocol"
+DESCRIPTORS = REPOSITORY_ROOT / "references/cortex-protocol"
 
 # Their trailer flags a non-protobuf body, so parsing them as protobuf is
 # meaningless rather than a schema failure. Cortex Control treats them the same

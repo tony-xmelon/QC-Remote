@@ -6,7 +6,7 @@ Cortex Control binary, cross-checked against the connected unit.
 
 Re-run the extraction with `tools/extract-cortex-protocol.py`. It writes the
 serialized descriptors, the message-type table, and the coverage map under
-`artifacts/cortex-protocol/`.
+`references/cortex-protocol/`.
 
 The schema is **generated, not transcribed**. `tools/generate_cortex_protos.py`
 renders `packages/rust/qc-protocol/proto/*.proto` from those descriptors, and

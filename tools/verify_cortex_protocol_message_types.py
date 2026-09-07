@@ -22,7 +22,7 @@ import sys
 from pathlib import Path
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
-COVERAGE = REPOSITORY_ROOT / "artifacts/cortex-protocol/coverage.json"
+COVERAGE = REPOSITORY_ROOT / "references/cortex-protocol/coverage.json"
 PLAN = REPOSITORY_ROOT / "references/cortex-protocol/message-type-plan.json"
 
 

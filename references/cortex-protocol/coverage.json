@@ -1,0 +1,512 @@
+{
+  "messageTypes": 72,
+  "observedOnWire": 32,
+  "implementedOrObserved": 46,
+  "evidence": "E:\\Users\\anton\\OneDrive\\Documents\\ChatGPT\\Neural DSP QC MCP\\.claude\\worktrees\\windows-ui-items\\artifacts\\hardware-conformance\\windows.json",
+  "rows": [
+    {
+      "number": 1,
+      "name": "Grid",
+      "implemented": true,
+      "sentOnWire": true,
+      "receivedOnWire": true
+    },
+    {
+      "number": 2,
+      "name": "SetlistPosition",
+      "implemented": true,
+      "sentOnWire": true,
+      "receivedOnWire": true
+    },
+    {
+      "number": 3,
+      "name": "IOSettings",
+      "implemented": true,
+      "sentOnWire": true,
+      "receivedOnWire": true
+    },
+    {
+      "number": 4,
+      "name": "File",
+      "implemented": true,
+      "sentOnWire": true,
+      "receivedOnWire": true
+    },
+    {
+      "number": 5,
+      "name": "IOMeter",
+      "implemented": false,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 6,
+      "name": "Tuner",
+      "implemented": true,
+      "sentOnWire": true,
+      "receivedOnWire": true
+    },
+    {
+      "number": 7,
+      "name": "Diagnostics",
+      "implemented": false,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 8,
+      "name": "MIDISettings",
+      "implemented": true,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 9,
+      "name": "GeneralSettings",
+      "implemented": true,
+      "sentOnWire": true,
+      "receivedOnWire": true
+    },
+    {
+      "number": 10,
+      "name": "Version",
+      "implemented": true,
+      "sentOnWire": true,
+      "receivedOnWire": true
+    },
+    {
+      "number": 11,
+      "name": "ProductionAutomationMode",
+      "implemented": true,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 12,
+      "name": "GridMove",
+      "implemented": true,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 13,
+      "name": "Scene",
+      "implemented": true,
+      "sentOnWire": true,
+      "receivedOnWire": true
+    },
+    {
+      "number": 14,
+      "name": "Mode",
+      "implemented": true,
+      "sentOnWire": true,
+      "receivedOnWire": true
+    },
+    {
+      "number": 15,
+      "name": "RecallPreset",
+      "implemented": true,
+      "sentOnWire": true,
+      "receivedOnWire": true
+    },
+    {
+      "number": 16,
+      "name": "EnableCaptureOut",
+      "implemented": true,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 17,
+      "name": "MasterVolume",
+      "implemented": true,
+      "sentOnWire": true,
+      "receivedOnWire": true
+    },
+    {
+      "number": 18,
+      "name": "CloudLogin",
+      "implemented": false,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 19,
+      "name": "DefaultParameters",
+      "implemented": false,
+      "sentOnWire": true,
+      "receivedOnWire": true
+    },
+    {
+      "number": 20,
+      "name": "RecentsFavorites",
+      "implemented": true,
+      "sentOnWire": true,
+      "receivedOnWire": true
+    },
+    {
+      "number": 21,
+      "name": "UndoRedo",
+      "implemented": true,
+      "sentOnWire": true,
+      "receivedOnWire": true
+    },
+    {
+      "number": 22,
+      "name": "SceneCopy",
+      "implemented": true,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 23,
+      "name": "SceneLabel",
+      "implemented": true,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 24,
+      "name": "ShowGigView",
+      "implemented": true,
+      "sentOnWire": true,
+      "receivedOnWire": true
+    },
+    {
+      "number": 25,
+      "name": "Screenshot",
+      "implemented": true,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 26,
+      "name": "CPULoad",
+      "implemented": false,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 27,
+      "name": "ShowTuner",
+      "implemented": true,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 28,
+      "name": "Looper",
+      "implemented": true,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 29,
+      "name": "ProductForward",
+      "implemented": false,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 30,
+      "name": "BackupsForward",
+      "implemented": false,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 31,
+      "name": "LogsForward",
+      "implemented": false,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 32,
+      "name": "KeepAlive",
+      "implemented": true,
+      "sentOnWire": true,
+      "receivedOnWire": false
+    },
+    {
+      "number": 33,
+      "name": "GlobalTempo",
+      "implemented": true,
+      "sentOnWire": true,
+      "receivedOnWire": true
+    },
+    {
+      "number": 34,
+      "name": "PresetDirty",
+      "implemented": true,
+      "sentOnWire": true,
+      "receivedOnWire": true
+    },
+    {
+      "number": 35,
+      "name": "ModuleStats",
+      "implemented": false,
+      "sentOnWire": true,
+      "receivedOnWire": true
+    },
+    {
+      "number": 36,
+      "name": "NeuralCapture",
+      "implemented": true,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 37,
+      "name": "GridModelMeter",
+      "implemented": false,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 38,
+      "name": "GlobalEQ",
+      "implemented": true,
+      "sentOnWire": true,
+      "receivedOnWire": true
+    },
+    {
+      "number": 39,
+      "name": "RecentSearches",
+      "implemented": false,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 40,
+      "name": "LocalBackup",
+      "implemented": true,
+      "sentOnWire": true,
+      "receivedOnWire": false
+    },
+    {
+      "number": 41,
+      "name": "CloudBackup",
+      "implemented": false,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 42,
+      "name": "CompilerInhibitedModules",
+      "implemented": true,
+      "sentOnWire": true,
+      "receivedOnWire": true
+    },
+    {
+      "number": 43,
+      "name": "SystemTimeSync",
+      "implemented": true,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 44,
+      "name": "Logs",
+      "implemented": false,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 45,
+      "name": "ProcessDownloadsQueue",
+      "implemented": false,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 46,
+      "name": "CloudProduct",
+      "implemented": false,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 47,
+      "name": "Confirmation",
+      "implemented": true,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 48,
+      "name": "SceneColor",
+      "implemented": true,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 49,
+      "name": "Connection",
+      "implemented": true,
+      "sentOnWire": true,
+      "receivedOnWire": false
+    },
+    {
+      "number": 50,
+      "name": "NewModels",
+      "implemented": false,
+      "sentOnWire": true,
+      "receivedOnWire": true
+    },
+    {
+      "number": 51,
+      "name": "ModelRepo",
+      "implemented": true,
+      "sentOnWire": true,
+      "receivedOnWire": true
+    },
+    {
+      "number": 52,
+      "name": "ResetCommsBuffers",
+      "implemented": true,
+      "sentOnWire": true,
+      "receivedOnWire": false
+    },
+    {
+      "number": 53,
+      "name": "SuspendConnection",
+      "implemented": true,
+      "sentOnWire": false,
+      "receivedOnWire": true
+    },
+    {
+      "number": 54,
+      "name": "PinnedModels",
+      "implemented": true,
+      "sentOnWire": true,
+      "receivedOnWire": true
+    },
+    {
+      "number": 55,
+      "name": "GigViewButton",
+      "implemented": false,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 56,
+      "name": "GenericError",
+      "implemented": true,
+      "sentOnWire": false,
+      "receivedOnWire": true
+    },
+    {
+      "number": 57,
+      "name": "BulkOperation",
+      "implemented": false,
+      "sentOnWire": true,
+      "receivedOnWire": true
+    },
+    {
+      "number": 58,
+      "name": "License",
+      "implemented": false,
+      "sentOnWire": true,
+      "receivedOnWire": true
+    },
+    {
+      "number": 59,
+      "name": "PresetSpeedTest",
+      "implemented": false,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 60,
+      "name": "Updater",
+      "implemented": false,
+      "sentOnWire": true,
+      "receivedOnWire": true
+    },
+    {
+      "number": 61,
+      "name": "UpdaterForward",
+      "implemented": false,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 62,
+      "name": "GainCalibration",
+      "implemented": false,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 63,
+      "name": "NeuralCapture2",
+      "implemented": false,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 64,
+      "name": "Serialization",
+      "implemented": false,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 65,
+      "name": "TestFarm",
+      "implemented": false,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 66,
+      "name": "ProductionTest",
+      "implemented": false,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 67,
+      "name": "LoadAutomatedTestPreset",
+      "implemented": false,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 68,
+      "name": "SetTestPresetInputOutputPorts",
+      "implemented": false,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 69,
+      "name": "SetTestPresetSplitMixPoints",
+      "implemented": false,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 70,
+      "name": "GenerateTestPreset",
+      "implemented": false,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 71,
+      "name": "ModelPreset",
+      "implemented": false,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    },
+    {
+      "number": 72,
+      "name": "RemoteControl",
+      "implemented": true,
+      "sentOnWire": false,
+      "receivedOnWire": false
+    }
+  ]
+}

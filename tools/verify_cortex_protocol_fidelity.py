@@ -17,7 +17,7 @@ Usage:
   python tools/verify_cortex_protocol_fidelity.py [--refresh]
 
 --refresh re-runs the extraction from the installed binary first. Without it the
-checked-in descriptors under artifacts/cortex-protocol are used, so the check
+checked-in descriptors under references/cortex-protocol are used, so the check
 runs on a machine that does not have Cortex Control installed.
 """
 
@@ -34,7 +34,7 @@ from google.protobuf import descriptor_pb2
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 PROTO_DIRECTORY = REPOSITORY_ROOT / "packages/rust/qc-protocol/proto"
-DESCRIPTORS = REPOSITORY_ROOT / "artifacts/cortex-protocol"
+DESCRIPTORS = REPOSITORY_ROOT / "references/cortex-protocol"
 FILES = ("ProductionAutomation", "Preset")
 
 LABELS = {1: "optional", 2: "required", 3: "repeated"}
