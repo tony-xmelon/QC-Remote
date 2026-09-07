@@ -1019,7 +1019,7 @@ function CorOsGridPopup({ view }: { view: GridPopupView }) {
   </section>;
 }
 
-function CorOsBlockContext() {
+function CorOsBlockContext({ bottom = false }: { bottom?: boolean }) {
   const rows: Array<[Parameters<typeof BlockContextIcon>[0]["kind"], string, string]> = [
     ["change", "Change device", ""],
     ["copy", "Copy device", ""],
@@ -1032,10 +1032,16 @@ function CorOsBlockContext() {
     ["model-downgrade", "Change to legacy version", "is-disabled"],
     ["remove", "Remove block from the grid", ""],
   ];
-  return <section className="qc-screen coros-block-context" aria-label="Block contextual actions">
-    <PhysicalEditorUnderlay slot="4" letter="E" title="QC MCP TEST_2" />
+  const reverb: Array<[string, string]> = [["MIX", "12.0 %"], ["SIZE", "Med"], ["PRE DELAY", "20.0 ms"], ["DAMPING", "50 %"], ["HIGH PASS", "80 Hz"]];
+  return <section className={`qc-screen coros-block-context${bottom ? " is-bottom" : ""}`} aria-label="Block contextual actions">
+    {bottom
+      ? <PhysicalEditorUnderlay slot="5" letter="C" title="Ilia" category="REVERB" device="Ambience" blocks={2} blockGlyphs={["Utility", "Reverb"]} expression={false}>
+          <div className="assignment-parameters">{reverb.map(([label, value]) => <section key={label}><span>{label}</span><i className="assignment-knob"><b /></i><strong>{value}</strong></section>)}</div>
+          <div className="assignment-parameters is-row-2">{[["LOW PASS", "6000 Hz"]].map(([label, value]) => <section key={label}><span>{label}</span><i className="assignment-knob"><b /></i><strong>{value}</strong></section>)}{[0, 1, 2, 3].map((index) => <section key={`empty-${index}`} />)}</div>
+        </PhysicalEditorUnderlay>
+      : <PhysicalEditorUnderlay slot="4" letter="E" title="QC MCP TEST_2" />}
     <i className="block-context-scrim" />
-    <aside>{rows.map(([kind, label, className], index) => <button key={label} className={`${className}${index === 3 ? " has-gap" : ""}`}><span><BlockContextIcon kind={kind} /></span>{label}</button>)}</aside>
+    <aside style={bottom ? { marginTop: "-180px" } : undefined}>{rows.map(([kind, label, className], index) => <button key={label} className={`${className}${index === 3 ? " has-gap" : ""}`}><span><BlockContextIcon kind={kind} /></span>{label}</button>)}</aside>
   </section>;
 }
 
@@ -1103,7 +1109,7 @@ const CORPUS_DEVICE_CATEGORIES = [
 ] as const;
 const CORPUS_OVERDRIVE_MODELS = ["Exotic Z Boost", "81 Creations Drive", "Brit Blues", "Brit Governor", "Chief BD2", "Chief DS1", "Chief MT", "Chief OD1", "Chief SD1", "Exotic", "Facial Fuzz", "Freeman BOD"];
 
-function CorOsOfficialGrid({ snapshot, children, browserChrome = false }: { snapshot: PresetSnapshot; children?: ReactNode; browserChrome?: boolean }) {
+function CorOsOfficialGrid({ snapshot, children, browserChrome = false, letterTone }: { snapshot: PresetSnapshot; children?: ReactNode; browserChrome?: boolean; letterTone?: string }) {
   const columns = [101, 187, 272, 357, 443, 529, 615, 701];
   const rowY = [147, 241, 335, 429];
   const screenBlocks = snapshot.blocks.filter((block) => block.row >= 0 && block.row < 4 && block.column >= 0 && block.column < 8);
@@ -1121,7 +1127,7 @@ function CorOsOfficialGrid({ snapshot, children, browserChrome = false }: { snap
   return <div className="qc-screen coros-vector-screen" aria-label="CorOS Grid">
     <svg className="coros-vector-canvas" viewBox="0 0 800 480" preserveAspectRatio="none" role="img" aria-label={`${snapshot.presetLocation} ${snapshot.presetName}, ${snapshot.mode} mode`}>
       <rect width="800" height="480" fill="#020202" />
-      <text x="14" y="76" fill="#f4f4f4" fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="64"><tspan letterSpacing="-2">{snapshot.presetLocation.slice(0, -1)}</tspan><tspan fill={browserChrome ? "#d63b3e" : "#2df36a"} letterSpacing="-2">{snapshot.presetLocation.slice(-1)}</tspan><tspan dx={16} dy={browserChrome ? -11 : 0} fill="#f4f4f4" fontSize={browserChrome ? 40 : 64} letterSpacing={browserChrome ? 0 : -2} textLength={browserChrome ? undefined : 313} lengthAdjust={browserChrome ? undefined : "spacingAndGlyphs"}>{snapshot.presetName}</tspan></text>
+      <text x="14" y="76" fill="#f4f4f4" fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="64"><tspan letterSpacing="-2">{snapshot.presetLocation.slice(0, -1)}</tspan><tspan fill={letterTone ?? (browserChrome ? "#d63b3e" : "#2df36a")} letterSpacing="-2">{snapshot.presetLocation.slice(-1)}</tspan><tspan dx={16} dy={browserChrome ? -11 : 0} fill="#f4f4f4" fontSize={browserChrome ? 40 : 64} letterSpacing={browserChrome ? 0 : -2} textLength={browserChrome ? undefined : 313} lengthAdjust={browserChrome ? undefined : "spacingAndGlyphs"}>{snapshot.presetName}</tspan></text>
       <QcScreenHeaderGlyph kind="undo" />
       <QcScreenHeaderGlyph kind="export" />
       <g className="grid-scene-badge"><rect x="656" y="12" width="25" height="25" rx="3" fill="#f2cf32" /><text x="668.5" y="33" textAnchor="middle" fill="#141414" fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="22">A</text></g>
@@ -1145,10 +1151,11 @@ function CorOsCorpusDeviceBrowser({ snapshot, view }: { snapshot: PresetSnapshot
   // device-browser-middle-deep.png opens on Compressor and -reverb on Cab:
   // the same list, scrolled seven and three of its 78px rows.
   const scrolled = view === "device-browser-middle-deep" ? 7 : view === "device-browser-middle-reverb" ? 3 : 0;
-  // Both middle frames were taken in 3C, not the root frame's 32H.
-  const gridSnapshot = scrolled ? { ...snapshot, presetLocation: "3C", presetName: "12 String Bass" } : snapshot;
-  return <CorOsOfficialGrid snapshot={gridSnapshot} browserChrome>
-    <svg className="coros-device-empty-slot" viewBox="0 0 70 70" aria-hidden="true"><rect width="70" height="70" rx="14" fill="#050505" /><path d="M25 35h20M35 25v20" fill="none" stroke="#dedede" strokeWidth="1.7" strokeLinecap="round" /></svg>
+  // Both middle frames were taken in 3C over a four-row grid, read off
+  // device-browser-middle-reverb.png.
+  const gridSnapshot: PresetSnapshot = scrolled ? { ...snapshot, presetLocation: "3C", presetName: "12 String Bass", routes: [{ row: 0, inputId: 0, outputId: 0, input: "In 1", output: "", splitMuted: false }, { row: 1, inputId: 0, outputId: 0, input: "In 1", output: "", splitMuted: false }, { row: 2, inputId: 0, outputId: 0, input: "Prev. Row", output: "", splitMuted: false }, { row: 3, inputId: 0, outputId: 0, input: "In 1", output: "", splitMuted: false }], blocks: [{ id: "c3-0-0", name: "Simple Gate", kind: "utility", category: "Utility", row: 0, column: 0 }, { id: "c3-0-1", name: "Digital Delay", kind: "delay", category: "Delay", row: 0, column: 1 }, { id: "c3-0-2", name: "Studio Comp", kind: "utility", category: "Compressor", row: 0, column: 2 }, { id: "c3-0-3", name: "Transpose", kind: "utility", category: "Pitch", row: 0, column: 3 }, { id: "c3-1-0", name: "Simple Gate", kind: "utility", category: "Utility", row: 1, column: 0 }, { id: "c3-1-1", name: "Digital Delay", kind: "delay", category: "Delay", row: 1, column: 1 }, { id: "c3-1-2", name: "Studio Comp", kind: "utility", category: "Compressor", row: 1, column: 2 }, { id: "c3-1-3", name: "Transpose", kind: "utility", category: "Pitch", row: 1, column: 3 }, { id: "c3-2-2", name: "Studio Comp", kind: "utility", category: "Compressor", row: 2, column: 2 }, { id: "c3-2-3", name: "Transpose", kind: "utility", category: "Pitch", row: 2, column: 3, bypassed: true }, { id: "c3-3-0", name: "Simple Gate", kind: "utility", category: "Utility", row: 3, column: 0 }, { id: "c3-3-2", name: "Studio Comp", kind: "utility", category: "Compressor", row: 3, column: 2 }] } : snapshot;
+  return <CorOsOfficialGrid snapshot={gridSnapshot} browserChrome letterTone={scrolled ? "#ff7100" : undefined}>
+    <svg className={`coros-device-empty-slot${scrolled ? " is-row-4" : ""}`} viewBox="0 0 70 70" aria-hidden="true"><rect width="70" height="70" rx="14" fill="#050505" /><path d="M25 35h20M35 25v20" fill="none" stroke="#dedede" strokeWidth="1.7" strokeLinecap="round" /></svg>
     <button className="coros-device-dismiss" aria-label="Close device browser" />
     <section className="coros-device-browser" aria-label="Virtual Device browser">
       <nav style={scrolled ? { marginTop: `${-scrolled * 78}px` } : undefined}>{CORPUS_DEVICE_CATEGORIES.map(([label, glyph, color]) => <button key={label} data-category={label} className={models && label === "Overdrive" ? "is-active" : ""} style={{ "--device-color": color } as CSSProperties}><i><DeviceCategoryGlyph label={label} fallback={glyph} /></i><span>{label === "Equalizer" ? "EQ" : label}</span>{label === "Delay" && <b>New</b>}</button>)}</nav>
@@ -1203,7 +1210,7 @@ export function CorOsScreenFixture({ view, snapshot, gigPresetList, onClose = ()
   if (view === "device-presets" || view === "device-presets-user" || view === "device-preset-actions" || view === "device-preset-save") return <CorOsDevicePresetScreen save={view === "device-preset-save"} view={view === "device-presets-user" ? "user" : view === "device-preset-actions" ? "actions" : "factory"} />;
   if (view === "expression-parameter" || view === "expression-bypass") return <ExpressionChooser trim={view === "expression-parameter"} />;
   if (view === "stomp-assignment" || view === "scene-assignment") return <CorOsAssignmentScreen view={view} />;
-  if (view === "block-context") return <CorOsBlockContext />;
+  if (view === "block-context" || view === "block-context-bottom") return <CorOsBlockContext bottom={view === "block-context-bottom"} />;
   if (view === "capture-type" || view === "grid-scene-selector" || view.endsWith("-route-selector") || view.endsWith("-route-selector-top") || view.startsWith("grid-context-menu")) return <CorOsGridPopup view={view as GridPopupView} />;
   if (view === "directory-new-folder") return <CorOsDirectoryNameScreen />;
   if (view === "directory-filter") return <CorOsOfficialDirectory view="directory-captures" filter />;

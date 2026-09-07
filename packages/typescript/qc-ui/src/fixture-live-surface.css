@@ -977,3 +977,17 @@
 .physical-grid-underlay .underlay-block svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .qc-screen.coros-assignment.is-amp-editor .underlay-block.is-block-2 { color: #ff2421; }
 
+/* The two scrolled browser frames are adding a device at row four, column
+   three: the target slot sits at (326, 397), not the root frame's (322, 206). */
+.coros-device-empty-slot.is-row-4 { left: 326px; top: 397px; }
+
+/* block-context-bottom.png: the reverb editor under the scrolled menu keeps the
+   undimmed cell colour and teal knob arcs, and its strips sit at 256 and 365
+   like every other editor's. */
+.qc-screen.coros-block-context.is-bottom .assignment-parameters.is-row-2 { top: 365px; }
+.qc-screen.coros-block-context.is-bottom .assignment-parameters > section { background: #292c29; }
+.qc-screen.coros-block-context.is-bottom .assignment-parameters > section > .assignment-knob { left: 80px; top: 38px; width: 60px; height: 60px; border-color: #16dfcc #212821 #16dfcc #16dfcc; }
+.qc-screen.coros-block-context.is-bottom .assignment-parameters > section > .assignment-knob b { height: 22px; background: #f2f2f2; }
+.qc-screen.coros-block-context.is-bottom .assignment-parameters > section > span { color: #e7e3e7; }
+.qc-screen.coros-block-context.is-bottom .assignment-parameters > section > strong { bottom: 15px; color: #e7e3e7; }
+

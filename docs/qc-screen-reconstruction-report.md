@@ -927,6 +927,38 @@ of its 78px rows; the list now matches row for row, but they were captured in
 **0.040 / 0.56** and **0.042 / 0.57** - the last two frames below 70%, and the
 residual is that Grid, not the browser.
 
+### The 3C grid, and the last frame over 70%
+
+The two `device-browser-middle-*` frames were left at 0.56 because their Grid -
+half the screen - was the browser's own 32H snapshot rather than the 3C preset
+they were captured over. It is all readable off
+`device-browser-middle-reverb.png`, and the columns and row centres land on the
+grid `CorOsOfficialGrid` already draws, so only the content was missing:
+
+- four rows, `In 1` on rows one, two and four and **`Prev. Row`** on the third;
+- rows one and two carry the same four devices - the Simple Gate's grey tile, a
+  cyan Delay, a green Compressor and an amber Pitch;
+- the third has the Compressor with a **bypassed** Pitch struck through beside
+  it, and the fourth the gate and the Compressor;
+- the browser is adding a device at **row four, column three** - its target slot
+  sits at (326, 397), not the root frame's (322, 206);
+- and 3C's preset letter is `#ff7100`, where 32H's is red.
+
+| frame | before | after |
+| --- | --- | --- |
+| `device-browser-middle-deep` | 0.040 / 0.56 | **0.036 / 0.74** |
+| `device-browser-middle-reverb` | 0.042 / 0.57 | **0.037 / 0.74** |
+
+That left one frame under 70%. `block-context-bottom` is the same ten-row menu
+three rows further down - Reset to defaults through Remove block from the grid -
+over a **reverb** editor rather than the empty parameter area
+`block-context.png` shows: PRE DELAY, DAMPING and HIGH PASS are the cells the
+menu leaves visible, on teal knobs. 0.032 / 0.68 to **0.025 / 0.89**.
+
+**Every one of the 119 frames now agrees on 70% or more of its edges** and sits
+under 0.07 mean error. The median is 0.0251, the worst 0.0633, 86 are under
+0.03, 93 agree on 80% or more and 49 on 90% or more.
+
 ## Improvements in this pass
 
 - Ran Neural Captures on the unit with the owner's approval and recorded

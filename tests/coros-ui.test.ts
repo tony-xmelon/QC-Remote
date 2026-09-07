@@ -977,7 +977,9 @@ test("physical device browser preserves its measured Grid chrome and selected sl
   // The browser draws the Grid it was captured over; the two scrolled frames
   // were taken in 3C, so the snapshot it passes is per-view.
   assert.match(fixtureSource, /CorOsOfficialGrid snapshot=\{gridSnapshot\} browserChrome/);
-  assert.match(fixtureSource, /className="coros-device-empty-slot"/);
+  // The target slot moves to row four on the two scrolled frames, so its
+  // class is built rather than fixed.
+  assert.match(fixtureSource, /coros-device-empty-slot\$\{scrolled \? " is-row-4" : ""\}/);
   assert.match(fixtureStyles, /\.coros-device-empty-slot \{[^}]*z-index: 31;[^}]*left: 322px;[^}]*top: 206px;/);
   assert.match(fixtureStyles, /\.coros-device-dismiss \{[^}]*background: #dfe3de49;/);
 });
