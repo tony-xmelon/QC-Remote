@@ -28,6 +28,7 @@ const androidModelStorageKey = "qc-control.android-gemini-model";
 const androidQuotaStorageKey = "qc-control.android-gemini-quota-v1";
 const androidChatCollapsedStorageKey = "qc-control.android-chat-collapsed-v1";
 const androidKeepScreenAwakeStorageKey = "qc-control.android-keep-screen-awake-v1";
+const screenDimAfterMs = 90_000;
 const legacyControlAccessModeKey = "qc-control.device-access-mode-v1";
 const qcRemoteScreen = {
   openIo: { x: 400, y: 8, toX: 400, toY: 220 },
@@ -79,6 +80,7 @@ export function App() {
   const [quotaNow, setQuotaNow] = useState(Date.now());
   const [chatCollapsed, setChatCollapsed] = useState(() => window.localStorage.getItem(androidChatCollapsedStorageKey) === "true");
   const [keepScreenAwake, setKeepScreenAwake] = useState(() => window.localStorage.getItem(androidKeepScreenAwakeStorageKey) !== "false");
+  const [screenDimmed, setScreenDimmed] = useState(false);
   const [voiceState, setVoiceState] = useState("idle");
   const [controlAccessMode, setControlAccessMode] = useState<ControlAccessMode>(storedControlAccessMode);
   const relayWorkflow = usePublicRelayWorkflow({ relay: publicRelay, enabled: native, autoStart: true, subscribe: subscribeRelayState });
@@ -90,6 +92,7 @@ export function App() {
   const presetSynchronized = useRef(false);
   const usbSessionReady = useRef(false);
   const nativeStateSequence = useRef(0);
+  const screenDimTimer = useRef<number | undefined>(undefined);
   const appendAssistant = useCallback((text: string, attachments?: AndroidAttachment[]) => conversation.append("assistant", text, attachments), [conversation.append]);
   useEffect(() => {
     if (!native) return;
@@ -101,6 +104,22 @@ export function App() {
     setKeepScreenAwake(enabled);
     window.localStorage.setItem(androidKeepScreenAwakeStorageKey, String(enabled));
   };
+  const resetScreenDimmer = useCallback(() => {
+    if (!native || !keepScreenAwake || !usbConnected) return;
+    if (screenDimTimer.current !== undefined) window.clearTimeout(screenDimTimer.current);
+    setScreenDimmed(false);
+    screenDimTimer.current = window.setTimeout(() => setScreenDimmed(true), screenDimAfterMs);
+  }, [keepScreenAwake, native, usbConnected]);
+  useEffect(() => {
+    if (!native || !keepScreenAwake || !usbConnected) {
+      if (screenDimTimer.current !== undefined) window.clearTimeout(screenDimTimer.current);
+      screenDimTimer.current = undefined;
+      setScreenDimmed(false);
+      return;
+    }
+    resetScreenDimmer();
+    return () => { if (screenDimTimer.current !== undefined) window.clearTimeout(screenDimTimer.current); };
+  }, [keepScreenAwake, native, resetScreenDimmer, usbConnected]);
   const workflows = useQcWorkflows({
     controller: qcController,
     transport: qcTransport,
@@ -532,7 +551,7 @@ export function App() {
     return next;
   });
 
-  return <main className={`android-app${chatCollapsed ? " chat-collapsed" : ""}`}>
+  return <main className={`android-app${chatCollapsed ? " chat-collapsed" : ""}${screenDimmed ? " screen-dimmed" : ""}`} onPointerDown={resetScreenDimmer} onKeyDown={resetScreenDimmer} onTouchStart={resetScreenDimmer}>
     <header className="mobile-header">
       <div className="mobile-brand"><AppMark onClick={() => setWorkflowPanel("about")} /><span><strong>{QC_BRAND.appName}</strong><small>{snapshot.presetLocation} · {snapshot.presetName}</small></span></div>
       <div className="connection-pills">
