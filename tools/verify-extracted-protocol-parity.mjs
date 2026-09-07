@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 const root = resolve(import.meta.dirname, "..");
 const manifest = JSON.parse(await readFile(resolve(root, "contracts/extracted-protocol-parity.v1.json"), "utf8"));
 const gateway = JSON.parse(await readFile(resolve(root, "contracts/gateway-methods.v1.json"), "utf8"));
+const irImport = JSON.parse(await readFile(resolve(root, "contracts/cortex-control-ir-import.v1.json"), "utf8"));
 const schema = await readFile(resolve(root, "packages/rust/qc-protocol/proto/ProductionAutomation.proto"), "utf8");
 const ids = new Set();
 
@@ -54,4 +55,35 @@ for (const extension of manifest.extensions) {
   }
 }
 
-console.log(JSON.stringify({ verified: true, extensions: manifest.extensions.length, languages: ["rust", "python"] }));
+assert.equal(irImport.version, 1, "IR import capture contract version changed");
+assert.equal(irImport.source.synthetic, true, "IR import evidence must use synthetic audio");
+assert.equal(irImport.source.containsPrivateContent, false,
+  "IR import evidence must not retain private content");
+assert.equal(irImport.fileMessage.messageType, 4, "IR import must use FileMessage type 4");
+assert.equal(irImport.fileMessage.action.value, 0, "IR import must use CREATE");
+assert.equal(irImport.fileMessage.action.encoded, false,
+  "captured CREATE is the omitted proto3 default");
+assert.equal(irImport.fileMessage.type, 1, "IR import FileMessage category must be 1");
+assert.ok(irImport.fileMessage.presentFields.includes("ir_payload"),
+  "IR import capture must retain ir_payload presence");
+assert.ok(irImport.fileMessage.absentFields.includes("total_bulk_create_count"),
+  "official IR import evidence must record the absent bulk count");
+assert.deepEqual(
+  [irImport.irPayload.audioFormat, irImport.irPayload.channels,
+    irImport.irPayload.sampleRate, irImport.irPayload.bitsPerSample,
+    irImport.irPayload.sampleCount],
+  [3, 1, 48_000, 32, 1_024],
+  "captured Cortex Control IR conversion shape changed",
+);
+const data = irImport.irPayload.chunks.find(({ id }) => id === "data");
+assert.equal(data.size, irImport.irPayload.sampleCount * irImport.irPayload.blockAlign,
+  "IR payload data size must match its sample count and block alignment");
+assert.equal(irImport.irPayload.bytes, data.dataOffset + data.size,
+  "IR payload byte count must end exactly after its data chunk");
+
+console.log(JSON.stringify({
+  verified: true,
+  extensions: manifest.extensions.length,
+  languages: ["rust", "python"],
+  irImportCapture: true,
+}));

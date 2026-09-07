@@ -135,12 +135,16 @@ message FileMessage {
 }
 ```
 
-Probed against a unit with an empty IR library. **The envelope is proven.**
+Probed against a unit with an empty IR library, then captured byte-for-byte from
+Cortex Control 4.1.0 while importing the synthetic test IR. **The envelope and
+payload container are proven.** The sanitized facts live in
+`contracts/cortex-control-ir-import.v1.json`.
 
 ```
-FileMessage{action: CREATE, type: 1, total_bulk_create_count: 1,
-            folder: FolderInfo{key, files: [ProductData{name}]},
-            ir_payload: <bytes>}                              on message type 4
+FileMessage{action: CREATE, request_id, type: 1,
+            folder: FolderInfo{key: "2_q", is_factory: false,
+              files: [ProductData{name: <stem>, date: <ISO UTC>}]},
+            ir_payload: <converted float WAV>}                on message type 4
 ```
 
 sent this way makes the device run a real import and answer on type 57, echoing
@@ -154,24 +158,24 @@ BulkOperation finished=true  progress=0.00  ""
 
 What the probes settled:
 
-- **`total_bulk_create_count` is required.** Without it the device is completely
-  silent and no import is attempted. With it, the flow above runs every time.
-- **The folder key does not matter.** `2_q`, `local_ir_root`, `/media/p4/CustomIRs`
-  and `/media/p4/CustomIRs/Impulse Responses/` all behave identically, as does
-  omitting the folder. Nor does the file metadata: a `.wav` suffix on the name,
-  an explicit `key`, and a bare name are indistinguishable.
+- **Cortex Control omits `total_bulk_create_count`.** The captured successful
+  message has no field 9 at all. Earlier probes correlated success with this
+  field, but the official sender disproves that conclusion.
+- **The official folder is exact.** Cortex Control sends `key: "2_q"` and an
+  explicitly present `is_factory: false`. The sole `ProductData` contains only
+  the extension-free name and an ISO-8601 UTC date. It sends no key; the QC
+  creates the `CIR_...` key.
 - **User IRs live at `/media/p4/CustomIRs/Impulse Responses/`** on the device.
   That path and the literal `CustomIR` sit together in the Cortex Control binary
   at `0x0310e8a8`, next to `irImportFinished` and the import file filter
   `*.wav;*.aiff`.
 
-**The WAV was never the problem.** Cortex Control imported the very same
+**The source WAV is not sent verbatim.** Cortex Control imported the same
 `tools/generate-hardware-test-ir.mjs` fixture - a 21 ms, 24-bit, 48 kHz mono
-WAV - without complaint: "ADDING 1 AUDIO FILE", full progress, `1 used / 2047
-available`. So the device accepts that file happily, and the probes above fail
-for a reason in how the message is built, not in what it carries. An earlier
-version of this note concluded the opposite from the probes alone; the import
-disproves it.
+WAV - but converted it before USB transmission. The captured `ir_payload` is a
+4,154-byte RIFF/WAVE containing 1,024 mono samples at 48 kHz as IEEE float32:
+an 18-byte `fmt ` chunk, a four-byte `fact` chunk, and a 4,096-byte `data`
+chunk. Its exact hash and chunk offsets are recorded in the capture contract.
 
 What the device stored, read back over USB afterwards:
 
@@ -191,10 +195,14 @@ Reading the IR library also shows the two folders it lives between:
 `/opt/neuraldsp/impulse_responses` are plugin assets that expose a name and no
 key, and the unit cannot load them.
 
-The remaining gap is narrow and specific: which of `addLocalImpulseResponse`'s
-three strings and its bool produce a `FileMessage` the device acts on. Capturing
-the bytes with `tools/capture_cortex_device_writes.py` during an import would
-close it; the import path itself is now proven to work end to end.
+The wire gap is now closed. The wire's three strings are the fixed destination
+folder key, the extension-free file name, and the ISO UTC date; the bool is
+`is_factory: false`. The capture does not expose the one-to-one mapping of the
+private C++ method's arguments, and that mapping is no longer needed for a wire
+implementation. The local source path is consumed by Cortex Control to read and
+convert the audio and is not transmitted. Implementations must still reproduce
+or safely replace Cortex Control's audio conversion before exposing a public
+persistent-write operation.
 
 ### What Cortex Control's own symbols say
 
@@ -231,21 +239,11 @@ Cortex Control does carry JUCE's `WavAudioFormatReader`, `WavAudioFormatWriter`,
 looks like a decode-and-re-encode pipeline. The signature says that pipeline is
 not on this path - nothing decoded is passed in.
 
-What remains unknown is the *value* of those three strings and the bool. The
-probes above already cover the obvious readings - name, key, folder key, a
-destination path, with and without extensions - and none of them import.
-
-Closing this needs ground truth rather than more guesses: capture Cortex Control
-performing an IR import with `tools/capture_cortex_device_writes.py` and read
-the bytes it puts in the field. Cortex Control also logs with source file and
-line (`{parseState: UpdaterMessageReceiver.cpp,135}`) to
-`%APPDATA%\Neural DSP\Cortex Control\logs`, so the import's own log lines will
-name the functions it ran even without a HID capture.
-
-> One caution from the probing. A 32-bit-float WAV payload knocked the QC's HID
-> interface off the USB bus. It re-enumerated on its own after about 15 seconds
-> with all 74 presets intact and nothing lost, but it is a real crash and worth
-> avoiding: send integer PCM while experimenting.
+The capture also resolves the apparent float-WAV contradiction. An arbitrary
+float32 WAV previously knocked the QC's HID interface off the bus, but Cortex
+Control itself sends a very particular float32 container. Do not generalize
+from `audioFormat = 3`: the exact chunk layout, sample count, conversion, pacing,
+and message metadata must be validated together before enabling imports.
 
 ## Long host-to-device messages need pacing
 
