@@ -45,6 +45,7 @@ test("the mobile control deck follows the physical three-row QC layout", () => {
   assert.match(styles, /\.mobile-down-glyph \{ display: inline-grid; transform: rotate\(180deg\); \}/);
   assert.match(styles, /\.mobile-volume-control \{ grid-column: 1; grid-row: 1;/);
   assert.match(styles, /@media \(orientation: landscape\)[\s\S]*grid-template-columns: repeat\(7, minmax\(0, 1fr\)\)/);
+  assert.match(styles, /@media \(orientation: landscape\)[\s\S]*\.mobile-screen > \.qc-chassis \{ width: min\(100%, 80vh\); \}/);
 });
 
 test("tapping a live Grid block opens the shared parameter editor and commits over USB", () => {

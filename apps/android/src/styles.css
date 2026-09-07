@@ -181,7 +181,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 @media (orientation: landscape) and (max-height: 800px) {
   .android-app { grid-template-columns: minmax(540px, 1.75fr) minmax(244px, .45fr); grid-template-rows: auto auto auto minmax(0, 1fr); gap: 8px 12px; }
   .mobile-header { grid-column: 1 / -1; }
-  .mobile-screen { grid-column: 1; grid-row: 2; align-self: start; }
+  .mobile-screen { grid-column: 1; grid-row: 2; width: 100%; align-self: start; }
+  .mobile-screen > .qc-chassis { width: min(100%, 80vh); }
   .quick-controls { min-height: 140px; grid-column: 1; grid-row: 3; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(62px, 1fr)); align-self: start; }
   .quick-controls .hardware-switch { min-height: 60px; }
   .mobile-volume-control { grid-column: 1; grid-row: 1; }
