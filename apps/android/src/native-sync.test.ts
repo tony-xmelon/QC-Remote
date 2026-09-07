@@ -26,6 +26,7 @@ const relayProtocolSource = readFileSync(new URL("../android/app/src/main/java/c
 const actionContract = JSON.parse(readFileSync(new URL("../../../contracts/qc-actions.v1.json", import.meta.url), "utf8"));
 const gatewayContract = JSON.parse(readFileSync(new URL("../../../contracts/gateway-methods.v1.json", import.meta.url), "utf8"));
 const androidManifestSource = readFileSync(new URL("../android/app/src/main/AndroidManifest.xml", import.meta.url), "utf8");
+const capacitorConfigSource = readFileSync(new URL("../capacitor.config.json", import.meta.url), "utf8");
 const splashFallbackSource = readFileSync(new URL("../android/app/src/main/res/drawable/splash.xml", import.meta.url), "utf8");
 
 test("tempo synchronizes in both directions over the native USB bridge", () => {
@@ -318,6 +319,10 @@ test("modern Android keeps a buffered interrupt-read ring queued across idle per
 
 test("Android provides a configuration-independent splash fallback", () => {
   assert.match(splashFallbackSource, /<shape[\s\S]*<solid android:color="#08090B"/);
+});
+
+test("Android bridge logs never expose relay credentials or pairing codes", () => {
+  assert.equal(JSON.parse(capacitorConfigSource).loggingBehavior, "none");
 });
 
 test("Android automatically recovers USB attachment and unexpected reader exit", () => {

@@ -3,6 +3,7 @@
   "appName": "QC Control",
   "webDir": "dist",
   "backgroundColor": "#08090b",
+  "loggingBehavior": "none",
   "android": {
     "allowMixedContent": false,
     "backgroundColor": "#08090b"

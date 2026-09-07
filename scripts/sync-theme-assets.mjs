@@ -44,6 +44,7 @@ const brandedJson = [
     appName: brand.appName,
     webDir: "dist",
     backgroundColor: nativeTheme.android.background,
+    loggingBehavior: "none",
     android: {
       allowMixedContent: false,
       backgroundColor: nativeTheme.android.background
