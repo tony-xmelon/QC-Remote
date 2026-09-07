@@ -57,8 +57,8 @@ function referenceModalSnapshot(base: PresetSnapshot): PresetSnapshot {
     dirty: false,
     footswitchStates: [{ index: 2, active: true, assigned: true, color: QC_COLORS.captured.presetBrown }],
     blocks: [
-      { id: "ilia-cab", name: "Cab", kind: "cab", category: "Cab", row: 0, column: 1 },
-      { id: "ilia-looper", name: "Looper", kind: "utility", category: "Looper", row: 0, column: 2 }
+      { id: "ilia-reverb", name: "Reverb", kind: "reverb", category: "Reverb", row: 0, column: 1, bypassed: true },
+      { id: "ilia-looper", name: "Looper", kind: "utility", category: "Looper", row: 0, column: 2, bypassed: true }
     ],
     routes: [
       { row: 0, inputId: 1, outputId: 19, input: "In 1", output: "Multi Out", splitMuted: false },

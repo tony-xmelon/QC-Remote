@@ -46,6 +46,10 @@ test("typography references render the captured state instead of a generic subst
   assert.equal(modal.presetLocation, "5C");
   assert.equal(modal.presetName, "Ilia");
   assert.equal(modal.routes[0].outputId, 19);
+  assert.deepEqual(modal.blocks.map(({ category, row, column, bypassed }) => ({ category, row, column, bypassed })), [
+    { category: "Reverb", row: 0, column: 1, bypassed: true },
+    { category: "Looper", row: 0, column: 2, bypassed: true }
+  ]);
   const browser = corosFixtureConfiguration("?fixture=coros410&variant=reference-browser", demoSnapshot).initialSnapshot;
   assert.equal(browser.presetLocation, "2F");
   assert.equal(browser.presetName, "QC MCP TEST");
