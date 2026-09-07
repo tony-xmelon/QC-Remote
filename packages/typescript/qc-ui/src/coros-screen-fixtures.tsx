@@ -119,20 +119,20 @@ function CorOsDirectoryFixture({ view, physicalContext = false }: { view: Direct
       <nav className="directory-fixture-banks">{(itemContext ? Array.from({ length: 14 }, (_, index) => index + 1) : [29, 30, 31, 32, 33, 34, 35]).map((bank) => <button key={bank} className={bank === (itemContext ? 2 : 32) ? "is-active" : ""}>{bank}</button>)}</nav>
       <section className="directory-fixture-items">{search && <div className="directory-search-field"><span>⌕</span><strong>{view === "directory-search-results" ? "Clean" : "Search Directory"}</strong><button>×</button></div>}{(search ? results : names).map((name, index) => itemContext ? <button key={name} className={index === 6 ? "is-current" : ""}><span className="physical-preset-name">{`2${String.fromCharCode(65 + index)} ${name}`}</span><b>⋮</b></button> : <button key={name} className={index === 0 ? "is-current" : ""}><strong>{category === "Presets" ? `32${String.fromCharCode(65 + index)}` : icons[category]}</strong><span>{name}<small>{category === "Neural Captures" ? "GUITAR · AMP" : category === "Impulse Responses" ? "48 kHz · 1024 samples" : category === "Plugin Presets" ? "NEURAL DSP X" : "USER"}</small></span>{view === "directory-arrange" ? <i>☰</i> : <b>⋮</b>}</button>)}</section>
     </main>
-    {view === "directory-categories" && <aside className="directory-category-menu">{categoryItems.map(([label, glyph]) => <button key={label}><span>{glyph}</span>{label}<b>›</b></button>)}</aside>}
+    {view === "directory-categories" && <><i className="directory-context-scrim" /><aside className="directory-category-menu">{categoryItems.map(([label, glyph]) => <button key={label}><span>{glyph}</span>{label}<b>›</b></button>)}</aside></>}
     {view === "directory-favorites" && <aside className="directory-favorites-panel"><header><button className="is-active">FAVORITES</button><button>RECENT</button></header>{names.slice(0, 5).map((name) => <button key={name}><span>★</span>{name}<b>⋮</b></button>)}</aside>}
     {/* Title, options and active-item styling taken from the device: the
         CorOS tree for `directory-sort` reads "Sort By" over Banks, Name,
         Date Added, Author, Preferred Instrument, and marks the active row in
         green rather than with a tick. */}
-    {view === "directory-sort" && <aside className="directory-tool-menu"><strong>Sort By</strong>{["Banks", "Name", "Date Added", "Author", "Preferred Instrument"].map((label, index) => <button key={label} className={index === 0 ? "is-active" : ""}>{label}</button>)}</aside>}
+    {view === "directory-sort" && <><i className="directory-context-scrim" /><aside className="directory-tool-menu"><strong>Sort By</strong>{["Banks", "Name", "Date Added", "Author", "Preferred Instrument"].map((label, index) => <button key={label} className={index === 0 ? "is-active" : ""}>{label}</button>)}</aside></>}
     {/* The device's filter is a capture-type list, not a scope list. Captured
         as `directory-filter` from the Neural Captures directory, where the
         funnel appears: Default, Amp, Combo Amp, Amp + Cab, Cab, Overdrive,
         Fuzz, Compressor, each with its category glyph and no heading. The
         previous FILTER / All items / Favorites / Downloaded / My items /
         Factory menu does not exist on the unit. */}
-    {view === "directory-filter" && <aside className="directory-tool-menu is-filter">{["Default", "Amp", "Combo Amp", "Amp + Cab", "Cab", "Overdrive", "Fuzz", "Compressor"].map((label) => <button key={label}><b><DeviceCategoryGlyph label={label} fallback="◈" /></b>{label}</button>)}</aside>}
+    {view === "directory-filter" && <><i className="directory-context-scrim" /><aside className="directory-tool-menu is-filter">{["Default", "Amp", "Combo Amp", "Amp + Cab", "Cab", "Overdrive", "Fuzz", "Compressor"].map((label) => <button key={label}><b><DeviceCategoryGlyph label={label} fallback="◈" /></b>{label}</button>)}</aside></>}
     {/* The device calls this Multi Select, not Arrange, and draws it as a top
         header: a select-all box, the green title, then trash / rename / copy /
         upload / favourite and a done tick. The previous bar - "ARRANGE",
@@ -144,7 +144,7 @@ function CorOsDirectoryFixture({ view, physicalContext = false }: { view: Direct
         folder's banks. Captured as `directory-copy`; the previous
         "Copy 3 items to..." folder picker with COPY HERE was not on the unit.
         CorOS emits its own <b> markup inside these label strings. */}
-    {view === "directory-copy" && <aside className="directory-copy-dialog"><header>Choose pasting option</header><p>Please select how you would like to paste these 1 Preset(s) into the banks in <b>My Presets</b>:</p>{[<>Choose each slot manually</>, <>Paste consecutively from the first <b>chosen</b> slot onwards</>, <>Paste consecutively from the first <b>empty</b> slot onwards</>].map((label, index) => <button key={index} className={index === 0 ? "is-active" : ""}>{label}{index === 0 && <i>✓</i>}</button>)}<footer><button>CANCEL</button><button className="is-primary">CONTINUE</button></footer></aside>}
+    {view === "directory-copy" && <><i className="directory-context-scrim" /><aside className="directory-copy-dialog"><header>Choose pasting option</header><p>Please select how you would like to paste these 1 Preset(s) into the banks in <b>My Presets</b>:</p>{[<>Choose each slot manually</>, <>Paste consecutively from the first <b>chosen</b> slot onwards</>, <>Paste consecutively from the first <b>empty</b> slot onwards</>].map((label, index) => <button key={index} className={index === 0 ? "is-active" : ""}>{label}{index === 0 && <i>✓</i>}</button>)}<footer><button>CANCEL</button><button className="is-primary">CONTINUE</button></footer></aside></>}
     {view === "directory-new-folder" && <aside className="directory-name-dialog"><header>New Setlist</header><label>NAME<input readOnly value="New Setlist" /></label><footer><button>CANCEL</button><button>CREATE</button></footer></aside>}
     {view === "directory-item-context" && <><i className="directory-context-scrim" /><aside className="directory-item-menu">{["Edit", "Copy", "Cut", "Paste to replace", "Delete"].map(label => <button key={label}>{label}</button>)}</aside></>}
     {view === "directory-cloud-upload" && <div className="directory-mode-bar is-cloud"><strong>UPLOAD TO CORTEX CLOUD</strong><span>Select Presets, Neural Captures, or IRs</span><button>CANCEL</button><button>UPLOAD (2)</button></div>}

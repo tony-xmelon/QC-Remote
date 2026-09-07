@@ -717,17 +717,23 @@
 .coros-directory-fixture.is-physical-context .directory-fixture-items button > span { font-size: 16px; }
 .coros-directory-fixture.is-physical-context .directory-fixture-items button.is-current .physical-preset-name { color: #43ef72; }
 .coros-directory-fixture.is-physical-context .directory-fixture-items button small { font-size: 9px; }
+/* directory-sort.png and its siblings draw these menus black over a dimmed
+   list, the same treatment the item menu already had. */
+.coros-directory-fixture .directory-category-menu,
+.coros-directory-fixture .directory-tool-menu { border: 0; background: #000; box-shadow: none; }
+/* directory-copy.png fills the paste dialog #101010, a shade off the menus. */
+.coros-directory-fixture .directory-copy-dialog { border: 0; background: #101010; box-shadow: none; }
 .coros-directory-fixture .directory-item-menu { left: 528px; right: auto; top: 212px; width: 256px; height: 260px; overflow: hidden; border: 0; border-radius: 8px; background: #000; box-shadow: none; }
 .coros-directory-fixture .directory-item-menu button { box-sizing: border-box; width: 100%; height: 52px; padding: 0 16px; border: 0; background: #000; color: #f0f0f0; font: 16px Arial,sans-serif; text-align: left; }
 .qc-screen.coros-physical-confirmation { position: absolute; inset: 0; z-index: 11; overflow: hidden; background: #111; color: #f1f1f1; font-family: Arial,Helvetica,sans-serif; }
 .coros-physical-confirmation > .coros-directory-fixture { position: absolute; inset: 0; }
 .coros-physical-confirmation > .confirmation-scrim { position: absolute; inset: 0; z-index: 4; background: rgba(92,96,92,.65); }
-.coros-physical-confirmation > aside { position: absolute; z-index: 5; left: 190px; top: 125px; box-sizing: border-box; width: 420px; height: 230px; border-radius: 10px; background: #101110; text-align: center; }
+.coros-physical-confirmation > aside { position: absolute; z-index: 5; left: 190px; top: 125px; box-sizing: border-box; width: 420px; height: 230px; border-radius: 10px; background: #ff594a; color: #000; text-align: center; }
 .coros-physical-confirmation > aside h1 { margin: 43px 0 24px; font: 20px Arial,sans-serif; }
 .coros-physical-confirmation > aside p { margin: 0; font: 18px Arial,sans-serif; }
 .coros-physical-confirmation > aside footer { position: absolute; left: 32px; right: 32px; bottom: 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
-.coros-physical-confirmation > aside button { height: 45px; border: 0; border-radius: 8px; background: #030303; color: #efefef; font: 16px Arial,sans-serif; }
-.coros-physical-confirmation > aside button:last-child { background: #2040ff; }
+.coros-physical-confirmation > aside button { height: 45px; border: 0; border-radius: 8px; background: #000; color: #fff; font: 16px Arial,sans-serif; }
+.coros-physical-confirmation > aside button:last-child { background: #1838ff; }
 
 /* Physical editor overflow menu. */
 .qc-screen.coros-block-context { position: absolute; inset: 0; overflow: hidden; background: #111; color: #f2f2f2; font-family: Arial,Helvetica,sans-serif; }

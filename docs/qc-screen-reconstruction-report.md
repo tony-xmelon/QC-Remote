@@ -477,6 +477,79 @@ The device does not composite the way a CSS alpha layer does: fitting the two
 dark samples exactly puts the bright ones 8-10 values out, and vice versa. The
 colour comparison through a scrim therefore allows three values, and says so.
 
+### The fourth pass: every fixture against its frame
+
+With a renderer available, all 119 frames were put next to our drawing of them.
+**94 are addressable from a URL**; the other 25 are reached by touch from
+another screen (a context menu, a route selector, a device browser opened from
+the Grid), and rendering the screen they are reached *from* would compare two
+different screens, so they are not scored. Each render is measured against its
+frame with `tools/visual-regression/qc_compare.py` - mean absolute error and
+2px edge agreement.
+
+**Six of the 94 were not defects at all: the corpus and the fixtures use the
+same name for different screens.** Scoring each frame against every render, not
+just the one its name suggests, separated them:
+
+| frame | view of that name draws | the view that actually draws it | edge f1 |
+| --- | --- | --- | --- |
+| `overlay-busy` | a "Saving preset" toast | `plugin-refresh` | 0.82 |
+| `overlay-error` | a different overlay | `device-search` | 0.70 |
+| `device-search` | the search results | `overlay-keyboard` | 0.70 |
+| `plugin-folders` | the folder browser | `plugin-list` | 0.81 |
+| `directory-new-folder` | the name dialog | `overlay-keyboard` | 0.76 |
+| `directory-search` | the search screen | `overlay-keyboard` | 0.75 |
+
+Mean error alone cannot make that call - two dark screens agree on it - which is
+why the match is decided on edge agreement.
+
+Across the remaining 88, four defects were found and fixed:
+
+| screen | was | frame shows |
+| --- | --- | --- |
+| confirmation dialog | `#101110` panel, `#efefef` copy | **`#ff594a`** panel, black copy, `#1838ff` confirm |
+| `empty-slot` | category list left, Grid right | **the other way round** |
+| directory sort/filter/category/paste menus | grey `#252a26`, no scrim | **black over a dimmed list** |
+| (and the block context underlay, above) | | |
+
+The confirmation dialog is the one worth noting: the overlay check has been
+measuring that panel's box against the stylesheet since the first pass and
+passing, because it measured *where* the panel is and never *what colour it is*
+- its own fill predicate looks for red pixels, so the evidence that the device
+draws it salmon was inside the check the whole time.
+
+`generic-confirmation.png` and `delete-confirmation.png` are byte-identical: the
+corpus holds one frame under two names.
+
+After those fixes the 88 sit at **median 0.0301 mean absolute error**, 42 under
+0.03 and 33 between 0.03 and 0.06. Thirteen remain at 0.06 or worse:
+
+| frame | mae | edge f1 | what is different |
+| --- | --- | --- | --- |
+| `stomp-assignment` | 0.158 | 0.24 | dialog is small and low-right; the frame centres it |
+| `generic-confirmation` | 0.125 | 0.57 | underlay is the Directory; the frame shows the Grid |
+| `delete-confirmation` | 0.125 | 0.57 | same frame as above, same cause |
+| `directory-copy` | 0.111 | 0.39 | paste dialog smaller than the frame's |
+| `cloud-upload-overwrite` | 0.120 | 0.61 | same dialog family |
+| `cpu-monitor` | 0.107 | 0.18 | not investigated |
+| `directory-filter` | 0.091 | 0.39 | menu narrower than the frame's |
+| `scene-assignment` | 0.087 | 0.17 | not investigated |
+| `capture-connect-input-2` | 0.081 | 0.71 | not investigated |
+| `directory-sort` | 0.070 | 0.46 | menu narrower than the frame's |
+| `looper-editor` | 0.067 | 0.81 | structure agrees; a tone difference |
+| `expression-parameter` | 0.065 | 0.12 | not investigated |
+| `capture-sanity-error` | 0.062 | 0.61 | not investigated |
+
+The menus' *position* is still off as well as their colour - the sort menu sits
+at x 488..720 in our rule and at 388..559 on the device - and that is part of the
+dialog-size family below. The four menu fills were corrected from renders; the
+release gate does not measure them, so they are held only by this comparison.
+
+These are catalogued rather than fixed. The dialog-size family (`directory-copy`,
+`directory-filter`, `directory-sort`, `cloud-upload-overwrite`,
+`stomp-assignment`) looks like one cause and is the obvious next thread; the
+confirmation underlay is the same rebuild the block context menu needed.
+
 ### Two more, in the fixture next door
 
 `input-gate-control.png` is the frame the grid header came from, and comparing

@@ -418,6 +418,18 @@ def check_overlays() -> None:
             expected = declared(sheet, selector, name)
             if expected is not None:
                 compare(f"{selector} {name} ({capture})", measured[name], expected)
+        # Where a panel is, and what colour it is, are separate claims. This
+        # check measured only the first for three passes while the confirmation
+        # dialog was declared near-black and drawn salmon - and its own fill
+        # predicate had been looking for red pixels the whole time.
+        fill = declaration(sheet, selector, "background")
+        if fill is not None and re.fullmatch(r"#[0-9a-f]{3,6}", fill.strip()):
+            interior = (measured["left"] + measured["width"] // 4,
+                        measured["top"] + measured["height"] // 3,
+                        measured["left"] + measured["width"] * 3 // 4,
+                        measured["top"] + measured["height"] * 2 // 3)
+            compare_colour(f"{selector} fill ({capture})",
+                           dominant(pixels, interior), parse_hex(fill))
 
 
 def check_content_panels() -> None:
