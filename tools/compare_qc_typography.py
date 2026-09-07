@@ -11,6 +11,7 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageFilter
+from scipy import ndimage, signal
 
 sys.path.insert(0, str(Path(__file__).parent / "visual-regression"))
 from qc_compare import metrics  # noqa: E402
@@ -79,16 +80,40 @@ def mask_bbox(mask: np.ndarray) -> tuple[int, int, int, int] | None:
     return int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1
 
 
-def placement_match(reference_mask: np.ndarray, rendered_mask: np.ndarray) -> float | None:
-    """Score text placement independently from glyph paint and color."""
-    left = mask_bbox(reference_mask)
-    right = mask_bbox(rendered_mask)
-    if left is None or right is None:
-        return None
-    intersection = max(0, min(left[2], right[2]) - max(left[0], right[0])) * max(0, min(left[3], right[3]) - max(left[1], right[1]))
-    left_area = (left[2] - left[0]) * (left[3] - left[1])
-    right_area = (right[2] - right[0]) * (right[3] - right[1])
-    return round(intersection / max(left_area + right_area - intersection, 1) * 100, 2)
+def placement_alignment(reference_mask: np.ndarray, rendered_mask: np.ndarray, search_radius: int = 18) -> tuple[float | None, int | None, int | None]:
+    """Measure the localized glyph-center displacement in reference pixels.
+
+    Bounding-box IoU is deliberately not used here: it couples placement to
+    glyph width and makes a two-pixel offset on a short label score near zero.
+    The score is a smooth displacement tolerance at the native 800x480 scale;
+    five pixels is the 80% quality-gate boundary.
+    """
+    if mask_bbox(reference_mask) is None or mask_bbox(rendered_mask) is None:
+        return None, None, None
+    # Cross-correlate the app glyph template against the wider reference-color
+    # candidate. This rejects adjacent labels and controls which happen to use
+    # the same foreground color.
+    correlation = signal.fftconvolve(
+        reference_mask.astype(np.float32),
+        rendered_mask[::-1, ::-1].astype(np.float32),
+        mode="full",
+    )
+    zero_y, zero_x = rendered_mask.shape[0] - 1, rendered_mask.shape[1] - 1
+    top, bottom = max(0, zero_y - search_radius), min(correlation.shape[0], zero_y + search_radius + 1)
+    left, right = max(0, zero_x - search_radius), min(correlation.shape[1], zero_x + search_radius + 1)
+    local = correlation[top:bottom, left:right] / max(float(rendered_mask.sum()), 1.0)
+    lag_y = np.arange(top, bottom, dtype=np.float32) - zero_y
+    lag_x = np.arange(left, right, dtype=np.float32) - zero_x
+    # Prefer the expected location unless moving the template produces a
+    # materially better glyph match. This prevents repeated values or nearby
+    # same-colour controls from winning merely because they contain more paint.
+    local -= np.hypot(lag_y[:, None], lag_x[None, :]) * .01
+    local_y, local_x = np.unravel_index(np.argmax(local), local.shape)
+    reference_lag_x = left + int(local_x) - zero_x
+    reference_lag_y = top + int(local_y) - zero_y
+    dx, dy = -reference_lag_x, -reference_lag_y
+    distance = float(np.hypot(dx, dy))
+    return round(max(0.0, 100.0 - distance * 4.0), 2), dx, dy
 
 
 def translated(mask: np.ndarray, dx: int, dy: int) -> np.ndarray:
@@ -104,15 +129,19 @@ def translated(mask: np.ndarray, dx: int, dy: int) -> np.ndarray:
     return shifted
 
 
-def glyph_shape_match(reference_mask: np.ndarray, rendered_mask: np.ndarray) -> float | None:
+def glyph_shape_match(reference_mask: np.ndarray, rendered_mask: np.ndarray, dx: int | None = None, dy: int | None = None) -> float | None:
     """Compare glyph silhouettes after removing their placement offset."""
     reference_box = mask_bbox(reference_mask)
     rendered_box = mask_bbox(rendered_mask)
     if reference_box is None or rendered_box is None:
         return None
-    reference_center = ((reference_box[0] + reference_box[2]) / 2, (reference_box[1] + reference_box[3]) / 2)
-    rendered_center = ((rendered_box[0] + rendered_box[2]) / 2, (rendered_box[1] + rendered_box[3]) / 2)
-    aligned = translated(reference_mask, round(rendered_center[0] - reference_center[0]), round(rendered_center[1] - reference_center[1]))
+    if dx is None or dy is None:
+        _, dx, dy = placement_alignment(reference_mask, rendered_mask)
+    aligned = translated(reference_mask, dx or 0, dy or 0)
+    # Discard same-colored neighbors admitted by the search crop; only the
+    # reference paint locally corresponding to this glyph run is shape data.
+    rendered_neighborhood = ndimage.maximum_filter(rendered_mask, size=9, mode="constant")
+    aligned &= rendered_neighborhood
     aligned_dilated = np.asarray(Image.fromarray(aligned).filter(ImageFilter.MaxFilter(5)), dtype=bool)
     rendered_dilated = np.asarray(Image.fromarray(rendered_mask).filter(ImageFilter.MaxFilter(5)), dtype=bool)
     precision = float((rendered_mask & aligned_dilated).sum()) / max(int(rendered_mask.sum()), 1)
@@ -135,7 +164,7 @@ def masked_screen(reference: Image.Image, rendered: Image.Image, no_text: Image.
     return metrics(Image.fromarray(reference_array), Image.fromarray(rendered_array))
 
 
-def box_for_run(image: Image.Image, run: dict, padding: int = 6) -> tuple[int, int, int, int]:
+def box_for_run(image: Image.Image, run: dict, padding: int = 18) -> tuple[int, int, int, int]:
     lines = run.get("lines", [])
     left = max(0, int(min(line["x"] for line in lines)) - padding)
     top = max(0, int(min(line["y"] for line in lines)) - padding)
@@ -168,6 +197,18 @@ def masked_run(reference: Image.Image, rendered: Image.Image, no_text: Image.Ima
 
 def rounded_mean(values: list[float], scale: float = 1.0) -> float | None:
     return round(sum(values) / len(values) * scale, 2) if values else None
+
+
+def text_weight(value: str | None) -> int:
+    """Weight readable labels, excluding icon-like punctuation from typography."""
+    characters = len(re.findall(r"[\w\d]", value or "", flags=re.UNICODE))
+    return min(characters, 8)
+
+
+def weighted_run_mean(items: list[dict], field: str) -> float | None:
+    scored = [(item[field], item["textWeight"]) for item in items if item.get(field) is not None and item.get("textWeight", 0) > 0]
+    total_weight = sum(weight for _, weight in scored)
+    return round(sum(value * weight for value, weight in scored) / total_weight, 2) if total_weight else None
 
 
 def load_json(path: Path) -> dict:
@@ -291,9 +332,14 @@ def main() -> int:
                         reference_crop, rendered_crop, text_mask, exact_mask, foreground, background = masked_run(reference, rendered, no_text, run)
                         score = metrics(reference_crop, rendered_crop)
                         reference_array = np.asarray(reference.crop(box_for_run(reference, run)).convert("RGB"))
+                        search_mask = ndimage.maximum_filter(exact_mask, size=37, mode="constant")
                         foreground_delta = palette_delta(reference_array[text_mask], foreground)
-                        background_pixels = reference_array[~text_mask] if (~text_mask).any() else reference_array.reshape(-1, 3)
+                        background_pixels = reference_array[~search_mask] if (~search_mask).any() else reference_array.reshape(-1, 3)
                         reference_background = representative_colors(background_pixels, limit=1)
+                        # Infer the reference glyph paint from the tight expected
+                        # run neighborhood, then use that paint across the wider
+                        # search area. Sampling the whole search area lets knobs
+                        # and panels crowd the real text color out of the palette.
                         reference_candidates = representative_colors(reference_array[text_mask], limit=20)
                         if reference_background:
                             reference_candidates = [color for color in reference_candidates if np.linalg.norm(
@@ -310,11 +356,13 @@ def main() -> int:
                         if reference_background and reference_foreground:
                             reference_background_distance = np.linalg.norm(reference_array.astype(np.float32) - np.asarray(reference_background[0], dtype=np.float32), axis=2)
                             reference_foreground_distance = np.linalg.norm(reference_array.astype(np.float32) - np.asarray(reference_foreground[0], dtype=np.float32), axis=2)
-                            reference_text_mask = (reference_background_distance > 16) & (reference_foreground_distance <= 48) & text_mask
+                            reference_text_mask = (reference_background_distance > 16) & (reference_foreground_distance <= 48) & search_mask
                         else:
                             reference_text_mask = np.zeros(exact_mask.shape, dtype=bool)
+                        placement_score, alignment_x, alignment_y = placement_alignment(reference_text_mask, exact_mask)
                         run_results.append({
                             "text": run.get("normalizedText"),
+                            "textWeight": text_weight(run.get("normalizedText")),
                             "lines": run.get("lines"),
                             "font": run.get("resolvedFontFamily"),
                             "fontSize": run.get("fontSize"),
@@ -330,8 +378,10 @@ def main() -> int:
                             "referenceBackgroundPaletteDelta": background_delta,
                             "foregroundColorMatchPercent": color_match(foreground_delta),
                             "backgroundColorMatchPercent": color_match(background_delta),
-                            "placementMatchPercent": placement_match(reference_text_mask, exact_mask),
-                            "glyphShapeMatchPercent": glyph_shape_match(reference_text_mask, exact_mask),
+                            "placementMatchPercent": placement_score,
+                            "alignmentOffsetX": alignment_x,
+                            "alignmentOffsetY": alignment_y,
+                            "glyphShapeMatchPercent": glyph_shape_match(reference_text_mask, exact_mask, alignment_x, alignment_y),
                         })
                     tree = tree_tokens(reference_root / f"{screen_id}.tree.txt") if source == "physical" else set()
                     tokens = rendered_tokens(metadata[host])
@@ -351,8 +401,8 @@ def main() -> int:
                         "backgroundColorPresencePercent": rounded_mean([item["referenceBackgroundPaletteDelta"] <= 12 for item in run_results if item["referenceBackgroundPaletteDelta"] is not None], 100),
                         "foregroundColorMatchPercent": rounded_mean([item["foregroundColorMatchPercent"] for item in run_results if item["foregroundColorMatchPercent"] is not None]),
                         "backgroundColorMatchPercent": rounded_mean([item["backgroundColorMatchPercent"] for item in run_results if item["backgroundColorMatchPercent"] is not None]),
-                        "placementMatchPercent": rounded_mean([item["placementMatchPercent"] for item in run_results if item["placementMatchPercent"] is not None]),
-                        "glyphShapeMatchPercent": rounded_mean([item["glyphShapeMatchPercent"] for item in run_results if item["glyphShapeMatchPercent"] is not None]),
+                        "placementMatchPercent": weighted_run_mean(run_results, "placementMatchPercent"),
+                        "glyphShapeMatchPercent": weighted_run_mean(run_results, "glyphShapeMatchPercent"),
                         "contentParityPercent": round(content_recall, 2) if content_recall is not None else None,
                         "contentPrecisionPercent": round(content_precision, 2) if content_precision is not None else None,
                         "contentF1Percent": round(content_f1, 2) if content_f1 is not None else None,
@@ -369,7 +419,7 @@ def main() -> int:
     available_runs = sum(count for (_, available), count in availability.items() if available)
     identity_verified_rasters = [item for item in raster_results if item["contentIdentity"] == "verified"]
     report = {
-        "schemaVersion": 3,
+        "schemaVersion": 4,
         "canonicalStates": len(coverage["states"]),
         "measuredStates": sum(bool(item["sources"]) for item in state_results),
         "authoritativeRasterMeasurements": len(raster_results),

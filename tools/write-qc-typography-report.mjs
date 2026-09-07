@@ -48,7 +48,7 @@ Generated from the complete ${report.canonicalStates}-state canonical screen man
 - Quality gate: ${report.qualityGate?.passed ? "PASS" : "FAIL"}
 ${report.qualityGate?.failures?.length ? `- Gate failures: ${report.qualityGate.failures.join("; ")}` : ""}
 
-These dimensions are intentionally independent. Content identity uses screenshot-verified anchor tokens from the manifest; screens without explicit anchors are marked unverified. ZenUI object-tree token coverage remains a separate diagnostic because the tree can contain hidden labels. Glyph shape is scored after normalizing position, placement compares text bounds, and foreground/background color scores compare their palettes separately. The older combined masked-region scores remain in the JSON only for historical trend continuity and are not presented as fidelity scores.
+These dimensions are intentionally independent. Content identity uses screenshot-verified anchor tokens from the manifest; screens without explicit anchors are marked unverified. ZenUI object-tree token coverage remains a separate diagnostic because the tree can contain hidden labels. Glyph shape is scored after normalizing position; placement is measured from localized glyph-template x/y displacement at the native 800×480 scale; and foreground/background color scores compare their palettes separately. Purely symbolic runs do not influence typography means. The older combined masked-region scores remain in the JSON only for historical trend continuity and are not presented as fidelity scores.
 
 ## Bundled font availability
 

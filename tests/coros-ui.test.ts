@@ -67,6 +67,12 @@ test("typography audit keeps content, glyphs, placement, and colors independent"
     assert.match(reportWriter, new RegExp(field));
   }
   assert.match(comparator, /content-identity-verified comparisons only/);
+  assert.match(comparator, /alignmentOffsetX/);
+  assert.match(comparator, /alignmentOffsetY/);
+  assert.match(comparator, /textWeight/);
+  assert.match(comparator, /def weighted_run_mean/);
+  assert.doesNotMatch(comparator, /intersection \/ max\(left_area \+ right_area - intersection/,
+    "placement must measure displacement rather than glyph-box overlap");
 });
 
 test("native frame ordering, timestamps, and tempo clocks are host-independent", () => {
