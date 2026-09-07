@@ -138,6 +138,28 @@ generates the constant rather than one language hand-writing it.
 None of those are needed to control a device; the untouched set is
 manufacturing, telemetry, and Cortex Cloud plumbing.
 
+That claim is checked rather than asserted.
+`references/cortex-protocol/message-type-plan.json` lists every type this stack
+does not speak, each with a category and, where it matters, what is known about
+it. `tools/verify_cortex_protocol_message_types.py` fails if a type is neither
+exercised nor explained, if an explained type starts being exercised, or if a
+future Cortex Control declares a type nobody has looked at:
+
+```
+PASS 46 of 72 message types are exercised; the remaining 26 each carry a
+reviewed reason (cloud=8, factory=8, telemetry=5, unestablished=5)
+```
+
+The five `unestablished` entries are the honest ones - types whose bytes are
+known but whose contract is not. **71 ModelPreset** is the one worth finishing:
+it is how a block's parameters are saved under a name, which the device reaches
+from the block menu's *Save Current Parameters as...*, and newer firmware
+threads it through `GridMessage.model_preset_to_load`,
+`IOSettingsMessage.preset_to_load`, `GlobalEQMessage.model_preset_to_load` and
+`NeuralCaptureMessage.model_ab_preset`. Captured traffic shows DELETE then
+CREATE either side of a save. Since a misunderstood DELETE can destroy a saved
+preset, it waits for a deliberate session against a disposable one.
+
 ## Impulse responses
 
 ### Reading
