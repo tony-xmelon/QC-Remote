@@ -4,6 +4,14 @@
   "description": "Typography parity contract for every canonical CorOS app state. Coverage is inherited from the executable 103-state screen ledger; every rendered text run is measured for content, line geometry, face, size, weight, style, color, background, alignment, direction, writing mode, spacing, and wrapping on Windows and Android.",
   "coverageLedger": "references/qc-ui-coverage/coros-4.1.0/coverage.json",
   "coordinateSpace": { "width": 800, "height": 480 },
+  "sourceEvidence": {
+    "product": "Cortex Control 4.1.0",
+    "installedExecutable": "C:\\Program Files\\Neural DSP\\Cortex Control\\Cortex Control.exe",
+    "executableSha256": "9BE548FB6CBD2E8C80715015C2A2F0F248C9B01A7165004E2B017FFE2B14E65A",
+    "embeddedResourceNames": ["IBMPlexSans-Light.ttf", "IBMPlexSans-Regular.ttf", "IBMPlexSans-Medium.ttf", "IBMPlexSans-LightItalic.ttf"],
+    "scope": "Cortex Control desktop chrome, not proof of the CorOS framebuffer face",
+    "note": "The desktop executable embeds IBM Plex Sans, but the full physical-framebuffer comparison scores lower when IBM Plex is forced across CorOS. CorOS reconstruction therefore retains the empirically superior bundled Arimo/Roboto mapping until firmware font resources can be extracted directly."
+  },
   "dimensions": [
     "text",
     "lineBreaks",
@@ -33,6 +41,7 @@
     "deviceRoute": "Helvetica Neue",
     "deviceRoboto": "Roboto"
   },
+  "bundledFamilies": ["Arimo Variable", "Roboto Variable"],
   "qualityGates": {
     "canonicalStateCoveragePercent": 100,
     "dualHostMetadataPercent": 100,

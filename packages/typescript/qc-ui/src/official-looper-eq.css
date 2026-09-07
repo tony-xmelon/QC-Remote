@@ -12,7 +12,7 @@
 .coros-looper > header button > svg { width: 3cqw; height: 3cqw; flex: none; color: var(--qc-icon-primary); fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .coros-looper > header button:first-child > svg { width: 3cqw; height: 3cqw; fill: currentColor; stroke: none; transform: translate(2px, 3px); }
 .coros-looper > header .looper-params { display: flex; align-items: center; justify-content: center; gap: 1cqw; }
-.coros-looper > header .looper-params > svg { width: 3.25cqw; height: 3cqw; transform: translate(-4px, 2px); }
+.coros-looper > header .looper-params > svg { width: 3.25cqw; height: 3cqw; transform: translate(-5px, 2px); }
 .coros-looper > header .looper-scene { display: flex; align-items: center; justify-content: space-around; }
 .coros-looper > header .looper-scene > svg { width: 3.5cqw; fill: currentColor; stroke: none; }
 .coros-looper > header .looper-scene > svg:first-child { transform: translateX(-1px); }

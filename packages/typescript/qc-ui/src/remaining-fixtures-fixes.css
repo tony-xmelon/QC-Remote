@@ -293,7 +293,7 @@
 .capture-library-browser button,.capture-search-keyboard button,.capture-directory-list button{font-weight:400}
 .capture-library-browser>header button:last-child{margin-left:2.25cqw}
 .capture-library-browser>main>i{width:15cqw;height:17.5cqw;color:var(--qc-library-mark);transform:none}
-.capture-library-browser>main>i .qc-library-icon-neural-mark{width:100%;height:100%;fill:currentColor;stroke:none}
+.capture-library-browser>main>i .qc-library-icon-neural-mark{width:100%;height:100%;fill:currentColor;stroke:none;transform:translateY(-1.25cqw)}
 .capture-library-browser.is-capture-directory>main{display:block;background:#292c29}
 .capture-directory-list{position:relative;width:100%;height:100%;overflow:hidden;background:#292c29}
 .capture-directory-list>button{position:relative;width:calc(100% - 3.25cqw);height:7.5cqw;display:block;padding:1cqw 2cqw;border-bottom:1px solid #171a18;background:#292c29;color:#eff1ef;text-align:left;font-size:2cqw}

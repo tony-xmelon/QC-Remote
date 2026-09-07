@@ -1,6 +1,14 @@
 {
   "schemaVersion": 1,
   "corosVersion": "4.1.0",
+  "canonicalRasterIcons": [
+    "directory.download", "directory.cloud", "directory.cloud-upload-header", "directory.trash",
+    "library.clock", "library.neural-mark", "screen-header.export", "mode.hybrid", "editor.looper",
+    "editor.confirm", "editor.paste", "editor.remove", "interface.add", "interface.file",
+    "interface.midi", "interface.modes", "interface.tempo", "interface.settings",
+    "interface.previous-cab", "interface.next-cab", "device-category.cab", "device-category.overdrive",
+    "device-category.wah", "route.analog-input", "route.send"
+  ],
   "description": "Authoritative evidence ledger for every typed glyph exposed by the shared QC UI. official-vector entries have exact path and palette evidence; screen-frame glyph entries require crop-level structural scoring; device-category *-tile entries are exact screen-palette anchors for the surrounding icon outline.",
   "qualityGates": { "exactColorMatchPercent": 100, "minimumMeanStructuralMatchPercent": 99.9, "minimumIndividualStructuralMatchPercent": 98 },
   "families": [
@@ -106,7 +114,7 @@
     { "icon": "library.broken-heart", "variant": "broken-heart", "screen": "official-directory-favorites", "crop": [701, 78, 24, 24], "referenceBackground": "#181c18", "rendererBackground": "#181c18", "expectedColors": ["#f8fcf8"], "paletteTokens": ["captured.iconPrimary"] },
     { "icon": "library.capture-header", "variant": "capture-header", "screen": "official-directory-captures", "crop": [24, 18, 24, 24], "referenceBackground": "#282c28", "rendererBackground": "#282c28", "expectedColors": ["#283028", "#404040", "#505050", "#586058", "#c0c0c0", "#c8c8c8", "#f8fcf8"], "paletteTokens": ["captured.captureStripeLow", "captured.captureStripeShadow", "captured.captureStripeDark", "captured.captureStripeMuted", "captured.captureStripeSoft", "captured.captureStripeLight", "captured.iconPrimary"] },
     { "icon": "library.capture-library", "variant": "capture-library", "screen": "official-directory-captures", "crop": [24, 198, 24, 24], "referenceBackground": "#181c18", "rendererBackground": "#181c18", "expectedColors": ["#f8fcf8"], "paletteTokens": ["captured.iconPrimary"] },
-    { "icon": "library.neural-mark", "variant": "neural-mark", "screen": "device-favorites", "sourceSet": "corpus", "crop": [520, 190, 120, 140], "referenceBackground": "#151a16", "rendererBackground": "#151a16", "expectedColors": ["#090b09"], "paletteTokens": ["captured.libraryMark"] },
+    { "icon": "library.neural-mark", "variant": "neural-mark", "screen": "device-favorites", "sourceSet": "corpus", "crop": [520, 190, 120, 140], "referenceBackground": "#181c18", "rendererBackground": "#151a16", "expectedColors": ["#101010"], "paletteTokens": ["captured.libraryMark"] },
     { "icon": "screen-header.undo", "variant": "undo", "screen": "official-grid-brit-2203", "crop": [604, 8, 32, 32], "referenceBackground": "#000000", "rendererBackground": "#020202", "expectedColors": ["#f6f8f6"], "paletteTokens": ["captured.headerUndo"] },
     { "icon": "screen-header.save", "variant": "save", "screen": "grid-base", "sourceSet": "corpus", "crop": [700, 8, 40, 32], "referenceBackground": "#000000", "rendererBackground": "#000000", "expectedColors": ["#ffffff"], "paletteTokens": ["captured.primaryText"] },
     { "icon": "screen-header.export", "variant": "export", "screen": "official-grid-brit-2203", "crop": [704, 10, 36, 28], "referenceBackground": "#000000", "rendererBackground": "#020202", "expectedColors": ["#eceeec"], "paletteTokens": ["captured.headerSave"] },

@@ -17,7 +17,7 @@
 .device-browser-official:not(.is-plugins) nav button:nth-child(1) svg { transform: none; }
 .device-browser-official:not(.is-plugins) nav button:nth-child(3) svg { transform: none; }
 .device-browser-official:not(.is-plugins) nav button:nth-child(4) svg { transform: translate(-1px, -1px); }
-.device-browser-official:not(.is-plugins) nav button:nth-child(5) svg { transform: translate(1px, -2px); }
+.device-browser-official:not(.is-plugins) nav button:nth-child(5) svg { transform: translate(0, 1px); }
 .device-browser-official:not(.is-plugins) nav button:nth-child(6) svg { transform: none; }
 .device-browser-official.is-plugins nav button:nth-child(1) svg { transform: scaleX(1.2); }
 .device-browser-official.is-plugins nav button:nth-child(3) svg { transform: scale(1.23); }

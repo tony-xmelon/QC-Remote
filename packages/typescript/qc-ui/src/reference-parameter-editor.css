@@ -179,6 +179,10 @@
 .coros-reference-parameter-editor .cab-mic svg { width: 1.6cqw; fill: none; stroke: currentColor; stroke-width: 2; }
 .coros-reference-parameter-editor .cab-mic .qc-ui-icon-previous,
 .coros-reference-parameter-editor .cab-mic .qc-ui-icon-next { width: 24px; height: 24px; flex: none; }
+.coros-reference-parameter-editor .cab-mic .qc-ui-icon-cab-previous,
+.coros-reference-parameter-editor .cab-mic .qc-ui-icon-cab-next { width: 24px; height: 24px; flex: none; }
+.coros-reference-parameter-editor .cab-mic .qc-ui-icon-cab-previous { transform: translate(-3px, 2px); }
+.coros-reference-parameter-editor .cab-mic .qc-ui-icon-cab-next { transform: translate(3px, 2px); }
 .coros-reference-parameter-editor .cab-mic .qc-ui-icon-previous { transform: translateX(-6px); }
 .coros-reference-parameter-editor .cab-mic .qc-ui-icon-next { transform: translateX(6px); }
 .coros-reference-parameter-editor .cab-enable { display: grid; place-items: center; }

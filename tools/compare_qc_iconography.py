@@ -22,10 +22,13 @@ def dominant_background(image: Image.Image) -> tuple[int, int, int]:
     return tuple(int(part) for part in colors[counts.argmax()])
 
 
-def foreground_mask(image: Image.Image, background: tuple[int, int, int], threshold: float = 24.0) -> np.ndarray:
+def foreground_mask(image: Image.Image, background: tuple[int, int, int], foreground_colors: list[tuple[int, int, int]]) -> np.ndarray:
     pixels = np.asarray(image.convert("RGB"), dtype=np.float32)
     background_pixel = np.asarray(background, dtype=np.float32)
-    return np.linalg.norm(pixels - background_pixel, axis=2) >= threshold
+    colors = np.asarray(foreground_colors, dtype=np.float32)
+    separation = float(np.min(np.linalg.norm(colors - background_pixel, axis=1)))
+    tolerance = max(2.0, min(20.0, separation / 2.0))
+    return np.min(np.linalg.norm(pixels[:, :, None, :] - colors[None, None, :, :], axis=3), axis=2) <= tolerance
 
 
 def edge(mask: np.ndarray) -> np.ndarray:
@@ -37,9 +40,9 @@ def edge(mask: np.ndarray) -> np.ndarray:
     return mask & ~eroded
 
 
-def structural_match(reference: Image.Image, renderer: Image.Image, reference_background: tuple[int, int, int], renderer_background: tuple[int, int, int]) -> float:
-    reference_edge = edge(foreground_mask(reference, reference_background))
-    renderer_edge = edge(foreground_mask(renderer, renderer_background))
+def structural_match(reference: Image.Image, renderer: Image.Image, reference_background: tuple[int, int, int], renderer_background: tuple[int, int, int], foreground_colors: list[tuple[int, int, int]]) -> float:
+    reference_edge = edge(foreground_mask(reference, reference_background, foreground_colors))
+    renderer_edge = edge(foreground_mask(renderer, renderer_background, foreground_colors))
     if not reference_edge.any() and not renderer_edge.any():
         return 1.0
     if not reference_edge.any() or not renderer_edge.any():
@@ -57,9 +60,9 @@ def shifted(image: Image.Image, dx: int, dy: int, background: tuple[int, int, in
     return result
 
 
-def best_alignment(reference: Image.Image, renderer: Image.Image, reference_background: tuple[int, int, int], renderer_background: tuple[int, int, int]) -> dict[str, object]:
+def best_alignment(reference: Image.Image, renderer: Image.Image, reference_background: tuple[int, int, int], renderer_background: tuple[int, int, int], foreground_colors: list[tuple[int, int, int]]) -> dict[str, object]:
     candidates = [
-        (structural_match(reference, shifted(renderer, dx, dy, renderer_background), reference_background, renderer_background), dx, dy)
+        (structural_match(reference, shifted(renderer, dx, dy, renderer_background), reference_background, renderer_background, foreground_colors), dx, dy)
         for dy in range(-3, 4)
         for dx in range(-3, 4)
     ]
@@ -130,7 +133,8 @@ def main() -> int:
             # corresponding glyph entry owns structural scoring for the same
             # registered variant.
             compare_structure = measurement.get("compareStructure", not measurement["icon"].endswith("-tile"))
-            structure = structural_match(reference, renderer, reference_background, renderer_background) if compare_structure else None
+            foreground_colors = [parse_hex_color(color) for color in measurement["expectedColors"]]
+            structure = structural_match(reference, renderer, reference_background, renderer_background, foreground_colors) if compare_structure else None
             result = {
                 "icon": measurement["icon"],
                 "host": host,
@@ -145,7 +149,7 @@ def main() -> int:
                 "rendererDominantColors": dominant_colors(renderer),
                 "colorMatchPercent": round(color_match * 100, 2),
                 "structuralMatchPercent": round(structure * 100, 2) if structure is not None else None,
-                "bestTranslation": best_alignment(reference, renderer, reference_background, renderer_background) if compare_structure else None,
+                "bestTranslation": best_alignment(reference, renderer, reference_background, renderer_background, foreground_colors) if compare_structure else None,
             }
             results.append(result)
             if args.require_exact_colors and color_match != 1.0:

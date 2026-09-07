@@ -4,6 +4,7 @@ import visualAssets from "./assets.json" with { type: "json" };
 import brand from "./brand.json" with { type: "json" };
 
 export { REFERENCE_BLOCK_ICONS } from "./reference-block-icons.ts";
+export { QC_REFERENCE_ICON_RASTERS } from "./reference-icon-rasters.ts";
 
 /**
  * Shared visual contract for the Windows and Android QC Control apps.

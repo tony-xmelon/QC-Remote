@@ -177,6 +177,7 @@ def main() -> int:
     args = parser.parse_args()
 
     manifest = load_json(args.manifest)
+    bundled_families = set(manifest["bundledFamilies"])
     coverage = load_json(Path(manifest["coverageLedger"]))
     roots = {
         "physical": (args.physical, args.baseline / "corpus"),
@@ -309,7 +310,7 @@ def main() -> int:
         quality_failures.append("Windows/Android computed typography styles are not identical")
     if report["primaryFaceAvailabilityPercent"] < 100:
         quality_failures.append("a primary typography face is unavailable")
-    system_font_runs = sum(item["runs"] for item in report["fontAvailability"] if item["font"] not in ("Arimo Variable", "Roboto Variable"))
+    system_font_runs = sum(item["runs"] for item in report["fontAvailability"] if item["font"] not in bundled_families)
     if system_font_runs:
         quality_failures.append(f"{system_font_runs} text runs still depend on a system font")
     if report["meanStructuralMatchPercent"] < 95:

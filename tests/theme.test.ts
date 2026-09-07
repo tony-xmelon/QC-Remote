@@ -36,7 +36,7 @@ test("shared theme retains every measured native QC color", () => {
     iconPrimary: "#f8fcf8",
     iconMuted: "#889088",
     iconToolbarMuted: "#606060",
-    libraryMark: "#090b09",
+    libraryMark: "#101010",
     keyboardGlyph: "#f7f3f7",
     cabArrowDark: "#848684",
     cabArrowLight: "#9c9e9c",
