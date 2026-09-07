@@ -48,6 +48,7 @@ test("the mobile control deck follows the physical three-row QC layout", () => {
   assert.match(styles, /\.mobile-tempo-control \{ grid-column: 5; grid-row: 3; \}/);
   assert.match(styles, /\.hardware-switch\.is-tempo-pulse\.is-active \.switch-led::before/);
   assert.match(styles, /\.mobile-down-glyph \{ display: inline-grid; transform: rotate\(180deg\); \}/);
+  assert.match(styles, /\.mobile-up-control \.switch-label svg,[\s\S]*width: 17px; height: 17px;/);
   assert.match(styles, /\.mobile-volume-control \{ grid-column: 1; grid-row: 1;/);
   assert.match(styles, /@media \(orientation: landscape\)[\s\S]*grid-template-columns: repeat\(7, minmax\(0, 1fr\)\)/);
   assert.match(styles, /@media \(orientation: landscape\)[\s\S]*\.mobile-screen > \.qc-chassis \{ width: min\(100%, 80vh\); \}/);
@@ -101,6 +102,16 @@ test("Android exposes an allowlisted Gemini selector and a compact persisted quo
   assert.match(quotaSource, /"gemini-3\.7-flash": \{ requestsPerMinute: 5, requestsPerDay: 20/);
   assert.match(quotaSource, /"gemini-3\.5-flash-lite": \{ requestsPerMinute: 15, requestsPerDay: 500/);
   assert.match(styles, /\.chat-model-bar/);
+});
+
+test("Firebase AI and Play Integrity initialize only inside a consent-gated Gemini request", () => {
+  const appSource = readFileSync(new URL("./App.tsx", import.meta.url), "utf8");
+  const mainSource = readFileSync(new URL("../android/app/src/main/java/com/qccontrol/mobile/MainActivity.java", import.meta.url), "utf8");
+  const geminiSource = readFileSync(new URL("../android/app/src/main/java/com/qccontrol/mobile/GeminiPlugin.java", import.meta.url), "utf8");
+  assert.match(appSource, /native && onlineModelsAllowed/);
+  assert.doesNotMatch(mainSource, /FirebaseApp(?:Check)?|PlayIntegrity/);
+  assert.match(geminiSource, /private synchronized void ensureAppCheckConfigured\(\)/);
+  assert.match(geminiSource, /ensureAppCheckConfigured\(\);\s*return models\.computeIfAbsent/);
 });
 
 test("Android chat is a compact, persistent, collapsible panel", () => {

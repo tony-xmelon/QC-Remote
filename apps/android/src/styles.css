@@ -93,6 +93,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .quick-controls .switch-label { position: absolute; z-index: 5; left: 50%; top: 39px; transform: translate(-50%, -50%); color: var(--qc-palette-f0f0f0); font-size: 12px; font-weight: 700; letter-spacing: .03em; pointer-events: none; }
 .quick-controls .mobile-encoder-control .switch-label { font-size: 14px; font-weight: 600; }
 .quick-controls .switch-label svg { width: 13px; height: 13px; }
+.quick-controls .mobile-up-control .switch-label,
+.quick-controls .mobile-down-control .switch-label { top: 40px; line-height: 0; }
+.quick-controls .mobile-up-control .switch-label svg,
+.quick-controls .mobile-down-control .switch-label svg { display: block; width: 17px; height: 17px; }
 .quick-controls .hardware-switch.is-active .switch-led, .quick-controls .hardware-switch.is-pressed .switch-led { border-color: var(--qc-palette-aaabae); background: var(--qc-palette-626367); box-shadow: none; }
 .quick-controls .hardware-switch.is-active .switch-led::before, .quick-controls .hardware-switch.is-pressed .switch-led::before { opacity: 1; }
 .quick-controls .hardware-switch.is-tempo-pulse.is-active .switch-led::before { animation: qc-tempo-led-pulse var(--tempo-period, 1s) linear infinite; }
