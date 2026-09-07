@@ -7,6 +7,7 @@ export type QcHardwareIconName = "power" | "brand-pulse";
 export type QcIoIconName = "header" | "usb" | "jack" | "midi" | "combo" | "headphone-active" | "input" | "headphones-symbol" | "linked";
 export type QcLibraryIconName = "capture-library" | "capture-header" | "heart" | "clock" | "binoculars" | "broken-heart" | "neural-mark";
 export type QcScreenHeaderGlyphName = "undo" | "save" | "export" | "menu";
+export type QcSettingsIconName = "connection" | "updates" | "brightness" | "power" | "volume" | "storage" | "factory-reset";
 export type QcUiIconName = "add" | "subtract" | "previous" | "next" | "cab-previous" | "cab-next" | "up" | "down" | "more" | "check" | "close" | "refresh" | "backspace" | "microphone" | "attachment" | "file" | "send" | "stop" | "save-as" | "edit" | "midi" | "favorite" | "delete" | "capture" | "modes" | "tempo" | "cpu" | "settings";
 
 type ReferenceRasterName = keyof typeof QC_REFERENCE_ICON_RASTERS;
@@ -51,24 +52,23 @@ export function QcPresetStackIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 4-8 4-8-4 8-4Zm8 8-8 4-8-4m16 4-8 4-8-4" /></svg>;
 }
 
+export function QcSettingsIcon({ kind, className }: { kind: QcSettingsIconName; className?: string }) {
+  return <QcReferenceRasterLayers icon={`settings.${kind}` as ReferenceRasterName} className={`qc-settings-icon qc-settings-icon-${kind}${className ? ` ${className}` : ""}`} />;
+}
+
 /** Shared app/CorOS glyph vocabulary. Text characters must not be used as icons. */
 export function QcUiIcon({ kind, className }: { kind: QcUiIconName; className?: string }) {
   const classes = `qc-ui-icon qc-ui-icon-${kind}${className ? ` ${className}` : ""}`;
+  if (kind === "settings" || kind === "check") return <QcReferenceRasterLayers icon={`interface.${kind}` as ReferenceRasterName} className={classes} />;
   const referenceIcons = {
     add: "interface.add", file: "interface.file", midi: "interface.midi", modes: "interface.modes",
-    tempo: "interface.tempo", settings: "interface.settings"
+    tempo: "interface.tempo"
   } as const;
   if (kind in referenceIcons) return <QcReferenceRaster icon={referenceIcons[kind as keyof typeof referenceIcons]} color={QC_COLORS.captured.primaryText} className={classes} />;
   if (kind === "cab-previous" || kind === "cab-next") {
     const icon = kind === "cab-previous" ? "interface.previous-cab" : "interface.next-cab";
     return <svg className={classes} viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true"><path d={referencePath(icon, 0)} style={{ fill: QC_COLORS.captured.cabArrowDark, stroke: "none" }} /><path d={referencePath(icon, 1)} style={{ fill: QC_COLORS.captured.cabArrowLight, stroke: "none" }} /></svg>;
   }
-  if (kind === "check")
-    return (
-      <svg className={classes} viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
-        <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M18 7h1v1h-1ZM16 8h4v1h-4ZM15 9h5v1h-5ZM14 10h4v1h-4ZM13 11h4v1h-4ZM5 12h2v1h-2ZM12 12h4v1h-4ZM4 13h4v1h-4ZM11 13h4v1h-4ZM5 14h4v1h-4ZM10 14h4v1h-4ZM6 15h7v1h-7ZM7 16h5v1h-5ZM8 17h3v1h-3ZM9 18h1v1h-1Z" />
-      </svg>
-    );
   if (kind === "down")
     return (
       <svg className={classes} viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">

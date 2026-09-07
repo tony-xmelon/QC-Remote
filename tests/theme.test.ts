@@ -111,7 +111,7 @@ test("core behavior and UI artwork consume one category palette", () => {
 
 test("shared glyph registry covers hardware, routing, directory, editing, and communication", () => {
   const icons = read("packages/typescript/qc-ui/src/theme-icons.tsx");
-  for (const component of ["QcRouteGlyph", "QcModeGlyph", "QcDirectoryIcon", "QcEditorIcon", "QcUiIcon"]) assert.ok(icons.includes("export function " + component));
+  for (const component of ["QcRouteGlyph", "QcModeGlyph", "QcDirectoryIcon", "QcEditorIcon", "QcSettingsIcon", "QcUiIcon"]) assert.ok(icons.includes("export function " + component));
   assert.equal(readdirSync("packages/typescript/qc-ui/src").filter((entry) => /icon/i.test(entry)).join(","), "theme-icons.tsx");
   assert.doesNotMatch(read("packages/typescript/qc-ui/src/quad-cortex-surface.tsx"), /function (?:RoutePickerGlyph|DirectoryIcon|ModeGlyph)/);
   assert.doesNotMatch(read("packages/typescript/qc-ui/src/parameter-editor.tsx"), /function ParameterMenuIcon/);
@@ -119,7 +119,7 @@ test("shared glyph registry covers hardware, routing, directory, editing, and co
   assert.match(fixtures, /return <QcModeGlyph mode=\{mode\} \/>/, "fixture modes must delegate to the shared glyph registry");
   assert.match(fixtures, /return <QcDirectoryIcon kind=\{kind\} number=\{number\} \/>/, "fixture Directory icons must delegate to the shared glyph registry");
   const manifest = JSON.parse(read("references/qc-ui-iconography/coros-4.1.0/manifest.json"));
-  for (const icon of ["mode.preset", "mode.scene", "mode.stomp", "mode.hybrid", "block.capture-wave"]) {
+  for (const icon of ["mode.preset", "mode.scene", "mode.stomp", "mode.hybrid", "block.capture-wave", "interface.check", "settings.connection", "settings.updates", "settings.brightness", "settings.power", "settings.volume", "settings.storage", "settings.factory-reset"]) {
     assert.ok(manifest.canonicalRasterIcons.includes(icon), `${icon} must be generated from its canonical device crop`);
   }
   assert.match(icons, /const icon = `mode\.\$\{mode\.toLowerCase\(\)\}`/);
@@ -128,6 +128,9 @@ test("shared glyph registry covers hardware, routing, directory, editing, and co
   const deviceGlyph = read("packages/typescript/qc-ui/src/device-glyph.tsx");
   assert.match(deviceGlyph, /QC_REFERENCE_ICON_RASTERS\["block\.capture-wave"\]/);
   assert.doesNotMatch(deviceGlyph, /block\.glyph === "capture-wave"[^]*?c\$\{size/, "Capture artwork must not be hand-authored in the renderer");
+  const officialSystem = fixtures.slice(fixtures.indexOf("function CorOsOfficialSettings"), fixtures.indexOf("type CapturedSettingsView"));
+  assert.doesNotMatch(officialSystem, /[⌁◔☀ϟ◕▥]/, "System Settings must not substitute font glyphs for device icons");
+  assert.match(fixtures, /<QcSettingsIcon kind=\{icon as QcSettingsIconName\} \/>/, "System Settings must use the canonical measured icon registry");
 });
 
 test("production and comparison screens cannot select alternate icon artwork", () => {

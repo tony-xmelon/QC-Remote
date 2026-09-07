@@ -76,6 +76,7 @@ const familyPrefixes = {
   QcIoIconName: "io",
   QcLibraryIconName: "library",
   QcScreenHeaderGlyphName: "screen-header",
+  QcSettingsIconName: "settings",
   QcModeGlyph: "mode",
   QcRouteGlyph: "route",
   DeviceCategoryGlyph: "device-category",

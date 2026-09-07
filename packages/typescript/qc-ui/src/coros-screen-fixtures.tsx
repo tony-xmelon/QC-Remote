@@ -4,7 +4,7 @@ import { QC_COLORS, QC_REFERENCE_ICON_RASTERS } from "@ndsp-qc/theme";
 import { officialBlockVisual } from "./block-visuals";
 import { openSplitPath } from "./coros-ui";
 import { QcDeviceGlyph } from "./device-glyph";
-import { QcDirectoryIcon, QcEditorIcon, QcHardwareIcon, QcIoIcon, QcLibraryIcon, QcModeGlyph, QcScreenHeaderGlyph, QcUiIcon, type QcIoIconName } from "./theme-icons";
+import { QcDirectoryIcon, QcEditorIcon, QcHardwareIcon, QcIoIcon, QcLibraryIcon, QcModeGlyph, QcScreenHeaderGlyph, QcSettingsIcon, QcUiIcon, type QcIoIconName, type QcSettingsIconName } from "./theme-icons";
 import "./fixture-live-surface.css";
 import "./remaining-fixtures.css";
 import "./remaining-fixtures-fixes.css";
@@ -271,13 +271,13 @@ function CorOsOfficialSettings({ view }: { view: "settings-account" | "settings-
     : view === "settings-account"
     ? { title: "Account", icon: "♧", active: 1, rows: [["♙", "My Account"], ["♻", "Backups"]] }
     : view === "settings-system"
-      ? { title: "System", icon: "⚙", active: 2, rows: [["⌁", "Connection"], ["◔", "Updates"], ["☀", "Brightness"], ["ϟ", "Power Functions"], ["◔", "Master Volume Knob"], ["◕", "Device Storage"], ["▥", "Factory Reset"]] }
+      ? { title: "System", icon: "settings", active: 2, rows: [["connection", "Connection"], ["updates", "Updates"], ["brightness", "Brightness"], ["power", "Power Functions"], ["volume", "Master Volume Knob"], ["storage", "Device Storage"], ["factory-reset", "Factory Reset"]] }
       : { title: "Device", icon: "▣", active: 0, rows: [["◉", "Global Bypass"], ["◴", "Scene Bypass Behavior"], ["♞", "Stomp Mode Bypass"], ["◴", "Hold Timing"], ["⇄", "Swap Tempo and Tuner"], ["▦", "Gig View Access"], ["◷", "Latency Compensation"]] };
   return <section className={`qc-screen coros-settings-official ${view}`} aria-label={`${data.title} Settings`}>
-    <header><button className="settings-section"><b>{view === "settings-account" ? <SettingsAccountGlyph kind="cloud" /> : view === "settings-device" ? <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2" /><rect x="7" y="5" width="10" height="5" /><path d="M8 14h1m3 0h1m3 0h1M8 18h1m3 0h1m3 0h1" /></svg> : data.icon}</b>{data.title}<i /></button><button className="settings-done">{view === "settings-device" ? <QcUiIcon kind="check" /> : "✓"}</button></header>
-    <main><nav>{data.rows.map(([icon, label], index) => <button key={label} className={index === data.active ? "is-active" : ""}><b>{view === "settings-account" ? <SettingsAccountGlyph kind={index === 0 ? "user" : "backup"} /> : view === "settings-device" ? <SettingsDeviceIcon label={label} /> : icon}</b>{label}</button>)}</nav>
+    <header><button className="settings-section"><b>{view === "settings-account" ? <SettingsAccountGlyph kind="cloud" /> : view === "settings-device" ? <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2" /><rect x="7" y="5" width="10" height="5" /><path d="M8 14h1m3 0h1m3 0h1M8 18h1m3 0h1m3 0h1" /></svg> : view === "settings-system" ? <QcUiIcon kind="settings" /> : data.icon}</b>{data.title}<i /></button><button className="settings-done"><QcUiIcon kind="check" /></button></header>
+    <main><nav>{data.rows.map(([icon, label], index) => <button key={label} className={index === data.active ? "is-active" : ""}><b>{view === "settings-account" ? <SettingsAccountGlyph kind={index === 0 ? "user" : "backup"} /> : view === "settings-device" ? <SettingsDeviceIcon label={label} /> : view === "settings-system" ? <QcSettingsIcon kind={icon as QcSettingsIconName} /> : icon}</b>{label}</button>)}</nav>
       {view === "settings-account" ? <section className="settings-account-detail"><header><strong>Cloud Backups　<span>3/5</span></strong><small>All timestamps are UTC</small></header>{[["My Rig 001", "☁ August 29th, 2025, 17:06", "↧ August 29th, 2025, 17:11"], ["My Backup", "☁ November 15th, 2024, 19:22", ""], ["Tour 2025", "☁ August 16th, 2023, 15:38", ""]].map(([name, first, second]) => <div key={name}><strong>{name}</strong><small>{first}</small><small>{second}</small><b>⋮</b></div>)}<button>NEW CLOUD BACKUP</button></section>
-        : view === "settings-system" ? <section className="settings-system-detail"><h1>Brightness</h1><p>Turn the ▲, ▼, and TEMPO footswitches to adjust the<br />brightness. Tap the Modes at the bottom to toggle dimmed<br />LED lights for each one individually.</p>{[["Screen", "16", 16], ["LEDs", "16", 16], ["Dimmed LEDs", "2", 2]].map(([label, value, bars]) => <div key={String(label)}><span>{label}</span><strong>{value}</strong><i>{Array.from({ length: 32 }, (_, index) => <b key={index} className={index < Number(bars) ? "is-on" : ""} />)}</i></div>)}<footer>▦　▣　♞</footer></section>
+        : view === "settings-system" ? <section className="settings-system-detail"><h1>Brightness</h1><p>Turn the ▲, ▼, and TEMPO footswitches to adjust the<br />brightness. Tap the Modes at the bottom to toggle dimmed<br />LED lights for each one individually.</p>{[["Screen", "16", 16], ["LEDs", "16", 16], ["Dimmed LEDs", "2", 2]].map(([label, value, bars]) => <div key={String(label)}><span>{label}</span><strong>{value}</strong><i>{Array.from({ length: 32 }, (_, index) => <b key={index} className={index < Number(bars) ? "is-on" : ""} />)}</i></div>)}<footer><QcModeGlyph mode="PRESET" /><QcModeGlyph mode="SCENE" /><QcModeGlyph mode="STOMP" /></footer></section>
           : view === "settings-midi" ? <section className="settings-midi-detail"><h1>MIDI Settings</h1>{[["MIDI Channel", "select", "1"], ["MIDI Thru", "toggle", "Off"], ["MIDI Over USB", "toggle", "On"], ["Ignore Duplicate PC", "toggle", "Off"], ["MIDI Clock Out", "select", "OFF"], ["MIDI Clock In", "toggle", "Off"]].map(([label, kind, value]) => <div key={label}><b>i</b><span>{label}</span>{kind === "select" ? <button>{value}<i>▼</i></button> : <label><small>On</small><small>Off</small><i className={value === "On" ? "is-on" : ""} /></label>}</div>)}</section>
           : <section className="settings-device-detail"><h1>Global Bypass</h1><p>Globally bypass Cabs, IR Loaders, or Neural Captures of<br />cabs* on any row. Globally bypassed devices will have a<br />bypass icon <span className="inline-settings-power"><SettingsPowerIcon /></span> but will not appear bypassed on The Grid.</p><small>*Neural Captures need to have the Capture Type set to "Cab" to be<br />bypassed.</small>{["cab", "ir"].map((key) => <div key={key}><b><SettingsDeviceModelIcon kind={key} /></b>{[1,2,3,4].map(row => <label key={row}><span>ROW {row}</span><i><SettingsPowerIcon /></i></label>)}</div>)}</section>}
     </main>
@@ -296,18 +296,15 @@ function SupportQr() {
 
 function CapturedSettingsIcon({ kind }: { kind: string }) {
   if (kind === "support") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 5h19v14h-19zM3 5l9 8 9-8" /></svg>;
-  if (kind === "system") return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v3m0 14v3M2 12h3m14 0h3M4.9 4.9 7 7m10 10 2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1" /></svg>;
+  if (kind === "system") return <QcUiIcon kind="settings" />;
   if (kind === "about") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 16 4-10 4 13 4-8 3 5h3" /></svg>;
   if (kind === "info") return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor" stroke="none" /><path d="M12 10v7m0-11v1" stroke="#282c28" strokeWidth="2" /></svg>;
   if (kind === "report") return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7" /><path d="M12 2v4m0 12v4M2 12h4m12 0h4M5 5l3 3m8 8 3 3M19 5l-3 3M8 16l-3 3" /></svg>;
   if (kind === "diagnostics") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3h4v18h-4zM3 10h18v4H3z" fill="currentColor" stroke="none" /></svg>;
   if (kind === "licenses") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 2h9l5 5v15H5zM8 12h8M8 16h8M8 8h3" /></svg>;
-  if (kind === "wifi") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8a14 14 0 0 1 18 0M6 12a9 9 0 0 1 12 0m-9 4a4 4 0 0 1 6 0" /><circle cx="12" cy="20" r="1" fill="currentColor" /></svg>;
-  if (kind === "updates") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 7V2l-3 3a8 8 0 1 0 4 13M6 17v5l3-3" /></svg>;
-  if (kind === "brightness") return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 1v3m0 16v3M1 12h3m16 0h3M4 4l2 2m12 12 2 2M20 4l-2 2M6 18l-2 2" /></svg>;
-  if (kind === "power") return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="3" fill="currentColor" stroke="none" /><path d="m13 4-6 10h5l-1 6 6-10h-5z" stroke="#282c28" /></svg>;
-  if (kind === "volume") return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" /><path d="M12 12 18 6" /></svg>;
-  if (kind === "storage") return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor" stroke="none" /><path d="M12 2v10h10" stroke="#282c28" /></svg>;
+  if (kind === "wifi") return <QcSettingsIcon kind="connection" />;
+  if (kind === "updates" || kind === "brightness" || kind === "power" || kind === "volume" || kind === "storage") return <QcSettingsIcon kind={kind} />;
+  if (kind === "factory") return <QcSettingsIcon kind="factory-reset" />;
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18v15H3zM7 2v8m5-8v8m5-8v8M7 16v2m5-2v2m5-2v2" /></svg>;
 }
 
