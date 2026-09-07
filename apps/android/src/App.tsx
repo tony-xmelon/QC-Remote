@@ -538,7 +538,7 @@ export function App() {
     </section>
 
     <nav className="quick-controls" aria-label="Quick device controls">
-      <div className="mobile-volume-control"><QcMasterVolumeKnob value={snapshot.masterVolume} onAction={handleSurfaceAction} /><small>VOLUME</small></div>
+      <div className="mobile-volume-control"><QcMasterVolumeKnob value={snapshot.masterVolume} readout={`${snapshot.masterVolume}`} onAction={handleSurfaceAction} /><small>VOLUME</small></div>
       <button className={`device-view-control mobile-io-control${ioViewOpen ? " is-active" : ""}`} onClick={toggleIoView} aria-pressed={ioViewOpen} aria-label={ioViewOpen ? "Hide I/O Settings quick control" : "Open I/O Settings"}><span>I/O</span></button>
       <button className={`device-view-control mobile-gig-control${gigViewOpen ? " is-active" : ""}`} onClick={toggleGigView} aria-pressed={gigViewOpen} aria-label={gigViewOpen ? "Hide Gig View quick control" : "Open Gig View"}><span>GIG</span></button>
       <div className="mobile-up-control"><QcHardwareSwitch role="bank:up" label={<QcUiIcon kind="up" />} ariaLabel="Previous preset" active={Boolean(parameterEditorBindings)} assigned={Boolean(parameterEditorBindings)} accent={QC_COLORS.hardware.whiteLed} onAction={handleSurfaceAction} /></div>
@@ -549,8 +549,8 @@ export function App() {
           <QcHardwareSwitch role={`footswitch:${label}`} label={label} active={led.active} assigned={led.assigned} accent={led.color} onAction={handleSurfaceAction} />
         </div>;
       })}
-      {(() => { const led = mobileLed(4, { active: false, assigned: false, color: QC_COLORS.hardware.whiteLed }); return <div className="mobile-down-control"><QcHardwareSwitch role="bank:down" label={<QcUiIcon kind="down" />} ariaLabel="Next preset" active={led.active} assigned={led.assigned} accent={led.color} onAction={handleSurfaceAction} /></div>; })()}
-      <div className="mobile-tempo-control"><QcHardwareSwitch role="tempo" label="TEMPO" active={parameterLeds ? parameterLeds[9].active : snapshot.tempoLedEnabled} assigned={parameterLeds ? parameterLeds[9].assigned : snapshot.tempoLedEnabled} accent={parameterLeds ? parameterLeds[9].color : QC_COLORS.device.tempoLed} pulseBpm={!parameterLeds && snapshot.tempoLedEnabled ? snapshot.tempo : undefined} pulseEpochMs={!parameterLeds ? snapshot.tempoPulseEpochMs : undefined} onAction={handleSurfaceAction} /></div>
+      {(() => { const led = mobileLed(4, { active: false, assigned: false, color: QC_COLORS.hardware.whiteLed }); return <div className="mobile-down-control"><QcHardwareSwitch role="bank:down" label={<span className="mobile-down-glyph"><QcUiIcon kind="up" /></span>} ariaLabel="Next preset" active={led.active} assigned={led.assigned} accent={led.color} onAction={handleSurfaceAction} /></div>; })()}
+      <div className="mobile-tempo-control"><QcHardwareSwitch role="tempo" label="TEMPO" readout={`${snapshot.tempo}`} active={parameterLeds ? parameterLeds[9].active : snapshot.tempoLedEnabled} assigned={parameterLeds ? parameterLeds[9].assigned : snapshot.tempoLedEnabled} accent={parameterLeds ? parameterLeds[9].color : QC_COLORS.device.tempoLed} pulseBpm={!parameterLeds && snapshot.tempoLedEnabled ? snapshot.tempo : undefined} pulseEpochMs={!parameterLeds ? snapshot.tempoPulseEpochMs : undefined} onAction={handleSurfaceAction} /></div>
     </nav>
 
     <section className={`mobile-chat${chatCollapsed ? " is-collapsed" : ""}`} aria-label="Chat">

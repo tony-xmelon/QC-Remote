@@ -76,8 +76,8 @@ interface QuadCortexSurfaceProps {
   onCloseScreen?: () => void;
 }
 
-export function QcHardwareSwitch({ role, label, ariaLabel, active, assigned = false, accent, compact = false, pulseBpm, pulseEpochMs, onAction }: {
-  role: string; label: ReactNode; ariaLabel?: string; active?: boolean; assigned?: boolean; accent?: string; compact?: boolean; pulseBpm?: number; pulseEpochMs?: number; onAction: (action: HardwareAction) => void;
+export function QcHardwareSwitch({ role, label, ariaLabel, active, assigned = false, accent, compact = false, pulseBpm, pulseEpochMs, readout, onAction }: {
+  role: string; label: ReactNode; ariaLabel?: string; active?: boolean; assigned?: boolean; accent?: string; compact?: boolean; pulseBpm?: number; pulseEpochMs?: number; readout?: string; onAction: (action: HardwareAction) => void;
 }) {
   const drag = useRef<{ pointerId: number; lastY: number; rotated: boolean } | null>(null);
   const hideValueTimer = useRef<number | undefined>(undefined);
@@ -155,12 +155,12 @@ export function QcHardwareSwitch({ role, label, ariaLabel, active, assigned = fa
     onPointerUp={(event) => release(event)} onPointerCancel={(event) => release(event, true)} onKeyDown={keyboard} onKeyUp={(event) => { if (event.key === "Enter" || event.key === " ") setPressed(false); }} onBlur={() => setPressed(false)} onWheel={wheel}
   >
     <span ref={led} className="switch-led" aria-hidden="true" />
-    <span className="switch-ring" aria-hidden="true"><span className="switch-cap" /><span className={`rotation-readout${showValue ? " is-visible" : ""}`}>{encoderValue}</span></span>
+    <span className="switch-ring" aria-hidden="true"><span className="switch-cap" /><span className={`rotation-readout${showValue || readout !== undefined ? " is-visible" : ""}`}>{readout ?? encoderValue}</span></span>
     <span className="switch-label">{label}</span>
   </button>;
 }
 
-export function QcMasterVolumeKnob({ value, onAction }: { value: number; onAction: (action: HardwareAction) => void }) {
+export function QcMasterVolumeKnob({ value, readout, onAction }: { value: number; readout?: string; onAction: (action: HardwareAction) => void }) {
   const drag = useRef<{ pointerId: number; lastY: number } | null>(null);
   const hideValueTimer = useRef<number | undefined>(undefined);
   const [showValue, setShowValue] = useState(false);
@@ -191,7 +191,7 @@ export function QcMasterVolumeKnob({ value, onAction }: { value: number; onActio
     }} onWheel={(event) => {
       event.preventDefault();
       rotate(event.deltaY < 0 ? 1 : -1);
-    }}><span className="volume-pointer" /><span className={`rotation-readout${showValue ? " is-visible" : ""}`}>{value}</span></button>;
+    }}><span className="volume-pointer" /><span className={`rotation-readout${showValue || readout !== undefined ? " is-visible" : ""}`}>{readout ?? value}</span></button>;
 }
 
 function MasterVolume({ value, onAction }: { value: number; onAction: (action: HardwareAction) => void }) {

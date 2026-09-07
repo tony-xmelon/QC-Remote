@@ -10,7 +10,7 @@ test("the mobile control deck follows the physical three-row QC layout", () => {
 
   assert.equal(domain.limits.scenes, 8);
   assert.match(appSource, /Array\.from\(\{ length: QC_SCENE_COUNT \}/, "A through H must come from the shared scene definition");
-  assert.match(appSource, /QcMasterVolumeKnob value=\{snapshot\.masterVolume\}/);
+  assert.match(appSource, /QcMasterVolumeKnob value=\{snapshot\.masterVolume\} readout=\{`\$\{snapshot\.masterVolume\}`\}/);
   assert.match(appSource, /const toggleIoView = async \(\) => \{[\s\S]*QcUsbNative\.swipeScreen\(qcRemoteScreen\.openIo\)[\s\S]*setMobileScreenView\("io-overview"\)/);
   assert.match(appSource, /else if \(ioViewOpen\) await QcUsbNative\.tapScreenDirect\(qcRemoteScreen\.done\)/);
   assert.match(appSource, /const toggleGigView = async \(\) => \{[\s\S]*androidGatewayTransport\.showGigView\(true\)[\s\S]*setMobileScreenView\("gig"\)/);
@@ -18,12 +18,12 @@ test("the mobile control deck follows the physical three-row QC layout", () => {
   assert.match(appSource, /onClick=\{toggleIoView\} aria-pressed=\{ioViewOpen\}/);
   assert.match(appSource, /onClick=\{toggleGigView\} aria-pressed=\{gigViewOpen\}/);
   assert.match(appSource, /QcHardwareSwitch role="bank:up" label=\{<QcUiIcon kind="up" \/>\}/);
-  assert.match(appSource, /QcHardwareSwitch role="bank:down" label=\{<QcUiIcon kind="down" \/>\}/);
+  assert.match(appSource, /QcHardwareSwitch role="bank:down" label=\{<span className="mobile-down-glyph"><QcUiIcon kind="up" \/><\/span>\}/);
   assert.doesNotMatch(appSource, />SCENE</);
   assert.match(appSource, /footswitchLeds\(snapshot\)/);
   assert.match(appSource, /useQcWorkflows\(\{/);
   assert.match(performanceWorkflow, /controller\.beginFootswitch/);
-  assert.match(appSource, /QcHardwareSwitch role="tempo" label="TEMPO"/);
+  assert.match(appSource, /QcHardwareSwitch role="tempo" label="TEMPO" readout=\{`\$\{snapshot\.tempo\}`\}/);
   assert.match(appSource, /useContinuousControlWorkflow\(\{/);
   assert.match(appSource, /adjustEditorParameter\(role, delta\)/);
   assert.doesNotMatch(appSource, /> BLOCK<\/button>/);
@@ -35,10 +35,12 @@ test("the mobile control deck follows the physical three-row QC layout", () => {
   assert.match(styles, /grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
   assert.match(styles, /grid-template-rows: repeat\(3, minmax\(66px, 1fr\)\)/);
   assert.match(styles, /\.quick-controls \.switch-ring \{ width: 50px;/);
-  assert.match(styles, /\.mobile-encoder-control \.switch-label \{ position: absolute; left: calc\(50% \+ 20px\);/);
+  assert.match(styles, /\.mobile-encoder-control \.switch-label \{ position: absolute; left: calc\(50% \+ 13px\);/);
   assert.match(styles, /\.mobile-up-control \{ grid-column: 5; grid-row: 1; \}/);
   assert.match(styles, /\.mobile-down-control \{ grid-column: 5; grid-row: 2; \}/);
   assert.match(styles, /\.mobile-tempo-control \{ grid-column: 5; grid-row: 3; \}/);
+  assert.match(styles, /\.hardware-switch\.is-tempo-pulse\.is-active \.switch-led::before/);
+  assert.match(styles, /\.mobile-down-glyph \{ display: inline-grid; transform: rotate\(180deg\); \}/);
   assert.match(styles, /\.mobile-volume-control \{ grid-column: 1; grid-row: 1;/);
 });
 
