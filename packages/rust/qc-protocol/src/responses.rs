@@ -990,6 +990,12 @@ mod tests {
     use super::*;
     use proptest::prelude::*;
 
+    /// Render a payload the way a capture prints it, so an assertion can be
+    /// compared against what was seen on the wire.
+    fn hex(payload: &[u8]) -> String {
+        payload.iter().map(|byte| format!("{byte:02x}")).collect()
+    }
+
     /// Shaped after a real reply from the unit; see `commands::read_graphics_tree`.
     #[test]
     fn graphics_tree_returns_the_device_widget_text_verbatim() {
@@ -1450,6 +1456,41 @@ mod tests {
             decode_model_presets(&reply, Some(9002)),
             Err(ResponseDecodeError::Mismatch(_))
         ));
+    }
+
+    #[test]
+    fn model_preset_writes_match_the_bytes_the_device_accepted() {
+        // Both were established against CorOS 4.1.0 with a disposable preset on
+        // the scratch preset's Adaptive Gate, and the library was restored
+        // afterwards. The hex is what went over the wire.
+        let create = crate::commands::create_model_preset(9301, 0, 0, "Zzcreate");
+        assert_eq!(create.message_type, 71);
+        assert_eq!(
+            hex(&create.payload),
+            "10d5481a0a12085a7a63726561746520002800"
+        );
+
+        // create_from_row and create_from_column are on the wire even at zero.
+        // With implicit presence they would vanish and the device would not
+        // know which block to save; this assertion is what keeps that from
+        // regressing silently.
+        let decoded = pa::ModelPresetMessage::decode(create.payload.as_slice()).unwrap();
+        assert_eq!(decoded.create_from_row, Some(0));
+        assert_eq!(decoded.create_from_column, Some(0));
+        assert_eq!(decoded.action, pa::message_action::Enum::Create as i32);
+
+        let delete = crate::commands::delete_model_preset(9201, "3", 16001, "Zztest");
+        assert_eq!(delete.message_type, 71);
+        assert_eq!(
+            hex(&delete.payload),
+            "080210f1471a120a080a0133100018817d12065a7a74657374"
+        );
+        let decoded = pa::ModelPresetMessage::decode(delete.payload.as_slice()).unwrap();
+        assert_eq!(decoded.action, pa::message_action::Enum::Delete as i32);
+        let target = &decoded.presets[0];
+        assert_eq!(target.id.as_ref().unwrap().value.as_deref(), Some("3"));
+        assert_eq!(target.id.as_ref().unwrap().hash, Some(16001));
+        assert_eq!(target.id.as_ref().unwrap().is_factory, Some(false));
     }
 
     #[test]

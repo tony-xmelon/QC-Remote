@@ -245,11 +245,50 @@ device gzips it. `commands::read_model_presets` and
 `responses::decode_model_presets` implement that half, with tests pinned to the
 shape above.
 
-The write half stays unbuilt on purpose. A misunderstood DELETE destroys a
-user's saved preset, and nothing observed so far distinguishes "delete this
-preset" from "tear down the subscription for the block being edited". It is
-listed as unfinished rather than guessed at, which is the same standard the
-other four `unestablished` entries are held to.
+The write half is established too, on a disposable preset created for the
+purpose on the scratch preset's Adaptive Gate, with the library restored
+afterwards.
+
+**CREATE** saves the parameters of the block at a grid position under a name.
+The device assigns the id - a counter across user presets, not per model - and
+stamps the block's model hash onto it:
+
+```
+-> { action: CREATE, request_id: 9301, create_from_row: 0,
+     create_from_column: 0, presets: [ { name: "Zzcreate" } ] }
+   10d5481a0a12085a7a63726561746520002800
+<- the listing now carries ('4', 16001, "Zzcreate")
+```
+
+**DELETE** removes a user preset, named by the id and model hash the listing
+reports:
+
+```
+-> { action: DELETE, request_id: 9201,
+     presets: [ { id { value: "3", is_factory: false, hash: 16001 },
+                  name: "Zztest" } ] }
+   080210f1471a120a080a0133100018817d12065a7a74657374
+<- 2754 entries become 2753; the entry is gone, the others untouched
+```
+
+So a `ModelPresetID` is *(id, factory flag, **model** hash)*: `hash` scopes the
+preset to a device model, not to the preset itself. Factory entries all share
+the id `SpecialFactoryModelPresetID` and differ only by that hash. On a stock
+unit the listing is 2,753 entries, of which two were the owner's.
+
+`commands::create_model_preset`, `commands::delete_model_preset` and
+`commands::read_model_presets` implement all three, with tests asserting the
+exact hex above.
+
+#### The zeros in that CREATE are the whole argument for the schema fix
+
+Look at the tail of the CREATE bytes: `20 00 28 00`. Those are
+`create_from_row = 0` and `create_from_column = 0`, on the wire, as values.
+Under the implicit-presence schema this crate carried before the protos were
+regenerated, a proto3 field set to its default is not serialized at all - so
+saving the block at row 0, column 0 would have sent neither field, and the
+device would have had no idea which block was meant. The 417 fields that
+regained explicit presence were not a cosmetic difference.
 
 ## Impulse responses
 

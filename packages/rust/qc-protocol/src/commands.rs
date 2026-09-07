@@ -772,16 +772,76 @@ pub fn read_global_eq() -> OutboundMessage {
 /// 25 KiB on the wire for 101 KiB of listing on a stock unit - so it arrives
 /// through the same inflate path as a full preset push.
 ///
-/// Only the read half is built. Captured traffic shows Cortex Control sending
-/// DELETE then CREATE around a save, and a misunderstood DELETE destroys a
-/// saved preset, so the write half stays unbuilt until its contract is
-/// established the same way this one was.
 pub fn read_model_presets(request_id: u64) -> OutboundMessage {
     OutboundMessage::encoded(
         71,
         pa::ModelPresetMessage {
             action: pa::message_action::Enum::Read as i32,
             request_id: Some(request_id),
+            ..Default::default()
+        },
+    )
+}
+
+/// Save the parameters of the block at `row`/`column` as a named user preset.
+///
+/// The device assigns the id - a counter across user presets, not per model -
+/// and stamps the block's model hash onto it. Establishing this on hardware
+/// produced `('4', 16001, "Zzcreate")` from the Adaptive Gate at row 0,
+/// column 0.
+///
+/// Note that row and column go out even when both are zero: they have explicit
+/// presence in the shipped schema, so `create_from_row = 0` is a value rather
+/// than an absence. Under the implicit-presence schema this crate used to
+/// carry, saving the block at 0,0 would have sent neither field and the device
+/// would not have known which block was meant.
+pub fn create_model_preset(request_id: u64, row: i32, column: i32, name: &str) -> OutboundMessage {
+    OutboundMessage::encoded(
+        71,
+        pa::ModelPresetMessage {
+            action: pa::message_action::Enum::Create as i32,
+            request_id: Some(request_id),
+            create_from_row: Some(row),
+            create_from_column: Some(column),
+            presets: vec![pa::ModelPreset {
+                name: Some(name.to_owned()),
+                ..Default::default()
+            }],
+            ..Default::default()
+        },
+    )
+}
+
+/// Remove a user model preset from the device's library.
+///
+/// `id` and `model_hash` are the pair the listing reports; together they name
+/// one entry. Verified on hardware against a disposable preset: the library
+/// went from 2754 entries to 2753 and the entry disappeared, with the other
+/// user presets untouched.
+///
+/// Factory entries share the id `SpecialFactoryModelPresetID` and are not
+/// deletable; this builder is for user presets, which is why it takes the
+/// hash that scopes one.
+pub fn delete_model_preset(
+    request_id: u64,
+    id: &str,
+    model_hash: u32,
+    name: &str,
+) -> OutboundMessage {
+    OutboundMessage::encoded(
+        71,
+        pa::ModelPresetMessage {
+            action: pa::message_action::Enum::Delete as i32,
+            request_id: Some(request_id),
+            presets: vec![pa::ModelPreset {
+                id: Some(pa::ModelPresetId {
+                    value: Some(id.to_owned()),
+                    is_factory: Some(false),
+                    hash: Some(model_hash),
+                }),
+                name: Some(name.to_owned()),
+                ..Default::default()
+            }],
             ..Default::default()
         },
     )
