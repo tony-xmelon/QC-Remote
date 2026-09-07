@@ -5,6 +5,7 @@
 .gig-official > header span { flex: 1; }
 .gig-official > header button { width: 8.25cqw; height: 5.5cqw; margin-left: 1cqw; border: 0; border-radius: 1cqw; background: #171b18; color: #eee; font: 3cqw Arial, sans-serif; }
 .gig-official > header button b { color: #f2d125; }
+.gig-official > header button:last-child svg { width: 3cqw; height: 3cqw; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .gig-official > header .gig-mode-icon { display: block; width: 3cqw; height: 3cqw; margin: auto; color: var(--qc-icon-primary); }
 .gig-official > header .gig-mode-icon-preset { transform: translate(2px, -1px); }
 .gig-official > header .gig-mode-icon-scene { transform: translate(2px, 1px); }
@@ -92,7 +93,17 @@
 .gig-official.is-hybrid > header button:first-of-type { transform: translateX(-.25cqw); }
 .gig-official.is-hybrid > header button:nth-of-type(2) { width: 5.25cqw; }
 .gig-official.is-hybrid > header button:nth-of-type(3) { width: 12.25cqw; }
+.qc-screen.gig-official.is-hybrid { grid-template-rows: 7.5cqw 0 52.5cqw; }
+.gig-official.is-hybrid > i { visibility: hidden; margin: 0; }
+.gig-official.is-hybrid .gig-official-tiles { padding-top: 0; }
 .gig-official.is-hybrid .gig-official-tiles article { padding: 1.5cqw 2cqw; }
+.gig-official.is-hybrid .gig-official-tiles article.hybrid-preset { padding-top: .625cqw; }
+.gig-official.is-hybrid .hybrid-preset > small { position: relative; top: -.75cqw; display: block; font-size: 5cqw; }
+.gig-official.is-hybrid .hybrid-preset > strong { margin-top: .5cqw; font-size: 4cqw; line-height: 1.3; }
+.gig-official.is-hybrid .hybrid-preset > small b { font: inherit; font-weight: 400; }
+.gig-official.is-hybrid .hybrid-preset:nth-child(1) > small b { color: #2df36a; }
+.gig-official.is-hybrid .hybrid-preset:nth-child(3) > small b { color: #ff7900; }
+.gig-official.is-hybrid .hybrid-preset:nth-child(4) > small b { color: #f000a8; }
 .gig-official.is-hybrid .hybrid-scene { display: grid; place-items: center; text-align: center; }
 .gig-official.is-hybrid .hybrid-scene::before { content: attr(data-letter); position: absolute; inset: 3cqw 0 auto; color: rgba(0,0,0,.22); font-size: 22cqw; line-height: 1; }
 .gig-official.is-hybrid .hybrid-scene > small { position: absolute; inset: 1.5cqw 2cqw auto; color: #a8aaa8; font-size: 3cqw; text-align: left; }

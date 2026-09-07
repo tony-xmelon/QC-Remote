@@ -4,7 +4,7 @@ import { QC_COLORS } from "@ndsp-qc/theme";
 import { officialBlockVisual } from "./block-visuals";
 import { openSplitPath } from "./coros-ui";
 import { QcDeviceGlyph } from "./device-glyph";
-import { QcDirectoryIcon, QcEditorIcon, QcEqIcon, QcHardwareIcon, QcIoIcon, QcLibraryIcon, QcModeGlyph, QcScreenHeaderGlyph, QcSettingsIcon, QcUiIcon, type QcIoIconName, type QcSettingsIconName } from "./theme-icons";
+import { QcDirectoryIcon, QcEditorIcon, QcEqIcon, QcHardwareIcon, QcIoIcon, QcLibraryIcon, QcModeGlyph, QcPresetStackIcon, QcScreenHeaderGlyph, QcSettingsIcon, QcUiIcon, type QcIoIconName, type QcSettingsIconName } from "./theme-icons";
 import { QcRotaryDial, type QcRotaryDialProps } from "./qc-rotary-dial";
 import "./fixture-live-surface.css";
 import "./remaining-fixtures.css";
@@ -48,7 +48,9 @@ function CorOsOfficialGig({ mode }: { mode: OfficialGigMode }) {
   const stomps = [["A", "Crying\nWah", "♧"], ["B", "MX\nClassicOD 4", "▥"], ["C", "Brit\nGovernor", "∿"], ["D", "Rodent\nDrive", "∿"], ["E", "Looper X", "♧"], ["F", "Transpose", "⌁"], ["G", "Multiple\ndevices (2)", "▣"], ["H", "Room", "◇"]];
   const sceneMode = mode === "scene";
   const stompMode = mode === "stomp";
-  return <section className={`qc-screen gig-official is-${mode === "hybrid" ? "hybrid" : sceneMode ? "scene" : stompMode ? "stomp" : "preset"}`}><header><span>1A Brit 2203</span><button><OfficialGigModeIcon mode={mode} /></button><button><b>A</b></button><button>✓</button></header><i /><main className="gig-official-tiles">{mode === "preset" ? preset.map(([location, name]) => <article key={location}><small>{location}</small><strong>{name.split("\n").map((line, i) => <span key={i}>{line}<br /></span>)}</strong></article>) : sceneMode ? scenes.map((name, index) => <article key={name} data-letter={String.fromCharCode(65 + index)}><SceneTileTools /><strong>{name.split("\n").map((line, i) => <span key={i}>{line}<br /></span>)}</strong></article>) : mode === "hybrid" ? [...scenes.slice(0, 4).map((name, index) => ({ letter: String.fromCharCode(65 + index), name, scene: true })), ...stomps.slice(4).map(([letter, name]) => ({ letter, name, scene: false }))].map(({ letter, name, scene }, index) => <article key={letter} className={scene ? "hybrid-scene" : "hybrid-stomp"} data-letter={letter} style={{ background: ["#ff272d", "#0b2027", "#302f10", "#301021", "#ff272d", "#302f10", "#171b18", "#10ead5"][index] }}>{scene ? <SceneTileTools /> : <small>↙ {letter}</small>}{!scene && <b className="has-device-glyph"><GigStompGlyph index={index} /></b>}<strong>{name.split("\n").map((line, i) => <span key={i}>{line}<br /></span>)}</strong></article>) : stomps.map(([letter, name], index) => <article key={letter}><small>↙ {letter}</small><b className="has-device-glyph"><GigStompGlyph index={index} /></b><strong>{name.split("\n").map((line, i) => <span key={i}>{line}<br /></span>)}</strong></article>)}</main></section>;
+  const hybridPresets = [["A", "Acoustic\nsim-_1"], ["B", "Top 3\nAcoustic\nSims"], ["C", "XUSH\n12string\nBass"], ["D", "QC-MCP-\nTEST-\nmtniwb_1"]];
+  const hybridScenes = [["C", "mono"], ["F", "stereo"], ["G", "chor"], ["H", "fx"]];
+  return <section className={`qc-screen gig-official is-${mode === "hybrid" ? "hybrid" : sceneMode ? "scene" : stompMode ? "stomp" : "preset"}`}><header><span>{mode === "hybrid" ? "7B Top 3 Acoustic Sims" : "1A Brit 2203"}</span><button><OfficialGigModeIcon mode={mode} /></button><button><b>{mode === "hybrid" ? "F" : "A"}</b></button><button><QcUiIcon kind="check" /></button></header><i /><main className="gig-official-tiles">{mode === "preset" ? preset.map(([location, name]) => <article key={location}><small>{location}</small><strong>{name.split("\n").map((line, i) => <span key={i}>{line}<br /></span>)}</strong></article>) : sceneMode ? scenes.map((name, index) => <article key={name} data-letter={String.fromCharCode(65 + index)}><SceneTileTools /><strong>{name.split("\n").map((line, i) => <span key={i}>{line}<br /></span>)}</strong></article>) : mode === "hybrid" ? <>{hybridPresets.map(([letter, name], index) => <article key={letter} className="hybrid-preset" style={{ background: index === 1 ? "#167ee8" : "#171b18", color: index === 1 ? "#050505" : "#f3f4f3" }}><small><span>7</span><b>{letter}</b></small><strong>{name.split("\n").map((line, i) => <span key={i}>{line}<br /></span>)}</strong></article>)}{hybridScenes.map(([letter, name], index) => <article key={letter} className="hybrid-scene" data-letter={letter} style={{ background: ["#0d2716", "#ff7900", "#17182f", "#0c3026"][index], color: index === 1 ? "#050505" : "#f3f4f3" }}><SceneTileTools /><strong>{name}</strong></article>)}</> : stomps.map(([letter, name], index) => <article key={letter}><small>↙ {letter}</small><b className="has-device-glyph"><GigStompGlyph index={index} /></b><strong>{name.split("\n").map((line, i) => <span key={i}>{line}<br /></span>)}</strong></article>)}</main></section>;
 }
 
 export type { CorOsScreenView } from "./coros-screen-fixture-data";
@@ -975,6 +977,30 @@ function CorOsRemainingFixture({ view }: { view: RemainingFixtureView }) {
         </section>
       </section>
     );
+  if (view === "fixture-editor-pages") {
+    const controls = [
+      ["GAIN", "5.0", -90, 38.9], ["BASS", "5.0", -90, 38.9], ["MID", "5.0", -90, 38.9],
+      ["TREBLE", "5.0", -90, 38.9], ["PRESENCE", "5.0", -90, 38.9], ["MASTER", "3.0", -140, 25],
+      ["OUTPUT", "0.0 dB", -90, 38.9],
+    ] as const;
+    return <section className="qc-screen capture-editor-physical amp-editor-pages" aria-label="Brit 2203 parameter editor page">
+      <header>
+        <strong><span>4</span>E</strong><h1>QC MCP TEST_2*</h1>
+        <nav><i><svg viewBox="607 11 26 27" aria-hidden="true"><QcScreenHeaderGlyph kind="undo" /></svg></i><b>A</b><i><svg viewBox="704 12 24 23" aria-hidden="true"><QcScreenHeaderGlyph kind="save" /></svg></i><i><svg viewBox="762 12 7 23" aria-hidden="true"><QcScreenHeaderGlyph kind="menu" /></svg></i></nav>
+        <em><ModeGlyph mode="PRESET" /><span>PRESET</span></em>
+      </header>
+      <div className="capture-editor-grid">
+        <span>In<br />1</span><i className="capture-cable" />
+        <i className="capture-block is-gate"><DeviceCategoryGlyph label="Utility" fallback="" /></i>
+        <i className="capture-block is-amp"><DeviceCategoryGlyph label="Amp" fallback="" /></i>
+        <span>Multi<br />Out</span>
+      </div>
+      <section className="capture-editor-panel">
+        <header><button><QcUiIcon kind="more" /></button><span><small>GUITAR AMP</small><strong>Brit 2203 <QcPresetStackIcon /></strong></span><nav><i><QcEditorIcon kind="scene-previous" /></i><b>A</b><i><QcEditorIcon kind="scene-next" /></i></nav><button><QcEditorIcon kind="bypass" /></button><button><QcEditorIcon kind="confirm" /></button></header>
+        <main>{controls.map(([label, value, angle, progress]) => <section key={label}><span>{label}</span><QcRotaryDial className="capture-editor-dial" angle={angle} progress={progress} accent="#ff393d" pointerStart={36} /><strong>{value}</strong></section>)}</main>
+      </section>
+    </section>;
+  }
   const editor =
     view === "fixture-editor-cab"
       ? [
@@ -2462,9 +2488,11 @@ function PluginModelGlyph({ name, kind }: { name: string; kind: "amp" | "cab" | 
   return <svg viewBox="0 0 70 70" aria-hidden="true"><QcDeviceGlyph block={block} x={35} y={35} size={70} /></svg>;
 }
 
-function CorOsDeviceBrowserFixture({ view }: { view: "device-search" | "device-favorites" | "plugin-folders" | "plugin-list" | "plugin-models" | "plugin-locked" | "plugin-refresh" }) {
+function CorOsDeviceBrowserFixture({ view }: { view: "device-search" | "device-favorites" | "plugin-folders" | "plugin-list" | "plugin-list-reference" | "plugin-models" | "plugin-locked" | "plugin-refresh" }) {
   if (view === "plugin-folders") return <section className="qc-screen plugin-folders-official" aria-label="Plugin folders"><header><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H4m0 0 6-6m-6 6 6 6" /></svg></button><button className="plugin-folder-category"><DeviceCategoryGlyph label="Plugins" fallback="" /><span>Plugins</span><small>▼</small></button><span /><button><DirectoryIcon kind="arrange" /></button><button><DirectoryIcon kind="search" /></button><button><DirectoryIcon kind="done" /></button></header><main><nav><button><b><DirectoryIcon kind="folder" /></b><span><small>Plugins</small>Parallax X</span></button>{["Artists", "Neural DSP", "User"].map(label => <button key={label}><b><DirectoryIcon kind="folder" /></b><span>{label}</span>{label === "User" && <i>⋮</i>}</button>)}</nav><section><button><span>Default<small>Bass</small></span><i>D</i><b><GridToolbarIcon kind="export" /></b></button></section></main></section>;
   const plugins = view.startsWith("plugin-");
+  const pluginList = view === "plugin-list" || view === "plugin-list-reference" || view === "plugin-refresh";
+  const referenceGrid = view === "plugin-list-reference";
   const pluginModels = view === "plugin-models" || view === "plugin-locked";
   const lockedPlugin = view === "plugin-locked";
   const pluginModelRows: ReadonlyArray<readonly [string, "amp" | "cab" | "drive"]> = lockedPlugin ? [
@@ -2473,18 +2501,18 @@ function CorOsDeviceBrowserFixture({ view }: { view: "device-search" | "device-f
     ["Plini Clean", "amp"], ["Plini Crunch", "amp"], ["Plini Lead", "amp"], ["Plini Cab (M)", "cab"], ["Plini Cab (ST)", "cab"], ["Plini Drive", "drive"]
   ];
   const rows = view === "device-favorites" ? [["Chief DS1", "OVERDRIVE", true], ["Brit 2203", "AMP", true], ["212 UK C30 65 (M)", "CAB", true], ["Digital Flanger", "MODULATION", true], ["Ambience", "REVERB", true]] as const : view === "device-search" ? [["Chief DS1", "OVERDRIVE", true], ["Chief SD1", "OVERDRIVE", true], ["Chief OD1", "OVERDRIVE", true]] as const : undefined;
-  return <section className={`qc-screen coros-browser-fixture${view === "plugin-list" || view === "plugin-refresh" ? " is-physical-plugin-list" : pluginModels ? ` is-physical-plugin-models${lockedPlugin ? " is-physical-plugin-locked" : ""}` : ""}`} aria-label={view.replaceAll("-", " ")}>
+  return <section className={`qc-screen coros-browser-fixture${pluginList ? " is-physical-plugin-list" : pluginModels ? ` is-physical-plugin-models${lockedPlugin ? " is-physical-plugin-locked" : ""}` : ""}`} aria-label={view.replaceAll("-", " ")}>
     <div className="browser-fixture-panel">
       <nav>{COROS_DEVICE_CATEGORIES.slice(0, 8).map(([label, glyph, color], index) => <button key={label} className={(plugins ? index === 0 : index === 4) ? "is-active" : ""} style={{ "--device-color": color } as CSSProperties}><i><DeviceCategoryGlyph label={label} fallback={glyph} /></i></button>)}</nav>
       <main>
-        <header><strong>{view === "plugin-refresh" ? "Refreshing the list can take 10-20 seconds." : view === "plugin-list" ? "Add device" : plugins ? "Plugins" : view === "device-favorites" ? "Favorites & Recent" : "Search devices"}</strong><button className={view === "plugin-refresh" ? "is-refreshing" : ""}><GridToolbarIcon kind="refresh" /></button></header>
+        <header><strong>{view === "plugin-refresh" ? "Refreshing the list can take 10-20 seconds." : view === "plugin-list" || view === "plugin-list-reference" ? "Add device" : plugins ? "Plugins" : view === "device-favorites" ? "Favorites & Recent" : "Search devices"}</strong><button className={view === "plugin-refresh" ? "is-refreshing" : ""}><GridToolbarIcon kind="refresh" /></button></header>
         {view === "device-search" && <div className="browser-search"><span>⌕</span><b>Chief</b><button>×</button></div>}
         {view === "device-favorites" && <div className="browser-tabs"><button className="is-active">FAVORITES</button><button>RECENT</button></div>}
-        {pluginModels ? <div className="browser-result-list is-plugin-licenses">{PLUGIN_LICENSES.map(([name, available]) => { const selected = name === (lockedPlugin ? "Archetype: Cory Wong X" : "Archetype: Plini X"); return <button key={name} className={`${available ? "is-licensed" : "is-locked"}${selected ? " is-selected" : ""}`}>{!available && <i className="plugin-license-lock"><PluginLockIcon /></i>}<span><strong>{name}</strong></span>{selected && <em>›</em>}</button>; })}</div> : view === "plugin-list" || view === "plugin-refresh" ? <div className="browser-result-list is-plugin-licenses">{PLUGIN_LICENSES.map(([name, available]) => <button key={name} className={available ? "is-licensed" : "is-locked"}>{!available && <i className="plugin-license-lock"><PluginLockIcon /></i>}<span><strong>{name}</strong></span></button>)}</div> : <div className="browser-result-list">{rows?.map(([name, category]) => <button key={name}><i style={{ "--result-color": category === "AMP" ? "#ff424c" : category === "CAB" ? "#7257ff" : category === "MODULATION" ? "#a95cff" : category === "REVERB" ? "#35b9ff" : "#ff7900" } as CSSProperties}>{category === "AMP" ? "▭" : category === "CAB" ? "⊙" : "∿"}</i><span><strong>{name}</strong><small>{category}</small></span><b>★</b></button>)}</div>}
+        {pluginModels ? <div className="browser-result-list is-plugin-licenses">{PLUGIN_LICENSES.map(([name, available]) => { const selected = name === (lockedPlugin ? "Archetype: Cory Wong X" : "Archetype: Plini X"); return <button key={name} className={`${available ? "is-licensed" : "is-locked"}${selected ? " is-selected" : ""}`}>{!available && <i className="plugin-license-lock"><PluginLockIcon /></i>}<span><strong>{name}</strong></span>{selected && <em>›</em>}</button>; })}</div> : pluginList ? <div className="browser-result-list is-plugin-licenses">{PLUGIN_LICENSES.map(([name, available]) => <button key={name} className={available ? "is-licensed" : "is-locked"}>{!available && <i className="plugin-license-lock"><PluginLockIcon /></i>}<span><strong>{name}</strong></span></button>)}</div> : <div className="browser-result-list">{rows?.map(([name, category]) => <button key={name}><i style={{ "--result-color": category === "AMP" ? "#ff424c" : category === "CAB" ? "#7257ff" : category === "MODULATION" ? "#a95cff" : category === "REVERB" ? "#35b9ff" : "#ff7900" } as CSSProperties}>{category === "AMP" ? "▭" : category === "CAB" ? "⊙" : "∿"}</i><span><strong>{name}</strong><small>{category}</small></span><b>★</b></button>)}</div>}
       </main>
       {pluginModels && <><header className="plugin-model-header"><strong>{lockedPlugin ? "Plugin license not found" : "Add device"}</strong><button><GridToolbarIcon kind="refresh" /></button><button>×</button></header><section className="plugin-model-list">{pluginModelRows.map(([name, kind]) => <button key={name}><i className={kind === "cab" ? "is-cab" : kind === "drive" ? "is-drive" : ""}><PluginModelGlyph name={name} kind={kind} /></i>{lockedPlugin && <i className="plugin-model-lock"><PluginLockIcon /></i>}<span>{name}</span><em><DevicePresetGlyph /></em></button>)}</section></>}
     </div>
-    {view === "plugin-list" || view === "plugin-refresh" ? <div className="plugin-grid-underlay"><header><strong>2<span>F</span></strong><em>QC MCP TEST</em></header><main><i className="underlay-input">In<br />1</i><i className="underlay-plus">＋</i><i className="underlay-add">＋</i><i className="underlay-row-2">＋</i><i className="underlay-row-3">＋</i><i className="underlay-row-4">＋</i></main></div> : <div className="browser-grid-ghost"><b>3B</b><span>SCENE</span><i>＋</i><i>＋</i><i>＋</i></div>}
+    {pluginList ? <div className={`plugin-grid-underlay${referenceGrid ? " is-reference-grid" : ""}`}><header><strong>{referenceGrid ? <>4<span>E</span></> : <>2<span>F</span></>}</strong><em>{referenceGrid ? "QC MCP T" : "QC MCP TEST"}</em></header><main><i className="underlay-input">In<br />1</i>{referenceGrid && <i className="underlay-gate"><PluginGridGlyph kind="gate" /></i>}<i className="underlay-plus">＋</i><i className="underlay-add">＋</i><i className="underlay-row-2">＋</i><i className="underlay-row-3">{referenceGrid ? <>In<br />1</> : "＋"}</i><i className="underlay-row-4">＋</i></main></div> : <div className="browser-grid-ghost"><b>3B</b><span>SCENE</span><i>＋</i><i>＋</i><i>＋</i></div>}
   </section>;
 }
 
@@ -2855,7 +2883,7 @@ export function CorOsScreenFixture({ view, snapshot, gigPresetList, onClose = ()
   if (view === "splitter-placement" || view === "splitter-editor" || view === "mixer-editor" || view === "empty-slot") return <CorOsRoutingScreen view={view} snapshot={snapshot} />;
   if (view === "device-browser-neural-capture") return <CorOsCaptureLibrary view={view} />;
   if (view === "device-search" || view === "device-search-entry" || view === "device-search-suggestions" || view === "device-search-results" || view === "device-favorites" || view === "device-recents") return <CorOsCaptureLibrary view={view} />;
-  if (view === "plugin-folders" || view === "plugin-list" || view === "plugin-models" || view === "plugin-locked" || view === "plugin-refresh") return <CorOsDeviceBrowserFixture view={view} />;
+  if (view === "plugin-folders" || view === "plugin-list" || view === "plugin-list-reference" || view === "plugin-models" || view === "plugin-locked" || view === "plugin-refresh") return <CorOsDeviceBrowserFixture view={view} />;
   if (view === "looper-editor") return <CorOsLooperEditor />;
   if (view === "device-presets" || view === "device-presets-user" || view === "device-preset-actions" || view === "device-preset-save") return <CorOsDevicePresetScreen save={view === "device-preset-save"} view={view === "device-presets-user" ? "user" : view === "device-preset-actions" ? "actions" : "factory"} />;
   if (view === "expression-parameter" || view === "expression-bypass") return <ExpressionChooser trim={view === "expression-parameter"} />;

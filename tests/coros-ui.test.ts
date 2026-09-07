@@ -64,6 +64,11 @@ test("typography references render the captured state instead of a generic subst
   assert.equal(deepBrowser.blocks.length, 12);
   assert.match(windowsCapture, /id === "device-browser-neural-capture" \? "device-browser-neural-capture"/);
   assert.match(androidCapture, /id === "device-browser-neural-capture" \? "device-browser-neural-capture"/);
+  for (const driver of [windowsCapture, androidCapture]) {
+    assert.match(driver, /id === "directory-search" \? "device-search-entry"/, "Directory search must capture the actual keyboard state");
+    assert.match(driver, /id === "cloud-upload-overwrite" \? "overlay-overwrite"/, "Cloud overwrite must use its Directory-backed confirmation");
+    assert.match(driver, /id === "plugin-folders" \? "plugin-list-reference"/, "Plugin audit must retain its captured preset/grid state");
+  }
   const capture = corosFixtureConfiguration("?fixture=coros410&variant=capture-type", demoSnapshot).initialSnapshot;
   assert.equal(capture.presetLocation, "2F");
   assert.equal(capture.presetPosition, 13);
@@ -76,6 +81,14 @@ test("Neural Capture editor uses the shared measured rotary controls", () => {
   assert.match(fixtureSource, /progress=\{\(140 \+ Number\(offset\)\) \/ 3\.6\}/);
   assert.match(fixtureSource, /pointerStart=\{36\}/);
   assert.match(fixtureSource, /<em>\s*<ModeGlyph mode="PRESET" \/>\s*<span>PRESET<\/span>\s*<\/em>/, "the canonical mode icon must not be wrapped in a second SVG viewport");
+});
+
+test("rebuilt amp and hybrid fixtures retain their captured screen identities", () => {
+  const fixtureSource = readFileSync(new URL("../packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", import.meta.url), "utf8");
+  assert.match(fixtureSource, /view === "fixture-editor-pages"/);
+  assert.match(fixtureSource, /Brit 2203 <QcPresetStackIcon/);
+  assert.match(fixtureSource, /7B Top 3 Acoustic Sims/);
+  assert.match(fixtureSource, /<QcUiIcon kind="check" \/>/, "Gig header must use the shared interface check asset");
 });
 
 test("typography audit keeps content, glyphs, placement, and colors independent", () => {
