@@ -122,7 +122,7 @@ export function coros410FixtureSnapshot(base: PresetSnapshot, overrides: Partial
     masterVolume: 40,
     dirty: false,
     routes: [
-      { row: 0, inputId: 1, outputId: 0, input: "In 1", output: "Multi Out", splitMuted: false },
+      { row: 0, inputId: 1, outputId: 19, input: "In 1", output: "Multi Out", splitMuted: false },
       { row: 1, inputId: 0, outputId: 0, input: "", output: "", splitMuted: false },
       { row: 2, inputId: 0, outputId: 0, input: "", output: "", splitMuted: false },
       { row: 3, inputId: 0, outputId: 0, input: "", output: "", splitMuted: false }

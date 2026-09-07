@@ -91,7 +91,16 @@
 .capture-search-results article strong,
 .capture-search-results article small { font-weight: 400; }
 .capture-search-results h2 b { width: 3cqw; height: 3cqw; }
-.capture-search-results h2 b svg { display: block; width: 100%; height: 100%; }
+.qc-screen.capture-search-results { background: #101010; }
+.capture-search-results > header { height: calc(7.5cqw + 1px); }
+.capture-search-results > header button:nth-of-type(2),
+.capture-search-results > header button:nth-of-type(4) { background: #101010; }
+.capture-search-results > header button.is-active { background: #424142; }
+.capture-search-results > header button:nth-of-type(6),
+.capture-search-results > header button:nth-of-type(7) { background: #292c29; }
+.capture-search-results h2 { height: calc(5.5cqw + 1px); background: #424142; }
+.capture-search-results article { height: calc(7.75cqw + 1px); }
+.capture-search-results h2 b svg { display: block; width: 100%; height: 100%; transform: rotate(180deg); }
 
 .capture-editor-physical > header > strong { font-size: 9cqw; transform: translate(.125cqw, 1.375cqw) scale(.965, .98); transform-origin: left center; }
 .capture-editor-physical > header { position: relative; }
@@ -183,6 +192,10 @@
 .coros-io-settings .io-editor.is-headphones > section:first-child .io-dial { right: -.25cqw; }
 .coros-io-settings .io-editor.is-headphones > section:nth-child(2) .io-dial { right: -.125cqw; }
 .coros-io-settings .io-editor.is-headphones .io-dial-wrap > strong { left: .5cqw; bottom: 1.5cqw; color: #c5c8c5; }
+
+.splitter-panel > header > button:first-child svg,
+.splitter-panel > header > button:last-child svg { width: 3cqw; height: 3cqw; }
+.splitter-panel > header > button:first-child svg { fill: currentColor; stroke: none; }
 .coros-io-settings.is-headphones > header .io-global-eq { width: 13.625cqw; height: 5.5cqw; border-radius: 1cqw; }
 .coros-io-settings.is-headphones .io-ports button:nth-child(12) > i { color: #171a18; }
 .coros-io-settings.is-headphones .io-headphone-meter small { left: 1.125cqw; top: 4.375cqw; }

@@ -745,21 +745,21 @@
 .physical-grid-underlay.is-full-grid .underlay-grid { height: 480px; }
 .qc-screen.coros-cpu-monitor { position: absolute; inset: 0; overflow: hidden; background: #000; color: #848684; font-family: Arial,sans-serif; }
 .coros-cpu-monitor > .physical-grid-underlay { position: absolute; inset: 0; }
-.coros-cpu-monitor .cpu-readout { position: absolute; z-index: 3; left: 606px; top: 12px; width: 180px; height: 78px; border-radius: 10px; background: #181c18; }
-.coros-cpu-monitor .cpu-readout button { position: absolute; left: 14px; top: 14px; width: 24px; height: 24px; padding: 0; border: 0; background: transparent; color: #848684; }
-.coros-cpu-monitor .cpu-readout button svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 2; }
+.coros-cpu-monitor .cpu-readout { position: absolute; z-index: 3; left: 606px; top: 11px; width: 180px; height: 82px; border-radius: 10px; background: #181c18; }
+.coros-cpu-monitor .cpu-readout button { position: absolute; left: 10px; top: 7px; width: 24px; height: 24px; padding: 0; border: 0; background: transparent; color: #737573; }
+.coros-cpu-monitor .cpu-readout button svg { width: 100%; height: 100%; fill: currentColor; stroke: none; opacity: .5; }
 .coros-cpu-readout-placeholder { display: none; }
-.coros-cpu-monitor .cpu-readout .cpu-mixer { position: absolute; left: 84px; top: 14px; width: 24px; height: 24px; color: #848684; }
-.coros-cpu-monitor .cpu-readout .cpu-mixer svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 2; }
-.coros-cpu-monitor .cpu-readout > b { position: absolute; right: 12px; top: 12px; width: 32px; height: 28px; display: grid; place-items: center; border: 1px solid #6c706c; border-radius: 5px; color: #848684; font: 14px Arial,sans-serif; font-weight: 400; }
-.coros-cpu-monitor .cpu-readout > span { position: absolute; left: 14px; bottom: 10px; font: 17px Arial,sans-serif; }
-.coros-cpu-monitor .cpu-readout > strong { position: absolute; right: 12px; bottom: 4px; color: #42fb63; font: 30px Arial,sans-serif; font-weight: 400; }
+.coros-cpu-monitor .cpu-readout .cpu-mixer { position: absolute; left: 98px; top: 7px; width: 24px; height: 24px; color: #737573; }
+.coros-cpu-monitor .cpu-readout .cpu-mixer svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.5; }
+.coros-cpu-monitor .cpu-readout > b { position: absolute; right: 10px; top: 8px; width: 22px; height: 28px; display: grid; place-items: center; border: 1px solid #6c706c; border-radius: 5px; color: #848684; font: 14px Arial,sans-serif; font-weight: 400; }
+.coros-cpu-monitor .cpu-readout > span { position: absolute; left: 12px; bottom: 7px; color: #525552; font: 17px Arial,sans-serif; }
+.coros-cpu-monitor .cpu-readout > strong { position: absolute; right: 12px; bottom: 4px; color: #42fb63; font: 36px Arial,sans-serif; font-weight: 400; }
 .physical-grid-underlay .underlay-route.is-row-2,
 .physical-grid-underlay .underlay-output.is-row-2 { top: 201px; }
 .physical-grid-underlay .underlay-cable.is-row-2 { top: 238px; }
 .physical-grid-underlay .underlay-slot { position: absolute; width: 44px; height: 76px; top: 107px; border-radius: 14px; background: #080808; }
 .physical-grid-underlay.is-lit .underlay-slot { background: #101010; }
-.physical-grid-underlay.is-lit .underlay-slot::before { content: "+"; position: absolute; inset: 0; display: grid; place-items: center; color: #9a9c9a; font: 38px/1 Arial,sans-serif; font-weight: 200; }
+.physical-grid-underlay.is-lit .underlay-slot::before { content: ""; position: absolute; inset: 0; background: linear-gradient(#9a9c9a 0 0) center/24px 2px no-repeat, linear-gradient(#9a9c9a 0 0) center/2px 24px no-repeat; }
 .physical-grid-underlay .underlay-slot.is-left { left: 8px; }
 .physical-grid-underlay .underlay-slot.is-right { right: 6px; }
 .physical-grid-underlay .underlay-slot.is-row-2 { top: 295px; }

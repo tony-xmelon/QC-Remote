@@ -1921,7 +1921,7 @@ function CorOsCpuMonitor({ onClose }: { onClose: () => void }) {
     <PhysicalGridUnderlay rows={2} lit />
     <aside className="cpu-readout">
       <button aria-label="Close CPU Monitor" onClick={onClose}><QcUiIcon kind="close" /></button>
-      <i className="cpu-mixer"><GridToolbarIcon kind="more" /></i>
+      <i className="cpu-mixer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3v18M12 3v18M19 3v18" /><circle cx="5" cy="8" r="2" /><circle cx="12" cy="15" r="2" /><circle cx="19" cy="10" r="2" /></svg></i>
       <b>In</b>
       <span>CPU</span>
       <strong>7%</strong>
@@ -2202,7 +2202,7 @@ function CorOsGlobalEq({ onClose }: { onClose: () => void }) {
   return (
     <section className="coros-global-eq" aria-label="Global EQ">
       <header>
-        <button className="global-eq-more"><QcUiIcon kind="more" /></button>
+        <button className="global-eq-more"><QcPresetStackIcon /></button>
         <span>
           <small>GLOBAL EQ</small>
           <strong>Parametric-5</strong>
@@ -2267,10 +2267,18 @@ function CorOsGlobalEq({ onClose }: { onClose: () => void }) {
           ["GAIN", "0.0 dB"],
           ["FREQ", "50 Hz"],
           ["Q", "0.71"],
-        ].map(([label, value]) => (
+        ].map(([label, value], index) => (
           <section key={label}>
             <span>{label}</span>
-            <IoDial value={value} />
+            <IoDial
+              value={value}
+              progress={[18, 18, 13][index]}
+              angle={[-90, -170, 162][index]}
+              accent={index < 2 ? "#082c4a" : "#102c18"}
+              track="#080808"
+              face="#101410"
+              pointer="#596059"
+            />
           </section>
         ))}
         <section className="global-eq-bypass">
@@ -2414,7 +2422,7 @@ function CorOsRoutingScreen({ view, snapshot }: { view: "splitter-placement" | "
   if (splitter) return <section className="qc-screen coros-splitter-physical" aria-label={placement ? "Splitter and Mixer placement handles" : "Splitter parameter editor"}>
     <PhysicalRoutingGrid snapshot={snapshot} selected="S" />
     <section className="splitter-panel">
-      <header><button>⋮</button><span><strong>Splitter</strong></span><RoutingEditorHeaderControls /><button>✓</button></header>
+      <header><button><QcUiIcon kind="more" /></button><span><strong>Splitter</strong></span><RoutingEditorHeaderControls /><button><QcUiIcon kind="check" /></button></header>
       <div className="splitter-controls">
         <label><strong>TYPE</strong><span className="splitter-toggle"><i/><b>Crossover<br/>A/B<br/><em>Balance</em></b></span></label>
         <label><strong>STEREO</strong><span className="splitter-toggle"><i/><b>Split<br/><em>Normal</em></b></span></label>
@@ -2430,7 +2438,7 @@ function CorOsRoutingScreen({ view, snapshot }: { view: "splitter-placement" | "
   return <section className="qc-screen coros-splitter-physical coros-mixer-physical" aria-label="Mixer parameter editor">
     <PhysicalRoutingGrid snapshot={snapshot} selected="M" />
     <section className="splitter-panel mixer-panel">
-      <header><button>⋮</button><span><strong>Mixer</strong></span><RoutingEditorHeaderControls /><button>✓</button></header>
+      <header><button><QcUiIcon kind="more" /></button><span><strong>Mixer</strong></span><RoutingEditorHeaderControls /><button><QcUiIcon kind="check" /></button></header>
       <div className="splitter-controls mixer-controls">
         <label><strong>LEVEL A</strong><span className="splitter-knob mixer-knob level-a"/><small>0.0 <em>dB</em></small></label>
         <label><strong>PAN A</strong><span className="splitter-knob mixer-knob pan"/><small>C</small></label>
@@ -2537,7 +2545,7 @@ function CaptureLibraryKeyboard({ query = "" }: { query?: string }) {
 function CorOsCaptureLibrary({ view }: { view: CaptureLibraryView }) {
   if (view === "device-search-entry") return <CaptureLibraryKeyboard />;
   if (view === "device-search-suggestions") return <CaptureLibraryKeyboard query="gary" />;
-  if (view === "device-search" || view === "device-search-results") return <section className="qc-screen capture-search-results"><header><button><QcDirectoryIcon kind="search" /></button><i /><button><QcDirectoryIcon kind="grid" /> (0)</button><button className="is-active"><QcLibraryIcon kind="capture-header" /> (1)</button><button><QcLibraryIcon kind="capture-library" /> (0)</button><button aria-label="Filter"><QcDirectoryIcon kind="filter" /></button><button aria-label="Arrange"><QcDirectoryIcon kind="arrange" /></button><button aria-label="Done"><QcDirectoryIcon kind="done" /></button></header><main><h2>DEVICE DIRECTORIES <b><QcUiIcon kind="down" /></b></h2><article><strong>JQ~Marshall JMP (Gary Moore)~</strong><small>Josepqr</small><em>J</em></article><h2>DOWNLOADS <b><QcUiIcon kind="down" /></b></h2><p>No results</p></main></section>;
+  if (view === "device-search" || view === "device-search-results") return <section className="qc-screen capture-search-results"><header><button><QcDirectoryIcon kind="search" /></button><i /><button><QcDirectoryIcon kind="grid" /> (0)</button><button className="is-active"><QcLibraryIcon kind="capture-header" /> (1)</button><button><QcLibraryIcon kind="capture-library" /> (0)</button><button aria-label="Filter"><QcDirectoryIcon kind="filter" /></button><button aria-label="Arrange"><QcDirectoryIcon kind="arrange" /></button><button aria-label="Done"><QcDirectoryIcon kind="done" /></button></header><main><h2>DEVICE DIRECTORIES <b><QcUiIcon kind="up" /></b></h2><article><strong>JQ~Marshall JMP (Gary Moore)~</strong><small>Josepqr</small><em>J</em></article><h2>DOWNLOADS <b><QcUiIcon kind="up" /></b></h2><p>No results</p></main></section>;
   const recent = view === "device-recents";
   const captures = view === "device-browser-neural-capture";
   const captureRows = Array.from({ length: 7 }, (_, index) => `4-Comp Custom ${index + 1}`);

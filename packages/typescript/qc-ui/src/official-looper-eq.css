@@ -165,8 +165,9 @@
 .capture-official-save > main > small:first-child,
 .capture-official-save > main > h1 { position: relative; top: 0; }
 .capture-official-save > main > small:nth-of-type(2) { position: relative; top: .125cqw; }
-.coros-global-eq .global-eq-graph { background: #070808; }
-.coros-global-eq .global-eq-controls { background: #292c29; }
+.coros-global-eq { background: #101010; }
+.coros-global-eq .global-eq-graph { background: #101010; }
+.coros-global-eq .global-eq-controls { background: #101410; }
 .coros-global-eq > header button:last-child { background: #292c29; }
 
 }
@@ -179,10 +180,22 @@
 /* global-eq.png: the EQ is off and flat - only the band in view keeps a tile,
    the rest of the tabs are bare text, and the power button is unlit. */
 .coros-global-eq .global-eq-tabs button { background: transparent; }
-.coros-global-eq .global-eq-tabs button.is-active { background: #212421; }
+.coros-global-eq .global-eq-tabs button.is-active { background: #101410; }
 .coros-global-eq .global-eq-power.is-off { background: #292c29; color: #adaaad; }
 .coros-global-eq .global-eq-power.is-off > i { background: #101010; }
-.coros-global-eq:has(.global-eq-power.is-off) .global-eq-graph,
-.coros-global-eq:has(.global-eq-power.is-off) .global-eq-tabs,
-.coros-global-eq:has(.global-eq-power.is-off) .global-eq-controls { opacity: .55; }
+.coros-global-eq .global-eq-more svg { width: 3cqw; height: 3cqw; fill: none; stroke: #087ce8; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.coros-global-eq:has(.global-eq-power.is-off) .global-eq-graph circle { fill: #101810; stroke: #080c08; }
+.coros-global-eq:has(.global-eq-power.is-off) .global-eq-graph circle.is-active { fill: #00345e; }
+.coros-global-eq:has(.global-eq-power.is-off) .global-eq-graph text { fill: #394139; }
+.coros-global-eq:has(.global-eq-power.is-off) .global-eq-tabs { color: #414541; }
+.coros-global-eq:has(.global-eq-power.is-off) .global-eq-controls > section > span,
+.coros-global-eq:has(.global-eq-power.is-off) .global-eq-controls .io-dial-wrap > strong { color: #555955; }
+.coros-global-eq .global-eq-controls .io-dial { background: radial-gradient(circle at center, #101410 0 68%, transparent 70%), conic-gradient(from 220deg, #082c4a 0 22%, #080808 22%); }
+.coros-global-eq .global-eq-controls > section:nth-child(4) .io-dial { background: radial-gradient(circle at center, #101410 0 68%, transparent 70%), conic-gradient(from 220deg, #102c18 0 18%, #080808 18%); }
+.coros-global-eq:has(.global-eq-power.is-off) .global-eq-controls .io-dial b { background: #596059; }
+.coros-global-eq:has(.global-eq-power.is-off) .global-eq-graph > div i { border-left-color: #212421; }
+.coros-global-eq:has(.global-eq-power.is-off) .global-eq-graph > svg { transform: translateY(1px); }
+.coros-global-eq:has(.global-eq-power.is-off) .global-eq-graph path { stroke: #5a595a; }
+.coros-global-eq .global-eq-tabs button.is-active { min-height: calc(100% + 4px); }
+.coros-global-eq .global-eq-controls { transform: translateY(-1px); }
 
