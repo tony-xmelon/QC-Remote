@@ -807,6 +807,70 @@ errors: only the near-ties that are screens differing by a word
 (`copy-scene-destination`), by a caret (`device-search`), or by one I/O page's
 contents, plus the three frames the corpus stores twice.
 
+### Completing the audit: all 119 frames against all 120 views
+
+The sweep had been scoring 94 of the 119 frames; the other 25 were set aside as
+"reached by touch". Rendering **every declared view** - all 112 plus the seven
+parameter editors and the preset directory - and scoring each unscored frame
+against all of them settles what is really missing.
+
+**Ten of the 25 were already drawn**, and were out of the sweep only because
+their names do not match a view's:
+
+| frame | view that draws it | mae / edge f1 |
+| --- | --- | --- |
+| `capture-calibration` | `capture-calibration` | 0.046 / 0.93 |
+| `grid-base`, `grid-restored`, `grid-scene-a-restored`, `grid-scene-b` | `grid` | 0.030 / 0.92 |
+| `device-browser-top`, `device-browser-base` | `corpus-device-browser-root` | 0.022 / 0.87, 0.028 / 0.73 |
+| `plugin-browser-ready` | `plugin-list` | 0.024 / 0.85 |
+| `block-context-bottom` | `block-context` | 0.032 / 0.68 |
+| `fixture-editor-pages` | (see below) | |
+
+The sweep now scores **104 frames**: median 0.0251, worst 0.0569, all under
+0.06, 77 under 0.03, and 103 of the 104 agreeing on 70% or more of their edges
+(83 on 80%, 47 on 90%).
+
+**`fixture-editor-pages` was drawing the wrong screen.** Its frame is the shared
+Grid and action bar with GUITAR AMP / Brit 2203 in red and seven parameters over
+two 107px strips; the view fell through to the Ambience detail editor - a real
+CorOS layout, but the manual's. Rebuilt on the shared underlay it went 0.094 /
+0.13 to **0.031 / 0.82**.
+
+**The scope failure again, and a second catch.** Rebuilding it exposed that the
+assignment screens' strips had never taken the measurements written for them:
+`.assignment-parameters` and `.assignment-knob` still had rules *inside* the
+`@scope` block from the panel those screens used before they moved onto the
+shared underlay, and proximity let them beat everything written after it. The
+markup no longer uses that panel, so the rules were dead weight that was still
+winning. Deleting them let the measured layout through:
+
+| frame | before | after |
+| --- | --- | --- |
+| `fixture-editor-pages` | 0.048 / 0.69 | **0.031 / 0.82** |
+| `scene-assignment` | 0.021 / 0.80 | **0.020 / 0.83** |
+| `stomp-assignment` | 0.025 / 0.81 | **0.025 / 0.82** |
+
+That is the same class the previous pass documented, found a second time by the
+same check - which is the argument for keeping the check rather than the lesson.
+
+**Fifteen frames are screens no fixture draws.** They are not defects; they are
+the remaining reconstruction work, and each is a panel over a Grid the sweep's
+Grid does not hold:
+
+| frames | what they are | closest view |
+| --- | --- | --- |
+| `grid-context-menu`, `-bottom`, `-favorite` | the Grid's own menu: FILE / Create New / Save as... over QUAD CORTEX / New Neural Capture / Tempo / CPU Monitor / Settings | 0.51, 0.31, 0.30 |
+| `input-route-selector`, `-top` | the input list - MONO over Input 1/2, Return 1/2, USB inputs, Not In Use | 0.52, 0.29 |
+| `output-route-selector`, `-top` | the output list - STEREO over Multiple Outputs, Output 1/2, Send 1/2, USB, Row 3/4 | 0.53, 0.35 |
+| `grid-scene-selector` | eight scene rows with amber badges, 232x416 at (454, 44) | `grid` 0.078 / 0.69 |
+| `gig-view-preset`, `-scene`, `-hybrid` | the GIG view in the unit's own content; hybrid is a preset row over a scene row, not the scenes-over-stomps the manual shows | 0.31, 0.51, 0.31 |
+| `device-browser-middle-deep`, `-middle-reverb`, `-neural-capture` | the browser scrolled, and its model menu | 0.54, 0.55, 0.52 |
+| `capture-type` | the capture type picker, the one Capture V1 screen never captured | 0.59 |
+
+Each needs its own Grid content read off the frame, which is why they are listed
+rather than approximated: mapping them to a view that draws a different Grid
+would report coverage the reconstruction does not have.
+
 ## Improvements in this pass
 
 - Ran Neural Captures on the unit with the owner's approval and recorded

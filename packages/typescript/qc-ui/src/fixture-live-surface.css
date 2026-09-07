@@ -355,36 +355,7 @@
 .coros-assignment > footer button { padding: 1cqw 2cqw; border: 1px solid #444; background: #252925; color: #ddd; }
 .coros-assignment > footer button.is-active { border-color: #3fec75; color: #3fec75; }
 .coros-assignment.is-stomp, .coros-assignment.is-scene { overflow: hidden; background: #0d0f0e; container-type: inline-size; }
-.assignment-grid-context { box-sizing: border-box; height: 41.04%; display: flex; align-items: center; gap: 3.8cqw; padding: 0 2.5cqw; background: #090b0a; color: #e6e8e7; }
-.assignment-grid-context span, .assignment-grid-context strong { width: 7.5cqw; text-align: center; font-size: 1.8cqw; font-weight: 400; line-height: 1.45; }
-.assignment-grid-context i { width: 8cqw; height: 8cqw; border: .35cqw solid #343936; border-radius: 1cqw; background: #151816; box-shadow: inset 0 0 0 .55cqw #090a0a; }
-.assignment-grid-context i:nth-of-type(2) { border-color: #ee202d; }.assignment-grid-context i:nth-of-type(3) { border-color: #6748ff; }.assignment-grid-context i:nth-of-type(4) { border-color: #16dfcc; }
-.assignment-device-editor { position: absolute; inset: auto 0 0; height: 58.96%; background: #0f1010; }
-.assignment-device-editor > header { box-sizing: border-box; height: 21.2%; display: grid; grid-template-columns: 5.4cqw 1fr auto; align-items: center; gap: 1.1cqw; padding: .9cqw 1cqw; }
-.assignment-device-editor button { border: 0; color: #fff; font: inherit; }
 .assignment-more { height: 5.5cqw; border-radius: .7cqw; background: #292c2b; font-size: 2.8cqw; }
-.assignment-device-editor > header > span { display: grid; align-content: center; }
-.assignment-device-editor > header small { color: #929493; font-size: 1.5cqw; letter-spacing: .04cqw; }
-.assignment-device-editor > header strong { color: #ff242f; font-size: 2.25cqw; font-weight: 400; }
-.assignment-toolbar { height: 5.5cqw; display: flex; align-items: stretch; gap: .9cqw; }
-.assignment-toolbar button { border-radius: .75cqw; background: #292c2b; }
-.assignment-toolbar > i { align-self: center; height: 3.5cqw; border-left: 1px solid #363937; }
-.assignment-stomp { width: 9.6cqw; border: .65cqw solid #40ef70; background: #203f2a; }
-.assignment-stomp svg { width: 4.3cqw; height: 2.75cqw; fill: #fff; }
-.assignment-scene-nav { width: 16.5cqw; font-size: 2.25cqw; word-spacing: .75cqw; }
-.assignment-scene-nav b { display: inline-grid; width: 3cqw; height: 3cqw; place-items: center; border-radius: .45cqw; background: #ffd430; color: #151515; }
-.assignment-power, .assignment-confirm { width: 8.25cqw; font-size: 2.7cqw; }
-.assignment-parameters { height: 76.3%; display: grid; grid-template-columns: 20.5% 20% 19.375% 19.5% 20.625%; grid-template-rows: 1fr 1fr; gap: 1px 0; background: #121413; }
-.assignment-parameters section { position: relative; overflow: hidden; background: #303130; }
-.assignment-parameters section > span { position: absolute; left: 1.25cqw; top: 1.05cqw; color: #e8e9e8; font-size: 2cqw; letter-spacing: .08cqw; }
-.assignment-parameters section > strong { position: absolute; left: 1.25cqw; bottom: 1.05cqw; font-size: 1.85cqw; font-weight: 400; }
-.assignment-parameters section > em { position: absolute; left: 1.3cqw; top: 4.9cqw; z-index: 2; color: #152519; font: bold 1.3cqw/1.05 Arial; letter-spacing: .35cqw; }
-.assignment-knob { position: absolute; right: 2.1cqw; top: 4.5cqw; width: 6.25cqw; height: 6.25cqw; border: .6cqw solid #080909; border-radius: 50%; background: #242625; box-shadow: 0 0 0 .35cqw #111; }
-.assignment-knob::before { content: ""; position: absolute; inset: -.75cqw; border: .55cqw solid transparent; border-left-color: #525552; border-top-color: #525552; border-radius: 50%; transform: rotate(-45deg); }
-.assignment-knob b { display: block; width: .25cqw; height: 2.25cqw; margin: .25cqw auto; background: #fff; }
-.assignment-parameters section.is-assigned { box-shadow: inset 0 0 0 .65cqw #40ef70; border-radius: 1.7cqw; }
-.assignment-touch { position: absolute; z-index: 3; left: 5.4cqw; top: 5.2cqw; width: 8.2cqw; height: 11.5cqw; border: .7cqw solid #050606; border-radius: 4cqw 4cqw 2cqw 2cqw; background: #3df263; transform: rotate(-14deg); }
-.assignment-touch::before { content: ""; position: absolute; left: 3.1cqw; top: -5.7cqw; width: 2.8cqw; height: 7.5cqw; border: .65cqw solid #050606; border-radius: 1.5cqw 1.5cqw 0 0; background: #3df263; transform: rotate(14deg); }
 /* stomp-assignment.png: the dialog is 418x286 at x 191, y 97, over a dimmed
    copy of the editor - not a panel standing in for it. */
 .assignment-stomp-message { position: absolute; inset: 0; z-index: 6; background: rgba(92,96,92,.65); }
@@ -985,4 +956,24 @@
 .coros-directory-fixture.is-cloud-upload .directory-fixture-items button { grid-template-columns: 1fr 64px; padding-right: 8px; }
 .coros-directory-fixture.is-cloud-upload .preset-upload { width: 64px; height: 44px; display: grid; place-items: center; border-radius: 8px; background: #181c18; color: #9aa09a; }
 .coros-directory-fixture.is-cloud-upload .preset-upload svg { width: 24px; height: 24px; fill: currentColor; stroke: currentColor; stroke-width: 1.5; }
+
+/* fixture-editor-pages.png: seven amp parameters over two strips at y 256 and
+   365, the block in view outlined in #ff2421 like its name and knob arcs. */
+.qc-screen.coros-assignment.is-amp-editor .assignment-parameters.is-row-2 { top: 365px; }
+/* Nothing dims this screen, so its cells carry the undimmed #292c29 and the
+   knob is the full 60px the frame draws at (80, 38) inside the cell. */
+.qc-screen.coros-assignment.is-amp-editor .assignment-parameters > section { background: #292c29; }
+.qc-screen.coros-assignment.is-amp-editor .assignment-parameters > section > .assignment-knob { left: 80px; top: 38px; width: 60px; height: 60px; }
+.qc-screen.coros-assignment.is-amp-editor .assignment-parameters > section > .assignment-knob b { height: 22px; background: #f2f2f2; }
+.qc-screen.coros-assignment.is-amp-editor .assignment-parameters > section > span { color: #e7e3e7; }
+.qc-screen.coros-assignment.is-amp-editor .assignment-parameters > section > strong { bottom: 15px; color: #e7e3e7; }
+.qc-screen.coros-assignment.is-amp-editor .underlay-editor-label strong { color: #ff2421; }
+.qc-screen.coros-assignment.is-amp-editor .assignment-knob { border-color: #ff2421 #212821 #ff2421 #ff2421; }
+.qc-screen.coros-assignment.is-amp-editor .underlay-block.is-block-2 { border-color: #ff2421; }
+
+/* The chain block holds its device's category glyph, 28px, in the block's own
+   ink colour. */
+.physical-grid-underlay .underlay-block { display: grid; place-items: center; color: #525152; }
+.physical-grid-underlay .underlay-block svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.qc-screen.coros-assignment.is-amp-editor .underlay-block.is-block-2 { color: #ff2421; }
 

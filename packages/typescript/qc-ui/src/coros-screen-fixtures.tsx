@@ -194,6 +194,14 @@ function CorOsRemainingFixture({ view }: { view: RemainingFixtureView }) {
       <main><section><span>NOISE REDUCTION</span><i className="input-gate-knob reduction"><b /></i><strong>30.0 <small>%</small></strong></section><section><span>GAIN REDUCTION</span><strong>0.0 <small>dB</small></strong><i className="input-gate-meter"><b /></i></section><section><span>INPUT GAIN</span><i className="input-gate-knob gain"><b /></i><strong>0.0 <small>dB</small></strong></section></main>
     </section>
   </section>;
+  // fixture-editor-pages.png: the amp editor is the shared Grid + action bar
+  // with two parameter strips, not the manual's full-screen page layout.
+  if (view === "fixture-editor-pages") return <section className="qc-screen coros-assignment is-amp-editor" aria-label="Amp parameter pages">
+    <PhysicalEditorUnderlay slot="4" letter="E" title="QC MCP TEST_2*" category="GUITAR AMP" device="Brit 2203" blocks={2} blockGlyphs={["Utility", "Amp"]} expression={false} mode="PRESET">
+      <div className="assignment-parameters">{[["GAIN", "5.0"], ["BASS", "5.0"], ["MID", "5.0"], ["TREBLE", "5.0"], ["PRESENCE", "5.0"]].map(([label, value]) => <section key={label}><span>{label}</span><i className="assignment-knob"><b /></i><strong>{value}</strong></section>)}</div>
+      <div className="assignment-parameters is-row-2">{[["MASTER", "3.0"], ["OUTPUT", "0.0 dB"]].map(([label, value], index) => <section key={label}>{index < 2 && <><span>{label}</span><i className="assignment-knob"><b /></i><strong>{value}</strong></>}</section>)}{[0, 1, 2].map((index) => <section key={`empty-${index}`} />)}</div>
+    </PhysicalEditorUnderlay>
+  </section>;
   const editor = view === "fixture-editor-cab" ? ["2x12 UK C30 65 (M)","CABINET",["MIC 1 · 57","MIC 2 · 121","POSITION","DISTANCE","LEVEL","PAN"]] : view === "fixture-editor-eq" ? ["Parametric-8","EQUALIZER",["LOW CUT","BAND 1","BAND 2","BAND 3","HIGH CUT","LEVEL"]] : ["Ambience","REVERB · PAGE 2/2",["MOD RATE","MOD DEPTH","DUCKING","TRAILS","WIDTH","MIX"]];
   return <section className={`qc-screen coros-detail-editor ${view}`}><header><button>⋮</button><span><small>{editor[1] as string}</small><strong>{editor[0] as string}</strong></span><i>●</i><button>✓</button></header>{view === "fixture-editor-cab" && <div className="cab-stage"><span>57</span><b>▰</b><span>121</span></div>}{view === "fixture-editor-eq" && <svg viewBox="0 0 800 150" preserveAspectRatio="none"><path d="M0 120 C100 120 110 35 205 55 S335 115 410 70 S565 20 640 75 S735 105 800 60" /></svg>}<main>{(editor[2] as string[]).map((label,index)=><section key={label}><span>{label}</span><i><b style={{transform:`rotate(${index*23-35}deg)`}} /></i><strong>{index%2 ? "0.0 dB" : index===0 ? "80 Hz" : "5.0"}</strong></section>)}</main><footer><button>1</button><button className="is-active">2</button><span /><button>BYPASS</button></footer></section>;
 }
@@ -871,16 +879,16 @@ function ExpressionChooser({ trim }: { trim: boolean }) {
 // The Grid, its title and the editor action bar are one screen on the unit:
 // `block-context.png`, `scene-assignment.png` and `stomp-assignment.png` all
 // draw it and differ only in what sits over it.
-function PhysicalEditorUnderlay({ slot, letter, title, scene = "A", category, device, blocks = 0, output = ["Multi", "Out"], fit = false, children }: { slot: string; letter: string; title: string; scene?: string; category?: string; device?: string; blocks?: number; output?: [string, string]; fit?: boolean; children?: ReactNode }) {
+function PhysicalEditorUnderlay({ slot, letter, title, scene = "A", category, device, blocks = 0, blockGlyphs = [], output = ["Multi", "Out"], fit = false, expression = true, mode = "STOMP", children }: { slot: string; letter: string; title: string; scene?: string; category?: string; device?: string; blocks?: number; blockGlyphs?: string[]; output?: [string, string]; fit?: boolean; expression?: boolean; mode?: "STOMP" | "PRESET"; children?: ReactNode }) {
   return <div className={`physical-grid-underlay${fit ? " is-long-title" : ""}`}>
     <div className="underlay-grid">
-      <header><strong><span>{slot}</span>{letter}</strong><h1>{title}</h1><nav><i><GridToolbarIcon kind="undo" /></i><b>{scene}</b><i><GridToolbarIcon kind="save" /></i><i><QcUiIcon kind="more" /></i></nav><em><svg viewBox="0 0 24 24" aria-hidden="true"><ModeGlyph mode="STOMP" /></svg>STOMP</em></header>
-      <main><span className="underlay-route">In<br />1</span><i className="underlay-cable" />{Array.from({ length: blocks }, (_, index) => <i key={index} className={`underlay-block is-block-${index + 1}`} />)}<span className="underlay-output">{output[0]}<br />{output[1]}</span></main>
+      <header><strong><span>{slot}</span>{letter}</strong><h1>{title}</h1><nav><i><GridToolbarIcon kind="undo" /></i><b>{scene}</b><i><GridToolbarIcon kind="save" /></i><i><QcUiIcon kind="more" /></i></nav><em><svg viewBox="0 0 24 24" aria-hidden="true"><ModeGlyph mode={mode} /></svg>{mode}</em></header>
+      <main><span className="underlay-route">In<br />1</span><i className="underlay-cable" />{Array.from({ length: blocks }, (_, index) => <i key={index} className={`underlay-block is-block-${index + 1}`}>{blockGlyphs[index] && <DeviceCategoryGlyph label={blockGlyphs[index]} fallback="" />}</i>)}<span className="underlay-output">{output[0]}<br />{output[1]}</span></main>
     </div>
     {category && <button className="underlay-editor-more"><QcUiIcon kind="more" /></button>}
     {category && <span className="underlay-editor-label"><small>{category}</small><strong>{device}</strong></span>}
     <nav className="underlay-editor-bar">
-      <button className="editor-expression"><svg viewBox="0 0 24 24" aria-hidden="true"><ModeGlyph mode="STOMP" /></svg><small>?</small></button>
+      {expression && <button className="editor-expression"><svg viewBox="0 0 24 24" aria-hidden="true"><ModeGlyph mode="STOMP" /></svg><small>?</small></button>}
       <button className="editor-scene"><svg viewBox="0 0 21 24" aria-hidden="true" className="editor-step"><path d="M11 5 0 12l11 7Z" /><path className="is-dim" d="M21 6.5 13 12l8 5.5Z" /></svg><b>{scene}</b><svg viewBox="0 0 21 24" aria-hidden="true" className="editor-step"><path className="is-dim" d="M0 6.5 8 12l-8 5.5Z" /><path d="M10 5 21 12l-11 7Z" /></svg></button>
       <i className="editor-divider" />
       <button className="editor-bypass" aria-label="Mute"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="15" rx="5" /><path strokeWidth="2.6" d="M1 11.75h22" /></svg></button>
@@ -894,7 +902,7 @@ function CorOsAssignmentScreen({ view }: { view: "stomp-assignment" | "scene-ass
   const scene = view === "scene-assignment";
   const parameters: Array<[string, string]> = scene ? [["NOISE REDUCTION", "17.3 %"]] : [["GAIN", "0.0 dB"], ["BASS", "6.5"], ["MID", "5.0"], ["TREBLE", "5.0"], ["VOLUME", "14.9 dB"]];
   return <section className={`qc-screen coros-assignment is-${scene ? "scene" : "stomp"}`} aria-label={view.replaceAll("-", " ")}>
-    <PhysicalEditorUnderlay slot="4" letter={scene ? "E" : "B"} title={scene ? "QC MCP TEST_2*" : "Top 3 Acoustic Sims"} scene={scene ? "A" : "F"} category={scene ? "UTILITY" : "NEURAL CAPTURE"} device={scene ? "Adaptive Gate" : "Akustyczna"} blocks={scene ? 1 : 2} output={scene ? ["Multi", "Out"] : ["Row", "3/4"]} fit={!scene}>
+    <PhysicalEditorUnderlay slot="4" letter={scene ? "E" : "B"} title={scene ? "QC MCP TEST_2*" : "Top 3 Acoustic Sims"} scene={scene ? "A" : "F"} category={scene ? "UTILITY" : "NEURAL CAPTURE"} device={scene ? "Adaptive Gate" : "Akustyczna"} blocks={scene ? 1 : 2} blockGlyphs={scene ? ["Utility"] : ["Utility", "Neural Capture"]} output={scene ? ["Multi", "Out"] : ["Row", "3/4"]} fit={!scene}>
       <div className="assignment-parameters">{Array.from({ length: 5 }, (_, index) => parameters[index]).map((parameter, index) => <section key={index}>{parameter && <><span>{parameter[0]}</span>{scene && <em>A B<br />C D</em>}<i className="assignment-knob"><b /></i><strong>{parameter[1]}</strong></>}</section>)}</div>
     </PhysicalEditorUnderlay>
     {!scene && <div className="assignment-stomp-message"><aside className="assignment-stomp-dialog"><h1>Assign footswitch</h1><p>Press the target footswitch to assign</p><div className="assignment-stomp-latch"><button className="is-active"><QcEditorIcon kind="footswitch" />Latching</button><button><QcEditorIcon kind="band-power" />Momentary</button></div><footer><button>CANCEL</button><button className="is-primary">UNASSIGN</button></footer></aside></div>}
