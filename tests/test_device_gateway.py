@@ -52,6 +52,15 @@ class RemoteControlCompatibilityTests(unittest.TestCase):
     def test_capture_cli_midi_helper_is_public(self):
         self.assertTrue(callable(send_qc_midi_cc))
 
+    def test_device_swipe_uses_the_python_remote_control_path(self):
+        device = PyQuadCortexDevice()
+        session = SimpleNamespace()
+        device._qc = session
+        with patch("qc_device_gateway.remote_control.swipe_screen") as swipe:
+            result = device.swipe_screen(10, 20, 30, 40)
+        swipe.assert_called_once_with(session, 10, 20, 30, 40)
+        self.assertIn("(10, 20) to (30, 40)", result["detail"])
+
 
 class ExtractedProtocolParityTests(unittest.TestCase):
     def test_tuner_meter_matches_the_sparse_rust_message(self):
@@ -152,8 +161,10 @@ class ExtractedProtocolParityTests(unittest.TestCase):
         self.assertEqual(device.set_tuner_meter(False, True), {"native": True})
         self.assertEqual(device.set_global_tempo(100, "GLOBAL", 90), {"native": True})
         self.assertEqual(device.graphics_tree(), {"native": True})
+        self.assertEqual(device.duplicate_setlist("source", "Copy", 32, "Live", 9), {"native": True})
         self.assertEqual([method for method, _ in calls], [
             "device.setTunerMeter", "device.setGlobalTempo", "device.graphicsTree",
+            "device.duplicateSetlist",
         ])
 
 

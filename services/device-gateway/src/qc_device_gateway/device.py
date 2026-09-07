@@ -1209,6 +1209,12 @@ class PyQuadCortexDevice:
         _pyquadcortex_method(qc, "tap_screen")(x, y)
         return {"detail": f"Tapped the Quad Cortex screen at ({x}, {y})"}
 
+    def swipe_screen(self, x: float, y: float, to_x: float, to_y: float) -> dict[str, Any]:
+        from .remote_control import swipe_screen
+
+        swipe_screen(self._require_session(), x, y, to_x, to_y)
+        return {"detail": f"Swiped the Quad Cortex screen from ({x}, {y}) to ({to_x}, {to_y})"}
+
     def save_preset_as(
         self,
         setlist_key: str,
