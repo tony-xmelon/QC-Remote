@@ -1052,7 +1052,7 @@ const KEYBOARD_ROWS = [
 function CorOsDirectoryNameScreen() {
   const shifted = ["", "", "", "", "", "", "", "(", ")"];
   return <section className="qc-screen coros-physical-keyboard is-name-editor" aria-label="Name folder">
-    <header><button><QcUiIcon kind="close" /></button><button className="keyboard-save-mark"><QcScreenHeaderGlyph kind="save" /></button></header>
+    <header><button><QcUiIcon kind="close" /></button><button className="keyboard-save-mark"><svg viewBox="700 8 32 32" aria-hidden="true"><QcScreenHeaderGlyph kind="save" /></svg></button></header>
     <h1><b>My IRs 2</b></h1>
     <div className="physical-keyboard-rows">{KEYBOARD_ROWS.map((row, rowIndex) => <div key={rowIndex}>{row.map((key, keyIndex) => <button key={key} className={key === "Space" ? "is-space" : key === "⇧" ? "is-shift" : key === "⌫" ? "is-backspace" : key === "Done" ? "is-done" : key === "123" ? "is-numeric" : ""}>{rowIndex < 2 && <small>{rowIndex === 0 ? (keyIndex + 1) % 10 : shifted[keyIndex]}</small>}{key === "⌫" ? <QcUiIcon kind="backspace" /> : key}</button>)}</div>)}</div>
   </section>;
@@ -1832,7 +1832,7 @@ function CorOsGigView({ snapshot, presetList, onClose, liveTuner = false }: { sn
     const block = assigned ?? gridBlocks[index];
     const color = !block ? "#292c29" : block.bypassed ? "#101c21" : block.name === "Simple Gate" ? "#949694" : block.name === "Chief DS1" ? "#ff7100" : block.name === "UK C30 TopBoost" ? "#ff2421" : block.name === "212 UK C30 65 (M)" ? "#6b55ff" : block.name === "Parametric-8" ? "#0875e7" : block.name === "Ambience" ? "#00ffde" : officialBlockVisual(block).color;
     return <button key={index} className={!block ? "is-empty" : ""} style={{ "--gig-color": color } as CSSProperties} aria-label={`Footswitch ${String.fromCharCode(65 + index)}${block ? `, ${block.name}` : ", empty"}`}>
-      {block && <span className="gig-device-icon"><QcDeviceGlyph block={block} x={43} y={43} size={70} /></span>}
+      {block && <span className="gig-device-icon"><svg viewBox="0 0 86 86" aria-hidden="true"><QcDeviceGlyph block={block} x={43} y={43} size={70} /></svg></span>}
       {block && <span className="gig-edit" aria-hidden="true"><QcUiIcon kind="edit" /></span>}<b>{String.fromCharCode(65 + index)}</b>{block && <strong className={block.name === "Parametric-8" ? "is-compact" : ""}>{block.name}</strong>}
     </button>;
   });
