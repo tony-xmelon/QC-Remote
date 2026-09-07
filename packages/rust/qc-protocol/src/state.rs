@@ -195,14 +195,8 @@ pub fn decode_preset_folder(
             if !(0..256).contains(&index) {
                 return None;
             }
-            let name = match file.name {
-                Some(value) => value,
-                _ => String::new(),
-            };
-            let instrument = match file.instrument {
-                Some(value) => value,
-                _ => 0,
-            };
+            let name = file.name.unwrap_or_default();
+            let instrument = file.instrument.unwrap_or_default();
             Some(PresetFileListing {
                 position: index as u32,
                 name,
@@ -1162,15 +1156,9 @@ impl StateDecoder {
     fn preset_update(&self, catalog_refresh: bool) -> Option<StateUpdate> {
         let preset = self.preset.as_ref()?;
         let mut update = StateUpdate::new("preset");
-        update.preset_name = match &preset.name {
-            Some(value) => Some(value.clone()),
-            _ => None,
-        };
+        update.preset_name = preset.name.clone();
         let tempo = tempo_state(preset.tempo_program_data.first());
-        update.tempo = tempo.bpm.or(match preset.tempo {
-            Some(value) => Some(value),
-            _ => None,
-        });
+        update.tempo = tempo.bpm.or(preset.tempo);
         update.tempo_led_enabled = tempo.led_enabled;
         update.scenes = Some(
             (0..8)
@@ -1474,10 +1462,7 @@ fn validate_wire_payload(payload: &[u8]) -> Result<(), StateDecodeError> {
 }
 
 fn model_hash(model: &Model) -> Option<u32> {
-    match model.hash {
-        Some(value) => Some(value),
-        _ => None,
-    }
+    model.hash
 }
 fn model_column(model: &Model, fallback: u32) -> u32 {
     match model.column {
@@ -1492,16 +1477,10 @@ fn chain_row(chain: &Chain, fallback: u32) -> u32 {
     }
 }
 fn chain_input(chain: &Chain) -> u32 {
-    match chain.in_portid {
-        Some(value) => value,
-        _ => 0,
-    }
+    chain.in_portid.unwrap_or_default()
 }
 fn chain_output(chain: &Chain) -> u32 {
-    match chain.out_portid {
-        Some(value) => value,
-        _ => 0,
-    }
+    chain.out_portid.unwrap_or_default()
 }
 fn param_index(parameter: &Param, fallback: u32) -> u32 {
     match parameter.index {
@@ -1604,24 +1583,15 @@ fn parameter_options(
 }
 
 fn param_expression(parameter: &Param) -> Option<i32> {
-    match parameter.expression {
-        Some(value) => Some(value),
-        _ => None,
-    }
+    parameter.expression
 }
 
 fn param_expression_minimum(parameter: &Param) -> Option<f32> {
-    match parameter.expression_min {
-        Some(value) => Some(value),
-        _ => None,
-    }
+    parameter.expression_min
 }
 
 fn param_expression_maximum(parameter: &Param) -> Option<f32> {
-    match parameter.expression_max {
-        Some(value) => Some(value),
-        _ => None,
-    }
+    parameter.expression_max
 }
 
 fn tempo_state(model: Option<&Model>) -> TempoState {

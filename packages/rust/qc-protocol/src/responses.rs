@@ -156,10 +156,7 @@ impl BackupAssembler {
             message.is_last_chunk,
             Some(true)
         );
-        let chunk = match message.backup_json {
-            Some(chunk) => chunk,
-            None => String::new(),
-        };
+        let chunk = message.backup_json.unwrap_or_default();
 
         if !self.started {
             // Current QC firmware does not echo request_id on LocalBackup
@@ -452,40 +449,26 @@ pub fn decode_general_settings(payload: &[u8]) -> Result<GeneralSettings, Respon
         return Err(ResponseDecodeError::Mismatch("hold_timing is out of range"));
     }
     Ok(GeneralSettings {
-        screen_brightness: message.screen_brightness.map(
-            |value| value,
-        ),
+        screen_brightness: message.screen_brightness,
         led_brightness: message
             .led_brightness,
-        dimmed_led_brightness: message.dimmed_led_brightness.map(
-            |value| value,
-        ),
-        lock_screen_and_volume_knob: message.lock_screen_and_volume_knob.map(
-            |value,| value,
-        ),
+        dimmed_led_brightness: message.dimmed_led_brightness,
+        lock_screen_and_volume_knob: message.lock_screen_and_volume_knob,
         global_bypass_cab: message.global_bypass_cab.map(
-            |value| rows(value),
+            &rows,
         ),
         global_bypass_ir: message.global_bypass_ir.map(
-            |value| rows(value),
+            rows,
         ),
         scene_bypass_behavior,
         midi_over_usb: message
             .midi_over_usb,
         midi_channel: message
             .midi_channel,
-        ignore_duplicate_pc: message.ignore_duplicate_pc.map(
-            |value| value,
-        ),
-        available_disk_space: message.available_disk_space.map(
-            |value| value,
-        ),
-        total_disk_space: message.total_disk_space.map(
-            |value| value,
-        ),
-        internal_midi_clock_enabled: message.internal_midi_clock_enabled.map(
-            |value,| value,
-        ),
+        ignore_duplicate_pc: message.ignore_duplicate_pc,
+        available_disk_space: message.available_disk_space,
+        total_disk_space: message.total_disk_space,
+        internal_midi_clock_enabled: message.internal_midi_clock_enabled,
         master_volume_assignment: message.master_volume_assignment.map(
             |value| {
                 MasterVolumeAssignment {
@@ -496,34 +479,16 @@ pub fn decode_general_settings(payload: &[u8]) -> Result<GeneralSettings, Respon
                 }
             },
         ),
-        stomp_mode_auto_assign: message.stomp_mode_auto_assign.map(
-            |value| value,
-        ),
-        swap_tempo_tuner_access: message.swap_tempo_tuner_access.map(
-            |value| value,
-        ),
+        stomp_mode_auto_assign: message.stomp_mode_auto_assign,
+        swap_tempo_tuner_access: message.swap_tempo_tuner_access,
         midi_clock_out,
-        disable_internet_connection_check: message.disable_internet_connection_check.map(
-            |value| value,
-        ),
-        dynamic_delay_compensation: message.enable_dynamic_delay_compensation.map(
-            |value| value,
-        ),
-        preset_dimmed: message.enable_preset_dimmed.map(
-            |value| value,
-        ),
-        scene_dimmed: message.enable_scene_dimmed.map(
-            |value| value,
-        ),
-        stomp_dimmed: message.enable_stomp_dimmed.map(
-            |value| value,
-        ),
-        midi_clock_in: message.midi_clock_in_enabled.map(
-            |value| value,
-        ),
-        gig_view_stomp_access: message.gig_view_stomp_access_enabled.map(
-            |value,| value,
-        ),
+        disable_internet_connection_check: message.disable_internet_connection_check,
+        dynamic_delay_compensation: message.enable_dynamic_delay_compensation,
+        preset_dimmed: message.enable_preset_dimmed,
+        scene_dimmed: message.enable_scene_dimmed,
+        stomp_dimmed: message.enable_stomp_dimmed,
+        midi_clock_in: message.midi_clock_in_enabled,
+        gig_view_stomp_access: message.gig_view_stomp_access_enabled,
         hold_timing_index,
         hold_timing_ms: hold_timing_index.map(|value| 500 + 100 * value),
     })

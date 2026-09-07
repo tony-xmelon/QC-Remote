@@ -884,7 +884,7 @@ pub fn read_library_files(
         4,
         pa::FileMessage {
             action: pa::message_action::Enum::Read as i32,
-            request_id: request_id,
+            request_id,
             r#type: file_type,
             ..Default::default()
         },
@@ -2220,7 +2220,7 @@ pub fn setlist_position_with_request_id(
         2,
         pa::SetlistPositionMessage {
             action: pa::message_action::Enum::Update as i32,
-            request_id: request_id,
+            request_id,
             folder_key: Some(setlist_key.into()),
             position: Some(position),
             is_factory: Some(is_factory,),
@@ -2751,10 +2751,7 @@ mod tests {
         let outbound = set_midi_out(0, vec![message], true);
         let decoded = pa::MidiSettingsMessage::decode(outbound.payload.as_slice()).unwrap();
         assert!(decoded.general_midi_messages.is_none());
-        assert!(matches!(
-            decoded.preset_load_messages,
-            Some(_)
-        ));
+        assert!(decoded.preset_load_messages.is_some());
     }
 
     #[test]
