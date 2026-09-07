@@ -1,0 +1,22 @@
+zenUI::RootGraphicsItem
+  zenUI::NeuralCaptureDialog
+    zenUI::GraphicsItem
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/24/close.png'
+          zenUI::PressAnimationView
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/24/skip.png'
+          zenUI::PressAnimationView
+      zenUI::Button
+        image: 'icons/24/backwards.png'
+        zenUI::PressAnimationView
+      zenUI::GraphicsItem
+    zenUI::GraphicsItem
+      zenUI::Button
+        image: 'icons/24/forward.png'
+        zenUI::PressAnimationView
+      zenUI::ModelItemBasic
+        zenUI::PressAnimationView
+      zenUI::GraphicsItem

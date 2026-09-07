@@ -11,10 +11,7 @@ pub use crate::generated_payloads::{
     ScalePoint,
 };
 use crate::proto::cortex_protobuf_v2 as pa;
-use crate::proto::{
-    binary_preset, bypass, chain, col_bypass, model, param, param_value, BinaryPreset, Chain,
-    Model, Param,
-};
+use crate::proto::{param_value, BinaryPreset, Chain, Model, Param};
 use crate::{domain, profile};
 use prost::Message;
 use quick_xml::events::Event;
@@ -168,17 +165,17 @@ pub fn decode_preset_folder(
     validate_wire_payload(payload)?;
     let decoded = maybe_gunzip(payload)?;
     let message = decode::<pa::FileMessage>(4, &decoded)?;
-    let Some(pa::file_message::Folder::Folder(folder)) = message.folder else {
+    let Some(folder) = message.folder else {
         return Ok(None);
     };
-    let Some(pa::folder_info::Key::Key(key)) = folder.key else {
+    let Some(key) = folder.key else {
         return Ok(None);
     };
     if key.is_empty() {
         return Ok(None);
     }
     let name = match folder.name {
-        Some(pa::folder_info::Name::Name(value)) => value,
+        Some(value) => value,
         _ => key
             .trim_end_matches('/')
             .rsplit('/')
@@ -188,24 +185,18 @@ pub fn decode_preset_folder(
     };
     let is_factory = matches!(
         folder.is_factory,
-        Some(pa::folder_info::IsFactory::IsFactory(true))
+        Some(true)
     );
     let mut files = folder
         .files
         .into_iter()
         .filter_map(|file| {
-            let pa::product_data::Index::Index(index) = file.index?;
+            let index = file.index?;
             if !(0..256).contains(&index) {
                 return None;
             }
-            let name = match file.name {
-                Some(pa::product_data::Name::Name(value)) => value,
-                _ => String::new(),
-            };
-            let instrument = match file.instrument {
-                Some(pa::product_data::Instrument::Instrument(value)) => value,
-                _ => 0,
-            };
+            let name = file.name.unwrap_or_default();
+            let instrument = file.instrument.unwrap_or_default();
             Some(PresetFileListing {
                 position: index as u32,
                 name,
@@ -642,12 +633,12 @@ impl StateDecoder {
 
     fn decode_io_settings(&self, payload: &[u8]) -> Result<Vec<StateUpdate>, StateDecodeError> {
         let message: pa::IoSettingsMessage = decode(3, payload)?;
-        let Some(pa::io_settings_message::Settings::Settings(settings)) = message.settings else {
+        let Some(settings) = message.settings else {
             return Ok(Vec::new());
         };
         let mut ports = Vec::new();
         for port in settings.in_port {
-            if let Some(pa::input_port_settings::Plugged::Plugged(plugged)) = port.plugged {
+            if let Some(plugged) = port.plugged {
                 ports.push(IoPortState {
                     kind: "input".into(),
                     id: port.input_port_id as i32,
@@ -657,7 +648,7 @@ impl StateDecoder {
             }
         }
         for port in settings.out_port {
-            if let Some(pa::output_port_settings::Plugged::Plugged(plugged)) = port.plugged {
+            if let Some(plugged) = port.plugged {
                 ports.push(IoPortState {
                     kind: "output".into(),
                     id: port.output_port_id as i32,
@@ -666,8 +657,8 @@ impl StateDecoder {
                 });
             }
         }
-        if let Some(pa::port_settings::HpPort::HpPort(port)) = settings.hp_port {
-            if let Some(pa::headphones_settings::Plugged::Plugged(plugged)) = port.plugged {
+        if let Some(port) = settings.hp_port {
+            if let Some(plugged) = port.plugged {
                 ports.push(IoPortState {
                     kind: "headphones".into(),
                     id: 0,
@@ -676,8 +667,8 @@ impl StateDecoder {
                 });
             }
         }
-        if let Some(pa::port_settings::UsbPort::UsbPort(port)) = settings.usb_port {
-            if let Some(pa::usb_port_settings::Plugged::Plugged(plugged)) = port.plugged {
+        if let Some(port) = settings.usb_port {
+            if let Some(plugged) = port.plugged {
                 ports.push(IoPortState {
                     kind: "usb".into(),
                     id: 0,
@@ -687,7 +678,7 @@ impl StateDecoder {
             }
         }
         for port in settings.exp_port {
-            if let Some(pa::exp_port_settings::Plugged::Plugged(plugged)) = port.plugged {
+            if let Some(plugged) = port.plugged {
                 ports.push(IoPortState {
                     kind: "expression".into(),
                     id: port.exp_port_id,
@@ -951,7 +942,7 @@ impl StateDecoder {
 
     fn decode_scene(&mut self, payload: &[u8]) -> Result<Vec<StateUpdate>, StateDecodeError> {
         let message = decode::<pa::SceneMessage>(13, payload)?;
-        let Some(pa::scene_message::SelectedScene::SelectedScene(scene)) = message.selected_scene
+        let Some(scene) = message.selected_scene
         else {
             return Ok(Vec::new());
         };
@@ -963,14 +954,14 @@ impl StateDecoder {
 
     fn decode_position(&mut self, payload: &[u8]) -> Result<Vec<StateUpdate>, StateDecodeError> {
         let message = decode::<pa::SetlistPositionMessage>(2, payload)?;
-        if let Some(pa::setlist_position_message::FolderKey::FolderKey(value)) = message.folder_key
+        if let Some(value) = message.folder_key
         {
             self.setlist_key = Some(value);
         }
-        if let Some(pa::setlist_position_message::Position::Position(value)) = message.position {
+        if let Some(value) = message.position {
             self.position = Some(value);
         }
-        if let Some(pa::setlist_position_message::IsFactory::IsFactory(value)) = message.is_factory
+        if let Some(value) = message.is_factory
         {
             self.is_factory = Some(value);
         }
@@ -986,7 +977,7 @@ impl StateDecoder {
         payload: &[u8],
     ) -> Result<Vec<StateUpdate>, StateDecodeError> {
         let message = decode::<pa::RecallPresetMessage>(15, payload)?;
-        let Some(pa::recall_preset_message::Preset::Preset(preset)) = message.preset else {
+        let Some(preset) = message.preset else {
             return Ok(Vec::new());
         };
         self.parameter_overrides.clear();
@@ -996,7 +987,7 @@ impl StateDecoder {
 
     fn decode_grid(&mut self, payload: &[u8]) -> Result<Vec<StateUpdate>, StateDecodeError> {
         let message = decode::<pa::GridMessage>(1, payload)?;
-        let Some(pa::grid_message::Preset::Preset(preset)) = message.preset else {
+        let Some(preset) = message.preset else {
             return Ok(Vec::new());
         };
         let mut states = Vec::new();
@@ -1072,7 +1063,7 @@ impl StateDecoder {
 
     fn decode_mode(&self, payload: &[u8]) -> Result<Vec<StateUpdate>, StateDecodeError> {
         let message = decode::<pa::ModeMessage>(14, payload)?;
-        let Some(pa::mode_message::Mode::Mode(value)) = message.mode else {
+        let Some(value) = message.mode else {
             return Ok(Vec::new());
         };
         let mut update = StateUpdate::new("mode");
@@ -1084,7 +1075,7 @@ impl StateDecoder {
             (value, value)
         };
         update.footswitch_modes = Some(vec![mode_name(pair.0), mode_name(pair.1)]);
-        if let Some(pa::mode_message::AvailableModes::AvailableModes(available)) =
+        if let Some(available) =
             message.available_modes
         {
             let slots = available
@@ -1107,7 +1098,7 @@ impl StateDecoder {
 
     fn decode_master_volume(&self, payload: &[u8]) -> Result<Vec<StateUpdate>, StateDecodeError> {
         let message = decode::<pa::MasterVolumeMessage>(17, payload)?;
-        let Some(pa::master_volume_message::Volume::Volume(value)) = message.volume else {
+        let Some(value) = message.volume else {
             return Ok(Vec::new());
         };
         let mut update = StateUpdate::new("master");
@@ -1165,15 +1156,9 @@ impl StateDecoder {
     fn preset_update(&self, catalog_refresh: bool) -> Option<StateUpdate> {
         let preset = self.preset.as_ref()?;
         let mut update = StateUpdate::new("preset");
-        update.preset_name = match &preset.name {
-            Some(binary_preset::Name::Name(value)) => Some(value.clone()),
-            _ => None,
-        };
+        update.preset_name = preset.name.clone();
         let tempo = tempo_state(preset.tempo_program_data.first());
-        update.tempo = tempo.bpm.or(match preset.tempo {
-            Some(binary_preset::Tempo::Tempo(value)) => Some(value),
-            _ => None,
-        });
+        update.tempo = tempo.bpm.or(preset.tempo);
         update.tempo_led_enabled = tempo.led_enabled;
         update.scenes = Some(
             (0..8)
@@ -1452,7 +1437,7 @@ pub fn parse_model_repo(payload: &[u8]) -> Result<ModelCatalog, StateDecodeError
     validate_wire_payload(payload)?;
     let payload = maybe_gunzip(payload)?;
     let message = decode::<pa::ModelRepoMessage>(profile::MESSAGE_TYPE_MODEL_REPO, &payload)?;
-    let Some(pa::model_repo_message::ModelRepoPayload::ModelRepoPayload(repo)) =
+    let Some(repo) =
         message.model_repo_payload
     else {
         return Ok(ModelCatalog(HashMap::new()));
@@ -1477,45 +1462,36 @@ fn validate_wire_payload(payload: &[u8]) -> Result<(), StateDecodeError> {
 }
 
 fn model_hash(model: &Model) -> Option<u32> {
-    match model.hash {
-        Some(model::Hash::Hash(value)) => Some(value),
-        _ => None,
-    }
+    model.hash
 }
 fn model_column(model: &Model, fallback: u32) -> u32 {
     match model.column {
-        Some(model::Column::Column(value)) => value,
+        Some(value) => value,
         _ => fallback,
     }
 }
 fn chain_row(chain: &Chain, fallback: u32) -> u32 {
     match chain.row {
-        Some(chain::Row::Row(value)) => value,
+        Some(value) => value,
         _ => fallback,
     }
 }
 fn chain_input(chain: &Chain) -> u32 {
-    match chain.in_portid {
-        Some(chain::InPortid::InPortid(value)) => value,
-        _ => 0,
-    }
+    chain.in_portid.unwrap_or_default()
 }
 fn chain_output(chain: &Chain) -> u32 {
-    match chain.out_portid {
-        Some(chain::OutPortid::OutPortid(value)) => value,
-        _ => 0,
-    }
+    chain.out_portid.unwrap_or_default()
 }
 fn param_index(parameter: &Param, fallback: u32) -> u32 {
     match parameter.index {
-        Some(param::Index::Index(value)) => value,
+        Some(value) => value,
         _ => fallback,
     }
 }
 fn param_scene_mode(parameter: &Param) -> bool {
     matches!(
         parameter.scene_mode,
-        Some(param::SceneMode::SceneMode(true))
+        Some(true)
     )
 }
 fn float_value(value: &crate::proto::ParamValue) -> Option<f32> {
@@ -1607,24 +1583,15 @@ fn parameter_options(
 }
 
 fn param_expression(parameter: &Param) -> Option<i32> {
-    match parameter.expression {
-        Some(param::Expression::Expression(value)) => Some(value),
-        _ => None,
-    }
+    parameter.expression
 }
 
 fn param_expression_minimum(parameter: &Param) -> Option<f32> {
-    match parameter.expression_min {
-        Some(param::ExpressionMin::ExpressionMin(value)) => Some(value),
-        _ => None,
-    }
+    parameter.expression_min
 }
 
 fn param_expression_maximum(parameter: &Param) -> Option<f32> {
-    match parameter.expression_max {
-        Some(param::ExpressionMax::ExpressionMax(value)) => Some(value),
-        _ => None,
-    }
+    parameter.expression_max
 }
 
 fn tempo_state(model: Option<&Model>) -> TempoState {
@@ -1660,7 +1627,7 @@ fn bypass_map(rows: &[crate::proto::Bypass], positional: bool) -> HashMap<(u32, 
     let mut result = HashMap::new();
     for (row_index, row) in rows.iter().enumerate() {
         let reported_row = match row.row {
-            Some(bypass::Row::Row(value)) => value,
+            Some(value) => value,
             _ => row_index as u32,
         };
         let row_address = if positional {
@@ -1670,7 +1637,7 @@ fn bypass_map(rows: &[crate::proto::Bypass], positional: bool) -> HashMap<(u32, 
         };
         for (column_index, column) in row.col_bypass.iter().enumerate() {
             let reported_column = match column.column {
-                Some(col_bypass::Column::Column(value)) => value,
+                Some(value) => value,
                 _ => column_index as u32,
             };
             let column_address = if positional {
@@ -2101,13 +2068,13 @@ mod tests {
         ));
     }
     use crate::proto::{
-        binary_preset, chain, col_bypass, model, param, param_value, Bypass, Chain, ColBypass,
-        Param, ParamValue, SceneBypass, StompModeAssignment,
+        param_value, Bypass, Chain, ColBypass, Param, ParamValue, SceneBypass,
+        StompModeAssignment,
     };
 
     fn numeric_param(index: u32, value: f32) -> Param {
         Param {
-            index: Some(param::Index::Index(index)),
+            index: Some(index),
             param_values: vec![ParamValue {
                 value: Some(param_value::Value::FloatValue(value)),
             }],
@@ -2126,17 +2093,17 @@ mod tests {
             param3: 0,
         };
         let preset = BinaryPreset {
-            name: Some(binary_preset::Name::Name("Shared Decoder".into())),
-            tempo: Some(binary_preset::Tempo::Tempo(99)),
+            name: Some("Shared Decoder".into()),
+            tempo: Some(99),
             scene_labels: vec!["Clean".into()],
             scene_colors: vec![0xff00aa],
             chains: vec![Chain {
-                row: Some(chain::Row::Row(0)),
-                in_portid: Some(chain::InPortid::InPortid(1)),
-                out_portid: Some(chain::OutPortid::OutPortid(2)),
+                row: Some(0),
+                in_portid: Some(1),
+                out_portid: Some(2),
                 models: vec![Model {
-                    hash: Some(model::Hash::Hash(1234)),
-                    column: Some(model::Column::Column(3)),
+                    hash: Some(1234),
+                    column: Some(3),
                     params: vec![numeric_param(7, 0.25)],
                     bypass_expression: vec![crate::proto::Expression {
                         expression: 2,
@@ -2152,12 +2119,12 @@ mod tests {
                     ..Default::default()
                 }],
                 input_control: vec![Model {
-                    hash: Some(model::Hash::Hash(28_000)),
+                    hash: Some(28_000),
                     params: vec![numeric_param(0, 0.35)],
                     ..Default::default()
                 }],
                 output_control: vec![Model {
-                    hash: Some(model::Hash::Hash(23_000)),
+                    hash: Some(23_000),
                     params: vec![numeric_param(1, 0.6)],
                     ..Default::default()
                 }],
@@ -2165,13 +2132,13 @@ mod tests {
                 ..Default::default()
             }],
             bypass: vec![Bypass {
-                row: Some(bypass::Row::Row(9)),
+                row: Some(9),
                 col_bypass: vec![
                     ColBypass::default(),
                     ColBypass::default(),
                     ColBypass::default(),
                     ColBypass {
-                        column: Some(col_bypass::Column::Column(7)),
+                        column: Some(7),
                         scene_bypass: vec![SceneBypass { bypass: true }],
                         ..Default::default()
                     },
@@ -2181,6 +2148,7 @@ mod tests {
                 row: 0,
                 column: 3,
                 stomp_index: 4,
+                r#type: None,
             }],
             single_stomp_labels: HashMap::from([(4, "Gate".into())]),
             stomp_is_momentary: HashMap::from([(4, true)]),
@@ -2195,7 +2163,7 @@ mod tests {
             ..Default::default()
         };
         let raw = pa::RecallPresetMessage {
-            preset: Some(pa::recall_preset_message::Preset::Preset(preset)),
+            preset: Some(preset),
             ..Default::default()
         }
         .encode_to_vec();
@@ -2259,7 +2227,7 @@ mod tests {
         );
 
         let scene = pa::SceneMessage {
-            selected_scene: Some(pa::scene_message::SelectedScene::SelectedScene(6)),
+            selected_scene: Some(6),
             ..Default::default()
         }
         .encode_to_vec();
@@ -2275,12 +2243,10 @@ mod tests {
     #[test]
     fn normalized_json_matches_the_shared_typescript_contract() {
         let mode = pa::ModeMessage {
-            mode: Some(pa::mode_message::Mode::Mode(6)),
-            available_modes: Some(pa::mode_message::AvailableModes::AvailableModes(
-                pa::AvailableModes {
+            mode: Some(6),
+            available_modes: Some(pa::AvailableModes {
                     modes: vec![0, 1, 6],
-                },
-            )),
+                },),
             ..Default::default()
         };
         let states = StateDecoder::new()
@@ -2297,34 +2263,32 @@ mod tests {
     fn decodes_physical_io_presence_from_native_io_settings() {
         let payload = pa::IoSettingsMessage {
             action: pa::message_action::Enum::Update as i32,
-            settings: Some(pa::io_settings_message::Settings::Settings(
-                pa::PortSettings {
+            settings: Some(pa::PortSettings {
                     in_port: vec![pa::InputPortSettings {
                         input_port_id: 1,
-                        plugged: Some(pa::input_port_settings::Plugged::Plugged(true)),
+                        plugged: Some(true),
                         ..Default::default()
                     }],
                     out_port: vec![pa::OutputPortSettings {
                         output_port_id: 4,
-                        plugged: Some(pa::output_port_settings::Plugged::Plugged(false)),
+                        plugged: Some(false),
                         ..Default::default()
                     }],
-                    hp_port: Some(pa::port_settings::HpPort::HpPort(pa::HeadphonesSettings {
-                        plugged: Some(pa::headphones_settings::Plugged::Plugged(true)),
+                    hp_port: Some(pa::HeadphonesSettings {
+                        plugged: Some(true),
                         ..Default::default()
-                    })),
-                    usb_port: Some(pa::port_settings::UsbPort::UsbPort(pa::UsbPortSettings {
-                        plugged: Some(pa::usb_port_settings::Plugged::Plugged(true)),
+                    }),
+                    usb_port: Some(pa::UsbPortSettings {
+                        plugged: Some(true),
                         ..Default::default()
-                    })),
+                    }),
                     exp_port: vec![pa::ExpPortSettings {
                         exp_port_id: 0,
-                        plugged: Some(pa::exp_port_settings::Plugged::Plugged(false)),
+                        plugged: Some(false),
                         ..Default::default()
                     }],
                     ..Default::default()
-                },
-            )),
+                }),
             ..Default::default()
         }
         .encode_to_vec();
@@ -2351,17 +2315,17 @@ mod tests {
     fn decodes_preset_folder_pushes_for_the_background_library() {
         let payload = pa::FileMessage {
             action: pa::message_action::Enum::Update as i32,
-            folder: Some(pa::file_message::Folder::Folder(pa::FolderInfo {
-                key: Some(pa::folder_info::Key::Key("/media/p4/Presets/Live".into())),
-                name: Some(pa::folder_info::Name::Name("Live".into())),
+            folder: Some(pa::FolderInfo {
+                key: Some("/media/p4/Presets/Live".into()),
+                name: Some("Live".into()),
                 files: vec![pa::ProductData {
-                    index: Some(pa::product_data::Index::Index(17)),
-                    name: Some(pa::product_data::Name::Name("Direct Rust".into())),
-                    instrument: Some(pa::product_data::Instrument::Instrument(1)),
+                    index: Some(17),
+                    name: Some("Direct Rust".into()),
+                    instrument: Some(1),
                     ..Default::default()
                 }],
                 ..Default::default()
-            })),
+            }),
             ..Default::default()
         }
         .encode_to_vec();
@@ -2386,9 +2350,7 @@ mod tests {
         let repo = pa::ModelRepoMessage {
             action: pa::message_action::Enum::Update as i32,
             request_id: None,
-            model_repo_payload: Some(pa::model_repo_message::ModelRepoPayload::ModelRepoPayload(
-                xml.to_vec(),
-            )),
+            model_repo_payload: Some(xml.to_vec()),
         };
         let catalog = parse_model_repo(&repo.encode_to_vec()).unwrap();
         assert_eq!(catalog.0.len(), 2);
@@ -2396,15 +2358,15 @@ mod tests {
         assert_eq!(catalog.0[&101].parameters[&0].options, ["Off", "On"]);
 
         let preset = BinaryPreset {
-            name: Some(binary_preset::Name::Name("Catalog Test".into())),
+            name: Some("Catalog Test".into()),
             chains: vec![Chain {
-                row: Some(chain::Row::Row(0)),
+                row: Some(0),
                 models: vec![Model {
-                    hash: Some(model::Hash::Hash(101)),
-                    column: Some(model::Column::Column(2)),
+                    hash: Some(101),
+                    column: Some(2),
                     params: vec![
                         Param {
-                            index: Some(param::Index::Index(0)),
+                            index: Some(0),
                             param_values: vec![ParamValue {
                                 value: Some(param_value::Value::StringValue("On".into())),
                             }],
@@ -2412,13 +2374,13 @@ mod tests {
                         },
                         numeric_param(1, 0.0),
                         Param {
-                            index: Some(param::Index::Index(2)),
+                            index: Some(2),
                             param_values: vec![ParamValue {
                                 value: Some(param_value::Value::FloatValue(0.5)),
                             }],
-                            expression: Some(param::Expression::Expression(2)),
-                            expression_min: Some(param::ExpressionMin::ExpressionMin(0.1)),
-                            expression_max: Some(param::ExpressionMax::ExpressionMax(0.9)),
+                            expression: Some(2),
+                            expression_min: Some(0.1),
+                            expression_max: Some(0.9),
                             ..Default::default()
                         },
                     ],
@@ -2434,7 +2396,7 @@ mod tests {
             .decode(
                 15,
                 &pa::RecallPresetMessage {
-                    preset: Some(pa::recall_preset_message::Preset::Preset(preset)),
+                    preset: Some(preset),
                     ..Default::default()
                 }
                 .encode_to_vec(),
@@ -2474,7 +2436,7 @@ mod tests {
                 action: pa::message_action::Enum::Update as i32,
                 request_id: None,
                 model_repo_payload: Some(
-                    pa::model_repo_message::ModelRepoPayload::ModelRepoPayload(xml.to_vec()),
+                    xml.to_vec(),
                 ),
             }
             .encode_to_vec(),
@@ -2488,9 +2450,9 @@ mod tests {
         };
         let preset = BinaryPreset {
             chains: vec![Chain {
-                row: Some(chain::Row::Row(0)),
+                row: Some(0),
                 input_control: vec![Model {
-                    hash: Some(model::Hash::Hash(28_000)),
+                    hash: Some(28_000),
                     // Full preset records address these parameters by position.
                     // CorOS also carries an undocumented fifth value.
                     params: vec![
@@ -2512,7 +2474,7 @@ mod tests {
             .decode(
                 15,
                 &pa::RecallPresetMessage {
-                    preset: Some(pa::recall_preset_message::Preset::Preset(preset)),
+                    preset: Some(preset),
                     ..Default::default()
                 }
                 .encode_to_vec(),

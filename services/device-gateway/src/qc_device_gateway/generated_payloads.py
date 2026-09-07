@@ -106,7 +106,6 @@ class GlobalEqParameter(TypedDict):
 class GlobalEqSettings(TypedDict):
     parameters: list[GlobalEqParameter]
     bypassed: NotRequired[bool]
-    hasUserDefaults: NotRequired[bool]
 
 class ModeCycle(TypedDict):
     slots: list[int]

@@ -35,6 +35,7 @@ pub const MESSAGE_TYPE_GLOBAL_TEMPO: u16 = 33;
 pub const MESSAGE_TYPE_BACKUP: u16 = 40;
 pub const MESSAGE_TYPE_MODEL_REPO: u16 = 51;
 pub const MESSAGE_TYPE_RESET_COMMS_BUFFERS: u16 = 52;
+pub const MESSAGE_TYPE_SYSTEM_TIME_SYNC: u16 = 43;
 pub const LIVE_SUBSCRIPTIONS: &[u16] = &[
     3, 9, 24, 38, 20, 42, 35, 58, 50, 54, 19, 15, 57, 60, 17, 33, 34, 21, 2, 13, 14,
 ];

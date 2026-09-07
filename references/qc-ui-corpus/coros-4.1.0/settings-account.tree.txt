@@ -1,0 +1,40 @@
+zenUI::RootGraphicsItem
+  zenUI::SettingsDialog
+    zenUI::GraphicsItem
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/24/done.png'
+          zenUI::PressAnimationView
+      zenUI::ComboBoxWithSelector
+        text : 'Account'
+        image: 'icons/custom/down_triangle.png'
+        zenUI::GraphicsItem
+          image: 'icons/system/settings/cloud.png'
+        zenUI::PressAnimationView
+    zenUI::SettingsMenu
+      zenUI::GraphicsItem
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'My Account'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/system/settings/account/account.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Backups'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/system/settings/account/backups.png'
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+    zenUI::GraphicsItem
+      zenUI::MyAccountMain
+        zenUI::GraphicsItem
+          text : '[redacted]'
+        zenUI::Button
+          text : 'UNLINK DEVICE'
+          zenUI::PressAnimationView
+        zenUI::GraphicsItem
+          text : 'You are ready to send & receive Presets & Neural Captures and use Cloud backups.'

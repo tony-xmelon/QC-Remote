@@ -1,0 +1,66 @@
+zenUI::RootGraphicsItem
+  zenUI::NCMetadataDialog
+    zenUI::GraphicsItem
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/24/close.png'
+          zenUI::PressAnimationView
+      zenUI::GraphicsItem
+      zenUI::NCFolderSelectionButton
+        text : 'My Captures'
+        image: 'icons/24/folder_white.png'
+        zenUI::PressAnimationView
+      zenUI::NameButton
+        text : 'Name'
+        zenUI::PressAnimationView
+      zenUI::MetadataButton
+        image: 'icons/24/metadata_green.png'
+        zenUI::PressAnimationView
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+      zenUI::CaptureDeviceTypeSelector
+        zenUI::GraphicsItem
+          text : 'TYPE OF CAPTURE'
+        zenUI::GraphicsItem
+          text : 'Amp'
+        zenUI::ModelItem
+          zenUI::PressAnimationView
+        zenUI::ModelItemOverlays
+        zenUI::ModelItem
+          zenUI::PressAnimationView
+        zenUI::ModelItemOverlays
+        zenUI::ModelItem
+          zenUI::PressAnimationView
+        zenUI::ModelItemOverlays
+        zenUI::ModelItem
+          zenUI::PressAnimationView
+        zenUI::ModelItemOverlays
+        zenUI::ModelItem
+          zenUI::PressAnimationView
+        zenUI::ModelItemOverlays
+        zenUI::ModelItem
+          zenUI::PressAnimationView
+        zenUI::ModelItemOverlays
+      zenUI::InstrumentSelector
+        zenUI::GraphicsItem
+          text : 'PREFERRED INSTRUMENT'
+        zenUI::Button
+          text : 'Guitar'
+          zenUI::PressAnimationView
+        zenUI::Button
+          text : 'Bass'
+          zenUI::PressAnimationView
+        zenUI::Button
+          text : 'Synth'
+          zenUI::PressAnimationView
+        zenUI::Button
+          text : 'Vocal'
+          zenUI::PressAnimationView
+        zenUI::Button
+          text : 'Other'
+          zenUI::PressAnimationView
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/24/floppy_white.png'
+          zenUI::PressAnimationView

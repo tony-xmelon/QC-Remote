@@ -4,11 +4,11 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 
 ## Coverage summary
 
-- Canonical device states: **103/103** routed through the shared Windows/Android surface.
-- Full-frame authoritative evidence: **79/103** states.
-- Official-detail-only evidence: **19/103** states.
-- Smoke-only evidence gaps: **5/103** states.
-- Exact-size dual-host capture paths: **103/103** states.
+- Canonical device states: **104/104** routed through the shared Windows/Android surface.
+- Full-frame authoritative evidence: **96/104** states.
+- Official-detail-only evidence: **4/104** states.
+- Smoke-only evidence gaps: **4/104** states.
+- Exact-size dual-host capture paths: **104/104** states.
 
 | Corpus | Windows structural | Windows color | Android structural | Android color |
 | --- | ---: | ---: | ---: | ---: |
@@ -16,6 +16,20 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 | Official manual | 92.74% | 97.27% | 92.74% | 97.27% |
 
 Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` color similarity. A canonical state that references multiple frames reports their mean. Detail evidence is scoped and therefore never promoted into a full-frame score.
+
+Thirty-five captures were added from hardware in the CorOS 4.1.0 session of 2026-09-06:
+
+- Directory — `directory-categories`, `-captures`, `-irs`, `-plugins`, `-favorites`, `-search`, `-search-results`, `-sort`, `-arrange`, `-new-folder`, `-nested`, `-filter`, `-copy`
+- I/O — `io-input`, `io-usb`, `global-eq`
+- Editor — `expression-parameter`, `expression-bypass`, `fixture-editor-pages`, `looper-editor`, `stomp-assignment`, `scene-assignment`
+- Grid and browser — `empty-slot`, `plugin-folders`, `plugin-refresh`
+- Monitoring and Settings — `cpu-monitor`, `settings-account`, `settings-device`, `settings-midi`, `settings-system`
+- Cortex Cloud — `directory-cloud-upload`, `cloud-upload-overwrite`
+- Gig View — `gig-view-hybrid`
+
+Full-frame authoritative coverage moved from 79/103 to 95/104 as a result, which the summary counts above reflect. The denominator grew by one because running a Neural Capture exposed a state the canonical inventory did not have: NC-08, the Sanity Check failure.
+
+Two things below are **not** refreshed for them, because both come from a scored dual-host render pass that has not been run: the score table, and the per-state `Evidence` column, which still reads `official frame` or `official detail` for the promoted states. Their wording has been checked against the device's own scene graph with `npm run verify:qc-screen-text`; their pixels have not been scored.
 
 ## Evidence by family
 
@@ -27,14 +41,14 @@ Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` col
 | MIDI | 1 | 1 | 0 | 0 |
 | Performance | 5 | 5 | 0 | 0 |
 | Gig View | 4 | 4 | 0 | 0 |
-| Monitoring | 1 | 0 | 1 | 0 |
+| Monitoring | 1 | 1 | 0 | 0 |
 | I/O | 8 | 8 | 0 | 0 |
 | Routing | 5 | 5 | 0 | 0 |
-| Device browser | 9 | 8 | 1 | 0 |
-| Editor | 9 | 8 | 1 | 0 |
-| Assignment | 4 | 1 | 3 | 0 |
+| Device browser | 9 | 9 | 0 | 0 |
+| Editor | 9 | 9 | 0 | 0 |
+| Assignment | 4 | 4 | 0 | 0 |
 | Virtual Device preset | 2 | 2 | 0 | 0 |
-| Directory | 16 | 9 | 7 | 0 |
+| Directory | 16 | 16 | 0 | 0 |
 | Capture V1 | 7 | 4 | 2 | 1 |
 | Settings | 10 | 9 | 0 | 1 |
 | Recovery | 2 | 0 | 1 | 1 |
@@ -124,13 +138,14 @@ Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` col
 | DR-14 | Directory | New folder / setlist editor | official detail | Built | Built | — / — | — / — | — / — | — / — |
 | DR-15 | Directory | Item contextual menu | physical frame | Built | Built | 88.93% / 88.93% | 98.87% / 98.87% | — / — | — / — |
 | DR-16 | Directory | Cortex Cloud upload mode | official frame | Built | Built | — / — | — / — | 96.19% / 96.00% | 98.34% / 98.34% |
-| NC-01 | Capture V1 | Capture introduction | official detail | Built | Built | — / — | — / — | — / — | — / — |
-| NC-02 | Capture V1 | Capture type selection | smoke only | Built | Built | — / — | — / — | — / — | — / — |
-| NC-03 | Capture V1 | Connection and routing | official detail | Built | Built | — / — | — / — | — / — | — / — |
+| NC-01 | Capture V1 | Connections 1 of 5, instrument into Input 1 | device frame | Built | Built | — / — | — / — | — / — | — / — |
+| NC-02 | Capture V1 | Connections 2 of 5, headphone and output monitoring | device frame | Built | Built | — / — | — / — | — / — | — / — |
+| NC-03 | Capture V1 | Connections 3 to 5, Capture Out, Input 2, and the summary | device frame | Built | Built | — / — | — / — | — / — | — / — |
 | NC-04 | Capture V1 | Calibration settings | official frame | Built | Built | — / — | — / — | 92.89% / 92.89% | 95.46% / 95.46% |
 | NC-05 | Capture V1 | Capture process / progress | official frame | Built | Built | — / — | — / — | 91.03% / 91.03% | 97.22% / 97.22% |
 | NC-06 | Capture V1 | A/B result | official frame | Built | Built | — / — | — / — | 94.14% / 94.14% | 97.94% / 97.94% |
 | NC-07 | Capture V1 | Metadata and save | official frame | Built | Built | — / — | — / — | 92.96% / 92.96% | 98.31% / 98.31% |
+| NC-08 | Capture V1 | Sanity Check failure | device frame | Built | Built | — / — | — / — | — / — | — / — |
 | ST-01 | Settings | Account settings | official frame | Built | Built | — / — | — / — | 93.11% / 93.11% | 98.44% / 98.44% |
 | ST-02 | Settings | System settings | official frame | Built | Built | — / — | — / — | 90.80% / 90.86% | 96.73% / 96.73% |
 | ST-03 | Settings | Device settings | official frame | Built | Built | — / — | — / — | 92.92% / 92.92% | 96.37% / 96.38% |
@@ -148,6 +163,118 @@ Scores are edge-F1 structural match with a two-pixel tolerance and `1 - MAE` col
 | OV-03 | System overlay | Error / unavailable state | physical frame | Built | Built | 91.78% / 91.78% | 96.20% / 96.20% | — / — | — / — |
 | OV-04 | System overlay | Busy / progress state | physical frame | Built | Built | 84.57% / 84.58% | 97.26% / 97.26% | — / — | — / — |
 
+## Authoritative evidence gaps after the 2026-09-06 capture session
+
+Twenty-two screens were captured from hardware in that session. What is left
+falls into three groups, and only the first is a matter of time.
+
+### Blocked by the capture harness, not by risk
+
+| state | renderer | what happened |
+| --- | --- | --- |
+| ED-02 | `fixture-editor-pages` | Needs a block with more than one parameter page. The scratch preset carries a single-parameter Adaptive Gate, so a multi-page block has to be added first - a preset edit, revertible by reloading the slot. |
+| ED-06 | `looper-editor` | Same: a Looper block has to be added to the preset first. |
+
+A caution about the rows above, learned the hard way. Several of them were first written off as protocol limitations, and most of those conclusions were wrong: the Multi Select checkboxes do respond, the filter menu does exist, and the mode-tile merge is expressible. Each was a coordinate or a stale-screen problem. Screenshot before every gesture and confirm the screen; a tap aimed at a dialog that had already closed once landed on the Grid and edited a preset that was not the scratch one. What remains genuinely unlanded is the mode-tile merge, which the owner performed by hand.
+
+The `directory-filter` fixture had invented its contents. CorOS does have a
+filter, but only in the Neural Captures directory, and it lists capture types -
+Default, Amp, Combo Amp, Amp + Cab, Cab, Overdrive, Fuzz, Compressor - not the
+All items / Favorites / Downloaded / My items / Factory scope list we drew. It
+was rebuilt from the capture. That is the fourth reconstruction in this session
+found to have been built from the manual rather than the unit, after the sort
+menu, the Multi Select bar and the Account page.
+
+The Neural Capture wizard was retried after the Gig View problem was fixed, with
+the menu verified open and the row coordinate verified by screenshot, on both a
+full preset and a nearly empty one. Selecting *New Neural Capture* returns to the
+Grid in every case, so NC-01 to NC-03 need the capture rig connected; this is not
+a navigation failure.
+
+`expression-bypass` (ED-12) is captured but **not** confirmed to be the screen
+our fixture draws, and the text check cannot tell the difference. The device
+frame is the expression parameter screen with BYPASS showing `ASSIGNED`; the
+fixture draws an expression *switch* settings page with SWITCH ON, INVERT RANGE,
+SWITCH DELAY and LATCH EMULATION. None of those words appear in the device tree,
+and the checker only reports strings the device shows and we lack, never chrome
+we invented. Either the fixture depicts a screen reached another way - an
+expression switch rather than a pedal - or it is invented like the other four.
+Worth resolving before the capture is treated as evidence for that renderer.
+
+`directory-copy` (DR-12) was captured with the owner driving the unit, after
+three failed attempts from here. Pasting does **not** ask for a destination
+folder - the destination is wherever you already are - it asks how to lay the
+items into that folder's banks: *Choose each slot manually*, *Paste consecutively
+from the first chosen slot onwards*, *Paste consecutively from the first empty
+slot onwards*, over CANCEL / CONTINUE. Our fixture drew a folder picker headed
+"Copy 3 items to..." with a COPY HERE button, which is not on the unit. That is
+the seventh reconstruction this session found to have been built from the manual
+rather than the device.
+
+Two mechanics fell out of it. CorOS emits its own `<b>` markup inside label
+strings - the body reads `...into the banks in <b>My Presets</b>:` - so a
+reconstruction has to reproduce the markup, not just the words. And the capture
+had to be taken by a watcher that connects once and polls: every one-shot
+screenshot reconnects, and reconnecting closes whatever dialog the owner is
+holding open.
+
+`scene-assignment` (ED-10) has no on-screen route that could be found. Three
+touchscreen approaches failed: long-pressing the knob does nothing, changing a
+value after switching scene in the editor writes the same value into every
+scene, and long-pressing the scene indicator merely advances the scene. It was
+captured a different way - `device.setParameterSceneMode`, an action this stack
+already implements, sets the flag directly, and the editor then draws the
+A B / C D badge beside the parameter. Worth remembering that a state gated
+behind an unknown gesture may still be reachable over the protocol.
+
+### Driving the touchscreen: three rules, now enforced
+
+`tools/qc_screen_driver.py` exists because the same three mistakes were made
+repeatedly during this session, and remembering them did not work. Each is now
+refused by the tool rather than left to discipline.
+
+1. **Never toggle Gig View.** The gateway's `wake_remote_control` revives a
+   dormant framebuffer by flipping Gig View, which changes what the owner is
+   looking at and closes any dialog they have open. The driver refuses to import
+   it and revives the stream with a RemoteControl mouse MOVE, which presses
+   nothing.
+2. **One connection per sequence.** Connecting runs the session handshake, which
+   resets the device UI. A screenshot taken in one process and a tap sent from
+   the next act on *different screens*. Several "misclicks" in this session were
+   exactly this, not bad coordinates.
+3. **No gesture without a verified screen.** `expect` must pass immediately
+   before any tap, hold, swipe or drag, and every gesture clears the
+   verification. A tap aimed at a dialog that had already closed once landed on
+   the Grid and silently edited a preset that was not the scratch one.
+
+### Physically impossible without the unit's owner
+
+| state | renderer | what it needs |
+| --- | --- | --- |
+| GL-01, GL-02, GL-03 | `fixture-boot`, `fixture-shutdown`, `power-overlay` | A power cycle, a power-button hold, and a short power press. |
+| RC-01, RC-02 | `recovery-entry`, `recovery-options` | The documented Recovery Mode boot gesture. |
+| ED-14 | `fixture-warning-clip` | A hot input signal. Nothing is plugged into the unit. |
+
+### Deliberately not triggered
+
+| state | renderer | why |
+| --- | --- | --- |
+| DR-16 | `directory-cloud-upload` | **Captured with the owner's explicit approval**, who nominated preset 4B "Top 3 Acoustic Sims" and authorised overwriting. Pressing a row's upload button raised a *Preset already exists / CANCEL / OVERWRITE* dialog, captured separately as `cloud-upload-overwrite` and attached to OV-02, which shares the overlay. Only 4B left the unit. |
+| ST-06 | `settings-update` | The acquisition plan marks it `do-not-trigger`: reaching update progress means starting a firmware update. |
+| ED-15 | `fixture-warning-dsp` | **Attempted and not reproduced.** The scratch preset was loaded up with an amp, a Looper and a second amp until the DSP was full. CorOS does not warn after the fact: it **greys out** every model that no longer fits in the device browser, and tapping a greyed model does nothing at all. So the warning our `fixture-warning-dsp` renderer draws is reached some other way - a preset that became too heavy after a model update is the likeliest - and the fixture is unverified until that path is found. |
+| GL-22 | `gig-official-hybrid` | **Captured, with the owner performing the merge gesture on the unit.** Two remote forms were tried first and neither landed: the atomic DRAG picks the tile up - it lifts and a red delete target replaces the tick - but never drops, and a composed PRESS, hold, repeated MOVE, RELEASE does not pick it up at all. An earlier revision of this row claimed the protocol cannot express the gesture; that was wrong, since RemoteControlMouse has PRESS, RELEASE and MOVE as distinct types. What is unproven is the timing CorOS expects. Once the owner merged Preset and Scene by hand, Gig View in HYBRID captured normally as `gig-view-hybrid`. |
+
+### A note on the capture guard
+
+`tools/capture_qc_ui_corpus.py` refuses a capture if touchscreen navigation
+changed the preset or its dirty state. That guard earned its place during this
+session - it caught the expression-pedal assignment immediately - but it has a
+blind spot worth fixing: it compares the preset **name**, and an unsaved slot
+reports an empty name. During the first batch the unit had drifted to an empty
+4F and the guard compared `''` to `''` and passed. The screens captured then are
+preset-independent, so the evidence stands, but the guard should compare the
+setlist position as well.
+
 ## Authoritative evidence gaps
 
 These states are implemented and captured on both hosts, but only against deterministic reconstruction fixtures. They require a physical framebuffer or an official visual before a visual-match percentage is meaningful.
@@ -156,7 +283,6 @@ These states are implemented and captured on both hosts, but only against determ
 | --- | --- | --- | --- | --- | --- | --- |
 | ED-14 | Grid | I/O clipping warning | `fixture-warning-clip` | controlled-transient | requires-trigger | `fixture-warning-clip` |
 | ED-15 | Grid | DSP/side-chain limit warning | `fixture-warning-dsp` | controlled-transient | requires-disposable-preset | `fixture-warning-dsp` |
-| NC-02 | Capture V1 | Capture type selection | `capture-type` | safe-navigation | ready | `capture-type` |
 | ST-06 | Settings | Update availability/progress | `settings-update` | external-evidence | do-not-trigger | `settings-update` |
 | RC-02 | Recovery | Recovery options | `recovery-options` | disruptive | requires-scheduled-session | `recovery-options` |
 

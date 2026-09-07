@@ -5,11 +5,16 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-from pathlib import Path
+import os
+import shutil
 import struct
+import subprocess
+import tempfile
+from pathlib import Path
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+NODE = shutil.which("node") or "node"
 
 
 def png_dimensions(payload: bytes) -> tuple[int, int]:
@@ -18,43 +23,27 @@ def png_dimensions(payload: bytes) -> tuple[int, int]:
     return struct.unpack(">II", payload[16:24])
 
 
+CLASSIFIER = REPOSITORY_ROOT / "tools" / "qc-tree-classifier.mjs"
+
+
 def classify_tree(tree: str) -> str:
-    if "zenUI::Tuner" in tree:
-        return "tuner"
-    if "zenUI::MetronomeEditor" in tree:
-        return "tempo"
-    if "zenUI::HybridModeConfigDialog" in tree:
-        return "modes-configuration"
-    if "zenUI::PresetSaveDialog" in tree and "zenUI::KeyboardTextInput" in tree:
-        return "preset-name-editor"
-    if "zenUI::MidiMatrixDialog" in tree:
-        return "midi-out"
-    if "zenUI::CopySceneDialog" in tree:
-        return "scene-destination"
-    if "zenUI::DirectoryDialog" in tree and "Save to..." in tree:
-        return "save-as-editor"
-    if "zenUI::GigView" in tree:
-        return "gig-view"
-    if "zenUI::Directory" in tree:
-        return "directory"
-    if "zenUI::SplitControlPointGrid" in tree and "zenUI::ContainerWithSplitter" in tree and "zenUI::ParameterControl" in tree:
-        return "mixer-editor" if tree.count("zenUI::ParameterControl") == 6 else "splitter-editor"
-    if "zenUI::ParameterEditor" in tree or "Parameter Editor" in tree:
-        return "parameter-editor"
-    if "Create New" in tree and "Preset MIDI Out" in tree:
-        return "grid-context-menu"
-    if "Default scene" in tree and "Scene H" in tree:
-        return "scene-selector"
-    if "Not In Use" in tree:
-        return "route-selector"
-    if "zenUI::ModelMenu" in tree:
-        return "device-browser"
-    browser_categories = ("Neural Capture", "Overdrive", "Reverb", "Pitch", "Utility")
-    if sum(label in tree for label in browser_categories) >= 3:
-        return "device-browser"
-    if "zenUI::Grid" in tree:
-        return "grid"
-    return "unknown"
+    """Classify a CorOS graphics tree by the shared rules in the JS classifier.
+
+    The rules used to be duplicated here. The copies drifted, and a screen the
+    corpus verifier called `busy-progress` was written into the manifest as
+    `unknown` - so a capture failed verification the instant it was taken.
+    Shelling out costs a node start-up per capture and keeps that impossible.
+    """
+    with tempfile.NamedTemporaryFile("w", suffix=".tree.txt", encoding="utf-8",
+                                     delete=False) as handle:
+        handle.write(tree)
+        path = handle.name
+    try:
+        result = subprocess.run([NODE, str(CLASSIFIER), path],
+                                capture_output=True, text=True, check=True)
+    finally:
+        os.unlink(path)
+    return result.stdout.strip()
 
 
 def main() -> int:

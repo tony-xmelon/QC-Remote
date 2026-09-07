@@ -4,7 +4,6 @@ use prost::Message;
 use qc_protocol::commands::{self, OutboundMessage};
 use qc_protocol::framing;
 use qc_protocol::profile;
-use qc_protocol::proto;
 use qc_protocol::proto::cortex_protobuf_v2 as pa;
 use qc_protocol::session::{FrameAssembler, SessionMachine};
 use std::cell::UnsafeCell;
@@ -15,6 +14,14 @@ use std::sync::{mpsc, Arc};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use thiserror::Error;
+
+/// Wall-clock milliseconds, for the SystemTimeSync the QC is sent at connect.
+fn unix_time_ms() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64
+}
 
 #[derive(Debug, Error)]
 pub enum UsbError {
@@ -310,7 +317,7 @@ impl QcUsb {
         // one protocol plan with Android. Directory enumeration stays on
         // demand so it cannot starve the active preset.
         self.flight.event("initialization-started");
-        for message in commands::initialization() {
+        for message in commands::initialization(unix_time_ms()) {
             self.send_command(message);
         }
         self.flight.event("initialization-sent");
@@ -490,15 +497,12 @@ impl QcUsb {
 
 pub fn preset_name(payload: &[u8]) -> Option<String> {
     let message = pa::RecallPresetMessage::decode(payload).ok()?;
-    let pa::recall_preset_message::Preset::Preset(preset) = message.preset?;
-    let proto::binary_preset::Name::Name(name) = preset.name?;
-    Some(name)
+    message.preset?.name
 }
 
 pub fn scene_value(payload: &[u8]) -> Option<u32> {
     let message = pa::SceneMessage::decode(payload).ok()?;
-    let pa::scene_message::SelectedScene::SelectedScene(scene) = message.selected_scene?;
-    Some(scene)
+    message.selected_scene
 }
 
 impl Drop for QcUsb {

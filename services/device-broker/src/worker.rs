@@ -1655,9 +1655,8 @@ mod tests {
 
     fn backup_chunk(json: &str, last: bool) -> Vec<u8> {
         pa::LocalBackupMessage {
-            backup_json: Some(pa::local_backup_message::BackupJson::BackupJson(json.into())),
-            is_last_chunk: last
-                .then_some(pa::local_backup_message::IsLastChunk::IsLastChunk(true)),
+            backup_json: Some(json.into()),
+            is_last_chunk: last.then_some(true),
             ..Default::default()
         }
         .encode_to_vec()

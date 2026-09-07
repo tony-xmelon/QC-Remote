@@ -147,6 +147,8 @@ test("production and comparison screens cannot select alternate icon artwork", (
   const sourceFiles = execFileSync("git", ["ls-files", "--", "apps", "packages", "tests"], { encoding: "utf8" })
     .trim().split(/\r?\n/).filter((file) => /\.(?:ts|tsx)$/.test(file));
   const fixtureOnlyVariant = new RegExp(["official", "Raster"].join(""));
+  // A collapsed listing would assert nothing and still pass.
+  assert.ok(sourceFiles.length > 100, `expected the source listing, got ${sourceFiles.length} file(s)`);
   for (const file of sourceFiles) {
     assert.doesNotMatch(read(file), fixtureOnlyVariant, `${file} must use the same canonical artwork in production and comparisons`);
   }
@@ -194,6 +196,7 @@ test("product visual assets have no byte-for-byte duplicates", () => {
     .trim().split(/\r?\n/).filter(Boolean).map((file) => file.replaceAll("\\", "/"))
     .filter((file) => !file.startsWith("references/"));
   const owners = new Map<string, string>();
+  assert.ok(visualFiles.length > 20, `expected the visual asset listing, got ${visualFiles.length} file(s)`);
   for (const file of visualFiles) {
     const fingerprint = sha256(file);
     assert.ok(!owners.has(fingerprint), `${file} duplicates canonical asset ${owners.get(fingerprint)}`);
@@ -205,6 +208,8 @@ test("authored vector geometry has one owner", () => {
   const sourceFiles = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "--", "apps/**/*.tsx", "packages/**/*.tsx"], { encoding: "utf8" })
     .trim().split(/\r?\n/).filter(Boolean);
   const owners = new Map<string, string>();
+  // A collapsed listing would compare nothing and still report success.
+  assert.ok(sourceFiles.length >= 10, `expected the .tsx listing, got ${sourceFiles.length} file(s)`);
   for (const file of sourceFiles) {
     for (const match of read(file).matchAll(/\bd="([^"]{8,})"/g)) {
       const location = `${file}:${read(file).slice(0, match.index).split("\n").length}`;
@@ -224,11 +229,16 @@ test("every declared icon is wired outside its registry and audit gallery", () =
   const authoredSource = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "--", "apps/**/*.ts", "apps/**/*.tsx", "packages/**/*.ts", "packages/**/*.tsx"], { encoding: "utf8" })
     .trim().split(/\r?\n/).filter((file) => file !== iconFile && file !== fixtureFile && !file.endsWith(".test.ts") && !file.endsWith(".test.tsx"))
     .map(read).concat(fixtureSource).join("\n");
+  let checkedVariants = 0;
   for (const union of iconSource.matchAll(/export type \w+(?:IconName|GlyphName)\s*=\s*([^;]+);/g)) {
     for (const variant of union[1].matchAll(/"([^"]+)"/g)) {
+      checkedVariants += 1;
       assert.match(authoredSource, new RegExp(`["']${variant[1].replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}["']`), `${variant[1]} is declared but not wired`);
     }
   }
+  // If the union declarations are ever renamed, the loops above match nothing
+  // and this test silently stops guaranteeing that icons are wired.
+  assert.ok(checkedVariants > 20, `expected the declared icon names, got ${checkedVariants}`);
 });
 
 test("product branding has one shared owner across web and native hosts", () => {
@@ -264,7 +274,7 @@ test("authored app and device sources cannot bypass the shared visual contract",
     .filter((file) => existsSync(file))
     .filter((file) => /\.(?:css|html|java|json|mjs|ps1|py|rs|ts|tsx|xml)$/.test(file))
     .filter((file) => !file.startsWith("packages/typescript/qc-theme/"))
-    .filter((file) => !file.startsWith("packages/typescript/qc-ui/src/official-") && !file.startsWith("packages/typescript/qc-ui/src/remaining-fixtures") && !file.endsWith("/coros-screen-fixtures.tsx") && !file.endsWith("/fixture-live-surface.css") && !file.endsWith("/reference-parameter-editor.css") && !file.endsWith("/qc-device-typography.css"))
+    .filter((file) => !file.startsWith("packages/typescript/qc-ui/src/official-") && !file.startsWith("packages/typescript/qc-ui/src/remaining-fixtures") && !file.endsWith("/coros-screen-fixtures.tsx") && !file.endsWith("/coros-capture-connections.css") && !file.endsWith("/fixture-live-surface.css") && !file.endsWith("/reference-parameter-editor.css") && !file.endsWith("/qc-device-typography.css"))
     .filter((file) => !/^tools\/capture_.*\.mjs$/.test(file))
     .filter((file) => file !== "tools/sweep_qc_font.mjs")
     .filter((file) => file !== "tools/compare_qc_font_candidates.py")
@@ -275,6 +285,9 @@ test("authored app and device sources cannot bypass the shared visual contract",
   const deployedAssetUrl = /url\([^)]*\.(?:svg|png|webp|jpe?g|ico)\b/i;
   const literalFontStack = /["'](?:Arial Narrow|Arial|Helvetica Neue|Helvetica|Roboto Condensed|Roboto|DM Mono|Cascadia Mono|IBM Plex Sans|Segoe UI Variable|Segoe UI|Inter|Consolas)["']|fontFamily=["']|android:fontFamily">\s*(?!@(?:string|font)\/)[^<]+/mi;
   const iconCharacter = /[▲▼►▶◀◁▷‹›⌄⌃⋮＋✕✓✔✚⏵⏴■↵⇥✎☆⌫◇♩▥⚙▤↑↓]/u;
+  // This is the visual contract's only enforcement. If the listing or its
+  // filters ever collapse, every rule below silently stops being checked.
+  assert.ok(files.length > 100, `expected the source listing, got ${files.length} file(s)`);
   for (const file of files) {
     const fullSource = read(file);
     if (/Generated by scripts\//.test(fullSource.slice(0, 300))) continue;

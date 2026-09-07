@@ -1,0 +1,50 @@
+zenUI::RootGraphicsItem
+  zenUI::NeuralCaptureDialog
+    zenUI::GraphicsItem
+      text : 'Neural Capture'
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/cabsim/close.png'
+          zenUI::PressAnimationView
+      zenUI::Button
+        text : 'CONNECTION DIAGRAM'
+        zenUI::PressAnimationView
+    zenUI::GraphicsItem
+      zenUI::Button
+        text : 'START CAPTURE'
+        zenUI::PressAnimationView
+      zenUI::NeuralCaptureBackground
+        zenUI::NeuralCaptureSemiRoundedRect
+        zenUI::NeuralCaptureSemiRoundedRect
+        zenUI::ParameterControl
+          zenUI::GraphicsItem
+            zenUI::GraphicsItem
+          zenUI::GraphicsItem
+          zenUI::Button
+            image: 'icons/cloud backup icons/info.png'
+            zenUI::PressAnimationView
+        zenUI::ParameterControl
+          zenUI::GraphicsItem
+            zenUI::GraphicsItem
+          zenUI::GraphicsItem
+          zenUI::Button
+            image: 'icons/cloud backup icons/info.png'
+            zenUI::PressAnimationView
+        zenUI::ParameterControl
+          zenUI::GraphicsItem
+        zenUI::ParameterControl
+          zenUI::GraphicsItem
+        zenUI::ParameterControl
+          zenUI::GraphicsItem
+        zenUI::ParameterControl
+          zenUI::GraphicsItem
+        zenUI::ParameterControl
+          zenUI::GraphicsItem
+            zenUI::GraphicsItem
+          zenUI::GraphicsItem
+        zenUI::GraphicsItem
+          image: 'icons/24/headphones.png'
+      zenUI::ModelItemBasic
+        zenUI::PressAnimationView
+      zenUI::GraphicsItem
+    zenUI::TabBar

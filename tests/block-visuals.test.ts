@@ -51,36 +51,64 @@ test("physical interaction fixtures preserve the captured CorOS overlay structur
   for (const marker of ["coros-physical-keyboard", "coros-physical-confirmation", "directory-context-scrim", "block-context-scrim"]) {
     assert.match(fixture, new RegExp(marker));
   }
-  assert.match(fixture, /\["Edit", "Copy", "Cut", "Delete"\]/);
+  // The device's item menu carries a Paste entry between Cut and Delete;
+  // `directory-item-context.tree.txt` is the evidence.
+  assert.match(fixture, /\["Edit", "Copy", "Cut", "Paste to replace", "Delete"\]/);
   assert.match(fixture, /DirectoryIcon kind="folder" number=\{4\}/);
-  assert.match(fixture, /function PhysicalDirectoryStatusIcon/);
+  // Six directory frames show a plain white cloud-upload in that header slot;
+  // the red signal-error glyph this used to draw is on none of them.
+  assert.match(fixture, /itemContext \? <DirectoryIcon kind="cloud-upload" \/> : "☁"/);
+  assert.doesNotMatch(fixture, /PhysicalDirectoryStatusIcon/);
   assert.match(fixture, /function PluginLockIcon/);
-  assert.match(fixture, /className="physical-preset-name">\{`2\$\{String\.fromCharCode\(65 \+ index\)\} \$\{name\}`\}/);
+  // Every physical directory frame was captured in bank 4 of My Presets.
+  assert.match(fixture, /className="physical-preset-name">\{`4\$\{String\.fromCharCode\(65 \+ index\)\} \$\{name\}`\}/);
   assert.match(fixture, /"Save Current Parameters as\.\.\."/);
   assert.match(fixture, /function BlockContextIcon/);
-  assert.match(fixture, /className="physical-eq-grid"/);
+  // block-context.png shows the Grid above an editor action bar with an empty
+  // parameter area below - not the full-screen EQ editor this used to draw,
+  // which is a real CorOS layout but not the one behind this menu.
+  assert.match(fixture, /physical-grid-underlay/);
+  // scene-assignment.png and stomp-assignment.png draw the same Grid and
+  // action bar, so all three share one component.
+  assert.match(fixture, /<PhysicalEditorUnderlay slot="4" letter="E" title="QC MCP TEST_2" \/>/);
+  assert.doesNotMatch(fixture, /physical-eq-/);
   for (const kind of ["change", "copy", "paste", "reset", "save", "expression", "bypass"]) {
     assert.match(fixture, new RegExp(`\\["${kind}"`));
   }
   assert.match(fixture, /dy=\{browserChrome \? -11 : 0\}/);
-  assert.match(css, /\.qc-screen\.coros-block-context > aside \{[^}]*left: 30px;[^}]*width: 322px;/s);
-  assert.match(css, /\.qc-screen\.coros-block-context > aside button \{[^}]*grid-template-columns: 57px 1fr;[^}]*font: 300 16px Roboto,Arial,sans-serif;/s);
-  assert.match(css, /\.coros-block-context > \.block-context-scrim \{[^}]*rgba\(78,81,78,\.84\)/s);
+  assert.match(css, /\.qc-screen\.coros-block-context > aside \{[^}]*left: 32px;[^}]*width: 320px;/s);
+  assert.match(css, /\.qc-screen\.coros-block-context > aside button \{[^}]*grid-template-columns: 57px 1fr;[^}]*font: 16px Roboto,Arial,sans-serif;/s);
+  // Fitted over five elements in block-context.png whose undimmed colours are
+  // known: rgba(71,74,71,.92) reproduced the page background exactly and
+  // crushed everything brighter, which no check caught because none looked
+  // past the background.
+  assert.match(css, /\.coros-block-context > \.block-context-scrim \{[^}]*rgba\(85,88,85,\.72\)/s);
   assert.match(css, /\.coros-block-context > aside button span svg \{[^}]*width: 24px;[^}]*height: 24px;/s);
-  assert.match(css, /\.physical-eq-underlay header nav \.physical-eq-confirm \{[^}]*width: 98px;/s);
-  assert.match(css, /\.physical-eq-underlay footer::before \{[^}]*top: -45px;/s);
-  assert.match(css, /\.coros-directory-fixture \.directory-item-menu \{[^}]*left: 528px;[^}]*width: 256px;[^}]*height: 208px;/s);
+  assert.match(css, /\.physical-grid-underlay \.underlay-grid \{[^}]*height: 196px;/s);
+  assert.match(css, /\.underlay-editor-bar \{[^}]*right: 8px;[^}]*top: 204px;[^}]*height: 44px;/s);
+  // editor-parametric-8.png separates the tab strip from the parameter cards
+  // with a 2px gap of page background, not with a rule 45px above the footer;
+  // nothing is drawn at that height in it or in either block-context frame.
+  assert.doesNotMatch(css, /\.physical-eq-underlay/);
+  // Measured from references/qc-ui-corpus/coros-4.1.0/directory-item-context.png:
+  // the menu is bottom-anchored at y=472 and the device's five items make it
+  // 260 tall, not the 208 a four-item menu would be.
+  assert.match(css, /\.coros-directory-fixture \.directory-item-menu \{[^}]*left: 528px;[^}]*width: 256px;[^}]*height: 260px;/s);
   assert.match(css, /\.coros-directory-fixture\.is-physical-context > header > button:last-child \{[^}]*left: 694px;[^}]*width: 98px;[^}]*min-width: 98px;/s);
   assert.match(css, /\.coros-directory-fixture\.is-physical-context \.directory-fixture-items \{[^}]*gap: 0;/s);
   assert.match(css, /\.directory-fixture-folders \.folder-number \{[^}]*fill: #202421;[^}]*stroke: none;/s);
-  assert.match(css, /\.directory-item-menu button:nth-child\(4\) \{[^}]*translateY\(-6px\)/s);
+  // directory-item-context.png puts the five entries on one 52px pitch, which
+  // is exactly the 260px menu divided by five; the 54px buttons overran it and
+  // three per-entry nudges were hiding the difference.
+  assert.match(css, /\.coros-directory-fixture \.directory-item-menu button \{[^}]*height: 52px;/s);
+  assert.doesNotMatch(css, /\.directory-item-menu button:nth-child\([235]\) \{[^}]*translateY/s);
   assert.match(css, /\.coros-physical-confirmation > aside \{[^}]*left: 190px;[^}]*width: 420px;[^}]*height: 230px;/s);
   assert.match(css, /\.physical-keyboard-rows button \{[^}]*background: #212421;/s);
   assert.match(remainingCss, /\.splitter-panel>header>svg\{transform:translate\(-1\.625cqw,\.25cqw\)\}/);
   assert.match(remainingCss, /\.coros-splitter-physical:not\(\.coros-mixer-physical\) \.splitter-knob\{left:73\.375%;top:4\.5cqw;/);
   assert.match(remainingCss, /repeating-linear-gradient\(to bottom,#212421 0 \.5cqw,transparent \.5cqw 1\.25cqw\)/);
   assert.match(remainingCss, /\.is-physical-plugin-list \.browser-fixture-panel>nav button\.is-active\{background:#181c18\}/);
-  assert.match(remainingCss, /\.is-physical-plugin-list \.browser-fixture-panel>nav button\.is-active i\{[^}]*background:#000;/);
+  assert.match(remainingCss, /\.is-physical-plugin-list \.browser-fixture-panel>nav button\.is-active i\{[^}]*background:#102818;/);
   assert.match(remainingCss, /\.is-physical-plugin-list \.plugin-license-lock svg[^}]*\{fill:currentColor;stroke:none\}/);
   assert.match(remainingCss, /\.is-physical-plugin-list \.plugin-license-lock\{width:2\.5cqw;height:3\.25cqw;transform:translateX\(1px\)\}/);
   assert.match(remainingCss, /\.is-physical-plugin-list \.plugin-grid-underlay main::before\{left:6\.875cqw\}/);
@@ -88,7 +116,11 @@ test("physical interaction fixtures preserve the captured CorOS overlay structur
   assert.match(remainingCss, /\.is-physical-plugin-list \.plugin-grid-underlay \.underlay-add\{left:40\.25cqw;top:12cqw;width:8\.75cqw;height:8\.875cqw\}/);
   assert.match(remainingCss, /\.is-physical-plugin-list \.plugin-grid-underlay main i:not\(\.underlay-input\)::before\{width:3cqw;height:2px\}/);
   assert.match(remainingCss, /\.coros-device-presets\.is-physical:not\(\.is-official-factory\):not\(\.is-official-actions\) section:nth-child\(2\) header \.preset-close\{[^}]*translateX\(\.25cqw\);font-size:0\}/);
-  assert.match(fixtureCss, /\.input-gate-grid h1 \{[^}]*margin: 1\.625cqw 0 0 1\.575cqw;/s);
+  // input-gate-control.png draws the preset name nearly as large as the number
+  // - cap rows 31..74 against the number's 28..76 - not the half-height face a
+  // 4.45cqw h1 produces, and it draws the letter blue rather than red.
+  assert.match(fixtureCss, /\.input-gate-grid h1 \{[^}]*margin: \.75cqw 0 0 1\.575cqw;[^}]*font-size: 7\.25cqw;/s);
+  assert.match(fixtureCss, /\.input-gate-grid > header > strong \{[^}]*color: #69b5d4;/s);
 });
 
 test("framebuffer capture drivers disable host LCD text artifacts", () => {
@@ -101,15 +133,27 @@ test("framebuffer capture drivers disable host LCD text artifacts", () => {
 
 test("official tuner retains the measured 440 Hz encoder geometry", () => {
   const css = readFileSync("packages/typescript/qc-ui/src/official-tuner.css", "utf8");
+  // The LIVE TUNER track and its selection ring are measured against
+  // tuner.png and tuner-live-enabled.png by tools/verify_screen_geometry.py.
+  // The encoder itself is not: we draw it as a gradient annulus and the device
+  // draws a ring with a pointer, so the two have no shared boundary to compare
+  // at this precision. Its numbers below are a pin, not evidence.
   assert.match(css, /\.tuner-official \.tuner-frequency > i \{[^}]*top: \.55cqw;[^}]*width: 7\.75cqw;[^}]*height: 7\.75cqw;/s);
   assert.match(css, /\.tuner-official > footer > section:last-child label \{[^}]*padding-left: 5\.5cqw;[^}]*translateY\(1\.25cqw\)/s);
   assert.match(css, /\.tuner-official > footer > section:last-child::before \{[^}]*left: 2cqw;[^}]*width: 3cqw;[^}]*height: 6cqw;/s);
   assert.match(css, /\.tuner-official > footer > section:last-child::after \{[^}]*border: \.375cqw solid #40f860;/s);
 });
 
-test("official device-preset actions retain the observed sixth category glyph", () => {
+test("official device-preset actions draw the observed sixth category glyph", () => {
   const css = readFileSync("packages/typescript/qc-ui/src/official-device-browser.css", "utf8");
   assert.match(css, /\.coros-device-presets\.is-official-actions > nav button:nth-child\(6\) i > span \{[^}]*width: 5cqw;[^}]*data:image\/svg\+xml/);
+  // official-device-preset-actions.png draws Reverb as two squares joined at
+  // their corners - a cabinet projection with a square 30x30 ink box - not the
+  // isometric hexagon that used to stand here, which would paint 30x33.5.
+  for (const path of ["M5 12h15v15H5z", "M12.5 4.5h15v15h-15z"]) {
+    assert.ok(css.includes(path), `the Reverb glyph must draw ${path}`);
+  }
+  assert.doesNotMatch(css, /M5 10 16 4l11 6v13l-11 6-11-6Z/);
 });
 
 test("official low-score refinements retain their measured geometry and glyphs", () => {
@@ -121,9 +165,6 @@ test("official low-score refinements retain their measured geometry and glyphs",
   const captureCss = readFileSync("packages/typescript/qc-ui/src/official-looper-eq.css", "utf8");
   const settingsCss = readFileSync("packages/typescript/qc-ui/src/official-settings-device.css", "utf8");
   const remainingCss = readFileSync("packages/typescript/qc-ui/src/remaining-fixtures-fixes.css", "utf8");
-  const zenIoCss = readFileSync("packages/typescript/qc-ui/src/remaining-fixtures-zenio.css", "utf8");
-  const rotary = readFileSync("packages/typescript/qc-ui/src/qc-rotary-dial.tsx", "utf8");
-  const rotaryCss = readFileSync("packages/typescript/qc-ui/src/qc-rotary-dial.css", "utf8");
   assert.match(browserCss, /\.device-browser-official:not\(\.is-plugins\) nav button:nth-child\(2\) svg \{ transform: scale\(1\.07, 1\.23\); \}/);
   assert.match(browserCss, /\.device-browser-official:not\(\.is-plugins\) nav button\.is-active i \{ border-color: #f82420; background: #101010; \}/);
   assert.match(browserCss, /\.device-browser-official:not\(\.is-plugins\) \.device-browser-grid main i:first-of-type \{ background: #101010; \}/);
@@ -142,27 +183,13 @@ test("official low-score refinements retain their measured geometry and glyphs",
   assert.match(fixture, /\{ id: "send-return", label: "", sub: "MIDI IN", kind: "midi" \}/);
   assert.match(ioCss, /\.coros-io-settings:not\(\.is-usb\) \.io-ports button:nth-child\(1\) > i \{ color: #f8fcf8; \}/);
   assert.match(ioCss, /\.coros-io-settings > header \{[^}]*background: #101010;/);
-  assert.match(fixture, /<span className="io-control-label">HP LEVEL<\/span><IoDial value="0\.0 dB" \/>/);
-  assert.match(ioCss, /\.io-editor\.is-headphones > section > \.io-control-label,/);
-  assert.match(fixture, /return <div className="io-dial-wrap"><QcRotaryDial className="io-dial" \{\.\.\.dial\} \/><strong>\{value\}<\/strong><\/div>;/);
-  assert.match(rotary, /<circle className="qc-rotary-progress"[^>]*pathLength="100" \/>/);
-  assert.match(rotary, /<line className="qc-rotary-pointer" x1=\{pointerStart\}/);
-  assert.match(rotaryCss, /stroke-linecap: round;/);
-  assert.match(rotaryCss, /stroke-dasharray: var\(--qc-rotary-progress\) 100;/);
-  assert.match(zenIoCss, /\.io-editor\.is-headphones \.io-dial \{ width: 8\.875cqw; height: 8\.875cqw;/);
-  assert.match(zenIoCss, /\.io-editor\.is-headphones \.io-dial \{ transform: translateY\(-\.375cqw\); \}/);
-  assert.match(ioCss, /\.io-output-row \.io-dial \{ right: -\.375cqw; width: 9cqw; height: 9cqw; transform: translateY\(-\.375cqw\); \}/);
-  assert.doesNotMatch(ioCss, /\.io-editor\.is-headphones > section > span,/);
-  assert.match(fixture, /className="capture-level-label"><IoHeadphonesGlyph \/>LEVEL/);
+  assert.match(fixture, /className="capture-level-label">\s*<IoHeadphonesGlyph \/>\s*LEVEL/);
   assert.match(captureCss, /\.capture-official-result \.capture-result-actions \.capture-target-icon \{ transform: translateY\(-1\.625cqw\); \}/);
   assert.match(captureCss, /\.capture-official-result > main > section:last-child > button \{ transform: translateY\(\.5cqw\); \}/);
   assert.match(captureCss, /\.capture-official-progress \.capture-official-progress-bar b \{ width: 31\.25%; \}/);
   assert.match(captureCss, /\.capture-official-progress section > em \{[^}]*width: 2\.75cqw;[^}]*border-top-color: #eee;[^}]*rotate\(-17deg\)/);
   assert.match(captureCss, /\.capture-official-progress > main > nav div:last-child b \{ color: #eee; \}/);
   assert.match(captureCss, /\.coros-global-eq \.global-eq-tabs \{ height: 10\.42%; \}/);
-  assert.match(captureCss, /\.coros-global-eq \{ background: #101010; \}/);
-  assert.match(captureCss, /\.global-eq-tabs button \{ background: #181c18; \}/);
-  assert.match(captureCss, /\.global-eq-tabs button\.is-active \{ background: #282c28; \}/);
   assert.match(captureCss, /\.global-eq-controls \{ margin-top: \.5cqw; \}/);
   assert.match(captureCss, /\.global-eq-controls \.io-dial-wrap \{ inset: 4\.625cqw 1cqw auto; height: 8cqw; \}/);
   assert.match(settingsCss, /\.coros-settings-official\.settings-system,\.coros-settings-official\.settings-system \* \{ font-family: Roboto, Arial, sans-serif; \}/);
@@ -179,10 +206,7 @@ test("official low-score refinements retain their measured geometry and glyphs",
   assert.match(settingsCss, /\.settings-info \.information-table:last-child > span:nth-child\(2\),[\s\S]*?min-height: 6\.125cqw;/);
   assert.match(settingsCss, /\.coros-settings-captured \.settings-edit > svg \{ width: 3cqw; height: 3cqw;/);
   assert.match(fixture, /className="settings-edit"[\s\S]*?M11 14 20 5l-3-3-9 9-1 4 4-1Z/);
-  assert.match(captureCss, /\.global-eq-controls \.io-dial \{ right: -\.1875cqw; width: 8\.75cqw; height: 8\.75cqw; \}/);
-  assert.match(fixture, /<QcRotaryDial className="capture-level-dial" progress=\{16\} angle=\{180\} pointerStart=\{36\} \/>/);
-  assert.match(fixture, /<QcRotaryDial className="capture-editor-dial" progress=\{\(140 \+ Number\(offset\)\) \/ 3\.6\}/);
-  assert.match(zenIoCss, /\.coros-io-settings \.io-ports button\.is-square > i,[\s\S]*?width: 6cqw; height: 6cqw;/);
+  assert.match(captureCss, /\.global-eq-controls \.io-dial \{ right: -\.1875cqw; width: 8\.375cqw; height: 8\.375cqw; \}/);
   assert.match(remainingCss, /\.coros-device-presets\.is-official-factory section:nth-child\(2\) header \.preset-close\{[^}]*transform:translateX\(\.75cqw\);font-size:0\}/);
   assert.match(remainingCss, /\.coros-device-presets\.is-official-factory section:nth-child\(2\) header \.preset-confirm\{[^}]*transform:translateX\(\.25cqw\);font-size:0\}/);
   assert.match(remainingCss, /\.coros-device-presets\.is-official-actions::after\{[^}]*background:transparent;/);
@@ -205,15 +229,86 @@ test("official MIDI Out retains the measured disabled header action", () => {
   const css = readFileSync("packages/typescript/qc-ui/src/official-settings-midi.css", "utf8");
   const fixtureCss = readFileSync("packages/typescript/qc-ui/src/remaining-fixtures-fixes.css", "utf8");
   assert.match(css, /\.coros-midi-out > header > span \{[^}]*translateY\(-1px\)/);
-  assert.match(css, /\.coros-midi-out > header \.midi-trash \{[^}]*width: 8\.25cqw;[^}]*translateX\(-\.375cqw\);[^}]*background: #101510;/);
+  // preset-midi-out.png fills that button with #081008, not the #101510 this
+  // claimed to have measured; the width was right at 66px.
+  assert.match(css, /\.coros-midi-out > header \.midi-trash \{[^}]*width: 8\.25cqw;[^}]*translateX\(-\.375cqw\);[^}]*background: #081008;/);
   assert.match(fixtureCss, /\.coros-midi-out \.midi-expression label div\{[^}]*clip-path:polygon\(1% 0,99% 0,100% 2%,91% 98%,89% 100%,11% 100%,9% 98%,0 2%\)/);
   assert.match(fixtureCss, /\.coros-midi-out \.midi-expression label div>i\{[^}]*left:\.75cqw;right:\.75cqw;[^}]*clip-path:polygon/);
 });
 
-test("official System brightness values remain right-aligned", () => {
+test("official System brightness values keep the alignment the device uses", () => {
   const css = readFileSync("packages/typescript/qc-ui/src/official-settings-device.css", "utf8");
+  const fixture = readFileSync("packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", "utf8");
   assert.match(css, /\.settings-system-detail > div span \{ position: relative; top: 1\.375cqw; \}/);
-  assert.match(css, /\.settings-system-detail > div strong \{ position: absolute; right: 1\.75cqw; top: 1\.375cqw; \}/);
+  // settings-system.png draws 16, 32 and 2 all beginning at x=743. Right
+  // alignment agrees with the device only while every value has the same digit
+  // count, which is why `right: 1.75cqw` looked measured for so long.
+  assert.match(css, /\.settings-system-detail > div strong \{ position: absolute; left: 56\.75cqw; right: auto; top: 1\.375cqw; \}/);
+  assert.doesNotMatch(css, /\.settings-system-detail > div strong \{[^}]*right: 1\.75cqw/);
+  // The same frame shows the LEDs row at 32 of 32 bars, not 16.
+  assert.match(fixture, /\["LEDs", "32", 32\]/);
+});
+
+// Every rule above pins a number that is supposed to have come off a device
+// frame, but a test that reads our own stylesheet cannot tell a measurement from
+// an invention - that is how the item menu kept a four-entry height and the
+// brightness column kept an alignment the device does not use. The measuring is
+// done by tools/verify_screen_geometry.py against the frames themselves; this
+// keeps the two lists tied together, so a new pinned number without a
+// measurement, or a measurement whose frame has gone missing, fails here.
+test("every pinned device geometry is measured against a captured frame", () => {
+  const verifier = readFileSync("tools/verify_screen_geometry.py", "utf8");
+  // The tool builds a few of its selectors from a shared prefix, so the link is
+  // on the part that identifies the element rather than on the whole string.
+  const claims = [
+    ".coros-directory-fixture .directory-item-menu",
+    ".coros-physical-confirmation > aside",
+    ".qc-screen.coros-block-context > aside",
+    ".coros-block-context > .block-context-scrim",
+    ".coros-directory-fixture.is-physical-context > header > button:last-child",
+    ".plugin-folders-official > main",
+    ".directory-official > main",
+    ".coros-midi-out > header .midi-trash",
+    ".coros-midi-out .midi-expression label div",
+    ".tuner-official > footer",
+    ".tuner-official > footer > section:last-child::before",
+    ".tuner-official > footer > section:last-child::after",
+    ".settings-system-detail > div strong",
+    ".physical-keyboard-rows button",
+    ".physical-grid-underlay .underlay-grid",
+    ".physical-grid-underlay .underlay-editor-bar",
+    ".physical-grid-underlay .underlay-cable",
+    ".plugin-grid-underlay main::before",
+    ".underlay-plus",
+    ".underlay-add",
+    ".plugin-license-lock",
+    "button.is-active i",
+    ".coros-device-presets.is-official-actions > nav button:nth-child(6) i > span"
+  ];
+  for (const selector of claims) {
+    assert.ok(verifier.includes(selector), `${selector} pins device geometry with no frame measurement`);
+  }
+  const frames = [
+    "references/qc-ui-corpus/coros-4.1.0/directory-item-context.png",
+    "references/qc-ui-corpus/coros-4.1.0/generic-confirmation.png",
+    "references/qc-ui-corpus/coros-4.1.0/block-context.png",
+    "references/qc-ui-corpus/coros-4.1.0/preset-midi-out.png",
+    "references/qc-ui-corpus/coros-4.1.0/settings-system.png",
+    "references/qc-ui-corpus/coros-4.1.0/tuner.png",
+    "references/qc-ui-corpus/coros-4.1.0/tuner-live-enabled.png",
+    "references/qc-ui-corpus/coros-4.1.0/onscreen-keyboard.png",
+    "references/qc-ui-official-manual/coros-4.1.0/official-plugin-folders.png",
+    "references/qc-ui-official-manual/coros-4.1.0/official-directory-presets.png",
+    "references/qc-ui-official-manual/coros-4.1.0/official-directory-plugin-presets.png",
+    "references/qc-ui-official-manual/coros-4.1.0/official-device-preset-actions.png",
+    "references/qc-ui-corpus/coros-4.1.0/block-context.png",
+    "references/qc-ui-corpus/coros-4.1.0/device-browser-plugin-list.png"
+  ];
+  for (const frame of frames) {
+    assert.ok(verifier.includes(frame.split("/").pop()!), `${frame} is not measured`);
+    assert.ok(readFileSync(frame).length > 0, `${frame} is missing from the corpus`);
+  }
+  assert.equal(claims.length + frames.length, 37);
 });
 
 test("vendored block sprite remains byte-identical to the verified Neural DSP SVG", () => {

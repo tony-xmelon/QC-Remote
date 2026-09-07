@@ -122,13 +122,14 @@ placeholder or a separate prototype.
 | DR-14 | Directory | New folder / setlist editor | Manual | Built | Built |
 | DR-15 | Directory | Item contextual menu | Manual | Built | Built |
 | DR-16 | Directory | Cortex Cloud upload mode | Official | Built | Built |
-| NC-01 | Capture V1 | Capture introduction | Manual | Built | Built |
-| NC-02 | Capture V1 | Capture type selection | Manual | Built | Built |
-| NC-03 | Capture V1 | Connection and routing | Manual | Built | Built |
+| NC-01 | Capture V1 | Connections 1 of 5, instrument into Input 1 | Physical | Built | Built |
+| NC-02 | Capture V1 | Connections 2 of 5, headphone and output monitoring | Physical | Built | Built |
+| NC-03 | Capture V1 | Connections 3 to 5, Capture Out, Input 2, and the summary | Physical | Built | Built |
 | NC-04 | Capture V1 | Calibration settings | Official | Built | Built |
 | NC-05 | Capture V1 | Capture process / progress | Official | Built | Built |
 | NC-06 | Capture V1 | A/B result | Official | Built | Built |
 | NC-07 | Capture V1 | Metadata and save | Official | Built | Built |
+| NC-08 | Capture V1 | Sanity Check failure | Physical | Built | Built |
 | ST-01 | Settings | Account settings | Official | Built | Built |
 | ST-02 | Settings | System settings | Official | Built | Built |
 | ST-03 | Settings | Device settings | Official | Built | Built |
@@ -173,17 +174,17 @@ coverage.
 
 ## Totals and interpretation
 
-- **103** canonical device screen/state rows are tracked (GL through OV).
+- **104** canonical device screen/state rows are tracked (GL through OV).
 - **16** Cortex Control-only companion rows are tracked separately.
-- **41** physical framebuffer captures currently exist; they are the first
+- **119** physical framebuffer captures currently exist; they are the first
   regression pack, not the denominator for total product coverage.
 - **37** official native-size manual frames are checksummed locally: 36 full-size
   Quad Cortex screens map to the shared renderer and one Quad Cortex mini frame
   is tracked separately rather than compared to the full-size device.
-- **59** canonical states currently have full-frame physical or official-manual
-  image evidence, and **79** have either full-frame or scoped official-detail
-  evidence. All **103** have a verified exact-size capture path on both
-  hosts: 84 through the general smoke pack and the remaining 19 through their
+- **95** canonical states currently have full-frame physical or official-manual
+  image evidence, and **99** have either full-frame or scoped official-detail
+  evidence. All **104** have a verified exact-size capture path on both
+  hosts: 84 through the general smoke pack and the remaining 20 through their
   physical or official-reference regression packs. These sets overlap and are
   checked by the executable coverage ledger.
 - Parameter-model permutations are not each counted as separate screens. They

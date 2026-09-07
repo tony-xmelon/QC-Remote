@@ -56,6 +56,8 @@ test("the generated QC reference has no structural catalog exceptions", () => {
 
 test("every catalog model produces a complete, bounded editor and encoder-page plan", () => {
   let auditedParameters = 0;
+  // A catalogue that failed to load would assert nothing and still pass.
+  assert.ok(audit.models.length > 50, `expected the model catalogue, got ${audit.models.length}`);
   for (const model of audit.models) {
     assert.ok(model.name.trim(), `model ${model.id} has a display name`);
     assert.notEqual(parameterEditorFamily(model.category), undefined);
@@ -156,7 +158,9 @@ test("all ModelRepo expression and linked scene-state declarations are retained"
 test("every dedicated full-screen editor covers all QC-visible parameter indexes", () => {
   const cabIndexes = new Set([2, 3, 4, 5, 10, 11, 12, 13]);
   const irIndexes = new Set([3, 4, 5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]);
-  for (const model of liveAudit.models.filter((candidate) => !candidate.hidden)) {
+  const visibleModels = liveAudit.models.filter((candidate) => !candidate.hidden);
+  assert.ok(visibleModels.length > 50, `expected the visible models, got ${visibleModels.length}`);
+  for (const model of visibleModels) {
     const visible = model.parameters.filter((parameter) => parameter.screenVisible);
     if (/cabsim/i.test(model.category)) {
       visible.forEach((parameter) => assert.ok(cabIndexes.has(parameter.index), `${model.name} ${parameter.name} is represented by the Cab screen`));

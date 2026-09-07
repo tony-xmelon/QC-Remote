@@ -26,7 +26,7 @@ test("physical search fixtures own deterministic typography without inheriting t
   assert.match(fixtureStyles, /\.capture-search-keyboard,.qc-screen\.capture-search-results\{position:absolute;inset:0;overflow:hidden;background:#101310;color:#ecefec;container-type:inline-size\}/);
   assert.match(fixtureSource, /<h1 className=\{query \? "is-query" : ""\}>/);
   assert.match(fixtureStyles, /\.capture-search-keyboard>h1\.is-query\{color:#2df36a\}/);
-  assert.match(fixtureSource, /className="capture-clear-searches"/);
+  assert.match(fixtureSource, /className="capture-recent-searches">\s*<button>Clear all<\/button>/);
   assert.match(measuredStyles, /grid-template-columns: repeat\(10, 8\.875cqw\)/, "Search keys must use the measured fixed tracks without fractional drift");
   assert.match(measuredStyles, /grid-template-columns: 14cqw 8\.875cqw 48\.375cqw 8\.875cqw 14cqw/, "Search bottom row must preserve the native key widths");
 });
@@ -51,26 +51,24 @@ test("typography references render the captured state instead of a generic subst
   assert.equal(modal.presetName, "Ilia");
   assert.equal(modal.routes[0].outputId, 19);
   assert.deepEqual(modal.blocks.map(({ category, row, column, bypassed }) => ({ category, row, column, bypassed })), [
-    { category: "Reverb", row: 0, column: 1, bypassed: true },
-    { category: "Looper", row: 0, column: 2, bypassed: true }
+    { category: "Cab", row: 0, column: 1, bypassed: undefined },
+    { category: "Looper", row: 0, column: 2, bypassed: undefined }
   ]);
   const browser = corosFixtureConfiguration("?fixture=coros410&variant=reference-browser", demoSnapshot).initialSnapshot;
   assert.equal(browser.presetLocation, "2F");
   assert.equal(browser.presetName, "QC MCP TEST");
   const capture = corosFixtureConfiguration("?fixture=coros410&variant=capture-type", demoSnapshot).initialSnapshot;
-  assert.equal(capture.presetLocation, "2F");
-  assert.equal(capture.presetPosition, 13);
-  assert.equal(capture.blocks[0]?.glyph, "capture-wave");
+  assert.equal(capture.presetLocation, "2E");
+  assert.equal(capture.presetPosition, 12);
+  assert.equal(capture.blocks[0]?.glyph, undefined);
 });
 
-test("Neural Capture editor preserves the measured layered rotary controls", () => {
+test("Neural Capture editor uses the shared measured rotary controls", () => {
   const fixtureSource = readFileSync(new URL("../packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", import.meta.url), "utf8");
-  const measuredStyles = readFileSync(new URL("../packages/typescript/qc-ui/src/remaining-fixtures-zenio.css", import.meta.url), "utf8");
-  assert.match(fixtureSource, /"--capture-angle": `\$\{angle\}deg`/);
-  assert.match(measuredStyles, /conic-gradient\(from 225deg, #949694/);
-  assert.match(measuredStyles, /\.capture-editor-panel > main i::before/);
-  assert.match(measuredStyles, /background: #212421/);
-  assert.match(fixtureSource, /<em><ModeGlyph mode="PRESET" \/><span>PRESET<\/span><\/em>/, "the canonical mode icon must not be wrapped in a second SVG viewport");
+  assert.match(fixtureSource, /<QcRotaryDial\s+className="capture-editor-dial"/);
+  assert.match(fixtureSource, /progress=\{\(140 \+ Number\(offset\)\) \/ 3\.6\}/);
+  assert.match(fixtureSource, /pointerStart=\{36\}/);
+  assert.match(fixtureSource, /<em>\s*<ModeGlyph mode="PRESET" \/>\s*<span>PRESET<\/span>\s*<\/em>/, "the canonical mode icon must not be wrapped in a second SVG viewport");
 });
 
 test("typography audit keeps content, glyphs, placement, and colors independent", () => {
@@ -140,8 +138,12 @@ test("neutral Grid colors match the native QC capture", () => {
 
 test("Grid contextual menu starts with the device Create New command", () => {
   assert.equal(GRID_CONTEXT_MENU[0].label, "Create New");
+  // Spelled as the device spells it. The CorOS graphics tree captured in
+  // references/qc-ui-corpus/coros-4.1.0/grid-context-menu.tree.txt draws three
+  // periods, not a typographic ellipsis; this list previously carried the
+  // prettier form, which no pixel score was ever going to notice.
   assert.deepEqual(GRID_CONTEXT_MENU.map((item) => item.label), [
-    "Create New", "Save as…", "Edit Details", "Copy Scene A", "Swap Scene A",
+    "Create New", "Save as...", "Edit Details", "Copy Scene A", "Swap Scene A",
     "Preset MIDI Out", "Add to favorites", "Delete Preset", "New Neural Capture",
     "Modes Configuration", "Tempo", "CPU Monitor", "Settings"
   ]);

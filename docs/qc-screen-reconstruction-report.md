@@ -27,17 +27,17 @@ The live Grid, Directory, routing, and
 parameter editor implementations are shared.
 
 The complete product target is larger than the measured corpus. The canonical
-inventory contains **103 CorOS screen/state rows** plus **16 Cortex Control-only
+inventory contains **104 CorOS screen/state rows** plus **16 Cortex Control-only
 rows**. Current canonical CorOS implementation counts are:
 
 | Status | Windows | Android |
 | --- | ---: | ---: |
-| Built | 103 | 103 |
+| Built | 104 | 104 |
 | Partial | 0 | 0 |
 | Shell only | 0 | 0 |
 | Missing | 0 | 0 |
 
-“70/70” therefore means every physical regression state has a renderer. All 103
+“70/70” therefore means every physical regression state has a renderer. All 104
 cataloged states are built, and 70 captured device frames now participate in the
 physical comparison.
 
@@ -50,7 +50,7 @@ Across the physical and official full-frame corpora, **79 canonical states**
 have directly comparable 800x480 evidence. A separate checksummed corpus of
 **27 official manual SVG details** supplies scoped control, editor-fragment,
 interaction, or hardware-diagram evidence for additional states, bringing the
-number with some authoritative visual evidence to **98/103**. Detail assets do
+number with some authoritative visual evidence to **99/104**. Detail assets do
 not enter full-screen similarity averages.
 
 Two UI-bearing details now also have crop-level regression measurements. These
@@ -186,7 +186,566 @@ The complete per-state evidence and score join is in
 | `settings-wifi` | **93.92%** | **93.92%** |
 | `settings-storage` | **93.31%** | **93.31%** |
 
+## Text validated against the device's own scene graph
+
+Every capture in the corpus is stored with the CorOS graphics tree that produced
+it, and until now the tree was only read to classify a capture into a screen
+family. It is a stronger oracle than that: it lists every string the device
+actually drew, so each one can be *required* to exist in our reconstruction.
+
+`npm run verify:qc-screen-text` (`tools/verify_screen_tree_coverage.py`) does
+that check. It reads wording rather than shapes, which is exactly the axis a
+structural or colour score cannot see.
+
+**893 device strings across 69 screens; 0 unaccounted for.** Reverting any of
+the three fixes below fails the check.
+
+### What it found on its first run
+
+All three sat inside screens already scoring above 97% on colour similarity, and
+none of them would ever have shown up as a pixel regression.
+
+| screen | device draws | we drew |
+| --- | --- | --- |
+| `grid-context-menu` | `Save as...` | `Save as…` — a typographic ellipsis |
+| `settings-info` | `Zenjack FW app:` | `Zeniack FW app:` — and four firmware rows missing |
+| `output-route-selector` | `USB Output 5/6`, `USB Output 7/8` | absent; only the unpaired 5, 6, 7, 8 |
+
+The device-information screen is the clearest case for the method. It renders a
+column of labels and per-unit values; a mis-transcribed label one letter out,
+with four rows simply absent below it, is invisible to a whole-frame score and
+obvious to a string comparison.
+
+### Where the check is blind
+
+A text oracle can only judge screens that carry text. CorOS draws the Neural
+Capture wizard's five connection steps as **images**: their graphics trees
+contain no text nodes at all, so every string the check knows about is zero, it
+compares nothing, and it passes. Three fixtures survived that way and were
+pure invention:
+
+| state | our fixture drew | the device shows |
+| --- | --- | --- |
+| NC-01 | an orbit graphic, *Create a digital replica of your amplifier...*, a **GET STARTED** button | connection step 1 of 5: the rear panel with **INPUT 1** lit and Send/Return struck through |
+| NC-02 | a picker offering **AMP + CAB**, **AMP**, **DRIVE**, **OTHER** | connection step 2 of 5: monitoring, with the headphone jack and Out 1-4 lit |
+| NC-03 | a signal path **QC SEND 1 -> AMPLIFIER -> CAB / LOAD -> QC RETURN 1** | connection step 5 of 5: the rear panel summary |
+
+The routing one was not merely a different drawing, it was wrong about the
+hardware: the wizard wants **CAPTURE OUT** into the target device and the
+target's output into **INPUT 2**, and Send/Return is what step 1 asks you to
+*disconnect*. NC-02 was wrong about the product: CorOS 4.1.0 has no capture-type
+step at all, and the type is chosen when saving, on the metadata pane NC-07
+renders.
+
+All three are replaced by `coros-capture-connections.tsx`, one rear-panel
+diagram driven by the five captured framebuffers, with jack coordinates taken
+from the device's own 800x480 pixels.
+
+The lesson is not that the oracle is bad but that a green oracle is not
+evidence for a screen it cannot see. A capture whose tree has no text needs an
+eye on the image.
+
+### What the check deliberately ignores
+
+- Text inside `ModelListCell`, `PluginModelListCell`, `ModelPresetListCell` and
+  `WifiTableCell`. Those rows are model, plugin, device-preset and Wi-Fi names
+  the unit supplies at runtime, so they belong to the catalog, not to a
+  reconstruction. That is 101 of the 119 strings an unfiltered run reports.
+- Per-unit values on the device information screen — serial, MAC, kernel and
+  bootloader banners, firmware build ids. The **labels** beside them are still
+  required, which is what caught `Zenjack`.
+
+Two traps are worth recording because both produced convincing wrong answers
+while the check was being written. Matching device text against source has to
+ignore layout, since CorOS wraps with newlines and JSX with `<br />`; without
+that, `ON PRESET LOAD\nMESSAGE` and the Hybrid Mode help text both looked
+missing when they were present and correct. And the check greps source, so a
+comment quoting a device string satisfies it — the comment added beside the
+`Save as...` fix kept the check green when the fix itself was reverted. Whole-line
+comments are now stripped before matching.
+
+### Not extended to icons
+
+The trees also carry each icon's asset path, and 32 of the device's 102 icon
+stems have no counterpart name in our sources. That is not a defect list. It is
+dominated by per-state and per-theme variants — `copy_dark`/`copy_light`,
+`edit_dark`/`edit_light`, `shift_icon_active`/`shift_icon_inactive`,
+`fav_inactive`, `toggle_iconOn` — where our reconstruction legitimately uses one
+icon plus a CSS state. A check that fires on a sound design decision teaches
+people to ignore it, so this stays an observation.
+
+### Coverage
+
+109 of the 116 physical captures carry a tree. The other seven — `block-context`,
+`delete-confirmation`, `device-preset-save`, `directory-item-context`,
+`generic-confirmation`, `input-gate-control`, `onscreen-keyboard` — predate tree
+capture. Their manifest entries record the tap sequences that reached them, but
+those sequences assume the preset that was loaded at capture time, so replaying
+them now would photograph a different screen under the old name. Re-acquiring
+them means restoring that device state first, and the corpus directory is
+immutable for its firmware family, so they are left as they are rather than
+silently overwritten.
+
+## What the tests are anchored to
+
+`tools/audit_test_evidence.mjs` classifies every test block by what its
+assertions rest on:
+
+| anchor | blocks | meaning |
+| --- | ---: | --- |
+| behaviour | 272 | calls the code and asserts on the result |
+| self | 58 | reads our own source and asserts its text |
+| contract | 13 | reads `contracts/` or a generated file |
+| device | 2 | reads a corpus capture or an extracted descriptor |
+
+Most `self` blocks are legitimate: `deduplication` and `theme` assert
+*structural invariants of the repository* - that an icon is wired, that a colour
+literal has not been hardcoded - and there is nothing but our own source those
+could be anchored to.
+
+The dangerous ones are the `self` blocks in `block-visuals.test.ts`, because
+they make claims about **the device** while reading only our stylesheet. A rule
+saying the directory item menu is 208px tall passes whether or not the unit
+agrees; it detects edits, not errors. That is exactly how the menu stayed 208
+tall after the device turned out to have five items rather than four, and how
+its `["Edit","Copy","Cut","Delete"]` pin outlived the discovery of *Paste to
+replace*.
+
+Every one of those blocks has now been re-measured against the frame it claims.
+Nine of the fourteen numbers were already right; five were not:
+
+| claim | pinned | measured on the device |
+| --- | --- | --- |
+| directory item menu | left 528, width 256, **height 208** | left 528, width 256, **height 260** |
+| block context menu | **left 30, width 322** | **left 32, width 320** |
+| System brightness values | **right-aligned** | **left-aligned at x=743** |
+| System brightness LEDs row | **16 of 32 bars** | **32 of 32** |
+| MIDI Out disabled trash fill | **#101510** | **#081008** |
+| Reverb category glyph | **isometric hexagon**, ink 30x33.5 | **cabinet projection**, ink 30x30 |
+| confirmation dialog | left 190, width 420, height 230 | exact match |
+| plugin-folder and directory panels | top 60, content bottom 472 | exact match |
+| LIVE TUNER track and ring | 24x48 track, 20x20 ring, 3px stroke | exact match |
+
+The item menu is bottom-anchored at y=472, so its fifth item grew it upward: top
+264 became 212 and height 208 became 260.
+
+The brightness column is the one worth dwelling on. `right: 1.75cqw` puts a
+two-digit value's right edge at exactly the x the device draws it, so *Screen 16*
+and *LEDs 32* agreed to the pixel and the rule looked measured. Only the
+single-digit *Dimmed LEDs 2* separates the two alignments, and it begins at 743
+like the others rather than ending at 762 like a right-aligned value would. The
+frame the test named had the disproof in it the whole time.
+
+`tools/verify_screen_geometry.py` now measures all of these in the captured
+frames and compares them with the rules that claim them, so the numbers are
+checked against the hardware instead of against themselves. Where a stylesheet
+value cannot be placed in screen coordinates - the tuner's offsets are relative
+to a footer section no rule positions absolutely - it measures the sizes and
+says plainly that it is not checking the offsets, rather than inventing an
+anchor. It runs in the release preflight as *Screen geometry against captured
+frames*, and each of the five corrections above was put back to confirm the tool
+reports it.
+
+Two frames are involved and they are not interchangeable: `plugin-folders.png`
+in the physical corpus is the device browser, while `.plugin-folders-official`
+reconstructs `official-plugin-folders.png` from the published screenshots. The
+first measurement of that panel used the wrong one and read a full-bleed layout
+into a rule describing a card with an 8px gutter.
+
+### The second pass, and what it found
+
+The first pass measured the numbers with an obvious frame. A second pass went
+through everything left in `block-visuals.test.ts` and found five more values
+the device contradicts:
+
+| claim | pinned | measured on the device |
+| --- | --- | --- |
+| item menu entry pitch | **54px buttons in a 260px menu**, three per-entry nudges | **52px**, five entries exactly filling it |
+| EQ underlay rule above the footer | **1px line 45px above it** | **nothing is drawn there** |
+| EQ underlay confirm fill | **#202421** | **#292c29** |
+| tuner footer fill | **#282c28** | **#292c29** |
+| active plugin rail tile | **#000** | **#102818** |
+
+The item menu is the same defect as its height, one layer down. Five 54px
+buttons need 270px and the menu is 260, so the last entry was clipped; the
+`translateY(-1px)`, `-3px` and `-6px` on entries two, three and five were
+pulling the overflow back into view. The device simply uses a 52px pitch, which
+is 260 divided by five, and the nudges disappear with it.
+
+Fourteen further numbers were measured and **agree**: the block context menu's
+57px icon column and its `rgba(71,74,71,.92)` scrim, the directory Done button
+at left 694 width 98, the EQ underlay's 98px confirm button and its footer band,
+the plugin underlay's row rule, empty-slot tile, add tile and plus strokes, the
+licence padlock, the on-screen keyboard's key fill, and the expression pedal's
+clip path - whose taper the treadle in `preset-midi-out.png` follows to within
+2px over its height.
+
+`tools/verify_screen_geometry.py` now takes **74 measurements**, and each of the
+nine corrections was put back to confirm the tool reports it, along with
+thirteen other single-value regressions - 22 in all. The glyph checks predict
+the ink a piece of artwork paints from its own path data, so they catch a
+wrong-shaped glyph and not merely a wrong-sized one; the parser understands
+lines and elliptical arcs and refuses anything else rather than guessing.
+
+### What is still only pinned
+
+Three numbers stay pins rather than evidence, and are worth naming rather than
+leaving to be rediscovered:
+
+- **The tuner's FREQ encoder** and **the splitter's parameter knobs.** We draw
+  each as a bordered disc or a gradient annulus; the device draws a ring with a
+  pointer and an arc. Measured across its widest scan-line the tuner knob is
+  63px against the declared 62; measured down its tallest column it is 59,
+  because its lower edge fades into the footer fill. The two renderings have no
+  shared boundary at the precision the claims assert, so no measurement was
+  added rather than one picked for agreeing. The splitter knob's *centre* does
+  check out by hand - x=436 against the 436.7 its `left: 73.375%` predicts - but
+  pinning that needs the cell grid modelled, which the tool does not do.
+- **`.directory-fixture-folders .folder-number`.** The only frame showing this
+  fixture has it behind a 92% scrim, and recovering a fill through that
+  multiplies the error by 12.5; the frame cannot settle the value either way.
+- **The input-gate title's margins.** A 12.6px margin between two 48px glyphs
+  is smaller than the side bearings around it; the measured ink gap is 23px,
+  which is consistent with the declared margin but does not pin it.
+
+`framebuffer capture drivers disable host LCD text artifacts` and the vendored
+sprite checksum are self-anchored by nature - one asserts a flag in our capture
+tools, the other pins a vendored asset's bytes - and are correctly classified as
+such rather than being device claims at all.
+
+### The third pass: the underlay, and a renderer
+
+Three colour values were *reverted* during the second pass. `.plugin-grid-underlay`
+declares base fills that the plugin-list fixture overrides in the only frame
+that shows them; correcting the base rules to what that frame measures would
+have been changing values on the strength of a frame that does not exercise
+them.
+
+The second pass also left the block context underlay drawing the wrong screen:
+`.physical-eq-underlay` painted a full-screen EQ editor, while `block-context.png`
+shows the Grid above an editor's action bar with an **empty parameter area**
+below. Both are real CorOS layouts; only one is behind that menu. It is now
+rebuilt as `.physical-grid-underlay`, and its grid header turns out to be the
+one in `input-gate-control.png` pixel for pixel, down to the preset name.
+
+Measured from `block-context.png`, the layout is:
+
+| element | geometry |
+| --- | --- |
+| Grid area | y 0..195, black |
+| preset title | number cap rows 28..76, name cap rows 31..74, name from x=114 |
+| header actions | four 24px icons on a 48px pitch, right edge 776, y 12..35 |
+| mode row | 21px glyph, 12px gap, STOMP ending at x=764, y 64..82 |
+| signal row | 44x76 pills at x 8 and 750, y 109..184; 2px cable at y 146 |
+| action bar | four cards, 8px gaps, right edge 792, y 204..247, widths 66/132/66/66 |
+| parameter area | y 248..479, one flat colour - nothing is drawn there |
+
+**This pass could check its work, which the earlier ones could not.** Playwright's
+bundled browser is not installed, but `QC_BROWSER_EXECUTABLE` accepts the Chrome
+already on the machine, so `tools/capture_qc_ui_screen.mjs` renders a fixture
+against a dev server and the render can be measured with the same predicates as
+the frame:
+
+```
+cd apps/windows && npx vite --host 127.0.0.1 --port 1473 --strictPort
+QC_BROWSER_EXECUTABLE="C:/Program Files/Google/Chrome/Application/chrome.exe"   node tools/capture_qc_ui_screen.mjs http://127.0.0.1:1473/ out.png block-context
+```
+
+Port 1420 is often taken by another worktree's dev server, which would serve
+that worktree's code. Every number above was iterated that way rather than reasoned about:
+the title now lands within 2px of the device's, the cable is exact, and the
+action bar's cards, badge, bypass and confirm all land within 1px.
+
+That is also how the next defect surfaced. With bright content finally under it,
+the scrim was obviously wrong:
+
+| under the scrim | device shows | `rgba(71,74,71,.92)` gives |
+| --- | --- | --- |
+| page `#101010` | `#424542` | `#424542` |
+| confirm card `#292c29` | `#4a4d4a` | `#444744` |
+| scene badge `#ffd331` | `#84794a` | `#555445` |
+| white glyph `#f8fcf8` | `#848684` | `#555855` |
+
+The old value reproduced the page background *exactly* and crushed everything
+brighter, which is why it survived every check: they all sampled the background.
+Fitted across those five elements the scrim is `rgba(85,88,85,.72)`, within two
+values everywhere. The verifier now samples the composite over two different
+under-colours, because one sample cannot separate a scrim's tint from its alpha -
+any pair that reproduces the background will pass.
+
+The device does not composite the way a CSS alpha layer does: fitting the two
+dark samples exactly puts the bright ones 8-10 values out, and vice versa. The
+colour comparison through a scrim therefore allows three values, and says so.
+
+### The fourth pass: every fixture against its frame
+
+With a renderer available, all 119 frames were put next to our drawing of them.
+**94 are addressable from a URL**; the other 25 are reached by touch from
+another screen (a context menu, a route selector, a device browser opened from
+the Grid), and rendering the screen they are reached *from* would compare two
+different screens, so they are not scored. Each render is measured against its
+frame with `tools/visual-regression/qc_compare.py` - mean absolute error and
+2px edge agreement.
+
+**Six of the 94 were not defects at all: the corpus and the fixtures use the
+same name for different screens.** Scoring each frame against every render, not
+just the one its name suggests, separated them:
+
+| frame | view of that name draws | the view that actually draws it | edge f1 |
+| --- | --- | --- | --- |
+| `overlay-busy` | a "Saving preset" toast | `plugin-refresh` | 0.82 |
+| `overlay-error` | a different overlay | `device-search` | 0.70 |
+| `device-search` | the search results | `overlay-keyboard` | 0.70 |
+| `plugin-folders` | the folder browser | `plugin-list` | 0.81 |
+| `directory-new-folder` | the name dialog | `overlay-keyboard` | 0.76 |
+| `directory-search` | the search screen | `overlay-keyboard` | 0.75 |
+
+Mean error alone cannot make that call - two dark screens agree on it - which is
+why the match is decided on edge agreement.
+
+Across the remaining 88, four defects were found and fixed:
+
+| screen | was | frame shows |
+| --- | --- | --- |
+| confirmation dialog | `#101110` panel, `#efefef` copy | **`#ff594a`** panel, black copy, `#1838ff` confirm |
+| `empty-slot` | category list left, Grid right | **the other way round** |
+| directory sort/filter/category/paste menus | grey `#252a26`, no scrim | **black over a dimmed list** |
+| (and the block context underlay, above) | | |
+
+The confirmation dialog is the one worth noting: the overlay check has been
+measuring that panel's box against the stylesheet since the first pass and
+passing, because it measured *where* the panel is and never *what colour it is*
+- its own fill predicate looks for red pixels, so the evidence that the device
+draws it salmon was inside the check the whole time.
+
+`generic-confirmation.png` and `delete-confirmation.png` are byte-identical: the
+corpus holds one frame under two names.
+
+After that pass the 88 sat at median 0.0301 mean absolute error, 42 under 0.03.
+Thirteen remained at 0.06 or worse, and the next pass took them:
+
+| frame | mae | edge f1 | what is different |
+| --- | --- | --- | --- |
+| `stomp-assignment` | 0.158 | 0.24 | dialog is small and low-right; the frame centres it |
+| `generic-confirmation` | 0.125 | 0.57 | underlay is the Directory; the frame shows the Grid |
+| `delete-confirmation` | 0.125 | 0.57 | same frame as above, same cause |
+| `directory-copy` | 0.111 | 0.39 | paste dialog smaller than the frame's |
+| `cloud-upload-overwrite` | 0.120 | 0.61 | same dialog family |
+| `cpu-monitor` | 0.107 | 0.18 | not investigated |
+| `directory-filter` | 0.091 | 0.39 | menu narrower than the frame's |
+| `scene-assignment` | 0.087 | 0.17 | not investigated |
+| `capture-connect-input-2` | 0.081 | 0.71 | not investigated |
+| `directory-sort` | 0.070 | 0.46 | menu narrower than the frame's |
+| `looper-editor` | 0.067 | 0.81 | structure agrees; a tone difference |
+| `expression-parameter` | 0.065 | 0.12 | not investigated |
+| `capture-sanity-error` | 0.062 | 0.61 | not investigated |
+
+The four menu fills were corrected from renders; the release gate does not
+measure them, so they are held only by this comparison.
+
+### The fifth pass: the thirteen
+
+Each of the thirteen was then taken in turn. Nine more defects came out of it:
+
+| screen | was | frame shows |
+| --- | --- | --- |
+| delete confirmation | Directory behind it, one scrim for both variants | **the Grid**, dimmed far harder (`rgba(45,44,45,.74)`) |
+| overwrite confirmation | salmon panel | **`#101010` with white copy** - the two variants are not the same colour |
+| `cpu-monitor` | a CPU Monitor page | **the Grid with a 180x78 readout at x 606, y 12** |
+| directory sort / filter / category / paste menus | at `right: 10%`, `left: 23%` | **x 371, 300, 8 and 164** - all four boxes were wrong |
+| paste dialog type | 1.5cqw body | **2.5cqw** - the dialog is half again the size |
+| `stomp-assignment` | a message panel replacing the editor | **the editor, dimmed, with a 418x286 dialog at x 191, y 97** |
+| `scene-assignment` | a seven-knob amp editor with a hand cursor | **UTILITY / Adaptive Gate, one NOISE REDUCTION parameter** |
+| assignment knobs | red arcs | **grey** |
+| `expression-parameter` | a pedal-assignment screen | **the parameter chooser with MIN and MAX RANGE** |
+| capture progress panels | `height: 51.5cqw` | **running to y=471**, the same fixed height the directory panels had |
+| `capture-sanity-error` | Training ticked | **Training not run** |
+
+`cpu-monitor` is worth singling out: `cpu-monitor.tree.txt` has `zenUI::Grid` at
+its root, so the device has no CPU Monitor page at all - the whole screen was
+invented, like the Capture screens found in the first pass. Removing the
+expression pedal-assignment screen dropped another: with both expression frames
+served by the chooser, that screen was unreachable and no capture shows it.
+
+**And one systematic error.** The looper's card band read `#282c28` against the
+device's `#292c29`, the same one-off already corrected in the tuner footer.
+Replacing all 33 occurrences across ten stylesheets moved the median across the
+88 from 0.0301 to 0.0275 and took two more screens under 0.03, with nothing
+regressing - which is the check that the hypothesis was right rather than
+merely plausible.
+
+Four remain at 0.06 or worse, all with their structure agreeing:
+
+| frame | mae | edge f1 | what is left |
+| --- | --- | --- | --- |
+| `capture-connect-input-2` | 0.081 | 0.71 | rear-panel jack rows offset; the warning box is narrower |
+| `directory-copy` | 0.080 | 0.45 | dialog rows still shorter than the frame's |
+| `looper-editor` | 0.067 | 0.81 | bands and tiles match; the residual is spread across glyphs |
+| `capture-sanity-error` | 0.063 | 0.61 | body text about 7px high |
+
+These are catalogued rather than fixed. The dialog-size family (`directory-copy`,
+`directory-filter`, `directory-sort`, `cloud-upload-overwrite`,
+`stomp-assignment`) looks like one cause and is the obvious next thread; the
+confirmation underlay is the same rebuild the block context menu needed.
+
+### Two more, in the fixture next door
+
+`input-gate-control.png` is the frame the grid header came from, and comparing
+our render of that screen with it found two more:
+
+- its preset letter is drawn **blue** (`#427184`), not the red `#e61723` the
+  stylesheet declared - `#69b5d4` before the fixture's 0.62 dimming;
+- its preset name is nearly as large as the number (cap rows 31..74 against
+  28..76), not the half-height face `font-size: 4.45cqw` produces.
+
+Correcting the size made the fixture's own preset name wrap, because it carried
+a placeholder (`QC-MCP-TEST-mtniwbfb-R`) rather than the name in the frame it
+reconstructs. The name now matches the capture, and the render's glyph columns
+land within 7px of the device's across the whole title.
+
+### The sixth pass: the last four, and what they uncovered
+
+The four screens the fifth pass catalogued were taken, and finishing them
+opened a second front. **All 94 addressable frames now score under 0.06** - the
+gap list is empty for the first time. The median is 0.0251, 65 sit under 0.03,
+88 under 0.04, and 90 of the 94 agree on 70% or more of their edges.
+
+| frame | before | after | what was wrong |
+| --- | --- | --- | --- |
+| `looper-editor` | 0.067 / 0.81 | **0.017 / 0.89** | six of the eight tiles are unassigned: `#080c08` with their ink at 7.5% |
+| `directory-copy` | 0.067 / 0.63 | **0.031 / 0.92** | wrong underlay, and `<b>` became a flex item so each option split into three columns |
+| `capture-sanity-error` | 0.062 / 0.61 | 0.057 / 0.75 | body copy and panel height |
+| `capture-connect-input-2` | 0.081 / 0.71 | 0.056 / 0.82 | jack rows and warning box |
+
+**Five frames were being compared with the wrong screen.** Their own CorOS
+trees say what they are: `overlay-error.tree.txt` is a `SearchResultsDialog`,
+`device-search.tree.txt` a `SearchDialog`, `overlay-busy` and `plugin-folders`
+are both `Grid` + device browser. They were captured under the name of the step
+being exercised rather than of the screen the unit showed. Pointing each at the
+view that draws it is the whole fix:
+
+| frame | was scored against | actually drawn by | mae | edge f1 |
+| --- | --- | --- | --- | --- |
+| `overlay-busy` | the Saving-preset toast | `plugin-refresh` | 0.172 -> **0.026** | 0.06 -> **0.85** |
+| `overlay-error` | the Action-unavailable dialog | `device-search` | 0.133 -> **0.024** | 0.01 -> **0.70** |
+| `plugin-folders` | the plugin folder browser | `plugin-list` | 0.088 -> **0.030** | 0.12 -> **0.81** |
+| `device-search` | the results list | `device-search-suggestions` | 0.106 -> **0.020** | 0.18 -> **0.79** |
+| `directory-search` | a list with a search field | `device-search-entry` | 0.070 -> **0.014** | 0.20 -> **0.84** |
+
+`device-search-entry.png` and `directory-search.png` are the same screen to the
+pixel apart from one column: the caret's phase. That is what made the sixth
+mislabelled frame - `directory-new-folder` - decidable too: naming a folder is
+not a dialog on the unit, it is the full keyboard with the name selected in
+`#42fb63` on `#102818`, a close at the left and a `#1838ff` save at the right.
+The NAME / CANCEL / CREATE dialog was an invention; it is gone, and the frame
+went 0.077 / 0.24 to **0.016 / 0.87**.
+
+**Every USB-captured directory frame draws the same layout.** `directory-sort`,
+`directory-categories`, `directory-copy` and `directory-arrange` were drawing
+the manual's compact list while their frames show what `directory-item-context`
+shows - 60px folder rows, a 2x7 bank grid, 52px preset rows, all of them
+captured in bank 4 of My Presets. Two claims that had been pinned by the visual
+contract turned out to record inventions rather than the frames, and both pins
+were re-pointed at the evidence:
+
+- the header's second slot is a plain white cloud-upload glyph in all six of
+  those frames, not the red signal-error icon `PhysicalDirectoryStatusIcon`
+  drew;
+- the preset rows are `4A`..`4H`, not `2A`..`2G`.
+
+Multi Select is a header, not a bottom bar: a 98x44 select-all tile at x 8, the
+title in `#42fb63` from x 115, then 64x44 actions on a 74px pitch ending at 674
+and a done tick at 694. `directory-copy` is the same mode with one action fewer,
+which is why the actions are placed from the right.
+
+| frame | before | after |
+| --- | --- | --- |
+| `directory-arrange` | 0.043 / 0.36 | **0.031 / 0.86** |
+| `directory-categories` | 0.050 / 0.47 | **0.028 / 0.83** |
+| `directory-sort` | 0.028 / 0.52 | **0.021 / 0.78** |
+| `directory-filter` | 0.035 / 0.45 | **0.019 / 0.81** |
+| `directory-irs` | 0.056 / 0.40 | **0.011 / 0.75** |
+| `directory-item-context` | 0.014 / 0.88 | **0.013 / 0.92** |
+
+`directory-filter` was over the wrong directory entirely: the funnel was
+captured in Neural Captures, inside the Fuzz folder. `directory-irs` was
+captured inside an empty My IRs, so the pane holds only the placeholder
+waveform - the seven IR rows with tick and trash buttons were invented.
+
+**The assignment screens are the block-context screen.** `scene-assignment` and
+`stomp-assignment` were drawing four outlined empty slots - the device browser's
+placeholder grid - where the frames show the Grid, its preset title and the
+editor action bar, with the block's own card at the left of the bar and a strip
+of five 156px parameter cells between y 256 and 363. The underlay is now one
+component shared with `block-context`, which is unchanged at 0.018 / 0.97.
+
+| frame | before | after |
+| --- | --- | --- |
+| `scene-assignment` | 0.051 / 0.26 | **0.020 / 0.80** |
+| `stomp-assignment` | 0.041 / 0.49 | **0.038 / 0.69** |
+
+**Four more came out of the same reading.** Once the structure was right the
+remaining screens were mostly showing the wrong *state*:
+
+| frame | before | after | what the frame shows |
+| --- | --- | --- | --- |
+| `directory-favorites` | 0.032 / 0.59 | **0.014 / 0.93** | one favourite, `Fender Deluxe 212`, and no A-Z rail |
+| `io-headphones` | 0.038 / 0.66 | **0.028 / 0.78** | two 107px panels from y 257, not one 248px block from 225 |
+| `global-eq` | 0.056 / 0.70 | **0.051 / 0.79** | the EQ is off and every band flat - a straight line with the nodes on it |
+| `cloud-upload-overwrite` | 0.034 / 0.62 | **0.033 / 0.71** | upload mode: a green-bordered cloud, one tool, upload tiles on the rows |
+
+`INPUT 1` carried a white ring on every I/O page; the frames ring it only on the
+input page, and in `#42fb63` rather than white.
+
+One thing the frames cannot settle: CorOS shrinks a long preset name to fit, so
+`Top 3 Acoustic Sims` sets its header at 66/47px against block-context's 71/58.
+That is fitted from the two frames, not derived.
+
+And one wrap the fixtures cannot reproduce. The paste dialog's body breaks after
+`paste` on the unit, which needs a measure of about 376px; in our face the
+second line then needs 409px, and no single size makes both true, because our
+bold is wider relative to the roman than the device's. The measure is set so the
+paragraph takes two lines with a break one word later - closer than the three
+lines an exact-width box produced.
+
 ## Improvements in this pass
+
+- Ran Neural Captures on the unit with the owner's approval and recorded
+  every distinct frame of them, which closed the whole Capture V1 family
+  except the type picker. The wizard's stages are **Calibration, Recording
+  Signals, Sanity Check, Training**.
+  - The first run failed the **Sanity Check** at 30% with *No signal
+    detected, or signal too low* - correct behaviour, since nothing was
+    patched into INPUT 2. That recoverable failure screen was a state the
+    canonical inventory did not have at all, and is now **NC-08**
+    (`capture-sanity-error`) with its own fixture.
+  - The owner then patched CAPTURE OUT into INPUT 2, which is enough for the
+    wizard: it checks for signal, not for a real amplifier. The second run
+    completed, giving hardware evidence for **NC-05** (Training stage),
+    **NC-06** (the A/B result, *CORTEX* against *REFERENCE*) and **NC-07**
+    (the save metadata). All three matched their existing manual-derived
+    fixtures with zero unmatched strings, so the reconstructions built from
+    the official manual are now confirmed against the device itself.
+  - `zenUI::NCSaveDialog` has three panes behind one header: a folder
+    chooser, a name pane carrying the standard on-screen keyboard (already
+    canonical as OV-01) and the metadata pane that NC-07 renders. Nothing
+    was saved: closing the dialog returns to the A/B result, and closing
+    that returns to the Grid without a discard prompt, so no capture was
+    left on the unit.
+  - A one-shot sequence cannot be re-staged to catch a screen that was
+    missed, so `qc_screen_driver.py` gained a `record` verb that writes every
+    changed frame with its graphics tree, and `promote_recorded_frame.py`
+    moves a reviewed frame into the corpus through the same manifest writer
+    a live capture uses. It refuses to overwrite an existing capture unless
+    told to, because `capture-type` was destroyed earlier in this session by
+    writing a new screenshot over a slug that was already another state's
+    reference.
+- Collapsed the CorOS screen classifier, which existed twice - once in
+  `verify-qc-ui-corpora.mjs` and once in `verify_qc_ui_corpus.py` - into
+  `tools/qc-tree-classifier.mjs`, which both now use. The copies had drifted:
+  the Python one was missing six rules, so `capture-progress` was written into
+  the manifest as `unknown` while the verifier called it `busy-progress`, and
+  a capture failed verification the instant it was taken.
 
 - Captured five additional physical Settings framebuffers directly from CorOS:
   Support, Device Information, Diagnostics, Wi-Fi, and Device Storage. Serial,

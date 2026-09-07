@@ -7,7 +7,7 @@
 .coros-settings-official.settings-system .settings-done,
 .coros-settings-official.settings-system > main > nav,
 .coros-settings-official.settings-system > main > section,
-.coros-settings-official.settings-system > main > nav button { background: #282c28; }
+.coros-settings-official.settings-system > main > nav button { background: #292c29; }
 .coros-settings-official.settings-system > main > nav button.is-active { background: #181c18; color: #40f860; }
 .coros-settings-official.settings-system .settings-section { grid-template-columns: 4.625cqw 1fr 2cqw; padding-left: 2cqw; }
 .coros-settings-official.settings-system > main > nav button { grid-template-columns: 4.625cqw 1fr; }
@@ -26,7 +26,7 @@
 .coros-settings-official.settings-device .settings-done,
 .coros-settings-official.settings-device > main > nav,
 .coros-settings-official.settings-device > main > section,
-.coros-settings-official.settings-device > main > nav button { background: #282c28; }
+.coros-settings-official.settings-device > main > nav button { background: #292c29; }
 .coros-settings-official.settings-device > main > nav button.is-active,
 .coros-settings-official.settings-device .settings-device-detail > div label i { background: #181c18; }
 .coros-settings-official.settings-device .settings-device-detail > div { border-bottom-color: #101010; }
@@ -52,7 +52,10 @@
 .coros-settings-official.settings-device .settings-device-detail > div > b > svg { width: 4cqw; height: 4cqw; }
 .coros-settings-official.settings-device .inline-settings-power { display: inline-block; width: 2.5cqw; height: 2.5cqw; vertical-align: -.55cqw; }
 .settings-system-detail > div span { position: relative; top: 1.375cqw; }
-.settings-system-detail > div strong { position: absolute; right: 1.75cqw; top: 1.375cqw; }
+/* settings-system.png: the values 16, 32 and 2 all begin at x=743, so the
+   device left-aligns them at a fixed offset - a right-aligned rule agrees
+   only while every value has the same digit count. */
+.settings-system-detail > div strong { position: absolute; left: 56.75cqw; right: auto; top: 1.375cqw; }
 .settings-system-detail > div i { top: 5.35cqw; }
 
 }
@@ -66,7 +69,7 @@
 .coros-settings-captured .settings-edit,
 .coros-settings-captured > main > nav,
 .coros-settings-captured > main > section,
-.coros-settings-captured > main > nav button { background: #282c28; }
+.coros-settings-captured > main > nav button { background: #292c29; }
 .coros-settings-captured .settings-section { grid-template-columns: 4.5cqw 1fr 2cqw; }
 .coros-settings-captured .settings-section b,
 .coros-settings-captured > main > nav button b { width: 3cqw; height: 3cqw; }

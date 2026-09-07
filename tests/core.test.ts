@@ -30,7 +30,10 @@ import { SHARED_QC_ASSISTANT_TOOLS, assistantSystemInstructions, assistantToolCa
 
 test("core stays independent of UI and native runtimes", () => {
   const core = new URL("../packages/typescript/qc-core/src/", import.meta.url);
-  for (const name of readdirSync(core).filter((entry) => entry.endsWith(".ts"))) {
+  const coreSources = readdirSync(core).filter((entry) => entry.endsWith(".ts"));
+  // An empty listing would assert nothing and still report success.
+  assert.ok(coreSources.length > 3, `expected the core sources, got ${coreSources.length}`);
+  for (const name of coreSources) {
     const source = readFileSync(new URL(name, core), "utf8");
     assert.doesNotMatch(source, /(?:@tauri-apps|@capacitor|from ["']react["']|window\.|document\.|navigator\.)/, name);
   }

@@ -20,7 +20,7 @@ const officialCapture = readFileSync("tools/capture_qc_official_manual_ui.mjs", 
 
 const inventoryIds = [...inventory.matchAll(/^\| ((?:GL|IO|GR|DB|ED|DR|NC|ST|RC|OV)-\d+) /gm)].map((match) => match[1]);
 const coverageIds = coverage.states.map((state) => state.id);
-assert.equal(inventoryIds.length, 103, "canonical inventory must contain 103 states");
+assert.equal(inventoryIds.length, 104, "canonical inventory must contain 104 states");
 assert.equal(new Set(coverageIds).size, coverageIds.length, "coverage state IDs must be unique");
 assert.deepEqual([...coverageIds].sort(), [...inventoryIds].sort(), "coverage ledger must map every canonical inventory state exactly once");
 const matrixCanonicalSection = matrix.split("## Authoritative evidence gaps")[0];
@@ -88,4 +88,4 @@ const authoritativeStates = new Set([...directStates, ...detailedStates]);
 const smokeOnlyIds = coverage.states.filter((state) => !(state.physical?.length || state.official?.length || state.officialDetail?.length)).map((state) => state.id);
 const matrixSmokeOnlyIds = [...matrixCanonicalSection.matchAll(/^\| ((?:GL|IO|GR|DB|ED|DR|NC|ST|RC|OV)-\d+) \|[^\n]*\| smoke only \|/gm)].map((match) => match[1]);
 assert.deepEqual([...matrixSmokeOnlyIds].sort(), [...smokeOnlyIds].sort(), "coverage matrix smoke-only gaps must match the executable ledger");
-console.log(`PASS ${coverage.states.length}/103 canonical states mapped; ${directStates.size} have full-frame authoritative evidence; ${authoritativeStates.size} have full-frame or official-detail evidence; ${dualHostStates.size} have verified dual-host capture paths (${smokeStates.size} through the general smoke pack)`);
+console.log(`PASS ${coverage.states.length}/104 canonical states mapped; ${directStates.size} have full-frame authoritative evidence; ${authoritativeStates.size} have full-frame or official-detail evidence; ${dualHostStates.size} have verified dual-host capture paths (${smokeStates.size} through the general smoke pack)`);

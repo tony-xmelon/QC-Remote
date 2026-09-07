@@ -1,0 +1,33 @@
+zenUI::RootGraphicsItem
+  zenUI::DirectoryDialog
+    zenUI::GraphicsItem
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/24/done.png'
+          zenUI::PressAnimationView
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/24/search.png'
+          zenUI::PressAnimationView
+      zenUI::LicenseRefreshButton
+        zenUI::Button
+          image: 'icons/24/updater.png'
+          zenUI::PressAnimationView
+      zenUI::ComboBoxWithSelector
+        text : 'Plugin Presets'
+        image: 'icons/custom/down_triangle.png'
+        zenUI::GraphicsItem
+          image: 'icons/24/plugin_device.png'
+        zenUI::PressAnimationView
+    zenUI::GraphicsItem
+    zenUI::FolderDirTable
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+    zenUI::FolderTable
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
