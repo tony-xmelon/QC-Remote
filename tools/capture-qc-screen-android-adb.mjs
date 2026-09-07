@@ -40,13 +40,13 @@ let socket;
 try {
   const unixSockets = adb("shell", "cat", "/proc/net/unix");
   const candidates = [...unixSockets.matchAll(/@(webview_devtools_remote_\d+)/g)].map((match) => match[1]);
-  if (candidates.length !== 1) throw new Error(`expected one debuggable QC Control WebView, found ${candidates.length}`);
+  if (candidates.length !== 1) throw new Error(`expected one debuggable QC Remote WebView, found ${candidates.length}`);
 
   adb("forward", `tcp:${port}`, `localabstract:${candidates[0]}`);
   forwarded = true;
   const targets = await (await fetch(`http://127.0.0.1:${port}/json`)).json();
-  const target = targets.find((candidate) => candidate.type === "page" && candidate.title === "QC Control");
-  if (!target?.webSocketDebuggerUrl) throw new Error("QC Control WebView target was not found");
+  const target = targets.find((candidate) => candidate.type === "page" && candidate.title === "QC Remote");
+  if (!target?.webSocketDebuggerUrl) throw new Error("QC Remote WebView target was not found");
 
   socket = new WebSocket(target.webSocketDebuggerUrl);
   socket.addEventListener("message", (event) => {

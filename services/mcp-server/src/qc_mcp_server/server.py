@@ -9,6 +9,7 @@ from typing import Any
 
 from mcp.server import MCPServer
 from mcp.types import ToolAnnotations
+from qc_gateway_client.generated_domain import IPC_MAX_FRAME_BYTES
 
 from .backend import QcBackend
 from .generated_actions import (
@@ -22,7 +23,6 @@ from .generated_actions import (
     SHARED_QC_ACTIONS,
 )
 from .generated_result_kinds import GATEWAY_RESULT_KINDS
-from .generated_domain import IPC_MAX_FRAME_BYTES
 from .generated_tools import GeneratedQcTools
 
 

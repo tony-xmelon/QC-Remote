@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import type { ConnectionState, RuntimeStatus } from "@ndsp-qc/client";
+import type { ConnectionState, RuntimeStatus } from "@qc-remote/client";
 import { chatCredentialStatus, type ChatQuota, type ChatSettings, type ChatUsage } from "./model-chat";
-import type { PublicRelayStatus } from "@ndsp-qc/core";
-import { QcUiIcon, qcReadyLabel, qcRelayLabel } from "@ndsp-qc/ui";
+import type { PublicRelayStatus } from "@qc-remote/core";
+import { QcUiIcon, qcReadyLabel, qcRelayLabel } from "@qc-remote/ui";
 import { qcDeviceStatusDetail } from "./qc-readiness";
 
 export type ConnectionEvent = { at: string; event: string; result: "pending" | "success" | "warning" | "failure" | "info"; detail: string };

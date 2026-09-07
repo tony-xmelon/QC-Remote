@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildSbom, npmComponents, parseCargoLock, parseGradleDeclarations, parseGradleDependencyReport, sha256, sidecarComponents } from "../tools/release-provenance.mjs";
+import { buildSbom, npmComponents, parseCargoLock, parseGradleDeclarations, parseGradleDependencyReport, sha256 } from "../tools/release-provenance.mjs";
 import { candidateMetadataMatches, releaseCandidateFileName } from "../tools/release-candidates.mjs";
 
 test("release hashes are stable SHA-256 values", () => {
-  assert.equal(sha256("QC Control"), "908fe6920dbb1fe6c417dbf1dd500de708a852925329c0291964b01982209f07");
+  assert.equal(sha256("QC Remote"), "5646b8d962d708147f77b49da0566a3b0d4ef5dceb2621497d12773bc7afdf2d");
 });
 
 test("npm SBOM components are de-duplicated and preserve scoped names", () => {
@@ -57,23 +57,9 @@ implementation project(':capacitor-android')
   assert.equal(components.find((component) => component.name === "firebase-ai")?.properties.at(-1)?.value, "com.google.firebase:firebase-bom:34.18.0");
 });
 
-test("Windows sidecars retain their release identity and verified archive hash", () => {
-  const [component] = sidecarComponents({ components: [{
-    name: "Tool",
-    version: "1.2.3",
-    purl: "pkg:github/example/tool@1.2.3",
-    url: "https://example.invalid/tool.zip",
-    sha256: "a".repeat(64)
-  }] });
-  assert.equal(component.type, "application");
-  assert.equal(component.hashes[0].content, "a".repeat(64));
-  assert.equal(component.externalReferences[0].type, "distribution");
-  assert.equal(component.properties[0].value, "windows-sidecar");
-});
-
 test("release candidates use stable platform and version names", () => {
-  assert.equal(releaseCandidateFileName("android", "1.2.3"), "QC-Control-Android-1.2.3-debug.apk");
-  assert.equal(releaseCandidateFileName("windows", "4.5.6"), "QC-Control-Windows-4.5.6-x64-setup.exe");
+  assert.equal(releaseCandidateFileName("android", "1.2.3"), "QC-Remote-Android-1.2.3-debug.apk");
+  assert.equal(releaseCandidateFileName("windows", "4.5.6"), "QC-Remote-Windows-4.5.6-x64-setup.exe");
   assert.throws(() => releaseCandidateFileName("ios", "1.0.0"), /Unsupported release platform/);
 });
 

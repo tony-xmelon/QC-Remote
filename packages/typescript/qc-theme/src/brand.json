@@ -1,13 +1,14 @@
 {
-  "appName": "QC Control",
-  "appWordmark": "QC CONTROL",
+  "appName": "QC Remote",
+  "appWordmark": "QC REMOTE",
   "deviceName": "Quad Cortex",
   "deviceWordmark": "QUADCORTEX",
-  "surfaceCaption": "CONTROL SURFACE",
+  "surfaceCaption": "INDEPENDENT CONTROL",
   "companionCaption": "QUAD CORTEX COMPANION",
+  "copyrightNotice": "Publisher and copyright ownership details will be identified before public release.",
   "androidPackage": "com.qccontrol.mobile",
   "androidSigningSha256": "3fc9b99645962e4b5348a6d4ade05ae9671f0b7dcae6c3b5db42cd8bc8fe7a08",
   "windowsIdentifier": "com.tonyxmelon.qcvoicecontrol",
-  "windowsShortDescription": "Safe desktop control for Neural DSP Quad Cortex",
-  "windowsLongDescription": "Unofficial Windows controller for a connected Neural DSP Quad Cortex with guarded live controls, workspaces, typed commands, and explicit device-save confirmation."
+  "windowsShortDescription": "Independent companion app for Quad Cortex devices",
+  "windowsLongDescription": "Unofficial, independently developed Windows controller for a connected Neural DSP Quad Cortex with guarded live controls, workspaces, typed commands, and explicit device-save confirmation. Not affiliated with or endorsed by Neural DSP Technologies Oy."
 }

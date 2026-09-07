@@ -30,7 +30,7 @@ const page = browser.contexts()
   .flatMap((context) => context.pages())
   .find((candidate) => candidate.url().startsWith("http://tauri.localhost/")
     || candidate.url().startsWith("http://127.0.0.1:1420/"));
-if (!page) throw new Error("A debuggable QC Control WebView was not found.");
+if (!page) throw new Error("A debuggable QC Remote WebView was not found.");
 
 const invoke = (method, params = {}) => page.evaluate(
   ({ method, params }) => window.__TAURI_INTERNALS__.invoke("gateway_invoke", { method, params }),

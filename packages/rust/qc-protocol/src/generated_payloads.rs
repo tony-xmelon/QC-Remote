@@ -213,6 +213,8 @@ pub struct TempoSettings {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub bpm: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub global_bpm: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub led_enabled: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub volume_db: Option<f32>,

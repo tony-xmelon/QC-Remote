@@ -49,6 +49,7 @@ try {
     Invoke-Checked "Windows and Android screen coverage" { npm run verify:qc-coverage }
     Invoke-Checked "Screen geometry against captured frames" { npm run verify:qc-geometry }
     Invoke-Checked "Dependency security policy" { npm run security:audit }
+    Invoke-Checked "Locked third-party legal inventory" { npm run legal:notices }
     Invoke-Checked "TypeScript typecheck" { npm run typecheck }
     Invoke-Checked "TypeScript and UI tests" { npm test }
     Invoke-Checked "Test assertions cannot pass vacuously" { npm run verify:test-assertions }
@@ -56,6 +57,7 @@ try {
     Invoke-Checked "Cortex Control wire schema fidelity" { npm run verify:cortex-protocol }
     Invoke-Checked "Gateway surface coverage" { npm run gateway:coverage }
     Invoke-Checked "pyquadcortex upstream surface parity" { npm run parity:pyquadcortex }
+    Invoke-Checked "extracted Rust and Python protocol parity" { npm run parity:protocol-extensions }
     Invoke-Checked "Installed-client native runtime boundary" { npm run native:runtime-boundary }
 
     foreach ($manifest in $rustManifests) {

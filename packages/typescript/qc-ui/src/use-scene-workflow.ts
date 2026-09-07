@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { QC_SCENE_COLORS, type GatewayTransport } from "@ndsp-qc/client";
+import { QC_SCENE_COLORS, type GatewayTransport } from "@qc-remote/client";
 import type { DeviceHistoryEntry } from "./use-device-history";
 import type { DeviceMutationWorkflowOptions } from "./workflow-options";
 

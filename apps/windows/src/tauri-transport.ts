@@ -1,6 +1,6 @@
-import { createGatewayClientTransport, type DiagnosticsReport, type GatewayTransport, type RuntimeStatus, type WorkspaceDocument, type WorkspaceFileResult } from "@ndsp-qc/client";
-import type { PublicRelayPort, PublicRelayStatus } from "@ndsp-qc/core";
-import { chatErrorMessage, type AntigravityModel, type ChatAttachment, type ChatCompletionRequest, type ChatCompletionResponse, type ChatQuota, type ChatSettings, type ChatSettingsUpdate, type GoogleOAuthResult } from "./model-chat";
+import { createGatewayClientTransport, type DiagnosticsReport, type GatewayTransport, type RuntimeStatus, type WorkspaceDocument, type WorkspaceFileResult } from "@qc-remote/client";
+import type { PublicRelayPort, PublicRelayStatus } from "@qc-remote/core";
+import { chatErrorMessage, type AntigravityModel, type ChatCompletionRequest, type ChatCompletionResponse, type ChatQuota, type ChatSettings, type ChatSettingsUpdate, type GoogleOAuthResult } from "./model-chat";
 
 declare global {
   interface Window {
@@ -30,7 +30,7 @@ export const publicRelay: PublicRelayPort = {
   status(): Promise<PublicRelayStatus> {
     return callTauri<PublicRelayStatus>("relay_status");
   },
-  pair(endpoint: string, pairingCode: string, deviceName = "QC Control on Windows"): Promise<PublicRelayStatus> {
+  pair(endpoint: string, pairingCode: string, deviceName = "QC Remote on Windows"): Promise<PublicRelayStatus> {
     return callTauri<PublicRelayStatus>("pair_public_relay", { endpoint, pairingCode, deviceName });
   },
   start(): Promise<void> {
@@ -85,9 +85,6 @@ export const modelChat = {
   },
   cancel(requestId: string): Promise<void> {
     return callModel<void>("cancel_chat", { requestId });
-  },
-  fetchYoutubeReferenceAudio(url: string, startSeconds: number, durationSeconds: number, userConfirmedRights: boolean): Promise<{ detail: string; attachment: ChatAttachment }> {
-    return callModel<{ detail: string; attachment: ChatAttachment }>("fetch_youtube_reference_audio", { url, startSeconds, durationSeconds, userConfirmedRights });
   },
   openExternalUrl(url: string): Promise<void> {
     return callModel<void>("open_external_url", { url });

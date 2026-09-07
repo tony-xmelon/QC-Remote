@@ -28,6 +28,8 @@ const dispatchEntries = (name) => Object.entries(contract[name]).flatMap(
 const contractRpcs = contract.methods.map(({ rpc }) => rpc);
 
 assert.equal(new Set(contractRpcs).size, contractRpcs.length, "gateway contract has duplicate RPCs");
+assert.deepEqual(contract.methods.filter(({ python }) => python === false), [],
+  "canonical gateway RPCs must not be excluded from the Python compatibility surface");
 assert.deepEqual(
   [...contractRpcs].sort(),
   ["system.status", ...actionContract.actions.map(({ rpc }) => rpc)].sort(),

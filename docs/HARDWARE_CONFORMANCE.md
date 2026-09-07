@@ -146,7 +146,7 @@ inspection and an explicit broker path, then run the reversible UI smoke test:
 ```powershell
 $env:QC_GATEWAY_EXECUTABLE = (Resolve-Path services/device-broker/target/release/qc-device-broker.exe)
 $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = "--remote-debugging-port=9223"
-npm run tauri:dev --workspace @ndsp-qc/windows -- --no-watch
+npm run tauri:dev --workspace @qc-remote/windows -- --no-watch
 ```
 
 In a second terminal:
@@ -275,7 +275,7 @@ arrives as a pushed event without an app request. Disconnect/reconnect USB,
 restart the app, and power-cycle the QC once; each recovery must establish a
 single fresh session with no orphaned command.
 
-The power switch is observational only: QC Control does not synthesize a power
+The power switch is observational only: QC Remote does not synthesize a power
 press. The test covers detection and recovery from a real device power cycle.
 
 ### Stage 2 — physical performance controls

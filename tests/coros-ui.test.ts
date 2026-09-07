@@ -635,7 +635,7 @@ test("Windows installer, Rust, About, and diagnostics share one app version sour
   assert.match(cargoManifest, new RegExp(`^version = "${appPackage.version.replaceAll(".", "\\.")}"$`, "m"));
   assert.match(appSource, /import appPackage from "\.\.\/package\.json"/);
   assert.match(appSource, /const appVersion = appPackage\.version/);
-  assert.doesNotMatch(appSource, /QC Control <span>0\.1\.0<\/span>/);
+  assert.doesNotMatch(appSource, /QC Remote <span>0\.1\.0<\/span>/);
 });
 
 test("Settings prioritizes Google subscription sign-in and retains OAuth fallback support", () => {
@@ -654,11 +654,16 @@ test("Settings exposes one device-model choice without a redundant skin selector
   assert.match(appSource, /item\.id === formFactor\.defaultSkinId/);
 });
 
-test("remote conversational sharing is a persistent Settings preference without a first-message popup", () => {
+test("remote conversational sharing is persistent and bound to the selected provider endpoint", () => {
   const appSource = readFileSync(new URL("../apps/windows/src/App.tsx", import.meta.url), "utf8");
   assert.match(appSource, /Allow online conversational models/);
-  assert.match(appSource, /localStorage\.setItem\(remoteChatDisclosureKey, allowed \? "accepted" : "declined"\)/);
+  assert.match(appSource, /remoteChatConsentTarget/);
+  assert.match(appSource, /consent === remoteChatConsentTarget\(settings\)/);
+  assert.match(appSource, /localStorage\.setItem\(remoteChatDisclosureKey, consent\)/);
+  assert.match(appSource, /if \(sharingAllowed\) void modelChat\.quota/);
+  assert.match(appSource, /if \(antigravityConfigured && sharingAllowed\)/);
   assert.match(appSource, /!remoteChatAllowed/);
+  assert.match(appSource, /Consent applies only to this provider and endpoint/);
   assert.doesNotMatch(appSource, /window\.confirm\(`Conversational chat will send/);
 });
 
@@ -733,31 +738,26 @@ test("chat accepts pasted and uploaded images, audio, video, PDFs, text, data, a
   assert.match(chatSource, /"video\/mp4" => "mp4"/);
 });
 
-test("authorized YouTube reference audio is attached to the next Antigravity round", () => {
+test("public builds do not expose or bundle streaming-media extraction", () => {
   const appSource = readFileSync(new URL("../apps/windows/src/App.tsx", import.meta.url), "utf8");
   const modelSource = readFileSync(new URL("../apps/windows/src/model-chat.ts", import.meta.url), "utf8");
   const rustSource = readFileSync(new URL("../apps/windows/src-tauri/src/lib.rs", import.meta.url), "utf8");
   const tauriConfig = readFileSync(new URL("../apps/windows/src-tauri/tauri.conf.json", import.meta.url), "utf8");
-  assert.match(modelSource, /name: "fetch_youtube_reference_audio"/);
-  assert.match(modelSource, /user_confirmed_rights/);
-  assert.match(appSource, /modelChat\.fetchYoutubeReferenceAudio/);
+  assert.doesNotMatch(modelSource, /name: "fetch_youtube_reference_audio"/);
+  assert.doesNotMatch(modelSource, /user_confirmed_rights/);
+  assert.doesNotMatch(appSource, /modelChat\.fetchYoutubeReferenceAudio/);
   assert.match(appSource, /result\.attachment \? \[result\.attachment as ChatAttachment\]/);
-  assert.match(rustSource, /bestaudio\[acodec=opus\]\[ext=webm\]/);
-  assert.match(rustSource, /--download-sections/);
-  assert.doesNotMatch(rustSource, /--extract-audio|--audio-format/);
-  assert.match(tauriConfig, /binaries\/qc-media-fetch/);
-  assert.match(tauriConfig, /binaries\/qc-media-ffmpeg/);
-  assert.match(tauriConfig, /binaries\/qc-media-deno/);
+  assert.doesNotMatch(rustSource, /fetch_youtube_reference_audio|youtube-reference|yt-dlp/);
+  assert.doesNotMatch(tauriConfig, /binaries\/qc-media-(?:fetch|ffmpeg|deno)/);
 });
 
-test("Antigravity browsing is read-only and does not grant command or page-interaction permission", () => {
+test("Antigravity browsing respects user-managed permissions and never mutates global policy", () => {
   const chatSource = readFileSync(new URL("../apps/windows/src-tauri/src/chat.rs", import.meta.url), "utf8");
-  assert.match(chatSource, /fn enable_antigravity_browsing\(\)/);
-  assert.match(chatSource, /allow\.push\(json!\("read_url\(\*\)"\)\)/);
   assert.match(chatSource, /You may browse public URLs read-only/);
   assert.doesNotMatch(chatSource, /dangerously-skip-permissions/);
-  const permissionFlow = chatSource.slice(chatSource.indexOf("fn enable_antigravity_browsing"), chatSource.indexOf("pub async fn open_google_subscription_setup"));
-  assert.doesNotMatch(permissionFlow, /command\(\*\)|execute_url\(\*\)|write_file\(\*\)/);
+  assert.doesNotMatch(chatSource, /enable_antigravity_browsing/);
+  assert.doesNotMatch(chatSource, /read_url\(\*\)/);
+  assert.doesNotMatch(chatSource, /\.gemini["']?\)\.join\(["']settings\.json/);
 });
 
 test("open parameter editor consumes device knob events and chat write readback", () => {
@@ -787,14 +787,14 @@ test("interactive synchronization avoids human-visible debounce and full snapsho
   const editorSource = readFileSync(new URL("../packages/typescript/qc-ui/src/parameter-editor.tsx", import.meta.url), "utf8");
   const parameterWorkflow = readFileSync(new URL("../packages/typescript/qc-ui/src/use-parameter-workflow.ts", import.meta.url), "utf8");
   const runtimeSource = readFileSync(new URL("../packages/rust/qc-device-runtime/src/request.rs", import.meta.url), "utf8");
-  const parameterStart = runtimeSource.indexOf('"device.previewParameter"');
-  const parameterFlow = runtimeSource.slice(parameterStart, runtimeSource.indexOf('"device.setTempo"', parameterStart));
+  const parameterStart = runtimeSource.indexOf('"device.previewParameter" | "device.setParameter"');
+  const parameterFlow = runtimeSource.slice(parameterStart, runtimeSource.indexOf('"device.previewLaneControlParameter" | "device.setLaneControlParameter"', parameterStart));
   assert.match(parameterWorkflow, /timers\.current\.set[\s\S]*?}, 8\)\)/);
   assert.match(parameterWorkflow, /previewQueue\.current = \{/);
   assert.match(parameterWorkflow, /await gateway\.previewParameter/);
   assert.match(parameterWorkflow, /revisions\.current\.get\(parameter\.index\) === revision/);
   assert.match(parameterFlow, /"device\.previewParameter" \| "device\.setParameter"/);
-  assert.match(parameterFlow, /GatewayVerification::None/);
+  assert.match(parameterFlow, /if method == "device\.previewParameter" \{\s*GatewayVerification::None\s*\} else \{\s*GatewayVerification::Parameter/s);
   assert.match(editorSource, /window\.setTimeout\(finish, 55\)/);
   assert.match(frameSource, /"qc-state-frame"/);
   assert.doesNotMatch(appSource, /window\.setTimeout\(\(\) => void reconcile\(\), 120\)/);

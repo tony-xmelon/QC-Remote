@@ -1,9 +1,9 @@
-# NDSP QC MCP
+# QC Remote
 
 An unofficial, modular control platform for Neural DSP Quad Cortex devices. The project provides hardware-faithful Windows and Android controllers plus a standalone MCP server, while keeping future iOS, web, and other clients from duplicating device-control logic.
 
 > [!IMPORTANT]
-> This project is not affiliated with or endorsed by Neural DSP. Device support uses an independent native Rust implementation informed by the community-maintained `pyquadcortex` project. The private protocol remains firmware-sensitive.
+> QC Remote is an independent, unofficial project. It is not affiliated with, authorized, sponsored, endorsed, or supported by Neural DSP Technologies Oy. Neural DSP and Quad Cortex are trademarks of Neural DSP Technologies Oy and are referenced only to identify compatibility. Device support uses an independent native Rust implementation informed by the community-maintained `pyquadcortex` project. The private protocol remains firmware-sensitive.
 
 ## Repository shape
 

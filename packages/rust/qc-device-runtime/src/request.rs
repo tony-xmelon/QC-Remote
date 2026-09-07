@@ -9,9 +9,10 @@ use base64::Engine;
 use qc_protocol::commands::{DeviceCommand, DeviceOperation};
 use qc_protocol::responses::{
     decode_captured_screen, decode_device_identity, decode_general_settings, decode_global_eq,
-    decode_global_tempo_settings, decode_inhibited_modules, decode_io_settings,
-    decode_library_files, decode_looper_status, decode_mode_cycle, decode_pinned_models,
-    decode_preset_screenshot, decode_recents_favorites, decode_tuner_settings, PngImage,
+    decode_global_tempo_settings, decode_graphics_tree, decode_inhibited_modules,
+    decode_io_settings, decode_library_files, decode_looper_status, decode_mode_cycle,
+    decode_pinned_models, decode_preset_screenshot, decode_preset_tempo_settings,
+    decode_recents_favorites, decode_tuner_settings, PngImage,
 };
 use qc_protocol::state::{BlockParameter, MidiOutMessage};
 use qc_protocol::{domain, profile};
@@ -166,7 +167,9 @@ pub fn gateway_write_retryable(method: &str) -> bool {
             | "device.reloadPreset"
             | "device.selectScene"
             | "device.toggleBypass"
+            | "device.previewParameter"
             | "device.setParameter"
+            | "device.previewLaneControlParameter"
             | "device.setLaneControlParameter"
             | "device.setLaneControlSceneMode"
             | "device.setParameterSceneMode"
@@ -200,6 +203,8 @@ pub fn gateway_write_is_realtime(method: &str) -> bool {
             | "device.command.scene"
             | "device.toggleBypass"
             | "device.command.bypass"
+            | "device.previewParameter"
+            | "device.previewLaneControlParameter"
             | "device.setTempo"
             | "device.command.tempo"
             | "device.setMasterVolume"
@@ -729,6 +734,9 @@ pub enum GatewayResponseProjection {
     GlobalEq,
     ModeCycle,
     GlobalTempoSettings,
+    PresetTempoSettings {
+        request_id: u64,
+    },
     LooperStatus,
     RecentsFavorites {
         request_id: u64,
@@ -746,6 +754,7 @@ pub enum GatewayResponseProjection {
         is_factory: bool,
     },
     CapturedScreen,
+    GraphicsTree,
 }
 
 fn image_response(image: PngImage) -> Value {
@@ -790,6 +799,11 @@ impl GatewayResponseProjection {
                 decode_global_tempo_settings(payload).map_err(|error| error.to_string())?,
             )
             .map_err(|error| error.to_string()),
+            Self::PresetTempoSettings { request_id } => serde_json::to_value(
+                decode_preset_tempo_settings(payload, *request_id)
+                    .map_err(|error| error.to_string())?,
+            )
+            .map_err(|error| error.to_string()),
             Self::LooperStatus => serde_json::to_value(
                 decode_looper_status(payload).map_err(|error| error.to_string())?,
             )
@@ -827,8 +841,31 @@ impl GatewayResponseProjection {
             Self::CapturedScreen => Ok(image_response(
                 decode_captured_screen(payload).map_err(|error| error.to_string())?,
             )),
+            Self::GraphicsTree => Ok(serde_json::json!({
+                "tree": decode_graphics_tree(payload).map_err(|error| error.to_string())?
+            })),
         }
     }
+}
+
+/// Compose the device-wide tempo mode/value with the loaded preset's
+/// metronome controls. CorOS exposes these through two different replies.
+pub fn compose_global_tempo_settings(global: &Value, preset: &Value) -> Result<Value, String> {
+    let mode = global
+        .get("mode")
+        .cloned()
+        .ok_or_else(|| "The global tempo reply did not include PRESET/GLOBAL mode".to_string())?;
+    let global_bpm = global
+        .get("bpm")
+        .cloned()
+        .ok_or_else(|| "The global tempo reply did not include its BPM value".to_string())?;
+    let mut result = preset.clone();
+    let object = result
+        .as_object_mut()
+        .ok_or_else(|| "The preset tempo reply was not an object".to_string())?;
+    object.insert("mode".into(), mode);
+    object.insert("globalBpm".into(), global_bpm);
+    Ok(result)
 }
 
 /// Correlated settings read used to prove a global write where CorOS exposes
@@ -853,8 +890,29 @@ pub fn gateway_write_readback_method(method: &str) -> Option<&'static str> {
         "device.setGlobalEqBypassed" | "device.setGlobalEqBand" | "device.setGlobalEqOutput" => {
             Some("device.globalEq")
         }
-        "device.setTempoMetronome" | "device.setTempoMode" => Some("device.globalTempoSettings"),
+        "device.setTempoMetronome" | "device.setTempoMode" | "device.setGlobalTempo" => {
+            Some("device.globalTempoSettings")
+        }
         _ => None,
+    }
+}
+
+/// Reads required before a write whose wire behavior depends on global state.
+pub fn gateway_write_preflight_method(method: &str) -> Option<&'static str> {
+    (method == "device.setGlobalTempo").then_some("device.globalTempoSettings")
+}
+
+/// Validate stale-state guards against the authoritative preflight reply.
+pub fn gateway_write_preflight_matches(method: &str, params: &Value, response: &Value) -> bool {
+    match method {
+        "device.setGlobalTempo" => {
+            supplied_fields_match(
+                params,
+                response,
+                &[("expectedMode", "mode"), ("expectedGlobalBpm", "globalBpm")],
+            ) && response.get("mode").and_then(Value::as_str) == Some("GLOBAL")
+        }
+        _ => true,
     }
 }
 
@@ -954,6 +1012,7 @@ pub fn gateway_write_readback_matches(method: &str, params: &Value, response: &V
                 })
         }
         "device.setTempoMode" => supplied_fields_match(params, response, &[("mode", "mode")]),
+        "device.setGlobalTempo" => supplied_fields_match(params, response, &[("bpm", "globalBpm")]),
         "device.setTempoMetronome" => supplied_fields_match(
             params,
             response,
@@ -1143,49 +1202,55 @@ pub fn plan_gateway_read(
     match method {
         "device.identity" => Ok(GatewayReadPlan {
             operation: DeviceOperation::ReadVersion,
-            response_type: 10,
+            response_type: profile::MESSAGE_TYPE_VERSION,
             timeout_ms: 5_000,
             projection: GatewayResponseProjection::DeviceIdentity,
         }),
         "device.tunerSettings" => Ok(GatewayReadPlan {
             operation: DeviceOperation::ReadTuner,
-            response_type: 6,
+            response_type: profile::MESSAGE_TYPE_TUNER,
             timeout_ms: 5_000,
             projection: GatewayResponseProjection::TunerSettings,
         }),
         "device.generalSettings" => Ok(GatewayReadPlan {
             operation: DeviceOperation::ReadGeneralSettings,
-            response_type: 9,
+            response_type: profile::MESSAGE_TYPE_GENERAL_SETTINGS,
             timeout_ms: 5_000,
             projection: GatewayResponseProjection::GeneralSettings,
         }),
         "device.ioSettings" => Ok(GatewayReadPlan {
             operation: DeviceOperation::ReadIoSettings,
-            response_type: 3,
+            response_type: profile::MESSAGE_TYPE_IO_SETTINGS,
             timeout_ms: 10_000,
             projection: GatewayResponseProjection::IoSettings,
         }),
         "device.globalEq" => Ok(GatewayReadPlan {
             operation: DeviceOperation::ReadGlobalEq,
-            response_type: 38,
+            response_type: profile::MESSAGE_TYPE_GLOBAL_EQ,
             timeout_ms: 5_000,
             projection: GatewayResponseProjection::GlobalEq,
         }),
         "device.modeCycle" => Ok(GatewayReadPlan {
             operation: DeviceOperation::ReadModeCycle,
-            response_type: 14,
+            response_type: profile::MESSAGE_TYPE_MODE,
             timeout_ms: 5_000,
             projection: GatewayResponseProjection::ModeCycle,
         }),
         "device.globalTempoSettings" => Ok(GatewayReadPlan {
             operation: DeviceOperation::ReadGlobalTempo,
-            response_type: 33,
+            response_type: profile::MESSAGE_TYPE_GLOBAL_TEMPO,
             timeout_ms: 30_000,
             projection: GatewayResponseProjection::GlobalTempoSettings,
         }),
+        "device.presetTempoSettings" => Ok(GatewayReadPlan {
+            operation: DeviceOperation::ReadCurrentPreset { request_id },
+            response_type: profile::MESSAGE_TYPE_RECALL_PRESET,
+            timeout_ms: 15_000,
+            projection: GatewayResponseProjection::PresetTempoSettings { request_id },
+        }),
         "device.looperStatus" => Ok(GatewayReadPlan {
             operation: DeviceOperation::ReadLooperStatus,
-            response_type: 28,
+            response_type: profile::MESSAGE_TYPE_LOOPER,
             timeout_ms: 5_000,
             projection: GatewayResponseProjection::LooperStatus,
         }),
@@ -1194,7 +1259,7 @@ pub fn plan_gateway_read(
                 favorites: method == "device.favorites",
                 request_id,
             },
-            response_type: 20,
+            response_type: profile::MESSAGE_TYPE_RECENTS_FAVORITES,
             timeout_ms: if method == "device.favorites" {
                 20_000
             } else {
@@ -1204,7 +1269,7 @@ pub fn plan_gateway_read(
         }),
         "device.pinnedModels" => Ok(GatewayReadPlan {
             operation: DeviceOperation::ReadPinnedModels,
-            response_type: 54,
+            response_type: profile::MESSAGE_TYPE_PINNED_MODELS,
             timeout_ms: 8_000,
             projection: GatewayResponseProjection::PinnedModels,
         }),
@@ -1226,7 +1291,7 @@ pub fn plan_gateway_read(
                     file_type: (method == "device.irs").then_some(1),
                     request_id: (method == "device.irs").then_some(request_id),
                 },
-                response_type: 4,
+                response_type: profile::MESSAGE_TYPE_FILE,
                 timeout_ms: 30_000,
                 projection: GatewayResponseProjection::LibraryFiles {
                     request_id: (method == "device.irs").then_some(request_id),
@@ -1236,7 +1301,7 @@ pub fn plan_gateway_read(
         }
         "device.inhibitedModules" => Ok(GatewayReadPlan {
             operation: DeviceOperation::ReadInhibitedModules,
-            response_type: 42,
+            response_type: profile::MESSAGE_TYPE_COMPILER_INHIBITED_MODULES,
             timeout_ms: 5_000,
             projection: GatewayResponseProjection::InhibitedModules,
         }),
@@ -1259,7 +1324,7 @@ pub fn plan_gateway_read(
                     is_factory,
                     request_id,
                 },
-                response_type: 25,
+                response_type: profile::MESSAGE_TYPE_SCREENSHOT,
                 timeout_ms: 10_000,
                 projection: GatewayResponseProjection::PresetScreenshot {
                     request_id,
@@ -1271,9 +1336,15 @@ pub fn plan_gateway_read(
         }
         "device.captureScreen" => Ok(GatewayReadPlan {
             operation: DeviceOperation::CaptureScreen,
-            response_type: 72,
+            response_type: profile::MESSAGE_TYPE_REMOTE_CONTROL,
             timeout_ms: 10_000,
             projection: GatewayResponseProjection::CapturedScreen,
+        }),
+        "device.graphicsTree" => Ok(GatewayReadPlan {
+            operation: DeviceOperation::ReadGraphicsTree,
+            response_type: profile::MESSAGE_TYPE_REMOTE_CONTROL,
+            timeout_ms: 5_000,
+            projection: GatewayResponseProjection::GraphicsTree,
         }),
         _ => Err(format!(
             "Gateway correlated read is not supported: {method}"
@@ -1841,6 +1912,9 @@ pub fn assert_expected_state(
     snapshot: Option<&GatewaySnapshot>,
     params: &Value,
 ) -> Result<(), String> {
+    // Global-tempo mode is not the footswitch mode stored in GatewaySnapshot.
+    // It is checked against a fresh device.globalTempoSettings preflight instead.
+    let uses_global_tempo_mode = method == "device.setGlobalTempo";
     let has_expected_state = [
         "expectedScene",
         "expectedMode",
@@ -1856,19 +1930,23 @@ pub fn assert_expected_state(
         "expectedMuted",
     ]
     .iter()
-    .any(|field| params.get(field).is_some());
+    .any(|field| {
+        (*field != "expectedMode" || !uses_global_tempo_mode) && params.get(field).is_some()
+    });
     if !has_expected_state {
         return Ok(());
     }
     let Some(snapshot) = snapshot else {
         return Err("No Quad Cortex preset has been synchronized yet".into());
     };
-    if let Some(expected) = params.get("expectedMode").and_then(Value::as_str) {
-        if snapshot.mode != expected {
-            return Err(format!(
+    if !uses_global_tempo_mode {
+        if let Some(expected) = params.get("expectedMode").and_then(Value::as_str) {
+            if snapshot.mode != expected {
+                return Err(format!(
                 "Footswitch mode changed on the Quad Cortex: expected {expected}, but {} is active. Refresh and retry.",
                 snapshot.mode
             ));
+            }
         }
     }
     if let Some(expected) = params.get("expectedScene").and_then(Value::as_u64) {
@@ -2170,6 +2248,16 @@ fn operation(operation: &str, params: &Value) -> Result<DeviceOperation, String>
                     "referenceOffsetHz must be a finite Hz offset from 440".to_string()
                 })?;
             Ok(DeviceOperation::SetTunerReference(offset_hz as f32))
+        }
+        "setTunerMeter" => {
+            if params
+                .get("confirmTunerActivation")
+                .and_then(Value::as_bool)
+                != Some(true)
+            {
+                return Err("Changing tuner meter reporting engages the tuner invisibly; confirmTunerActivation must be true.".into());
+            }
+            Ok(DeviceOperation::SetTunerMeter(boolean(params, "enabled")?))
         }
         "setGeneralInteger" => {
             let setting = required_text(params, "setting")?;
@@ -2504,6 +2592,17 @@ fn operation(operation: &str, params: &Value) -> Result<DeviceOperation, String>
                 _ => return Err("mode must be PRESET or GLOBAL".into()),
             },
         )),
+        "setGlobalTempo" => {
+            let bpm = bounded_u32(params, "bpm", domain::MAXIMUM_TEMPO_BPM)?;
+            if bpm < domain::MINIMUM_TEMPO_BPM {
+                return Err(format!(
+                    "bpm must be an integer from {} through {}",
+                    domain::MINIMUM_TEMPO_BPM,
+                    domain::MAXIMUM_TEMPO_BPM
+                ));
+            }
+            Ok(DeviceOperation::SetGlobalTempo(bpm))
+        }
         "setFavorite" => {
             let name = validate_path_component(required_text(params, "name")?, "name", 80, &[])?;
             let folder_key =
@@ -3034,6 +3133,7 @@ fn verification_for_operation(
         | DeviceOperation::ReadTuner
         | DeviceOperation::SetTunerInput(_)
         | DeviceOperation::SetTunerMute(_)
+        | DeviceOperation::SetTunerMeter(_)
         | DeviceOperation::SetTunerReference(_)
         | DeviceOperation::ReadGeneralSettings
         | DeviceOperation::SetGeneralInteger { .. }
@@ -3053,6 +3153,7 @@ fn verification_for_operation(
         | DeviceOperation::ReadModeCycle
         | DeviceOperation::SetModeCycle(_)
         | DeviceOperation::ReadGlobalTempo
+        | DeviceOperation::SetGlobalTempo(_)
         | DeviceOperation::SetTempoParameters(_)
         | DeviceOperation::SetTempoMode(_)
         | DeviceOperation::ReadLooperStatus
@@ -3069,7 +3170,10 @@ fn verification_for_operation(
         | DeviceOperation::LoadIr { model_id: None, .. }
         | DeviceOperation::PresetScreenshot { .. }
         | DeviceOperation::CaptureScreen
-        | DeviceOperation::ScreenTap { .. } => GatewayVerification::None,
+        | DeviceOperation::ReadGraphicsTree
+        | DeviceOperation::ScreenTap { .. }
+        | DeviceOperation::ScreenDrag { .. }
+        | DeviceOperation::ReadCurrentPreset { .. } => GatewayVerification::None,
     }
 }
 
@@ -3096,6 +3200,7 @@ pub fn plan_gateway_write(
         "device.pressFootswitch" | "device.tapTempo" => &["expectedMode", "expectedPresetName"],
         "device.setMasterVolume" => &["expectedValue"],
         "device.setTempo" => &["expectedTempo", "expectedPresetName"],
+        "device.setGlobalTempo" => &["expectedMode", "expectedGlobalBpm"],
         "device.toggleBypass" => &["expectedBypassed", "expectedScene", "expectedPresetName"],
         "device.setParameter" | "device.previewParameter" => {
             &["expectedValue", "expectedScene", "expectedPresetName"]
@@ -3154,11 +3259,13 @@ pub fn plan_gateway_write(
         }
         "device.setTunerInput"
         | "device.setTunerMute"
+        | "device.setTunerMeter"
         | "device.restoreTunerAudio"
         | "device.setTunerReference" => {
             let operation_name = match method {
                 "device.setTunerInput" => "setTunerInput",
                 "device.setTunerMute" => "setTunerMute",
+                "device.setTunerMeter" => "setTunerMeter",
                 "device.restoreTunerAudio" => "restoreTunerAudio",
                 _ => "setTunerReference",
             };
@@ -3170,6 +3277,9 @@ pub fn plan_gateway_write(
                     }
                     "device.setTunerMute" => {
                         "Tuner mute preference updated; the tuner is now invisibly engaged"
+                    }
+                    "device.setTunerMeter" => {
+                        "Tuner meter reporting updated; the tuner is now invisibly engaged"
                     }
                     "device.restoreTunerAudio" => "Tuner mute preference cleared to restore audio",
                     _ => "Tuner reference updated; the tuner is now invisibly engaged",
@@ -3225,6 +3335,14 @@ pub fn plan_gateway_write(
         "device.setTempoMode" => GatewayWritePlan {
             write: PlannedWrite::HidOperation(operation("setTempoMode", params)?),
             detail: "Global tempo mode sent to the Quad Cortex".into(),
+            verification: GatewayVerification::None,
+        },
+        "device.setGlobalTempo" => GatewayWritePlan {
+            write: PlannedWrite::HidOperation(operation("setGlobalTempo", params)?),
+            detail: format!(
+                "Global tempo set to {} BPM",
+                bounded_u32(params, "bpm", domain::MAXIMUM_TEMPO_BPM)?
+            ),
             verification: GatewayVerification::None,
         },
         "device.setFavorite"
@@ -3427,6 +3545,22 @@ pub fn plan_gateway_write(
                 verification: GatewayVerification::None,
             }
         }
+        "device.swipeScreen" => {
+            let x = screen_coordinate(params, "x", 800.0)?;
+            let y = screen_coordinate(params, "y", 480.0)?;
+            let to_x = screen_coordinate(params, "toX", 800.0)?;
+            let to_y = screen_coordinate(params, "toY", 480.0)?;
+            if (x - to_x).abs() < f32::EPSILON && (y - to_y).abs() < f32::EPSILON {
+                return Err("A screen swipe must end at a different pixel".into());
+            }
+            GatewayWritePlan {
+                write: PlannedWrite::HidOperation(DeviceOperation::ScreenDrag { x, y, to_x, to_y }),
+                detail: format!(
+                    "Swiped the Quad Cortex screen from ({x}, {y}) to ({to_x}, {to_y})"
+                ),
+                verification: GatewayVerification::None,
+            }
+        }
         "device.addBlock"
         | "device.removeBlock"
         | "device.moveBlock"
@@ -3611,6 +3745,8 @@ mod tests {
         for method in [
             "device.recallPreset",
             "device.selectScene",
+            "device.previewParameter",
+            "device.previewLaneControlParameter",
             "device.setParameter",
             "device.setTempo",
             "device.showTuner",
@@ -3719,6 +3855,8 @@ mod tests {
         for method in [
             "device.selectScene",
             "device.toggleBypass",
+            "device.previewParameter",
+            "device.previewLaneControlParameter",
             "device.setTempo",
             "device.setMasterVolume",
             "device.pressFootswitch",
@@ -5079,6 +5217,106 @@ mod tests {
             PlannedWrite::HidOperation(DeviceOperation::SetTempoMode(true))
         ));
         assert!(plan_gateway_write("device.setTempoMode", &json!({"mode":"AUTO"}), None).is_err());
+    }
+
+    #[test]
+    fn global_tempo_composition_and_guarding_are_shared_by_native_hosts() {
+        let composed = compose_global_tempo_settings(
+            &json!({"mode":"GLOBAL", "bpm":120, "beats":[]}),
+            &json!({"bpm":96, "ledEnabled":true, "beats":["DOWN"]}),
+        )
+        .unwrap();
+        assert_eq!(composed["mode"], "GLOBAL");
+        assert_eq!(composed["bpm"], 96);
+        assert_eq!(composed["globalBpm"], 120);
+        let params = json!({"bpm":121, "expectedMode":"GLOBAL", "expectedGlobalBpm":120});
+        assert_eq!(
+            gateway_write_preflight_method("device.setGlobalTempo"),
+            Some("device.globalTempoSettings")
+        );
+        assert!(gateway_write_preflight_matches(
+            "device.setGlobalTempo",
+            &params,
+            &composed
+        ));
+        assert!(!gateway_write_preflight_matches(
+            "device.setGlobalTempo",
+            &params,
+            &json!({"mode":"PRESET", "globalBpm":120})
+        ));
+        assert!(plan_gateway_write(
+            "device.setGlobalTempo",
+            &json!({"bpm":121, "expectedMode":"GLOBAL"}),
+            None
+        )
+        .is_err());
+        let plan = plan_gateway_write("device.setGlobalTempo", &params, None).unwrap();
+        assert!(matches!(
+            plan.write,
+            PlannedWrite::HidOperation(DeviceOperation::SetGlobalTempo(121))
+        ));
+        assert_eq!(
+            gateway_write_readback_method("device.setGlobalTempo"),
+            Some("device.globalTempoSettings")
+        );
+        assert!(gateway_write_readback_matches(
+            "device.setGlobalTempo",
+            &params,
+            &json!({"globalBpm":121})
+        ));
+    }
+
+    #[test]
+    fn graphics_tree_tuner_meter_and_screen_drag_use_shared_plans() {
+        let graphics = plan_gateway_read("device.graphicsTree", &json!({}), 7).unwrap();
+        assert!(matches!(
+            graphics.operation,
+            DeviceOperation::ReadGraphicsTree
+        ));
+        assert_eq!(graphics.response_type, 72);
+        assert!(matches!(
+            graphics.projection,
+            GatewayResponseProjection::GraphicsTree
+        ));
+
+        assert!(plan_gateway_write(
+            "device.setTunerMeter",
+            &json!({"enabled":true, "confirmTunerActivation":false}),
+            None,
+        )
+        .is_err());
+        assert!(matches!(
+            plan_gateway_write(
+                "device.setTunerMeter",
+                &json!({"enabled":true, "confirmTunerActivation":true}),
+                None,
+            )
+            .unwrap()
+            .write,
+            PlannedWrite::HidOperation(DeviceOperation::SetTunerMeter(true))
+        ));
+
+        let swipe = plan_gateway_write(
+            "device.swipeScreen",
+            &json!({"x":10, "y":20, "toX":30, "toY":40}),
+            None,
+        )
+        .unwrap();
+        assert!(matches!(
+            swipe.write,
+            PlannedWrite::HidOperation(DeviceOperation::ScreenDrag {
+                x: 10.0,
+                y: 20.0,
+                to_x: 30.0,
+                to_y: 40.0
+            })
+        ));
+        assert!(plan_gateway_write(
+            "device.swipeScreen",
+            &json!({"x":10, "y":20, "toX":10, "toY":20}),
+            None,
+        )
+        .is_err());
     }
 
     #[test]

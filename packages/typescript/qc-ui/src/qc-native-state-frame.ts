@@ -1,6 +1,6 @@
 import type { Dispatch, MutableRefObject, SetStateAction } from "react";
-import type { NativeStateFrame, PresetSnapshot } from "@ndsp-qc/client";
-import { synchronizeTempoPulseEpoch, type QcStateUpdate } from "@ndsp-qc/core";
+import type { NativeStateFrame, PresetSnapshot } from "@qc-remote/client";
+import { synchronizeTempoPulseEpoch, type QcStateUpdate } from "@qc-remote/core";
 
 export interface QcNativeStateFrameConsumer {
   sequence: MutableRefObject<number>;

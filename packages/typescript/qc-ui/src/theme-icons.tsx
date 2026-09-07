@@ -1,5 +1,5 @@
-import type { PresetSnapshot } from "@ndsp-qc/client";
-import { QC_COLORS, QC_REFERENCE_ICON_RASTERS, QC_TYPOGRAPHY } from "@ndsp-qc/theme";
+import type { PresetSnapshot } from "@qc-remote/client";
+import { QC_COLORS, QC_REFERENCE_ICON_RASTERS, QC_TYPOGRAPHY } from "@qc-remote/theme";
 
 export type QcDirectoryIconName = "grid" | "download" | "cloud" | "cloud-upload" | "folder" | "new-folder" | "sort" | "filter" | "arrange" | "upload" | "search" | "trash" | "done";
 export type QcEditorIconName = "save" | "change" | "copy" | "paste" | "reset" | "expression" | "looper" | "mute" | "model-update" | "model-downgrade" | "remove" | "assignment-expression" | "band-power" | "footswitch" | "momentary" | "scene-previous" | "scene-next" | "bypass" | "confirm" | "waveform";

@@ -1,6 +1,6 @@
 import { useCallback, useReducer } from "react";
-import type { BlockDetails, BlockParameter } from "@ndsp-qc/client";
-import { emptyBlockEditorSession, reduceBlockEditorSession } from "@ndsp-qc/core";
+import type { BlockDetails, BlockParameter } from "@qc-remote/client";
+import { emptyBlockEditorSession, reduceBlockEditorSession } from "@qc-remote/core";
 
 export interface BlockEditorSessionController {
   details?: BlockDetails;

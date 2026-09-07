@@ -3,8 +3,8 @@ import { createRoot } from "react-dom/client";
 import { StatusBar, Style } from "@capacitor/status-bar";
 import { Capacitor } from "@capacitor/core";
 import { App } from "./App";
-import { QC_BRAND, QC_COLORS, QC_NATIVE_THEME } from "@ndsp-qc/theme";
-import "@ndsp-qc/theme/theme.css";
+import { QC_BRAND, QC_COLORS, QC_NATIVE_THEME } from "@qc-remote/theme";
+import "@qc-remote/theme/theme.css";
 import "./styles.css";
 
 document.querySelector('meta[name="theme-color"]')?.setAttribute("content", QC_NATIVE_THEME.browser.androidThemeColor);

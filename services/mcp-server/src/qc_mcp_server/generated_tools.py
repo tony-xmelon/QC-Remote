@@ -158,6 +158,15 @@ class GeneratedQcTools:
         """Set tuner reference as an Hz offset from 440. This invisibly engages the tuner."""
         return self._invoke_generated_action("set_tuner_reference", locals())
 
+    def set_tuner_meter(
+        self,
+        enabled: bool,
+        confirm_tuner_activation: bool,
+        confirm_risky_operation: bool,
+    ) -> Any:
+        """Enable or disable live tuner-meter reports. This invisibly engages the tuner and must be explicitly confirmed."""
+        return self._invoke_generated_action("set_tuner_meter", locals())
+
     def get_preset_screenshot(
         self,
         folder_name: str,
@@ -173,6 +182,13 @@ class GeneratedQcTools:
     ) -> Any:
         """Capture the current Quad Cortex touchscreen as a PNG image."""
         return self._invoke_generated_action("capture_screen", locals())
+
+    def get_graphics_tree(
+        self,
+
+    ) -> Any:
+        """Read the live Quad Cortex zenUI widget tree for structural screen inspection."""
+        return self._invoke_generated_action("get_graphics_tree", locals())
 
     def preview_parameter(
         self,
@@ -237,6 +253,17 @@ class GeneratedQcTools:
     ) -> Any:
         """Tap an exact touchscreen pixel after reviewing a fresh screen capture and explicitly confirming the action."""
         return self._invoke_generated_action("tap_screen", locals())
+
+    def swipe_screen(
+        self,
+        x: int,
+        y: int,
+        to_x: int,
+        to_y: int,
+        confirm_risky_operation: bool,
+    ) -> Any:
+        """Swipe between exact touchscreen pixels after reviewing a fresh screen capture and explicitly confirming the action."""
+        return self._invoke_generated_action("swipe_screen", locals())
 
     def select_scene(
         self,
@@ -751,6 +778,16 @@ class GeneratedQcTools:
     ) -> Any:
         """Select whether the Quad Cortex uses the loaded preset tempo or its device-global tempo block."""
         return self._invoke_generated_action("set_tempo_mode", locals())
+
+    def set_global_tempo(
+        self,
+        bpm: int,
+        expected_mode: str,
+        expected_global_bpm: int,
+        confirm_persistent_write: bool,
+    ) -> Any:
+        """Set device-global tempo after proving the QC is in GLOBAL mode and the previously read global value is still current."""
+        return self._invoke_generated_action("set_global_tempo", locals())
 
     def get_looper_status(
         self,

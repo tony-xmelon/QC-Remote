@@ -2,8 +2,8 @@ export { QcHardwareSwitch, QcMasterVolumeKnob, QuadCortexSurface } from "./quad-
 export { coros410FixtureSnapshot, corosFixtureConfiguration } from "./coros-screen-fixture-data";
 export type { CorOsFixtureConfiguration } from "./coros-screen-fixture-data";
 export type { CorOsContextAction, CorOsScreenView, HardwareAction, PresetDirectoryState } from "./quad-cortex-surface";
-export { footswitchLeds, optimisticallyPressFootswitch } from "@ndsp-qc/core";
-export type { FootswitchLed } from "@ndsp-qc/core";
+export { footswitchLeds, optimisticallyPressFootswitch } from "@qc-remote/core";
+export type { FootswitchLed } from "@qc-remote/core";
 export { blockUsesActiveFill, officialBlockVisual, pluginBadge, OFFICIAL_BLOCK_CATEGORIES, OFFICIAL_BLOCK_VISUALS, PUBLISHED_PLUGIN_BADGES } from "./block-visuals";
 export { QcDeviceGlyph } from "./device-glyph";
 export type { OfficialBlockCategory, OfficialBlockVisual, OfficialBlockVisualKey, PublishedPluginBadge } from "./block-visuals";

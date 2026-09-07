@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
-import type { PresetSnapshot } from "@ndsp-qc/client";
-import { QcCommandCoordinator, type QcAssistantDeviceCommand, type QcCommandResult, type QcCommandToken, type QcDeviceTransport, type QcStateUpdate } from "@ndsp-qc/core";
+import type { PresetSnapshot } from "@qc-remote/client";
+import { QcCommandCoordinator, type QcAssistantDeviceCommand, type QcCommandResult, type QcCommandToken, type QcDeviceTransport, type QcStateUpdate } from "@qc-remote/core";
 
 export interface QcController {
   snapshot: PresetSnapshot;

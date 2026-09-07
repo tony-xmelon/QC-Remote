@@ -24,6 +24,9 @@ function verifyPngCorpus(relativePath) {
   const corpus = join(root, relativePath);
   const manifest = readJson(join(corpus, "manifest.json"));
   const ids = new Set();
+  const capturesById = new Map((manifest.captures ?? []).map((capture) => [capture.id, capture]));
+  const imageOwners = new Map();
+  const treeOwners = new Map();
   for (const capture of manifest.captures ?? []) {
     assert.ok(!ids.has(capture.id), `${capture.id}: duplicate id`);
     ids.add(capture.id);
@@ -31,13 +34,34 @@ function verifyPngCorpus(relativePath) {
     const [width, height] = pngDimensions(payload);
     assert.equal(width, 800, `${capture.id}: expected width 800`);
     assert.equal(height, 480, `${capture.id}: expected height 480`);
-    assert.equal(capture.sha256, sha256(payload), `${capture.id}: checksum mismatch`);
+    const imageHash = sha256(payload);
+    assert.equal(capture.sha256, imageHash, `${capture.id}: checksum mismatch`);
     assert.equal(capture.bytes, payload.length, `${capture.id}: byte count mismatch`);
     assert.equal(capture.width, width, `${capture.id}: stale width`);
     assert.equal(capture.height, height, `${capture.id}: stale height`);
+    const imageOwner = imageOwners.get(imageHash);
+    if (imageOwner) {
+      assert.equal(capture.identicalImageOf, imageOwner, `${capture.id}: identical image must name its canonical capture`);
+    } else {
+      assert.equal(capture.identicalImageOf, undefined, `${capture.id}: identicalImageOf is stale`);
+      imageOwners.set(imageHash, capture.id);
+    }
     if (capture.graphicsTree) {
       const tree = readFileSync(join(corpus, capture.graphicsTree), "utf8");
       assert.equal(capture.screen, classifyTree(tree), `${capture.id}: stale screen classification`);
+      const treeHash = sha256(tree);
+      const treeOwner = treeOwners.get(treeHash);
+      if (treeOwner) {
+        assert.equal(capture.identicalGraphicsTreeOf, treeOwner, `${capture.id}: identical graphics tree must name its canonical capture`);
+      } else {
+        assert.equal(capture.identicalGraphicsTreeOf, undefined, `${capture.id}: identicalGraphicsTreeOf is stale`);
+        treeOwners.set(treeHash, capture.id);
+      }
+    }
+  }
+  for (const capture of manifest.captures ?? []) {
+    for (const field of ["identicalImageOf", "identicalGraphicsTreeOf"]) {
+      if (capture[field]) assert.ok(capturesById.has(capture[field]), `${capture.id}: ${field} target is missing`);
     }
   }
   console.log(`PASS ${ids.size} captures in ${basename(corpus)}; PNG geometry, checksums, and metadata match`);

@@ -1,5 +1,5 @@
-import type { PresetSnapshot } from "@ndsp-qc/client";
-import { QC_COLORS } from "@ndsp-qc/theme";
+import type { PresetSnapshot } from "@qc-remote/client";
+import { QC_COLORS } from "@qc-remote/theme";
 import type { CorOsParameterEditorProps } from "./parameter-editor";
 import { officialBlockVisual } from "./block-visuals";
 import type { BlockEditorSessionController } from "./use-block-editor-session";

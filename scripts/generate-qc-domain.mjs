@@ -93,7 +93,6 @@ const outputs = [
   [resolve(root, "packages/typescript/qc-client/src/generated-domain.ts"), typescript],
   [resolve(root, "services/device-gateway/src/qc_device_gateway/domain.py"), python],
   [resolve(root, "packages/python/qc-gateway-client/src/qc_gateway_client/generated_domain.py"), python],
-  [resolve(root, "services/mcp-server/src/qc_mcp_server/generated_domain.py"), python],
   [resolve(root, "packages/rust/qc-protocol/src/domain.rs"), rust],
   [resolve(root, "apps/android/android/app/src/main/java/com/qccontrol/mobile/QcDomain.java"), java]
 ];

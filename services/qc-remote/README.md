@@ -1,6 +1,6 @@
 # QC remote service
 
-Production composition root for the public QC Control connector. It mounts the
+Production composition root for the public QC Remote connector. It mounts the
 Rust `rmcp` Streamable HTTP server at `/mcp` and the authenticated Android relay
 routes from `qc-relay` in one Axum application.
 
@@ -37,7 +37,7 @@ cargo test --manifest-path services/qc-remote/Cargo.toml
 Connector clients use `https://qc.example.com/mcp`. The same URL and OAuth flow
 works for a ChatGPT plugin/connector and a Claude custom remote MCP connector.
 Provider consumer tokens, browser cookies, and provider API secrets never enter
-QC Control or this service.
+QC Remote or this service.
 
 This first production vertical slice is intentionally single-instance: device
 credentials and pairing offers are held in memory, so a service restart requires
@@ -48,7 +48,7 @@ the same.
 Pairing flow:
 
 1. The signed-in user requests `POST /v1/pairing/offers` with `qc:pair` scope.
-2. The user pastes or scans the returned short-lived, one-use secret in QC Control.
+2. The user pastes or scans the returned short-lived, one-use secret in QC Remote.
 3. Android redeems it at `POST /v1/device/pair` and stores the returned device
    credential with Android Keystore-backed encryption.
 4. The foreground service opens `wss://qc.example.com/v1/device/connect`, using

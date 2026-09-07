@@ -1,8 +1,9 @@
 {
   "appId": "com.qccontrol.mobile",
-  "appName": "QC Control",
+  "appName": "QC Remote",
   "webDir": "dist",
   "backgroundColor": "#08090b",
+  "loggingBehavior": "none",
   "android": {
     "allowMixedContent": false,
     "backgroundColor": "#08090b"

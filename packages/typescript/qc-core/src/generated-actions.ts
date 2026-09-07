@@ -533,6 +533,43 @@ export const SHARED_QC_ACTIONS = [
     }
   },
   {
+    "name": "set_tuner_meter",
+    "rpc": "device.setTunerMeter",
+    "classification": "risky-write",
+    "description": "Enable or disable live tuner-meter reports. This invisibly engages the tuner and must be explicitly confirmed.",
+    "properties": {
+      "enabled": "boolean",
+      "confirm_tuner_activation": "boolean",
+      "confirm_risky_operation": "boolean"
+    },
+    "required": [
+      "enabled",
+      "confirm_tuner_activation",
+      "confirm_risky_operation"
+    ],
+    "access": "full",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "confirm_tuner_activation": {
+          "type": "boolean"
+        },
+        "confirm_risky_operation": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "enabled",
+        "confirm_tuner_activation",
+        "confirm_risky_operation"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
     "name": "get_preset_screenshot",
     "rpc": "device.presetScreenshot",
     "classification": "read",
@@ -576,6 +613,21 @@ export const SHARED_QC_ACTIONS = [
     "rpc": "device.captureScreen",
     "classification": "read",
     "description": "Capture the current Quad Cortex touchscreen as a PNG image.",
+    "properties": {},
+    "required": [],
+    "access": "read-only",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "get_graphics_tree",
+    "rpc": "device.graphicsTree",
+    "classification": "read",
+    "description": "Read the live Quad Cortex zenUI widget tree for structural screen inspection.",
     "properties": {},
     "required": [],
     "access": "read-only",
@@ -880,6 +932,63 @@ export const SHARED_QC_ACTIONS = [
       "required": [
         "x",
         "y",
+        "confirm_risky_operation"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "swipe_screen",
+    "rpc": "device.swipeScreen",
+    "classification": "risky-write",
+    "description": "Swipe between exact touchscreen pixels after reviewing a fresh screen capture and explicitly confirming the action.",
+    "properties": {
+      "x": "screen-x",
+      "y": "screen-y",
+      "to_x": "screen-x",
+      "to_y": "screen-y",
+      "confirm_risky_operation": "boolean"
+    },
+    "required": [
+      "x",
+      "y",
+      "to_x",
+      "to_y",
+      "confirm_risky_operation"
+    ],
+    "access": "full",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 799
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 479
+        },
+        "to_x": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 799
+        },
+        "to_y": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 479
+        },
+        "confirm_risky_operation": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "to_x",
+        "to_y",
         "confirm_risky_operation"
       ],
       "additionalProperties": false
@@ -3527,6 +3636,57 @@ export const SHARED_QC_ACTIONS = [
       },
       "required": [
         "mode",
+        "confirm_persistent_write"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "set_global_tempo",
+    "rpc": "device.setGlobalTempo",
+    "classification": "persistent-write",
+    "description": "Set device-global tempo after proving the QC is in GLOBAL mode and the previously read global value is still current.",
+    "properties": {
+      "bpm": "tempo",
+      "expected_mode": "tempo-mode",
+      "expected_global_bpm": "tempo",
+      "confirm_persistent_write": "boolean"
+    },
+    "required": [
+      "bpm",
+      "expected_mode",
+      "expected_global_bpm",
+      "confirm_persistent_write"
+    ],
+    "access": "full",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "bpm": {
+          "type": "integer",
+          "minimum": 40,
+          "maximum": 240
+        },
+        "expected_mode": {
+          "type": "string",
+          "enum": [
+            "PRESET",
+            "GLOBAL"
+          ]
+        },
+        "expected_global_bpm": {
+          "type": "integer",
+          "minimum": 40,
+          "maximum": 240
+        },
+        "confirm_persistent_write": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "bpm",
+        "expected_mode",
+        "expected_global_bpm",
         "confirm_persistent_write"
       ],
       "additionalProperties": false

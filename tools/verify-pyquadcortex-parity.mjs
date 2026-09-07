@@ -107,7 +107,7 @@ const publicClientMethods = (source) => {
 const fetchGitHub = async (url, raw = false) => {
   const headers = {
     Accept: raw ? "application/vnd.github.raw+json" : "application/vnd.github+json",
-    "User-Agent": "ndsp-qc-mcp-parity-audit",
+    "User-Agent": "qc-remote-mcp-parity-audit",
     "X-GitHub-Api-Version": "2022-11-28",
   };
   if (process.env.GITHUB_TOKEN) headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;

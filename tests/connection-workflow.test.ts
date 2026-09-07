@@ -40,8 +40,9 @@ test("neither host spells device readiness on its own", () => {
   const windowsMenu = readFileSync(new URL("../apps/windows/src/menu-bar.tsx", import.meta.url), "utf8");
   const android = readFileSync(new URL("../apps/android/src/App.tsx", import.meta.url), "utf8");
   assert.match(windowsMenu, /qcReadyLabel\(connection, deviceReady, syncing \? syncProgress : undefined\)/);
-  assert.match(android, /qcReadyLabel\(connection\)/);
-  for (const [host, source] of [["windows", windowsMenu], ["android", android]] as const) {
+  assert.match(android, /<i\s*\/?> USB<\/button>/, "Android uses the compact transport label");
+  assert.doesNotMatch(android, /qcReadyLabel\(/, "Android presents USB transport state with color, not a second readiness phrase");
+  for (const [host, source] of [["windows", windowsMenu]] as const) {
     assert.doesNotMatch(source, /"QC READY"|"QC OFFLINE"|"CHECKING QC"/, `${host} must not restate readiness wording locally`);
   }
 });

@@ -126,7 +126,7 @@ test("publishes strict schemas for every allowed QC model tool", () => {
     assert.equal(schema.additionalProperties, false, tool.name);
     assert.deepEqual(new Set(schema.required), new Set(Object.keys(schema.properties)), tool.name);
   }
-  for (const name of ["set_bypass", "set_parameter", "set_master_volume", "press_footswitch", "move_block", "add_block", "remove_block", "set_chain_split", "fetch_youtube_reference_audio", "save_current_unsaved_preset", "save_preset_as", "rename_current_preset", "create_device_backup", "reconnect_device", "reset_device_session", "disconnect_device"]) {
+  for (const name of ["set_bypass", "set_parameter", "set_master_volume", "press_footswitch", "move_block", "add_block", "remove_block", "set_chain_split", "save_current_unsaved_preset", "save_preset_as", "rename_current_preset", "create_device_backup", "reconnect_device", "reset_device_session", "disconnect_device"]) {
     assert.ok(qcChatTools.some((tool) => tool.name === name), name);
   }
 });
@@ -161,7 +161,7 @@ test("classifies read-only tools separately from direct device controls", () => 
   assert.equal(isReadOnlyChatTool("get_current_preset"), true);
   assert.equal(isReadOnlyChatTool("list_presets"), true);
   assert.equal(isReadOnlyChatTool("list_preset_slots"), true);
-  assert.equal(isReadOnlyChatTool("fetch_youtube_reference_audio"), true);
+  assert.equal(qcChatTools.some((tool) => tool.name === "fetch_youtube_reference_audio"), false);
   assert.equal(isReadOnlyChatTool("set_tempo"), false);
   assert.equal(isReadOnlyChatTool("set_parameter"), false);
 });

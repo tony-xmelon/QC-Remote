@@ -6,20 +6,7 @@ Cortex Control binary, cross-checked against the connected unit.
 
 Re-run the extraction with `tools/extract-cortex-protocol.py`. It writes the
 serialized descriptors, the message-type table, and the coverage map under
-`references/cortex-protocol/`.
-
-The schema is **generated, not transcribed**. `tools/generate_cortex_protos.py`
-renders `packages/rust/qc-protocol/proto/*.proto` from those descriptors, and
-`tools/verify_cortex_protocol_fidelity.py` compiles the result with the same
-vendored protoc the Rust build uses and compares it to the shipped descriptor
-field by field. Both run in one command:
-
-```
-npm run verify:cortex-protocol
-```
-
-which the release preflight also runs, so the schema cannot drift again without
-a red build.
+`artifacts/cortex-protocol/`.
 
 ## What the binary carries
 
@@ -36,74 +23,9 @@ The blobs have no length prefix. Their end is found by walking the top-level
 a truncated prefix does not parse, so growing a candidate window never gets a
 foothold.
 
-### A name-level diff is not enough, and once hid real drift
-
-An earlier revision of this document said the copies in
-`packages/rust/qc-protocol/proto/` were complete, because a **message-set** diff
-reported 153/153 and 15/15 with nothing missing on either side. That comparison
-only ever looked at message *names*. Comparing fields found **27 real
-differences** behind those matching names:
-
-| difference | what it was |
-| --- | --- |
-| `GlobalEQMessage` field 5 | we declared `bool has_user_defaults`; the binary says `ModelPresetID model_preset_to_load`. A bool is wire type 0 and a message is wire type 2, so anything we sent there was malformed |
-| `GlobalEQMessage` field 6 | `default_parameter_action`, with a `DefaultParameterAction` enum. Ours only; absent from the shipped schema |
-| 24 fields | added by newer firmware and simply missing here, including `FileMessage.omit_factory_content` and `.user_content_estimate`, `GridMessage.model_preset_to_load`, `IOSettingsMessage.preset_to_load`, `RecentsFavoritesItem.product_key`, `StompModeAssignment.type`, `VersionMessage.cloud_endpoint`, and four `SOC2ARMCommsDiagnosticsMessage` USB-audio counters |
-| 2 enums | `RecentsFavoritesMessage.RecentFavoriteType` and `StompModeAssignment.Type` were absent |
-| `GridMessage.UpdateType` | missing the `MODEL_PRESET = 1` value |
-
-The lesson is the same one the UI corpus taught: a check that passes for the
-wrong reason is worse than no check. The protos are now generated from the
-descriptor and verified field for field, so this class of drift is gone rather
-than fixed.
-
-#### The schema also parses what the device actually sends
-
-Matching Cortex Control's descriptors proves we copied them correctly. It does
-not prove the descriptors describe the firmware. `tools/verify_cortex_schema_against_device.py`
-closes that: it listens to a connected unit, keeps the raw payload of every
-message pushed, and parses each one against a pool built from the extracted
-`.desc` files - reporting both parse failures and any top-level field the schema
-does not declare.
-
-```
-PASS 170 payload(s) parsed cleanly against the schema extracted from
-Cortex Control, with no undeclared fields
-```
-
-across roughly 25 types in a 30-second session, including `GridMessage`,
-`RecallPresetMessage`, `SceneMessage`, `IOSettingsMessage`,
-`GeneralSettingsMessage` and `GlobalEQMessage`. Two things it must handle, and
-which are properties of the protocol rather than of the tool:
-
-- **Whole frames arrive gzipped.** A payload beginning `1f 8b` is a deflate
-  stream and has to be inflated before it is protobuf at all; the device does
-  this for large pushes such as a full `BinaryPreset` or a library listing.
-- **Two types are not protobuf.** `License` (58) and `CloudLogin` (18) flag a
-  raw body in their trailer. Parsing them as protobuf reports "wire format was
-  corrupt", which is a category error, not a schema defect.
-
-It needs hardware, so it is not part of the release preflight; run it when the
-firmware or Cortex Control changes.
-
-#### What the device says about `GlobalEQMessage` field 5
-
-pyquadcortex carries the same older definition we did, so the two schemas
-disagree about a field a controller might send. Reading Global EQ from the
-connected unit settles the practical question: the reply carries **fields 1, 3
-and 4 only**, and never populates field 5 at all.
-
-```
---- GlobalEQ payload: 229 bytes ---
-field 1: varint = 1                       action = UPDATE
-field 3: length-delimited (x27)           parameters
-field 4: varint = 1                       bypassed
-```
-
-So adopting the shipped definition costs nothing on the read path, and it is
-the only definition that can be correct on the write path. `has_user_defaults`
-is gone from `GlobalEqSettings` in `contracts/qc-payloads.v1.schema.json`,
-because the protocol has no such field to report.
+**The copies in `packages/rust/qc-protocol/proto/` are complete.** A message-set
+diff against the freshly extracted descriptors reports 153/153 and 15/15 with
+nothing missing on either side. There is no schema drift to chase.
 
 ## The message-type table
 
@@ -148,147 +70,17 @@ encodes or decodes with the numbers actually exchanged during a full 102-action
 hardware conformance run.
 
 - **32 types observed on the wire** in one complete conformance pass.
-- **46 of 72 implemented or observed.**
-- **26 never touched**, and they fall into coherent groups:
-  - factory and production test: 65-70
-  - 71 ModelPreset — *not* production test despite sitting in that range;
-    Cortex Control sends it during ordinary block editing (see the wire
-    section below), and `pyquadcortex`'s enum does not know the type exists
+- **45 of 72 implemented or observed.**
+- **27 never touched**, and they fall into coherent groups:
+  - factory and production test: 65-71
   - Cloud forwarding and account: 18, 29, 30, 31, 41, 45, 46
-  - telemetry, meters and logs: 5, 7, 26, 37, 44. Measured: **none of them
-    answers a READ**, so they are subscription-gated push streams rather than
-    request/response types, and none appears in the handshake's
-    live-subscription list. Cortex Control presumably subscribes while its
-    meter and diagnostics screens are open.
+  - telemetry, meters and logs: 5, 7, 26, 37, 44
   - updater and calibration: 61, 62
-  - other: 39 RecentSearches, 55 GigViewButton, 59 PresetSpeedTest,
-    63 NeuralCapture2, 64 Serialization
-
-43 SystemTimeSync used to sit in that list and is now implemented; its type
-number is declared in `contracts/qc-usb-profile.v1.json` so every binding
-generates the constant rather than one language hand-writing it.
+  - other: 39 RecentSearches, 43 SystemTimeSync, 55 GigViewButton,
+    59 PresetSpeedTest, 63 NeuralCapture2, 64 Serialization
 
 None of those are needed to control a device; the untouched set is
 manufacturing, telemetry, and Cortex Cloud plumbing.
-
-### Every declared type is implemented at the protocol layer
-
-Describing the protocol correctly is not the same as implementing it. Until the
-registry existed, the crate could only encode or decode the types someone had
-hand-wired, so 26 of the 72 had no code path at all.
-
-`packages/rust/qc-protocol/src/message_registry.rs` is generated from the same
-`CortexMessageType` table lifted out of the binary and gives every declared type
-a variant, a decoder and an encoder:
-
-```rust
-pub const MESSAGE_TYPES: [(u16, &str); 72];
-pub enum DecodedMessage { Grid(pa::GridMessage), /* ... 72 variants */ }
-pub fn decode_any(message_type: u16, payload: &[u8])
-    -> Option<Result<DecodedMessage, prost::DecodeError>>;
-pub fn message_name(message_type: u16) -> Option<&'static str>;
-```
-
-`decode_any` returns `None` for a type the binary does not declare, which is how
-an unknown push is told apart from a corrupt one. A generated test round-trips
-all 72. Because it is generated, a type added by a future Cortex Control appears
-the moment the descriptors are refreshed, and
-`verify_cortex_protocol_message_types.py` treats an undecodable type as a hard
-failure - a hole in the reimplementation rather than a product decision.
-
-That leaves two separate questions, and the coverage map now reports both:
-
-```
-decodable by the protocol layer: 72 of 72
-observed on the wire: 32 | driven by the application: 47 of 72
-```
-
-### Which types the application drives
-
-That claim is checked rather than asserted.
-`references/cortex-protocol/message-type-plan.json` lists every type this stack
-does not speak, each with a category and, where it matters, what is known about
-it. `tools/verify_cortex_protocol_message_types.py` fails if a type is neither
-exercised nor explained, if an explained type starts being exercised, or if a
-future Cortex Control declares a type nobody has looked at:
-
-```
-PASS 46 of 72 message types are exercised; the remaining 26 each carry a
-reviewed reason (cloud=8, factory=8, telemetry=5, unestablished=5)
-```
-
-#### ModelPreset (71), established by reading
-
-This was the one worth finishing. It is how a block's parameters are saved under
-a name - the device reaches it from a block menu's *Save Current Parameters
-as...* - and newer firmware threads it through
-`GridMessage.model_preset_to_load`, `IOSettingsMessage.preset_to_load`,
-`GlobalEQMessage.model_preset_to_load` and `NeuralCaptureMessage.model_ab_preset`.
-
-Captured traffic only ever showed DELETE then CREATE around a save, which is why
-the contract was recorded as bytes without meaning. READ is the safe half of the
-same message, and asking the unit settles it:
-
-```
--> ModelPresetMessage { action: READ, request_id: 9001 }        080310a946
-<- 25,023 bytes, gzipped, inflating to 101,142
-   action: UPDATE
-   request_id: 9001
-   presets { id { value: "1",  is_factory: true, hash: 1 } name: "Crunch"       }
-   presets { id { value: "12", is_factory: true, hash: 1 } name: "Lead Boost"   }
-   presets { id { value: "13", is_factory: true, hash: 1 } name: "Medium Drive" }
-```
-
-So the reply is an ordinary correlated read: `action: UPDATE`, the request id
-echoed, one `presets` entry per saved preset, and a body large enough that the
-device gzips it. `commands::read_model_presets` and
-`responses::decode_model_presets` implement that half, with tests pinned to the
-shape above.
-
-The write half is established too, on a disposable preset created for the
-purpose on the scratch preset's Adaptive Gate, with the library restored
-afterwards.
-
-**CREATE** saves the parameters of the block at a grid position under a name.
-The device assigns the id - a counter across user presets, not per model - and
-stamps the block's model hash onto it:
-
-```
--> { action: CREATE, request_id: 9301, create_from_row: 0,
-     create_from_column: 0, presets: [ { name: "Zzcreate" } ] }
-   10d5481a0a12085a7a63726561746520002800
-<- the listing now carries ('4', 16001, "Zzcreate")
-```
-
-**DELETE** removes a user preset, named by the id and model hash the listing
-reports:
-
-```
--> { action: DELETE, request_id: 9201,
-     presets: [ { id { value: "3", is_factory: false, hash: 16001 },
-                  name: "Zztest" } ] }
-   080210f1471a120a080a0133100018817d12065a7a74657374
-<- 2754 entries become 2753; the entry is gone, the others untouched
-```
-
-So a `ModelPresetID` is *(id, factory flag, **model** hash)*: `hash` scopes the
-preset to a device model, not to the preset itself. Factory entries all share
-the id `SpecialFactoryModelPresetID` and differ only by that hash. On a stock
-unit the listing is 2,753 entries, of which two were the owner's.
-
-`commands::create_model_preset`, `commands::delete_model_preset` and
-`commands::read_model_presets` implement all three, with tests asserting the
-exact hex above.
-
-#### The zeros in that CREATE are the whole argument for the schema fix
-
-Look at the tail of the CREATE bytes: `20 00 28 00`. Those are
-`create_from_row = 0` and `create_from_column = 0`, on the wire, as values.
-Under the implicit-presence schema this crate carried before the protos were
-regenerated, a proto3 field set to its default is not serialized at all - so
-saving the block at row 0, column 0 would have sent neither field, and the
-device would have had no idea which block was meant. The 417 fields that
-regained explicit presence were not a cosmetic difference.
 
 ## Impulse responses
 
@@ -322,7 +114,7 @@ path despite its label:
 
 Every IR Loader has two slots, each with its own pair.
 
-### Writing — captured from Cortex Control, then replayed
+### Writing — probed on hardware
 
 `FileMessage` carries the upload field:
 
@@ -338,381 +130,120 @@ message FileMessage {
    8  BinaryPreset preset_payload
    9  int32  total_bulk_create_count
   10  bool   delete_from_library
+  11  bool   omit_factory_content
+  12  int32  user_content_estimate
 }
 ```
 
-This was settled by breakpointing `kernel32!WriteFile` in Cortex Control 4.1.0
-and reading the bytes it hands the HID device during a real import
-(`tools/capture_cortex_hid_writes.py`). The import is **one message, 34 reports,
-with no keepalive interleaved**, and decodes to exactly this:
+Probed against a unit with an empty IR library, then captured byte-for-byte from
+Cortex Control 4.1.0 while importing the synthetic test IR. **The envelope and
+payload container are proven.** The sanitized facts live in
+`contracts/cortex-control-ir-import.v1.json`.
 
 ```
-FileMessage{
-  request_id: 10,
-  type: 1,                                   // RecentFavoriteType.IR
-  folder: FolderInfo{ key: "local_ir_root",
-                      is_factory: false,
-                      files: [ ProductData{ name: "QC-MCP-TEST-IR2",
-                                            date: "2026-09-06T17:53:06Z" } ] },
-  ir_payload: <4154 bytes>
-}                                                        on message type 4
+FileMessage{action: CREATE, request_id, type: 1,
+            folder: FolderInfo{key: "2_q", is_factory: false,
+              files: [ProductData{name: <stem>, date: <ISO UTC>}]},
+            ir_payload: <converted float WAV>}                on message type 4
 ```
 
-Note what is **not** there: no `action` (so `CREATE`, the proto3 default), no
-`total_bulk_create_count`, no key on the file entry, and no path anywhere. The
-whole envelope is a folder key, a display name, a date, and the bytes.
+sent this way makes the device run a real import and answer on type 57, echoing
+the request's `request_id`:
 
-#### The payload is re-encoded to 32-bit float
+```
+BulkOperation finished=false progress=0.00  "Importing IRs, please wait."
+BulkOperation finished=false progress=1.00  ""
+BulkOperation finished=true  progress=0.00  ""
+```
 
-The fixture on disk is a 21 ms, 24-bit, 48 kHz mono WAV of 3116 bytes. What
-Cortex Control puts on the wire is 4154 bytes and a different format:
+What the probes settled:
 
-| | on disk | on the wire |
-| --- | --- | --- |
-| `fmt ` chunk | 16 bytes | 18 bytes |
-| format | PCM | IEEE_FLOAT |
-| bits | 24 | 32 |
-| `fact` chunk | absent | present, 1024 samples |
-| `data` | 3072 bytes | 4096 bytes |
+- **Cortex Control omits `total_bulk_create_count`.** The captured successful
+  message has no field 9 at all. Earlier probes correlated success with this
+  field, but the official sender disproves that conclusion.
+- **The official folder is exact.** Cortex Control sends `key: "2_q"` and an
+  explicitly present `is_factory: false`. The sole `ProductData` contains only
+  the extension-free name and an ISO-8601 UTC date. It sends no key; the QC
+  creates the `CIR_...` key.
+- **User IRs live at `/media/p4/CustomIRs/Impulse Responses/`** on the device.
+  That path and the literal `CustomIR` sit together in the Cortex Control binary
+  at `0x0310e8a8`, next to `irImportFinished` and the import file filter
+  `*.wav;*.aiff`.
 
-So Cortex Control does decode and re-encode before sending. An earlier revision
-of this note ruled that out because `addLocalImpulseResponse` takes no buffer -
-the signature reading is still right, but the conversion simply happens
-elsewhere, and the wire bytes outrank the inference.
+**The source WAV is not sent verbatim.** Cortex Control imported the same
+`tools/generate-hardware-test-ir.mjs` fixture - a 21 ms, 24-bit, 48 kHz mono
+WAV - but converted it before USB transmission. The captured `ir_payload` is a
+4,154-byte RIFF/WAVE containing 1,024 mono samples at 48 kHz as IEEE float32:
+an 18-byte `fmt ` chunk, a four-byte `fact` chunk, and a 4,096-byte `data`
+chunk. Its exact hash and chunk offsets are recorded in the capture contract.
 
-One quirk to copy deliberately or not at all: the emitted RIFF size field says
-4192, which describes a 4200-byte file, while only 4154 bytes are sent. The
-device accepts the mismatch.
+What the device stored, read back over USB afterwards:
 
-#### Replayed from this stack, which settles the rest
+```
+key   = "CIR_cd2f33341295a482cf3eea966fbc94e"      # CIR_ + 31 hex, device-generated
+name  = "QC-MCP-TEST-IR"                            # the file name, extension stripped
+is_readonly = false
+date_ms_since_epoch = 1788715934000
+```
 
-The captured envelope was rebuilt and sent through `pyquadcortex` with two
-different payloads and everything else held equal:
+The key is **generated by the device**, not supplied by the host - which is why
+supplying one changed nothing. Cortex Control's own preset converter mentions
+"IR hash calculation", and the key's shape matches that.
 
-| payload | result |
-| --- | --- |
-| the 32-bit float bytes Cortex Control sent | **stored** |
-| the original 24-bit PCM file | **silently ignored** |
-
-That answers the question this document carried for three revisions. The file on
-disk was never the problem and the envelope was never the problem; **the wire
-payload must be a 32-bit IEEE-float WAV**. A host that reads a user's `.wav` and
-forwards its bytes unchanged will fail on anything else, with no error at all.
-
-Two further facts fell out of the replay:
-
-- **The key is a content hash.** Importing identical audio under a new name
-  yields the same `CIR_…` key and *replaces* the existing entry instead of
-  adding one; halving every sample yields a different key and a second entry.
-  That is why supplying a key from the host never changed anything.
-
-  ```
-  QC-MCP-TEST-IR3   key=CIR_cd2f33341295a482cf3eea966fbc94e   # the captured audio
-  QC-MCP-TEST-IR5   key=CIR_cdc892a018ccda5f4c9ffa4d2de0a2fe   # same audio, halved
-  ```
-
-- **`total_bulk_create_count` controls progress reporting, not the import.**
-  Omitted, as Cortex Control omits it, the import runs and the device says
-  nothing. Set to 1, the same import runs *and* answers on type 57:
-
-  ```
-  BulkOperation finished=false progress=0.00  "Importing IRs, please wait."
-  BulkOperation finished=false progress=1.00  ""
-  BulkOperation finished=true  progress=0.00  ""
-  ```
-
-  An earlier revision called the field *required*, because omitting it produced
-  silence. The silence was the missing progress channel, not a missing import;
-  the imports in those probes failed for the payload-format reason above.
-
-- **The folder key does not matter.** `2_q`, `local_ir_root`,
-  `/media/p4/CustomIRs` and omitting the folder all behave identically. User IRs
-  live at `/media/p4/CustomIRs/Impulse Responses/` on the device; that path and
-  the literal `CustomIR` sit together in the Cortex Control binary at
-  `0x0310e8a8`, next to `irImportFinished` and the file filter `*.wav;*.aiff`.
-
-Reading the library back shows the folders user IRs live between:
-`local_ir_root` and `2_q` ("My IRs"), while the 690 entries under
+Reading the IR library also shows the two folders it lives between:
+`local_ir_root` and `2_q` ("My IRs") hold user IRs, while the 690 entries under
 `/opt/neuraldsp/impulse_responses` are plugin assets that expose a name and no
 key, and the unit cannot load them.
 
-> One caution. During the probing, before the format was understood, a malformed
-> 32-bit-float payload knocked the QC's HID interface off the USB bus. It
-> re-enumerated on its own after about 15 seconds with all 74 presets intact,
-> but it is a real crash. Well-formed float payloads are handled cleanly.
+The wire gap is now closed. The wire's three strings are the fixed destination
+folder key, the extension-free file name, and the ISO UTC date; the bool is
+`is_factory: false`. The capture does not expose the one-to-one mapping of the
+private C++ method's arguments, and that mapping is no longer needed for a wire
+implementation. The local source path is consumed by Cortex Control to read and
+convert the audio and is not transmitted. Implementations must still reproduce
+or safely replace Cortex Control's audio conversion before exposing a public
+persistent-write operation.
 
-## What the rest of the protocol looks like on the wire
+### What Cortex Control's own symbols say
 
-The same capture technique applied to ordinary UI actions. Every block below is
-bytes Cortex Control 4.1.0 actually sent, decoded through this stack's own
-registry, so it doubles as a conformance check on our encoders.
+The binary keeps MSVC RTTI names for lambdas, and each builder's lambda names the
+method that encloses it, so the senders' signatures survive demangling:
 
-**KeepAlive (32)** — once per second while idle, not every five:
+```cpp
+void FileMessageSender::addLocalImpulseResponse(
+    const juce::String&, const juce::String&, const juce::String&, bool) const;
 
-```
-KeepAlive{action: UPDATE, request_id, is_online: true}          6 bytes
-```
+void FileMessageSender::addPluginPreset(
+    const juce::String&, const juce::String&, const juce::String&, bool,
+    BinaryPreset*) const;
 
-**Scene change (13)** — `selected_scene` is 0-based, A=0:
-
-```
-Scene{action: UPDATE, request_id: 16, selected_scene: 1}        6 bytes
-```
-
-**Preset navigation (2)** — the full setlist path every time, 0-based position,
-and `is_factory` written explicitly even when false:
-
-```
-SetlistPosition{action: UPDATE, request_id: 19,
-                folder_key: "/media/p4/Presets/My Presets",
-                position: 29, is_factory: false}               38 bytes
+void FileMessageSender::addUserFile(
+    int, const juce::String&,
+    const std::optional<neural::cortex::usb::FileData>&) const;
 ```
 
-**Parameter write (1)** — one sparse `Grid` message per pointer move, no
-coalescing, the model addressed by grid position rather than by hash:
+All three build a `cortex_protobuf_v2::FileMessage` - their lambdas are
+`std::function<void(FileMessage&)>`. The contrast between them is the useful
+part:
 
-```
-Grid{action: UPDATE, request_id: 25,
-     preset: {chains: [{row: 0,
-              models: [{column: 0,
-                        params: [{index: 0,
-                                  param_values: [{float_value: 0.44207263}]}]}]}]}}
-```
+- `addPluginPreset` takes the same three strings and bool **plus a
+  `BinaryPreset*`**, which is `preset_payload`.
+- `addUserFile` takes a `usb::FileData`, which is how file bytes travel.
+- **`addLocalImpulseResponse` takes neither.** It receives only strings, so it
+  is not handed decoded audio or a byte buffer; the bytes must be read inside
+  from a path one of those strings carries.
 
-Dragging one knob across its range produced 26 of these. The value is plainly
-normalized: the last one sent was `0.17337024` and the editor then read
-`17.3 %`.
+That rules out one theory worth stating because the class list suggests it:
+Cortex Control does carry JUCE's `WavAudioFormatReader`, `WavAudioFormatWriter`,
+`AiffAudioFormatReader`, `ResamplingAudioSource` and `MemoryOutputStream`, which
+looks like a decode-and-re-encode pipeline. The signature says that pipeline is
+not on this path - nothing decoded is passed in.
 
-**Preset save (4)** — positional, and carries no payload at all. The device
-writes its own edit buffer into the addressed slot:
-
-```
-File{request_id: 39, type: 0,                                  // 0 = PRESET
-     folder: {key: "/media/p4/Presets/My Presets", is_factory: false,
-              files: [{index: 28, instrument: 0}]}}            44 bytes
-```
-
-**Tuner (27 + 6)** — showing the tuner is *two* messages, and the second is the
-one this stack is missing:
-
-```
-ShowTuner{action: UPDATE, request_id: 8, show: true}            6 bytes
-Tuner{action: UPDATE, request_id: 9, enable_meter: true}        6 bytes
-Tuner{action: READ}                                             2 bytes
-```
-
-Hiding it sends `ShowTuner{action: UPDATE, request_id: 10}` with `show`
-**omitted**, then `Tuner{enable_meter: false}`. Our `show_tuner` writes an
-explicit `18 00` for hide and its comment claims Cortex Control does the same;
-the capture shows Cortex Control relies on proto3 omission instead. Both reach
-the device as false, so the encoder is fine and only the comment is wrong.
-
-**Tap tempo (33)** — writes `GlobalTempo` parameter **0**, normalized:
-
-```
-GlobalTempo{action: UPDATE, params: [{index: 0,
-                                      param_values: [{float_value: 0.175}]}]}
-```
-
-The footer read `75BPM` at that moment, and `(75 - 40) / (240 - 40) = 0.175`
-exactly — an independent confirmation of `MINIMUM_TEMPO_BPM = 40` and
-`MAXIMUM_TEMPO_BPM = 240` in `qc-protocol::domain`.
-
-**But the device does not always act on it.** Parameter 0 is writable only
-while parameter 1 — the PRESET/GLOBAL switch — is GLOBAL. Measured directly:
-
-| tempo mode | write | parameter 0 afterwards |
-| --- | --- | --- |
-| PRESET (`param1 = 0.0`) | `0.175`, then `0.60` | unchanged at `0.4000` |
-| GLOBAL (`param1 = 1.0`) | `0.60` | `0.6000` |
-| GLOBAL (`param1 = 1.0`) | `0.30` | `0.3000` |
-
-No error, no reply, no acknowledgement in the PRESET case — the write is simply
-dropped. The unit here was in PRESET mode during the capture, so Cortex
-Control's tap almost certainly did nothing to the global tempo either, and its
-`75BPM` footer is its own optimistic display. Anything that wants "set the
-tempo I can hear" has to read the mode first and then choose between this and
-the preset's own TempoControl block.
-
-**ModelPreset (71)** — a type `pyquadcortex`'s enum does not have at all: its
-table stops at 70 and names 71 as the `NumberOfMessageTypes` sentinel, whereas
-CorOS 4.1.0 has 72 real types. Sent either side of a save:
-
-```
-ModelPreset{action: DELETE, request_id: 40, loaded_row: 0, loaded_column: 0}
-GridModelMeter{action: DELETE, request_id: 41, row: 0, column: 0}
-ModelPreset{action: CREATE, request_id: 42, loaded_row: 0, loaded_column: 0}
-```
-
-Read as teardown and re-subscription of the edited block's feeds; the exact
-contract is not established, only the bytes.
-
-### What this changed in our implementation
-
-Both gaps the capture exposed now have builders in `qc-protocol::commands`,
-each with a unit test asserting the bytes Cortex Control sent:
-
-- **`set_tuner_meter(enabled)`** — `TunerMessage.enable_meter` on type 6, the
-  half of Cortex Control's tuner pair we were missing. It writes that field and
-  nothing else, so it cannot clobber the user's input, mute or reference.
-- **`set_global_tempo(bpm)`** — `GlobalTempo` parameter 0, alongside the
-  existing `set_tempo_mode` on parameter 1. The read side already handled this
-  parameter correctly (`decode_tempo_settings` maps it as `40 + 200 × value`),
-  which the `0.175`/`75BPM` observation independently confirms.
-
-Neither is exposed as a gateway action yet, and both have a caveat that argues
-for care rather than haste:
-
-- The meter's payload is unverified. With nothing plugged into the unit,
-  enabling it produced no `TunerMessage` pushes at all over 12 seconds, so
-  `TunerMessage.meter`'s range and unit stay unmeasured and nothing decodes it.
-- A `set_global_tempo` action would be a silent no-op whenever the device is in
-  PRESET mode, per the table above. Exposing it means picking a behaviour —
-  switch the mode first (a global setting change the caller did not ask for),
-  or refuse and report the mode — and that is a product decision, not a
-  protocol one.
-
-Worth recording separately: `show_tuner` (type 27) is built and unit-tested in
-`commands.rs` but is **not on the live path**. `device.showTuner` is served by
-`request.rs` as MIDI CC 45 (`profile::TUNER_CONTROLLER`), and
-`DeviceCommand::ShowTuner` is constructed nowhere outside tests.
-
-## The connection handshake, captured from launch
-
-`tools/capture_cortex_hid_writes.py --wait-for-launch 60` polls for the process
-so the attach lands before the USB handshake, which an attach to an
-already-running instance can never show. Cortex Control 4.1.0 opens a session
-with 35 distinct message types, in this order:
-
-```
-52 ResetCommsBuffers  {request_id: 1, session_id: "5538f3285b154317bb1cbfedc210c2f1"}
-10 Version            READ
-10 Version            UPDATE {cortex_control_version: "4.1.0"}
-26 CPULoad            DELETE {request_id: 3}
-49 Connection         {connected: false}
-49 Connection         {connected: true}
-51 ModelRepo          READ
-35 ModuleStats        READ
-26 CPULoad            {request_id: 1}
-58 License · 21 UndoRedo · 3 IOSettings · 9 GeneralSettings · 24 ShowGigView
-14 Mode · 38 GlobalEQ · 17 MasterVolume · 4 File · 71 ModelPreset
-46 CloudProduct · 20 RecentsFavorites (x6) · 42 CompilerInhibitedModules
-15 RecallPreset · 50 NewModels · 54 PinnedModels · 19 DefaultParameters
-33 GlobalTempo · 2 SetlistPosition · 34 PresetDirty · 13 Scene
-57 BulkOperation · 60 Updater                                       all READ
-37 GridModelMeter     {row: 0..3, column: -1}                       x4
- 5 IOMeter            {request_id: 6}
-43 SystemTimeSync     UPDATE {ms_since_epoch: 1788711237617}
-18 CloudLogin         (non-protobuf body)
-61 UpdaterForward     UPDATE {updater_request_id, response: {...}}
-```
-
-Two shapes are worth copying. `Connection` is sent **false then true**, not just
-true. And a `GridModelMeter` subscription uses `column: -1` to mean "every
-column in this row", which is why four messages cover the whole grid.
-
-### What Cortex Control uses here that this stack does not
-
-`profile::LIVE_SUBSCRIPTIONS` covers 21 types plus `version_hello`, `ModelRepo`
-and `Connection`. Set against the capture, these are the gaps — all confirmed
-absent from our Rust by search, not assumed:
-
-| type | what it is | why it might matter |
-| --- | --- | --- |
-| 5 IOMeter | input/output level meters | live metering on our device surface |
-| 37 GridModelMeter | per-block meters, `column: -1` per row | gain reduction and block activity |
-| 43 SystemTimeSync | host sets the device clock | the QC has no clock of its own to trust |
-| 26 CPULoad | live DSP load | our CPU readout exists only as a screen fixture |
-| 61 UpdaterForward | host relays the firmware update check | see below |
-| 46 CloudProduct, 18 CloudLogin | Cortex Cloud plumbing | account features we do not implement |
-| 71 ModelPreset | read at connect and around edits | contract not established |
-
-**`SystemTimeSync` is now sent, but do not believe the obvious story about it.**
-The host hands the device a `ms_since_epoch` once per connection, and the
-obvious reading — that this is where saved content gets its dates — is wrong.
-Two tests on hardware say so:
-
-| test | result |
-| --- | --- |
-| import an IR with the `date` field omitted | stored with **no date at all**, whatever the clock said |
-| set the clock to 2020-01-02, then save a preset | stamped with the **true wall time**, with and without a `request_id` |
-
-So an IR's `date_ms_since_epoch` is the host's own `date` string echoed back,
-and preset dates come from a time source the sync does not override. Type 43
-answers no READ either, so the device clock cannot be inspected directly. What
-the field actually reaches — device logs, backups, the unit's own UI — is not
-established. `commands::sync_system_time` is in `initialization` for handshake
-fidelity, and its doc comment says exactly this so no caller builds on it.
-
-**The host is the device's internet connection.** `UpdaterForward` (61) carries
-a plain-JSON body the host fetched on the device's behalf:
-
-```json
-{"message":"There is no new version available.","requestId":"835eafb3-…"}
-```
-
-`ProductForward` (29), `BackupsForward` (30), `LogsForward` (31) and
-`CloudProduct` (46) are the same pattern. The QC does not reach the network
-itself for these; it asks whichever host is attached. That also explains
-`GeneralSettings.disableInternetConnectionCheck`.
-
-### One more thing the host announces
-
-`version_hello` tells the device which Cortex Control it is talking to. Ours
-says `4.0.1` (`profile::CORTEX_CONTROL_VERSION`); the shipping app now says
-`4.1.0`. Nothing observed depends on it, but it is a version gate the firmware
-could use, and it is worth knowing that we currently identify as an older build.
-
-### The device will hand over its screen and its widget tree
-
-`RemoteControlMessage` (72) has three payloads. This stack already used `mouse`
-for tap and drag, and `screenshot` is wired all the way out as
-`device.captureScreen`. The third, `graphics_tree`, was unused; asking for it
-returns the live `zenUI` scene graph as indented text, with each node's class,
-its text and the icon it draws:
-
-```
-zenUI::RootGraphicsItem
-  zenUI::GraphicsItem
-    zenUI::Grid
-      zenUI::Chain
-        zenUI::InputPortItem
-          zenUI::GraphicsItem
-            text : 'In
-1'
-        zenUI::ChainItemContainer
-          zenUI::SlotItem
-          zenUI::ModelItem
-```
-
-A real reply on the Grid screen was 5230 characters over 171 lines, and named
-`SceneIndicator`, `NavigationBar`, `NavMenuBlock`, `ModeButton`,
-`SplitCableHelper` and `PressAnimationView` among others. `commands::read_graphics_tree`
-and `responses::decode_graphics_tree` now expose it.
-
-This is the structural counterpart to the screenshot for the reconstruction work
-in `docs/qc-screen-coverage-matrix.md`: the PNG says what the device drew, and
-the tree says which widgets it thinks it drew and what text they hold - which a
-pixel diff cannot report.
-
-### How to reproduce a capture
-
-```
-python tools/capture_cortex_hid_writes.py --seconds 90 --out artifacts/cortex-hid/trace.bin
-python tools/analyze_cortex_hid_trace.py artifacts/cortex-hid/trace.bin
-```
-
-Cortex Control has no `hid.dll` imports: its Windows HID backend writes output
-reports straight through `kernel32!WriteFile` on the device handle, so
-breakpointing that one export and keeping 129-byte buffers whose first byte is
-`0x02` yields its wire traffic and nothing else.
-
-Two things that will otherwise waste time. Cortex Control's footer bar sits
-*underneath* the Windows taskbar when the window is maximized, so clicks aimed
-at TUNER or TAP hit the taskbar and the capture comes back empty — un-maximize
-first. And JUCE ignores UI Automation's `InvokePattern` here: invoking a scene
-button changes its highlight and sends nothing, so drive it with real mouse
-input and judge the result from the trace, never from the button's appearance.
+The capture also resolves the apparent float-WAV contradiction. An arbitrary
+float32 WAV previously knocked the QC's HID interface off the bus, but Cortex
+Control itself sends a very particular float32 container. Do not generalize
+from `audioFormat = 3`: the exact chunk layout, sample count, conversion, pacing,
+and message metadata must be validated together before enabling imports.
 
 ## Long host-to-device messages need pacing
 

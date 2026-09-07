@@ -1,6 +1,6 @@
 # Conversational chat and MCP
 
-QC Control has two separate AI-facing integrations. They share the same guarded
+QC Remote has two separate AI-facing integrations. They share the same guarded
 device operations, but they serve different hosts:
 
 - The Windows chat uses a native provider bridge inside the Tauri application.
@@ -23,7 +23,7 @@ provider-specific Windows Credential Manager entry; it is never returned to the
 web interface or written to settings/local storage after submission.
 
 Environment configuration remains supported: for the default OpenAI endpoint,
-start QC Control with either `QC_OPENAI_API_KEY` or `OPENAI_API_KEY` present in
+start QC Remote with either `QC_OPENAI_API_KEY` or `OPENAI_API_KEY` present in
 its process environment. The general `OPENAI_API_KEY` is sent only to
 `api.openai.com`; a custom remote provider requires `QC_OPENAI_API_KEY`. A key
 stored in Windows Credential Manager takes precedence for its exact provider
@@ -69,7 +69,7 @@ The production mobile connector is now the Rust service in
 `services/qc-remote`. ChatGPT or Claude connects to its public HTTPS Streamable
 HTTP endpoint and performs OAuth directly with the configured authorization
 server. The provider host then sends ordinary OAuth access tokens scoped to the
-QC relay; QC Control never receives ChatGPT/Claude consumer login tokens,
+QC relay; QC Remote never receives ChatGPT/Claude consumer login tokens,
 browser cookies, or provider secrets. The app that owns USB opens an outbound
 authenticated WebSocket to the relay: a background native task on Windows, or a
 foreground service on Android. Neither app opens a public inbound listener.
@@ -98,7 +98,7 @@ python -m pip install -e services/mcp-server
 python services/mcp-server/main.py --mode gateway --transport stdio
 ```
 
-The installed entry point is `ndsp-qc-mcp`. It supports stdio and loopback
+The installed entry point is `qc-remote-mcp`. It supports stdio and loopback
 Streamable HTTP. See [the MCP service README](../services/mcp-server/README.md)
 for command-line options and packaging.
 
@@ -117,7 +117,7 @@ preset's current slot and verifies the returned name; factory presets remain
 read-only.
 
 Local gateway/direct modes each own the QC session used by that MCP process, so
-close QC Control and Cortex Control before starting either mode. The supported
+close QC Remote and Cortex Control before starting either mode. The supported
 way for MCP to control a QC already owned by a running Windows or Android app is
 the authenticated public relay described above; the private desktop child
 process is intentionally not exposed for local process attachment.

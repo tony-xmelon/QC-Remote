@@ -1,8 +1,8 @@
 import { useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import { listen } from "@tauri-apps/api/event";
-import type { NativeStateFrames, PresetSnapshot } from "@ndsp-qc/client";
-import type { QcStateUpdate } from "@ndsp-qc/core";
-import { consumeQcNativeStateFrame } from "@ndsp-qc/ui";
+import type { NativeStateFrames, PresetSnapshot } from "@qc-remote/client";
+import type { QcStateUpdate } from "@qc-remote/core";
+import { consumeQcNativeStateFrame } from "@qc-remote/ui";
 
 type NativeFrame = NativeStateFrames<QcStateUpdate>["frames"][number];
 

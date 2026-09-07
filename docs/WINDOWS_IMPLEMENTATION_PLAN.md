@@ -206,7 +206,7 @@ A skin supplies:
 
 Skin packages may not define hardware commands, execute code, or access files/network. Geometry belongs to the form factor; appearance belongs to the skin. This lets one form factor have multiple visual themes without duplicating layout.
 
-Use original vector/CSS assets that evoke the physical layout. Do not redistribute Neural DSP artwork, fonts, logos, or trademarks unless permission and attribution requirements are established. Legal Notices records the unofficial nature of the app and all third-party licenses.
+Release builds must use original vector/CSS assets that evoke the physical layout. The current private test build still contains identified official-reference artwork for visual comparison; it must be removed or licensed before public distribution. Do not redistribute Neural DSP artwork, fonts, logos, or trademarks unless permission and attribution requirements are established. Legal Notices records the unofficial nature of the app and all third-party licenses.
 
 ## 5. QC screen interaction
 

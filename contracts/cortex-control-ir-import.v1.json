@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "source": {
+    "application": "Cortex Control",
+    "applicationVersion": "4.1.0",
+    "capturedAt": "2026-09-07T13:37:49Z",
+    "fixtureName": "QC-MCP-CAPTURE-IR-2.wav",
+    "fixtureSha256": "94e2d983006b01584d6dca6971f6e9040df3eb569547ca8bae02337da8da2d95",
+    "synthetic": true,
+    "containsPrivateContent": false
+  },
+  "fileMessage": {
+    "messageType": 4,
+    "payloadBytes": 4215,
+    "payloadSha256": "a32d89fd9d84425b0bc57c37a3b94fdd6badeda0de488e49c2302f5fdc36831b",
+    "action": { "name": "CREATE", "value": 0, "encoded": false },
+    "type": 1,
+    "presentFields": ["request_id", "type", "folder", "ir_payload"],
+    "absentFields": ["to_folder", "short_listing", "preset_payload", "total_bulk_create_count", "delete_from_library"],
+    "folder": {
+      "key": "2_q",
+      "isFactory": false,
+      "file": {
+        "name": "QC-MCP-CAPTURE-IR-2",
+        "date": "2026-09-07T13:37:49Z",
+        "presentFields": ["name", "date"]
+      }
+    }
+  },
+  "irPayload": {
+    "bytes": 4154,
+    "sha256": "bc25de470c21093f4df29564acf3d238b9361189f6c16974f5a1a6b41c4bf171",
+    "container": "RIFF/WAVE",
+    "riffDeclaredSize": 4192,
+    "audioFormat": 3,
+    "audioFormatName": "IEEE_FLOAT",
+    "channels": 1,
+    "sampleRate": 48000,
+    "byteRate": 192000,
+    "blockAlign": 4,
+    "bitsPerSample": 32,
+    "sampleCount": 1024,
+    "chunks": [
+      { "id": "fmt ", "size": 18, "dataOffset": 20 },
+      { "id": "fact", "size": 4, "dataOffset": 46 },
+      { "id": "data", "size": 4096, "dataOffset": 58 }
+    ]
+  }
+}

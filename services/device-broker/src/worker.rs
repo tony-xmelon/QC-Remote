@@ -17,6 +17,11 @@ use std::sync::{mpsc, Arc, Mutex, MutexGuard};
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
+// A complete IR library can publish more than a thousand frames at once. State
+// queries remain ordered behind those frames so they observe a coherent
+// decoder, but must allow enough time for that finite burst to drain.
+const STATE_DECODER_QUERY_TIMEOUT: Duration = Duration::from_secs(10);
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BrokerStatus {
@@ -119,6 +124,11 @@ const SUBSCRIBER_QUEUE_CAPACITY: usize = qc_protocol::domain::STATE_EVENT_DEFAUL
 // coalesced, but allow another request soon enough to recover within the normal
 // 45-second authoritative verification window.
 const PRESET_LIBRARY_REFRESH_COALESCE: Duration = Duration::from_secs(8);
+// The USB reader itself blocks on a permanent native RX thread. This short
+// broker-side receive poll only multiplexes completed reports with outbound
+// commands; keeping the old 50 ms wait added a full UI frame (and sometimes
+// more) before realtime HID commands could even be submitted.
+const CONNECTED_IO_POLL_MS: i32 = 5;
 const PRESET_LIBRARY_VERIFY_TIMEOUT: Duration = Duration::from_secs(45);
 
 trait RecoverPoison<T> {
@@ -317,7 +327,7 @@ impl DeviceController {
             .send(StateDecoderCommand::BlockDetails(row, column, sender))
             .map_err(|error| error.to_string())?;
         receiver
-            .recv_timeout(Duration::from_secs(2))
+            .recv_timeout(STATE_DECODER_QUERY_TIMEOUT)
             .map_err(|error| error.to_string())
     }
 
@@ -338,7 +348,7 @@ impl DeviceController {
             ))
             .map_err(|error| error.to_string())?;
         receiver
-            .recv_timeout(Duration::from_secs(2))
+            .recv_timeout(STATE_DECODER_QUERY_TIMEOUT)
             .map_err(|error| error.to_string())
     }
 
@@ -379,7 +389,7 @@ impl DeviceController {
             .send(StateDecoderCommand::ListModels(sender))
             .map_err(|error| error.to_string())?;
         receiver
-            .recv_timeout(Duration::from_secs(2))
+            .recv_timeout(STATE_DECODER_QUERY_TIMEOUT)
             .map_err(|error| error.to_string())
     }
 
@@ -445,7 +455,7 @@ impl DeviceController {
 
             let wake_at = std::cmp::min(deadline, next_request);
             match events.recv_timeout(wake_at.saturating_duration_since(Instant::now())) {
-                Ok(message) if message.message_type == 4 => {
+                Ok(message) if message.message_type == qc_protocol::profile::MESSAGE_TYPE_FILE => {
                     let Ok(Some(listing)) = decode_preset_folder(&message.payload) else {
                         continue;
                     };
@@ -572,7 +582,7 @@ impl DeviceController {
                 return folders;
             }
             match events.recv_timeout(deadline.saturating_duration_since(Instant::now())) {
-                Ok(message) if message.message_type == 4 => {}
+                Ok(message) if message.message_type == qc_protocol::profile::MESSAGE_TYPE_FILE => {}
                 Ok(_) => continue,
                 Err(_) => return self.preset_folders(),
             }
@@ -590,7 +600,7 @@ impl DeviceController {
                 return None;
             }
             match events.recv_timeout(deadline.saturating_duration_since(Instant::now())) {
-                Ok(message) if message.message_type == 4 => {}
+                Ok(message) if message.message_type == qc_protocol::profile::MESSAGE_TYPE_FILE => {}
                 Ok(_) => continue,
                 Err(_) => return self.preset_list(key),
             }
@@ -644,7 +654,7 @@ impl DeviceController {
     }
 
     pub fn send_operation(&self, operation: DeviceOperation) -> Result<(), String> {
-        let sequenced_touch = matches!(operation, DeviceOperation::ScreenTap { .. });
+        let sequenced_touch = operation_requires_paced_sequence(&operation);
         let messages = operation.try_encode().map_err(|error| error.to_string())?;
         if sequenced_touch {
             return self.send_sequence(messages, Duration::ZERO, Duration::from_millis(20));
@@ -697,7 +707,7 @@ impl DeviceController {
             ));
         }
         let state_events = self.subscribe_state_events();
-        let message = commands::read(17);
+        let message = commands::read(qc_protocol::profile::MESSAGE_TYPE_MASTER_VOLUME);
         self.request(
             message.message_type,
             message.payload,
@@ -767,6 +777,13 @@ impl DeviceController {
             }
         }
     }
+}
+
+fn operation_requires_paced_sequence(operation: &DeviceOperation) -> bool {
+    matches!(
+        operation,
+        DeviceOperation::ScreenTap { .. } | DeviceOperation::ScreenDrag { .. }
+    )
 }
 
 impl Drop for DeviceController {
@@ -847,8 +864,7 @@ impl BackupInProgress {
                         qc_protocol::profile::BACKUP_STREAM_STALL_TIMEOUT_MS,
                         self.deadline,
                     );
-                } else if !was_started
-                    && self.assembler.ignored_prefix_chunks() > previous_ignored
+                } else if !was_started && self.assembler.ignored_prefix_chunks() > previous_ignored
                 {
                     // Traffic from an earlier uncorrelated transfer is still
                     // draining. Do not inject a duplicate CREATE request into it.
@@ -1106,7 +1122,7 @@ fn ingest_incoming(
         state_generation,
         message.clone(),
     ));
-    if message.message_type == 4 {
+    if message.message_type == qc_protocol::profile::MESSAGE_TYPE_FILE {
         if let Ok(Some(listing)) = decode_preset_folder(&message.payload) {
             preset_library.lock_recover().ingest(listing);
         }
@@ -1320,7 +1336,7 @@ fn run(
                         // and deadlock the device loop against an RPC thread.
                         let initial = connected.initial_messages.clone();
                         for message in &initial {
-                            if message.message_type == 4 {
+                            if message.message_type == qc_protocol::profile::MESSAGE_TYPE_FILE {
                                 if let Ok(Some(listing)) = decode_preset_folder(&message.payload) {
                                     preset_library.lock_recover().ingest(listing);
                                 }
@@ -1359,14 +1375,14 @@ fn run(
         }
 
         if let Some(connected) = connection.as_mut() {
-            match connected.usb.read_message(50) {
+            match connected.usb.read_message(CONNECTED_IO_POLL_MS) {
                 Ok(Some(message)) => {
                     session.read_succeeded();
                     session.state_observed(
                         session_clock.elapsed().as_millis() as u64,
                         connected.synchronized,
                     );
-                    if message.message_type == qc_protocol::profile::MESSAGE_TYPE_BACKUP
+                    if message.message_type == qc_protocol::profile::MESSAGE_TYPE_LOCAL_BACKUP
                         && backup.is_some()
                     {
                         let outcome = backup
@@ -1617,12 +1633,12 @@ fn update_message(
     message: IncomingMessage,
 ) {
     let message_type = message.message_type;
-    let preset_name = if message_type == 15 {
+    let preset_name = if message_type == qc_protocol::profile::MESSAGE_TYPE_RECALL_PRESET {
         crate::usb::preset_name(&message.payload)
     } else {
         None
     };
-    let active_scene = if message_type == 13 {
+    let active_scene = if message_type == qc_protocol::profile::MESSAGE_TYPE_SCENE {
         crate::usb::scene_value(&message.payload)
     } else {
         None
@@ -1636,7 +1652,7 @@ fn update_message(
         .or_default();
     *count = count.saturating_add(1);
     status.last_message_type = Some(message_type);
-    if message_type == 15 {
+    if message_type == qc_protocol::profile::MESSAGE_TYPE_RECALL_PRESET {
         status.phase = "ready".into();
         status.detail = "Active preset synchronized".into();
         status.synchronized = true;
@@ -1655,22 +1671,44 @@ mod tests {
 
     fn backup_chunk(json: &str, last: bool) -> Vec<u8> {
         pa::LocalBackupMessage {
-            backup_json: Some(json.into()),
-            is_last_chunk: last.then_some(true),
+            backup_json: Some(pa::local_backup_message::BackupJson::BackupJson(
+                json.into(),
+            )),
+            is_last_chunk: last.then_some(pa::local_backup_message::IsLastChunk::IsLastChunk(true)),
             ..Default::default()
         }
         .encode_to_vec()
     }
 
-    fn started_backup(timeout: Duration) -> (BackupInProgress, mpsc::Receiver<Result<String, String>>) {
+    fn started_backup(
+        timeout: Duration,
+    ) -> (BackupInProgress, mpsc::Receiver<Result<String, String>>) {
         let (reply, receiver) = mpsc::channel();
         (BackupInProgress::start(timeout, reply), receiver)
     }
 
     #[test]
+    fn every_remote_touch_gesture_uses_the_paced_sequence_lane() {
+        assert!(operation_requires_paced_sequence(
+            &DeviceOperation::ScreenTap { x: 10.0, y: 20.0 }
+        ));
+        assert!(operation_requires_paced_sequence(
+            &DeviceOperation::ScreenDrag {
+                x: 10.0,
+                y: 20.0,
+                to_x: 30.0,
+                to_y: 40.0,
+            }
+        ));
+        assert!(!operation_requires_paced_sequence(&DeviceOperation::Undo));
+    }
+
+    #[test]
     fn backup_streams_on_the_device_loop_without_a_nested_read_loop() {
         let (mut backup, _receiver) = started_backup(Duration::from_secs(60));
-        assert!(backup.absorb(&backup_chunk("{\"type\":\"backup\",", false)).is_none());
+        assert!(backup
+            .absorb(&backup_chunk("{\"type\":\"backup\",", false))
+            .is_none());
         // A partial document keeps the transfer alive rather than blocking.
         assert!(matches!(backup.advance(Instant::now()), BackupStep::Wait));
         let outcome = backup.absorb(&backup_chunk("\"creator\":\"quad\"}", true));
@@ -1683,9 +1721,8 @@ mod tests {
     #[test]
     fn a_silent_device_is_re_requested_then_reported_without_splicing_attempts() {
         let (mut backup, _receiver) = started_backup(Duration::from_secs(600));
-        let overdue = Instant::now() + Duration::from_millis(
-            qc_protocol::profile::BACKUP_FIRST_CHUNK_TIMEOUT_MS + 1,
-        );
+        let overdue = Instant::now()
+            + Duration::from_millis(qc_protocol::profile::BACKUP_FIRST_CHUNK_TIMEOUT_MS + 1);
         // Nothing has started, so the request may safely be repeated.
         assert!(matches!(backup.advance(overdue), BackupStep::Rerequest));
         assert_eq!(backup.attempts, 2);
@@ -1703,7 +1740,9 @@ mod tests {
     #[test]
     fn a_stalled_document_is_terminal_and_is_never_retried() {
         let (mut backup, _receiver) = started_backup(Duration::from_secs(600));
-        assert!(backup.absorb(&backup_chunk("{\"type\":\"backup\",", false)).is_none());
+        assert!(backup
+            .absorb(&backup_chunk("{\"type\":\"backup\",", false))
+            .is_none());
         let stalled = Instant::now()
             + Duration::from_millis(qc_protocol::profile::BACKUP_STREAM_STALL_TIMEOUT_MS + 1);
         match backup.advance(stalled) {
@@ -1767,8 +1806,9 @@ mod tests {
         session.transport_opened(0);
         session.handshake_completed(1, true);
         session.liveness_probe_sent(1);
-        assert!(session
-            .liveness_probe_timed_out(1 + qc_protocol::profile::LIVENESS_REPLY_TIMEOUT_MS));
+        assert!(
+            session.liveness_probe_timed_out(1 + qc_protocol::profile::LIVENESS_REPLY_TIMEOUT_MS)
+        );
 
         // Starting a backup disarms the probe, so the device's silence while it
         // prepares the document cannot end the session.

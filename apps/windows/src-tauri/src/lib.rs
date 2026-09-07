@@ -1,4 +1,3 @@
-use base64::{engine::general_purpose::STANDARD as BASE64_STANDARD, Engine as _};
 use qc_device_runtime::{generated_gateway, generated_gateway::rpc};
 use qc_relay_client::{DeviceAdapter, DeviceError};
 use serde_json::{json, Value};
@@ -346,78 +345,6 @@ fn locate_native_broker(executable_directory: Option<&Path>) -> Option<PathBuf> 
     candidates.into_iter().find(|path| path.is_file())
 }
 
-fn locate_media_tool(
-    environment_name: &str,
-    packaged_name: &str,
-    path_name: &str,
-) -> Option<PathBuf> {
-    if let Some(path) = std::env::var_os(environment_name)
-        .map(PathBuf::from)
-        .filter(|path| path.is_file())
-    {
-        return Some(path);
-    }
-    let mut candidates = Vec::new();
-    if let Some(directory) = std::env::current_exe()
-        .ok()
-        .and_then(|path| path.parent().map(Path::to_path_buf))
-    {
-        candidates.push(directory.join(format!("{packaged_name}.exe")));
-    }
-    let binaries = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("binaries");
-    for suffix in ["", "-x86_64-pc-windows-msvc", "-x86_64-pc-windows-gnu"] {
-        candidates.push(binaries.join(format!("{packaged_name}{suffix}.exe")));
-    }
-    if let Some(path) = candidates.into_iter().find(|path| path.is_file()) {
-        return Some(path);
-    }
-    std::env::var_os("PATH").and_then(|path| {
-        std::env::split_paths(&path)
-            .map(|directory| directory.join(path_name))
-            .find(|candidate| candidate.is_file())
-    })
-}
-
-fn validate_youtube_url(value: &str) -> Result<(), ChatError> {
-    let parsed = reqwest::Url::parse(value)
-        .map_err(|_| ChatError::new("invalid_request", "The reference URL is invalid.", false))?;
-    if parsed.scheme() != "https" {
-        return Err(ChatError::new(
-            "invalid_request",
-            "The YouTube reference must use HTTPS.",
-            false,
-        ));
-    }
-    let host = parsed.host_str().unwrap_or_default().to_ascii_lowercase();
-    let allowed = host == "youtu.be"
-        || host == "youtube.com"
-        || host.ends_with(".youtube.com")
-        || host == "youtube-nocookie.com"
-        || host.ends_with(".youtube-nocookie.com");
-    if !allowed {
-        return Err(ChatError::new(
-            "invalid_request",
-            "Only public YouTube URLs are accepted by this tool.",
-            false,
-        ));
-    }
-    Ok(())
-}
-
-#[derive(serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-struct ReferenceAudioAttachment {
-    name: String,
-    media_type: String,
-    data: String,
-}
-
-#[derive(serde::Serialize)]
-struct ReferenceAudioResult {
-    detail: String,
-    attachment: ReferenceAudioAttachment,
-}
-
 #[derive(Default)]
 struct Gateway {
     process: Option<GatewayProcess>,
@@ -730,199 +657,6 @@ async fn chat_with_model(
 }
 
 #[tauri::command]
-async fn fetch_youtube_reference_audio(
-    url: String,
-    start_seconds: f64,
-    duration_seconds: f64,
-    user_confirmed_rights: bool,
-) -> Result<ReferenceAudioResult, ChatError> {
-    if !user_confirmed_rights {
-        return Err(ChatError::new(
-            "rights_confirmation_required",
-            "Confirm that you own this media or have permission to copy it before fetching an excerpt.",
-            false,
-        ));
-    }
-    validate_youtube_url(&url)?;
-    if !start_seconds.is_finite() || start_seconds < 0.0 {
-        return Err(ChatError::new(
-            "invalid_request",
-            "The excerpt start must be zero or greater.",
-            false,
-        ));
-    }
-    if !duration_seconds.is_finite() || !(5.0..=120.0).contains(&duration_seconds) {
-        return Err(ChatError::new(
-            "invalid_request",
-            "The excerpt duration must be from 5 through 120 seconds.",
-            false,
-        ));
-    }
-
-    let fetcher = locate_media_tool("QC_MEDIA_FETCH_EXECUTABLE", "qc-media-fetch", "yt-dlp.exe")
-        .ok_or_else(|| {
-            ChatError::new(
-                "media_tool_unavailable",
-                "The bundled YouTube media fetcher is unavailable.",
-                false,
-            )
-        })?;
-    let ffmpeg = locate_media_tool(
-        "QC_MEDIA_FFMPEG_EXECUTABLE",
-        "qc-media-ffmpeg",
-        "ffmpeg.exe",
-    )
-    .ok_or_else(|| {
-        ChatError::new(
-            "media_tool_unavailable",
-            "The bundled lossless media remuxer is unavailable.",
-            false,
-        )
-    })?;
-    let deno = locate_media_tool("QC_MEDIA_DENO_EXECUTABLE", "qc-media-deno", "deno.exe")
-        .ok_or_else(|| {
-            ChatError::new(
-                "media_tool_unavailable",
-                "The bundled YouTube stream resolver is unavailable.",
-                false,
-            )
-        })?;
-
-    let nonce = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_nanos();
-    let output_directory =
-        std::env::temp_dir().join(format!("qc-reference-audio-{}-{nonce}", std::process::id()));
-    fs::create_dir(&output_directory).map_err(|_| {
-        ChatError::new(
-            "media_download",
-            "Could not prepare temporary reference-audio storage.",
-            false,
-        )
-    })?;
-    let output_template = output_directory.join("reference.%(ext)s");
-    let end_seconds = start_seconds + duration_seconds;
-    let section = format!("*{start_seconds:.3}-{end_seconds:.3}");
-    let runtime = format!("deno:{}", deno.to_string_lossy());
-    let mut command = tokio::process::Command::new(fetcher);
-    command
-        .kill_on_drop(true)
-        .args([
-            "--ignore-config",
-            "--no-playlist",
-            "--no-progress",
-            "--no-warnings",
-            "--restrict-filenames",
-            "--max-filesize",
-            "32M",
-            "--format",
-            "bestaudio[acodec=opus][ext=webm]/bestaudio[acodec^=mp4a][ext=m4a]/bestaudio[ext=webm]/bestaudio[ext=m4a]",
-            "--download-sections",
-        ])
-        .arg(section)
-        .arg("--js-runtimes")
-        .arg(runtime)
-        .arg("--ffmpeg-location")
-        .arg(ffmpeg)
-        .arg("--output")
-        .arg(output_template)
-        .arg("--")
-        .arg(&url);
-
-    let output = tokio::time::timeout(std::time::Duration::from_secs(180), command.output())
-        .await
-        .map_err(|_| {
-            ChatError::new(
-                "media_download_timeout",
-                "The YouTube audio excerpt did not finish within three minutes.",
-                true,
-            )
-        })?
-        .map_err(|_| {
-            ChatError::new(
-                "media_download",
-                "The YouTube media fetcher could not start.",
-                true,
-            )
-        })?;
-    if !output.status.success() {
-        let _ = fs::remove_dir_all(&output_directory);
-        return Err(ChatError::new(
-            "media_download",
-            "The public YouTube audio excerpt could not be fetched. The video may be unavailable, restricted, or require sign-in.",
-            true,
-        ));
-    }
-
-    let media_path = fs::read_dir(&output_directory)
-        .map_err(|_| {
-            ChatError::new(
-                "media_download",
-                "The downloaded excerpt could not be inspected.",
-                false,
-            )
-        })?
-        .filter_map(Result::ok)
-        .map(|entry| entry.path())
-        .find(|path| {
-            matches!(
-                path.extension()
-                    .and_then(|value| value.to_str())
-                    .map(str::to_ascii_lowercase)
-                    .as_deref(),
-                Some("webm" | "m4a")
-            )
-        })
-        .ok_or_else(|| {
-            ChatError::new(
-                "media_download",
-                "The fetcher produced no supported Opus/WebM or AAC/M4A audio file.",
-                true,
-            )
-        })?;
-    let media = fs::read(&media_path).map_err(|_| {
-        ChatError::new(
-            "media_download",
-            "The downloaded audio excerpt could not be read.",
-            false,
-        )
-    })?;
-    let _ = fs::remove_dir_all(&output_directory);
-    if media.is_empty() || media.len() > 32 * 1024 * 1024 {
-        return Err(ChatError::new(
-            "media_download",
-            "The downloaded audio excerpt is empty or exceeds the 32 MB chat attachment limit.",
-            false,
-        ));
-    }
-    let extension = media_path
-        .extension()
-        .and_then(|value| value.to_str())
-        .unwrap_or("webm")
-        .to_ascii_lowercase();
-    let media_type = if extension == "m4a" {
-        "audio/m4a"
-    } else {
-        "audio/webm"
-    };
-    Ok(ReferenceAudioResult {
-        detail: format!(
-            "Fetched and losslessly remuxed a {:.1}-second YouTube reference excerpt from {:.1}s as {} ({:.1} MB); it is attached for direct model analysis.",
-            duration_seconds,
-            start_seconds,
-            if extension == "m4a" { "AAC/M4A" } else { "Opus/WebM" },
-            media.len() as f64 / 1_048_576.0,
-        ),
-        attachment: ReferenceAudioAttachment {
-            name: format!("youtube-reference-{:.0}-{:.0}.{extension}", start_seconds, end_seconds),
-            media_type: media_type.into(),
-            data: BASE64_STANDARD.encode(media),
-        },
-    })
-}
-
-#[tauri::command]
 async fn chat_quota(state: State<'_, ChatBridge>) -> Result<chat::ChatQuota, ChatError> {
     chat::quota(&state).await
 }
@@ -1089,7 +823,7 @@ async fn pair_public_relay(
         .pair(
             &endpoint,
             &pairing_code,
-            device_name.as_deref().unwrap_or("QC Control on Windows"),
+            device_name.as_deref().unwrap_or("QC Remote on Windows"),
             relay_adapter(&app),
         )
         .await
@@ -1460,7 +1194,7 @@ fn export_diagnostics(report: Value) -> Result<Value, String> {
     let timestamp = chrono_free_timestamp();
     let Some(path) = rfd::FileDialog::new()
         .add_filter("QC Diagnostics", &["json"])
-        .set_file_name(format!("QC Control Diagnostics {timestamp}.json"))
+        .set_file_name(format!("QC Remote Diagnostics {timestamp}.json"))
         .save_file()
     else {
         return Ok(json!({ "cancelled": true }));
@@ -1470,7 +1204,7 @@ fn export_diagnostics(report: Value) -> Result<Value, String> {
     Ok(json!({
         "cancelled": false,
         "path": path.to_string_lossy(),
-        "name": path.file_name().and_then(|value| value.to_str()).unwrap_or("QC Control Diagnostics.json")
+        "name": path.file_name().and_then(|value| value.to_str()).unwrap_or("QC Remote Diagnostics.json")
     }))
 }
 
@@ -1486,15 +1220,6 @@ fn chrono_free_timestamp() -> String {
 #[allow(clippy::items_after_test_module)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn reference_audio_accepts_only_https_youtube_hosts() {
-        assert!(validate_youtube_url("https://youtu.be/abc123").is_ok());
-        assert!(validate_youtube_url("https://music.youtube.com/watch?v=abc123").is_ok());
-        assert!(validate_youtube_url("http://youtube.com/watch?v=abc123").is_err());
-        assert!(validate_youtube_url("https://youtube.com.example.test/watch?v=abc123").is_err());
-        assert!(validate_youtube_url("https://example.test/watch?v=abc123").is_err());
-    }
 
     #[test]
     fn external_browser_links_are_exactly_allowlisted() {
@@ -1713,7 +1438,6 @@ pub fn run() {
             select_google_project,
             disconnect_google_oauth,
             chat_with_model,
-            fetch_youtube_reference_audio,
             chat_quota,
             antigravity_models,
             test_chat_connection,
@@ -1721,5 +1445,5 @@ pub fn run() {
             cancel_chat
         ])
         .run(tauri::generate_context!())
-        .expect("error while running QC Control");
+        .expect("error while running QC Remote");
 }

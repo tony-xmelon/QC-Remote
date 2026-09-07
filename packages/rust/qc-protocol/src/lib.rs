@@ -1,4 +1,4 @@
-//! Native protocol primitives shared by QC Control's Windows host and broker.
+//! Native protocol primitives shared by QC Remote's Windows host and broker.
 //!
 //! The protobuf schema and framing are derived from the MIT-licensed
 //! `pyquadcortex` 0.40.0 reference implementation. See

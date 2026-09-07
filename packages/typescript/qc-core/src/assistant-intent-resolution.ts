@@ -1,4 +1,4 @@
-import type { GridBlock, PresetSnapshot } from "@ndsp-qc/client";
+import type { GridBlock, PresetSnapshot } from "@qc-remote/client";
 import { type AssistantIntent, assistantHelp, assistantIntentToolName, formatSnapshotSummary } from "./assistant.ts";
 import { assistantIntentCommand, type QcAssistantDeviceCommand } from "./assistant-execution.ts";
 import { assistantAccessPermitsTool, type AssistantAccessMode } from "./assistant-tools.ts";

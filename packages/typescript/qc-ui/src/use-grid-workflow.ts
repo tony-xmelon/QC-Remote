@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
-import type { BlockDetails, DeviceActionResult, GatewayTransport, GridBlock, ModelEntry, PresetSnapshot } from "@ndsp-qc/client";
-import { demoBlockDetails, sceneLetter } from "@ndsp-qc/core";
+import type { BlockDetails, DeviceActionResult, GatewayTransport, GridBlock, ModelEntry, PresetSnapshot } from "@qc-remote/client";
+import { demoBlockDetails, sceneLetter } from "@qc-remote/core";
 import type { BlockEditorSessionController } from "./use-block-editor-session";
 import type { DeviceHistoryEntry } from "./use-device-history";
 import type { DeviceMutationWorkflowOptions } from "./workflow-options";

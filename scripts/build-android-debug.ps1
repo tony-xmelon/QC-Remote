@@ -65,6 +65,17 @@ try {
             throw "Android APK is missing the shared Rust runtime for $nativeLibrary."
         }
     }
+    foreach ($legalAsset in @(
+        "assets/public/legal/THIRD_PARTY-NOTICES.md",
+        "assets/public/legal/THIRD_PARTY-LICENSE-INVENTORY.json",
+        "assets/public/legal/THIRD_PARTY-LICENSE-TEXTS.txt",
+        "assets/public/legal/THIRD_PARTY-SOURCE-OFFER.md",
+        "assets/public/legal/COMMUNITY-PROTOCOL-LICENSE.txt"
+    )) {
+        if ($legalAsset -notin $packagedEntries) {
+            throw "Android APK is missing required legal material: $legalAsset"
+        }
+    }
 }
 finally {
     $apkArchive.Dispose()

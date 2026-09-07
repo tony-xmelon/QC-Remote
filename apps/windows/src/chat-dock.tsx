@@ -1,6 +1,6 @@
 import { type ClipboardEventHandler, type ReactNode, type RefObject } from "react";
-import type { ConversationMessage } from "@ndsp-qc/core";
-import { AssistantAttachmentList, CollapsibleAssistantResult, QcUiIcon } from "@ndsp-qc/ui";
+import type { ConversationMessage } from "@qc-remote/core";
+import { AssistantAttachmentList, CollapsibleAssistantResult, QcUiIcon } from "@qc-remote/ui";
 import type { ChatAttachment } from "./model-chat";
 
 const attachmentTypes = "image/jpeg,image/png,image/webp,image/gif,audio/mpeg,audio/wav,audio/aiff,audio/aac,audio/ogg,audio/flac,audio/m4a,audio/opus,audio/webm,video/mp4,video/mpeg,video/quicktime,video/avi,video/webm,video/wmv,video/3gpp,application/pdf,.txt,.md,.markdown,.csv,.json,.xml,.yaml,.yml,.log,.js,.jsx,.ts,.tsx,.css,.html,.htm,.py,.rs,.toml";

@@ -515,7 +515,15 @@ class PyQuadCortexDevice:
         # reads, keepalive, and reconnection readiness happen off the Python/UI
         # threads. Source/dev environments without the broker retain the direct
         # transport as a compatibility fallback.
-        self._qc = connect_native() if native_broker_enabled() else pyquadcortex.connect()
+        use_native_broker = native_broker_enabled()
+        self._qc = connect_native() if use_native_broker else pyquadcortex.connect()
+        if not use_native_broker:
+            # The Rust broker includes SystemTimeSync in its initialization
+            # plan. Keep the development-only direct Python fallback wire-
+            # compatible without making ordinary tests or imports require a QC.
+            from .protocol_extensions import sync_system_time
+
+            sync_system_time(self._qc, int(time.time() * 1000))
         self._connected_at = _utc_now()
         self._remember_position(self._read_position_state())
         return self.connection_state("Quad Cortex handshake complete")
@@ -576,6 +584,11 @@ class PyQuadCortexDevice:
             raise RuntimeError(f"{method} requires the native Rust device broker in compatibility mode.")
         return request(method, params or {})
 
+    def _native_gateway_request(self) -> Any | None:
+        transport = getattr(self._require_session(), "_t", None)
+        request = getattr(transport, "gateway_request", None)
+        return request if callable(request) else None
+
     def get_global_eq(self): return self._native_gateway("device.globalEq")
     def set_global_eq_bypassed(self, bypassed): return self._native_gateway("device.setGlobalEqBypassed", {"bypassed": bypassed})
     def set_global_eq_band(self, band, gain, frequency, q, filter_type, enabled):
@@ -588,6 +601,54 @@ class PyQuadCortexDevice:
     def set_tempo_metronome(self, led_enabled, volume_db, running, pan, time_signature, subdivision, sound, routing, beats):
         return self._native_gateway("device.setTempoMetronome", {"ledEnabled": led_enabled, "volumeDb": volume_db, "running": running, "pan": pan, "timeSignature": time_signature, "subdivision": subdivision, "sound": sound, "routing": routing, "beats": beats})
     def set_tempo_mode(self, mode): return self._native_gateway("device.setTempoMode", {"mode": mode})
+    def set_tuner_meter(self, enabled: bool, confirm_tuner_activation: bool) -> dict[str, Any]:
+        self._confirm_tuner_activation(confirm_tuner_activation)
+        if not isinstance(enabled, bool):
+            raise ValueError("enabled must be a boolean")
+        request = self._native_gateway_request()
+        if request is not None:
+            return request("device.setTunerMeter", {
+                "enabled": enabled, "confirmTunerActivation": True,
+            })
+        from .protocol_extensions import send_tuner_meter
+
+        send_tuner_meter(self._require_session(), enabled)
+        state = "enabled" if enabled else "disabled"
+        return {"detail": f"Tuner meter {state}; the tuner is now invisibly engaged"}
+
+    def set_global_tempo(self, bpm: int, expected_mode: str, expected_global_bpm: int) -> dict[str, Any]:
+        request = self._native_gateway_request()
+        if request is not None:
+            return request("device.setGlobalTempo", {
+                "bpm": bpm, "expectedMode": expected_mode,
+                "expectedGlobalBpm": expected_global_bpm,
+            })
+        from .protocol_extensions import read_global_tempo, send_global_tempo
+
+        if isinstance(bpm, bool) or not isinstance(bpm, int) or not MIN_TEMPO_BPM <= bpm <= MAX_TEMPO_BPM:
+            raise ValueError(f"bpm must be an integer from {MIN_TEMPO_BPM} through {MAX_TEMPO_BPM}")
+        if expected_mode not in ("PRESET", "GLOBAL"):
+            raise ValueError("expectedMode must be PRESET or GLOBAL")
+        if (
+            isinstance(expected_global_bpm, bool)
+            or not isinstance(expected_global_bpm, int)
+            or not MIN_TEMPO_BPM <= expected_global_bpm <= MAX_TEMPO_BPM
+        ):
+            raise ValueError(
+                f"expectedGlobalBpm must be an integer from {MIN_TEMPO_BPM} through {MAX_TEMPO_BPM}"
+            )
+        before = read_global_tempo(self._require_session())
+        if before != {"mode": expected_mode, "globalBpm": expected_global_bpm}:
+            raise RuntimeError("Global tempo changed on the Quad Cortex. Refresh and retry.")
+        if expected_mode != "GLOBAL":
+            raise RuntimeError("The Quad Cortex must already be in GLOBAL tempo mode.")
+        send_global_tempo(self._require_session(), bpm)
+        for _ in range(4):
+            after = read_global_tempo(self._require_session(), timeout=2.5)
+            if after == {"mode": "GLOBAL", "globalBpm": bpm}:
+                return {"detail": f"Global tempo set to {bpm} BPM and verified"}
+            time.sleep(0.08)
+        raise RuntimeError("Global tempo was sent, but authoritative readback did not confirm it.")
     def get_looper_status(self): return self._native_gateway("device.looperStatus")
     def control_looper(self, command, value): return self._native_gateway("device.controlLooper", {"command": command, "value": value})
     def list_recents(self): return self._native_gateway("device.recents")
@@ -1127,6 +1188,14 @@ class PyQuadCortexDevice:
         qc = self._require_session()
         return _png_response(_pyquadcortex_method(qc, "capture_screen")())
 
+    def graphics_tree(self) -> dict[str, Any]:
+        request = self._native_gateway_request()
+        if request is not None:
+            return request("device.graphicsTree", {})
+        from .remote_control import capture_graphics_tree
+
+        return {"tree": capture_graphics_tree(self._require_session())}
+
     def tap_screen(self, x: float, y: float) -> dict[str, Any]:
         for name, value, upper in (("x", x, 800.0), ("y", y, 480.0)):
             if (
@@ -1139,6 +1208,12 @@ class PyQuadCortexDevice:
         qc = self._require_session()
         _pyquadcortex_method(qc, "tap_screen")(x, y)
         return {"detail": f"Tapped the Quad Cortex screen at ({x}, {y})"}
+
+    def swipe_screen(self, x: float, y: float, to_x: float, to_y: float) -> dict[str, Any]:
+        from .remote_control import swipe_screen
+
+        swipe_screen(self._require_session(), x, y, to_x, to_y)
+        return {"detail": f"Swiped the Quad Cortex screen from ({x}, {y}) to ({to_x}, {to_y})"}
 
     def save_preset_as(
         self,
@@ -2948,7 +3023,7 @@ class PyQuadCortexDevice:
         if abs(actual - expected_value) > 1:
             raise RuntimeError(
                 f"Master Volume changed on the Quad Cortex: expected {expected_value}, found {actual}. "
-                "The current device value has been restored in QC Control."
+                "The current device value has been restored in QC Remote."
             )
         if actual == value:
             return {"detail": f"Master Volume is already {value}", "snapshot": self.snapshot()}

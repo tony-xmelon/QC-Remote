@@ -5,6 +5,20 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      build_distributables:
+        description: Build signed private-test or public-release artifacts
+        required: true
+        default: false
+        type: boolean
+      distribution_scope:
+        description: Intended distribution scope for generated artifacts
+        required: true
+        default: private-test
+        type: choice
+        options:
+          - private-test
+          - public-release
 
 concurrency:
   group: software-parity-${{ github.ref }}
@@ -87,6 +101,7 @@ jobs:
 
   android-package:
     name: Android APK and native Rust libraries
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_distributables }}
     runs-on: windows-latest
     timeout-minutes: 30
 
@@ -147,6 +162,10 @@ jobs:
       - name: Install JavaScript dependencies
         run: npm ci
 
+      - name: Enforce public-release legal gate
+        if: ${{ inputs.distribution_scope == 'public-release' }}
+        run: npm run legal:check
+
       - name: Restore registered Android signing identity
         shell: pwsh
         env:
@@ -169,8 +188,8 @@ jobs:
         with:
           name: qc-control-android-${{ github.sha }}
           path: |
-            artifacts/android/QC-Control-Android-*.apk
-            artifacts/android/QC-Control-Android-*.apk.source.json
+            artifacts/android/QC-Remote-Android-*.apk
+            artifacts/android/QC-Remote-Android-*.apk.source.json
             artifacts/release-manifest.json
             artifacts/sbom.cdx.json
           if-no-files-found: error
@@ -178,6 +197,7 @@ jobs:
 
   windows-package:
     name: Windows installer and native Rust broker
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_distributables }}
     runs-on: windows-latest
     timeout-minutes: 45
 
@@ -209,6 +229,10 @@ jobs:
       - name: Install JavaScript dependencies
         run: npm ci
 
+      - name: Enforce public-release legal gate
+        if: ${{ inputs.distribution_scope == 'public-release' }}
+        run: npm run legal:check
+
       - name: Build Windows installer from the parity-approved commit
         shell: pwsh
         run: ./scripts/build-windows-installer.ps1 -SkipPreflight
@@ -218,8 +242,8 @@ jobs:
         with:
           name: qc-control-windows-${{ github.sha }}
           path: |
-            artifacts/windows/QC-Control-Windows-*.exe
-            artifacts/windows/QC-Control-Windows-*.exe.source.json
+            artifacts/windows/QC-Remote-Windows-*.exe
+            artifacts/windows/QC-Remote-Windows-*.exe.source.json
             artifacts/release-manifest.json
             artifacts/sbom.cdx.json
           if-no-files-found: error
@@ -227,6 +251,7 @@ jobs:
 
   release-bundle:
     name: Same-commit Windows and Android release bundle
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_distributables }}
     needs: [software-parity, ui-conformance, android-package, windows-package]
     runs-on: windows-latest
     timeout-minutes: 10
@@ -255,8 +280,8 @@ jobs:
       - name: Regenerate and verify combined release provenance
         shell: pwsh
         run: |
-          $windows = @(Get-ChildItem artifacts/windows/QC-Control-Windows-*.exe -File | ForEach-Object FullName)
-          $android = @(Get-ChildItem artifacts/android/QC-Control-Android-*.apk -File | ForEach-Object FullName)
+          $windows = @(Get-ChildItem artifacts/windows/QC-Remote-Windows-*.exe -File | ForEach-Object FullName)
+          $android = @(Get-ChildItem artifacts/android/QC-Remote-Android-*.apk -File | ForEach-Object FullName)
           if ($windows.Count -ne 1 -or $android.Count -ne 1) { throw "Combined release bundle requires exactly one Windows and one Android candidate." }
           node tools/release-provenance.mjs $windows[0] $android[0]
           node tools/release-candidates.mjs verify
@@ -266,10 +291,10 @@ jobs:
         with:
           name: qc-control-release-bundle-${{ github.sha }}
           path: |
-            artifacts/windows/QC-Control-Windows-*.exe
-            artifacts/windows/QC-Control-Windows-*.exe.source.json
-            artifacts/android/QC-Control-Android-*.apk
-            artifacts/android/QC-Control-Android-*.apk.source.json
+            artifacts/windows/QC-Remote-Windows-*.exe
+            artifacts/windows/QC-Remote-Windows-*.exe.source.json
+            artifacts/android/QC-Remote-Android-*.apk
+            artifacts/android/QC-Remote-Android-*.apk.source.json
             artifacts/release-manifest.json
             artifacts/sbom.cdx.json
           if-no-files-found: error

@@ -10,7 +10,7 @@ use std::cell::UnsafeCell;
 use std::collections::HashMap;
 use std::io::Read;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{mpsc, Arc};
+use std::sync::{mpsc, Arc, Mutex};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use thiserror::Error;
@@ -118,10 +118,10 @@ enum HidReadEvent {
 /// when the command thread writes a report.
 struct SharedWindowsHid(UnsafeCell<HidDevice>);
 
-// Safety: exactly one RX thread calls read_timeout and exactly one broker
-// thread calls write. The selected windows-native backend touches disjoint
+// Safety: exactly one RX thread calls read_timeout and exactly one TX thread
+// calls write. The selected windows-native backend touches disjoint
 // read_state/write_state RefCells; read_pending is RX-only and the native
-// handle is immutable. HidIo joins RX before releasing the handle.
+// handle is immutable. HidIo joins both lanes before releasing the handle.
 unsafe impl Sync for SharedWindowsHid {}
 
 impl SharedWindowsHid {
@@ -136,17 +136,20 @@ impl SharedWindowsHid {
 }
 
 struct HidIo {
-    device: Arc<SharedWindowsHid>,
     receiver: mpsc::Receiver<HidReadEvent>,
+    write_sender: Option<mpsc::SyncSender<Vec<u8>>>,
+    telemetry: Arc<Mutex<UsbTelemetry>>,
     stopping: Arc<AtomicBool>,
     overflowed: Arc<AtomicBool>,
     reader: Option<JoinHandle<()>>,
+    writer: Option<JoinHandle<()>>,
 }
 
 // A complete maximum-sized logical frame fits in this queue. The queue is
 // deliberately finite: a stalled command lane must never turn sustained USB
 // input into unbounded process memory.
 const HID_READ_QUEUE_CAPACITY: usize = profile::MAX_FRAME_BYTES / framing::CHUNK_SIZE + 2;
+const HID_WRITE_QUEUE_CAPACITY: usize = profile::MAX_FRAME_BYTES / framing::CHUNK_SIZE + 2;
 
 impl HidIo {
     fn start(device: HidDevice) -> Result<Self, UsbError> {
@@ -195,17 +198,64 @@ impl HidIo {
                 }
             })
             .map_err(|error| UsbError::Hid(format!("could not start HID reader: {error}")))?;
+        let (write_sender, write_receiver) =
+            mpsc::sync_channel::<Vec<u8>>(HID_WRITE_QUEUE_CAPACITY);
+        let writer_device = Arc::clone(&device);
+        let telemetry = Arc::new(Mutex::new(UsbTelemetry::default()));
+        let writer_telemetry = Arc::clone(&telemetry);
+        let writer = match thread::Builder::new()
+            .name("qc-native-hid-tx".into())
+            .spawn(move || {
+                while let Ok(report) = write_receiver.recv() {
+                    let started = Instant::now();
+                    let completed = writer_device.write(&report).is_ok();
+                    let duration_ms = started.elapsed().as_millis().min(u64::MAX as u128) as u64;
+                    let mut telemetry = writer_telemetry
+                        .lock()
+                        .unwrap_or_else(|poisoned| poisoned.into_inner());
+                    telemetry.record_write(duration_ms, completed);
+                }
+            }) {
+            Ok(writer) => writer,
+            Err(error) => {
+                stopping.store(true, Ordering::Release);
+                let _ = reader.join();
+                return Err(UsbError::Hid(format!(
+                    "could not start HID writer: {error}"
+                )));
+            }
+        };
         Ok(Self {
-            device,
             receiver,
+            write_sender: Some(write_sender),
+            telemetry,
             stopping,
             overflowed,
             reader: Some(reader),
+            writer: Some(writer),
         })
     }
 
-    fn write(&self, report: &[u8]) -> Result<usize, String> {
-        self.device.write(report)
+    fn write(&self, report: Vec<u8>) -> Result<(), String> {
+        self.write_sender
+            .as_ref()
+            .ok_or_else(|| "native HID writer stopped".to_string())?
+            .send(report)
+            .map_err(|_| "native HID writer stopped".to_string())
+    }
+
+    fn record_message(&self, message_type: u16) {
+        self.telemetry
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .record_message(message_type);
+    }
+
+    fn telemetry(&self) -> UsbTelemetry {
+        self.telemetry
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .clone()
     }
 
     fn read(&self, timeout_ms: i32) -> Result<Option<Vec<u8>>, UsbError> {
@@ -234,22 +284,25 @@ impl HidIo {
 impl Drop for HidIo {
     fn drop(&mut self) {
         self.stopping.store(true, Ordering::Release);
+        self.write_sender.take();
         if let Some(reader) = self.reader.take() {
             let _ = reader.join();
+        }
+        if let Some(writer) = self.writer.take() {
+            let _ = writer.join();
         }
     }
 }
 
 pub struct QcUsb {
     // Rust drops fields in declaration order. Keep the exclusive I/O owner
-    // ahead of HidApi so shutdown joins RX and releases USB first.
+    // ahead of HidApi so shutdown joins both I/O lanes and releases USB first.
     io: HidIo,
     _api: HidApi,
     frames: FrameAssembler,
     frame_report_count: usize,
     next_sequence: u64,
     flight: FlightRecorder,
-    telemetry: UsbTelemetry,
 }
 
 impl QcUsb {
@@ -268,7 +321,6 @@ impl QcUsb {
             frame_report_count: 0,
             next_sequence: 1,
             flight,
-            telemetry: UsbTelemetry::default(),
         })
     }
 
@@ -391,7 +443,7 @@ impl QcUsb {
     ) -> Result<bool, UsbError> {
         while Instant::now() < deadline {
             if let Some(message) = self.read_message(read_timeout_ms)? {
-                let is_preset = message.message_type == 15;
+                let is_preset = message.message_type == profile::MESSAGE_TYPE_RECALL_PRESET;
                 record_initial(initial_messages, message_counts, latest_messages, message);
                 if is_preset {
                     return Ok(true);
@@ -405,28 +457,14 @@ impl QcUsb {
         let reports = framing::encode(message_type, &payload);
         self.flight.outbound(message_type, reports.len());
         for report in reports {
-            // The QC accepts the report then stalls its status stage, so the
-            // return value is intentionally ignored. Device loss is detected
-            // only by reads.
-            let started = Instant::now();
-            let result = self.io.write(&report);
-            self.telemetry.record_write(
-                started.elapsed().as_millis().min(u64::MAX as u128) as u64,
-                result.is_ok(),
-            );
-            if message_type == profile::MESSAGE_TYPE_BACKUP {
-                self.flight.event(format!(
-                    "backup-write-{}-{}ms",
-                    if result.is_ok() {
-                        "completed"
-                    } else {
-                        "stalled"
-                    },
-                    started.elapsed().as_millis()
-                ));
+            // Windows reports the QC's accepted status-stage STALL only after
+            // the data was delivered. Keep that wait on the permanent TX lane
+            // so it cannot block report ingestion or the command dispatcher.
+            if self.io.write(report.to_vec()).is_err() {
+                self.flight.event("hid-writer-stopped");
             }
         }
-        self.telemetry.record_message(message_type);
+        self.io.record_message(message_type);
     }
 
     pub fn send_command(&mut self, message: OutboundMessage) {
@@ -434,7 +472,7 @@ impl QcUsb {
     }
 
     pub fn telemetry(&self) -> UsbTelemetry {
-        self.telemetry.clone()
+        self.io.telemetry()
     }
 
     pub fn read_message(&mut self, timeout_ms: i32) -> Result<Option<IncomingMessage>, UsbError> {
@@ -514,6 +552,7 @@ impl Drop for QcUsb {
 #[cfg(test)]
 mod tests {
     use super::{record_initial, IncomingMessage, UsbTelemetry, MAX_INITIAL_MESSAGES};
+    use qc_protocol::profile;
     use std::collections::HashMap;
 
     fn message(sequence: u64, message_type: u16, payload: &[u8]) -> IncomingMessage {
@@ -531,18 +570,37 @@ mod tests {
         // A preset-folder listing arrives as one message per folder. Keeping
         // only the newest of each type left the library with one folder.
         for (sequence, folder) in [(1_u64, b"A"), (2, b"B"), (3, b"C")] {
-            record_initial(&mut initial, &mut counts, &mut latest, message(sequence, 4, folder));
+            record_initial(
+                &mut initial,
+                &mut counts,
+                &mut latest,
+                message(sequence, 4, folder),
+            );
         }
-        record_initial(&mut initial, &mut counts, &mut latest, message(4, 15, b"preset"));
+        record_initial(
+            &mut initial,
+            &mut counts,
+            &mut latest,
+            message(4, 15, b"preset"),
+        );
 
         assert_eq!(counts.get(&4), Some(&3));
         let folders: Vec<&[u8]> = initial
             .iter()
-            .filter(|entry| entry.message_type == 4)
+            .filter(|entry| entry.message_type == profile::MESSAGE_TYPE_FILE)
             .map(|entry| entry.payload.as_slice())
             .collect();
-        assert_eq!(folders, vec![b"A".as_slice(), b"B".as_slice(), b"C".as_slice()]);
-        assert_eq!(initial.iter().map(|entry| entry.sequence).collect::<Vec<_>>(), vec![1, 2, 3, 4]);
+        assert_eq!(
+            folders,
+            vec![b"A".as_slice(), b"B".as_slice(), b"C".as_slice()]
+        );
+        assert_eq!(
+            initial
+                .iter()
+                .map(|entry| entry.sequence)
+                .collect::<Vec<_>>(),
+            vec![1, 2, 3, 4]
+        );
         // The per-type cache still answers "newest of this type".
         assert_eq!(latest.get(&4).map(|entry| entry.sequence), Some(3));
     }
@@ -551,7 +609,12 @@ mod tests {
     fn initialization_burst_is_bounded() {
         let (mut initial, mut counts, mut latest) = (Vec::new(), HashMap::new(), HashMap::new());
         for sequence in 0..(MAX_INITIAL_MESSAGES as u64 + 50) {
-            record_initial(&mut initial, &mut counts, &mut latest, message(sequence, 4, b"f"));
+            record_initial(
+                &mut initial,
+                &mut counts,
+                &mut latest,
+                message(sequence, 4, b"f"),
+            );
         }
         assert_eq!(initial.len(), MAX_INITIAL_MESSAGES);
         assert_eq!(counts.get(&4), Some(&(MAX_INITIAL_MESSAGES + 50)));

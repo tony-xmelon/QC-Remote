@@ -113,6 +113,7 @@ class ModeCycle(TypedDict):
 class TempoSettings(TypedDict):
     mode: NotRequired[Literal["PRESET", "GLOBAL"]]
     bpm: NotRequired[int]
+    globalBpm: NotRequired[int]
     ledEnabled: NotRequired[bool]
     volumeDb: NotRequired[float]
     running: NotRequired[bool]

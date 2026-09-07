@@ -76,4 +76,4 @@ python -m build services/mcp-server
 ```
 
 To validate the wheels in a clean environment, install the generated gateway
-client wheel first, then the MCP server wheel, and run `ndsp-qc-mcp --help`.
+client wheel first, then the MCP server wheel, and run `qc-remote-mcp --help`.

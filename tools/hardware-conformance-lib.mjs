@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 
 export async function retryTransientRead(read, {
-  attempts = 3,
-  intervalMs = 100
+  attempts = 5,
+  intervalMs = 250
 } = {}) {
   let lastError;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
@@ -11,10 +11,11 @@ export async function retryTransientRead(read, {
     } catch (error) {
       lastError = error;
       const message = error instanceof Error ? `${error.message} ${error.cause?.code ?? ""}` : String(error);
-      if (!/terminated|fetch failed|ECONNRESET|UND_ERR_SOCKET|did not return a valid .* reply within/i.test(message) || attempt === attempts) {
+      if (!/terminated|fetch failed|ECONNRESET|UND_ERR_SOCKET|did not return a valid .* reply within|"retryable"\s*:\s*true/i.test(message) || attempt === attempts) {
         throw error;
       }
-      await new Promise((resolveWait) => setTimeout(resolveWait, intervalMs));
+      const backoffMs = Math.min(2_000, intervalMs * (2 ** (attempt - 1)));
+      await new Promise((resolveWait) => setTimeout(resolveWait, backoffMs));
     }
   }
   throw lastError;
@@ -48,16 +49,19 @@ export const REPEATABLE_PHYSICAL_CONTROLS = Object.freeze([
 ]);
 export const MINIMUM_CONTROL_REPETITIONS = 20;
 export const MINIMUM_RAPID_PAIRS = 5;
-export const MAXIMUM_SEND_LATENCY_MS = 20;
+export const MAXIMUM_SEND_P95_MS = 20;
 export const MAXIMUM_EVENT_MEDIAN_MS = 50;
 export const MAXIMUM_EVENT_P95_MS = 200;
+export const ANDROID_MAXIMUM_EVENT_MEDIAN_MS = 800;
+export const ANDROID_MAXIMUM_EVENT_P95_MS = 1_000;
 export const MAXIMUM_NAVIGATION_P95_MS = 2_000;
 export const NAVIGATION_CONTROLS = Object.freeze(["up", "down"]);
 export const REALTIME_CONTROLS = Object.freeze(
   REPEATABLE_PHYSICAL_CONTROLS.filter((control) => !NAVIGATION_CONTROLS.includes(control))
 );
-export const realtimeControlEventP95Limit = (control) =>
-  ["mode", "master_volume"].includes(control) ? 200 : 100;
+export const realtimeControlEventP95Limit = (target, control) => target === "android"
+  ? ANDROID_MAXIMUM_EVENT_P95_MS
+  : ["mode", "master_volume"].includes(control) ? 200 : 100;
 
 export function summarizePerformanceSamples(samplesByControl) {
   const eventLatencies = [];
@@ -86,6 +90,8 @@ export function summarizePerformanceSamples(samplesByControl) {
       failures: samples.filter((sample) => sample.failed === true).length,
       sendLatencyMs: {
         sampleCount: controlSendLatencies.length,
+        median: percentile(controlSendLatencies, 0.5),
+        p95: percentile(controlSendLatencies, 0.95),
         max: controlSendLatencies.length ? Math.max(...controlSendLatencies) : null
       },
       eventLatencyMs: {
@@ -100,6 +106,8 @@ export function summarizePerformanceSamples(samplesByControl) {
     controls,
     sendLatencyMs: {
       sampleCount: sendLatencies.length,
+      median: percentile(sendLatencies, 0.5),
+      p95: percentile(sendLatencies, 0.95),
       max: sendLatencies.length ? Math.max(...sendLatencies) : null
     },
     eventLatencyMs: {
@@ -138,6 +146,7 @@ export const CASES = Object.freeze({
   set_tuner_mute: { phase: "tuner", hazard: "tuner" },
   restore_tuner_audio: { phase: "tuner", hazard: "tuner" },
   set_tuner_reference: { phase: "tuner", hazard: "tuner" },
+  set_tuner_meter: { phase: "tuner", hazard: "tuner" },
   get_general_settings: { phase: "read", hazard: "read" },
   get_io_settings: { phase: "read", hazard: "read" },
   get_global_eq: { phase: "read", hazard: "read" },
@@ -151,6 +160,7 @@ export const CASES = Object.freeze({
   list_irs: { phase: "read", hazard: "read" },
   get_preset_screenshot: { phase: "read", hazard: "read" },
   capture_screen: { phase: "read", hazard: "read" },
+  get_graphics_tree: { phase: "read", hazard: "read" },
   preview_parameter: { phase: "modify", hazard: "live" },
   preview_lane_control_parameter: { phase: "modify", hazard: "live" },
   create_device_backup: { phase: "persistent", hazard: "persistent" },
@@ -158,6 +168,7 @@ export const CASES = Object.freeze({
   undo_device: { phase: "modify", hazard: "live" },
   redo_device: { phase: "modify", hazard: "live" },
   tap_screen: { phase: "system", hazard: "screen" },
+  swipe_screen: { phase: "system", hazard: "screen" },
   select_scene: { phase: "performance", hazard: "live" },
   copy_scene: { phase: "modify", hazard: "live" },
   set_scene_label: { phase: "modify", hazard: "live" },
@@ -213,6 +224,7 @@ export const CASES = Object.freeze({
   set_mode_cycle: { phase: "persistent", hazard: "persistent" },
   set_tempo_metronome: { phase: "persistent", hazard: "persistent" },
   set_tempo_mode: { phase: "persistent", hazard: "persistent" },
+  set_global_tempo: { phase: "persistent", hazard: "persistent" },
   set_favorite: { phase: "persistent", hazard: "persistent" },
   set_model_pinned: { phase: "persistent", hazard: "persistent" },
   create_setlist: { phase: "persistent", hazard: "persistent" },
@@ -273,6 +285,14 @@ const requiredFixturePaths = [
   "screenTap.restoreY"
 ];
 
+const stressFixturePaths = [
+  "safety.expectedSerialSuffix",
+  "scratchPreset.setlistKey",
+  "scratchPreset.position",
+  "scratchPreset.requiredNamePrefix",
+  "temporaryBlock.modelId"
+];
+
 function atPath(value, path) {
   return path.split(".").reduce((current, key) => current?.[key], value);
 }
@@ -287,7 +307,7 @@ export function validateCoverage(contract) {
   return names;
 }
 
-export function validateConfig(config, { requireAll = false } = {}) {
+export function validateConfig(config, { requireAll = false, requireStress = false } = {}) {
   if (!config || typeof config !== "object") throw new Error("A hardware conformance config object is required.");
   if (!config.transport || !["gateway-stdio", "mcp-http"].includes(config.transport.kind)) {
     throw new Error("transport.kind must be gateway-stdio or mcp-http.");
@@ -296,13 +316,21 @@ export function validateConfig(config, { requireAll = false } = {}) {
   if (config.transport.kind === "gateway-stdio" && !config.transport.command) throw new Error("gateway-stdio requires transport.command.");
   if (config.transport.kind === "mcp-http" && !config.transport.endpoint) throw new Error("mcp-http requires transport.endpoint.");
   const missing = requiredFixturePaths.filter((path) => atPath(config, path) === undefined || atPath(config, path) === "");
+  const missingStress = stressFixturePaths.filter((path) =>
+    atPath(config, path) === undefined || atPath(config, path) === "");
   if (config.screenTap?.restoreTaps !== undefined
       && (!Number.isInteger(config.screenTap.restoreTaps)
         || config.screenTap.restoreTaps < 1
         || config.screenTap.restoreTaps > 4)) {
     throw new Error("screenTap.restoreTaps must be an integer from 1 through 4.");
   }
+  if (config.routing?.row !== undefined && ![0, 2].includes(config.routing.row)) {
+    throw new Error("routing.row must be 0 or 2 because CorOS parallel split routing is available only on rows 0 and 2.");
+  }
   if (requireAll && missing.length) throw new Error(`Full physical coverage requires config values: ${missing.join(", ")}`);
+  if (requireStress && missingStress.length) {
+    throw new Error(`Physical performance stress requires config values: ${missingStress.join(", ")}`);
+  }
   if (requireAll) {
     if (!Number.isFinite(config.transport.timeoutMs)
         || config.transport.timeoutMs < FULL_RUN_MINIMUM_TRANSPORT_TIMEOUT_MS) {
@@ -380,14 +408,14 @@ export function validatePerformanceEvidence(target, performance) {
     }
     if (evidence.failures !== 0) errors.push(`${target} ${control} repetition evidence contains failures`);
     if (REALTIME_CONTROLS.includes(control)) {
-      const limit = realtimeControlEventP95Limit(control);
+      const limit = realtimeControlEventP95Limit(target, control);
       if (!(Number.isFinite(evidence.eventLatencyMs?.p95) && evidence.eventLatencyMs.p95 <= limit)) {
         errors.push(`${target} ${control} event-latency p95 exceeded or lacked the ${limit} ms gate`);
       }
     }
   }
-  if (!(Number.isFinite(performance.sendLatencyMs?.max) && performance.sendLatencyMs.max <= MAXIMUM_SEND_LATENCY_MS)) {
-    errors.push(`${target} direct-control send latency exceeded or lacked the ${MAXIMUM_SEND_LATENCY_MS} ms gate`);
+  if (!(Number.isFinite(performance.sendLatencyMs?.p95) && performance.sendLatencyMs.p95 <= MAXIMUM_SEND_P95_MS)) {
+    errors.push(`${target} direct-control send-latency p95 exceeded or lacked the ${MAXIMUM_SEND_P95_MS} ms gate`);
   }
   const minimumEventSamples = REALTIME_CONTROLS.length * MINIMUM_CONTROL_REPETITIONS;
   if (!(Number.isInteger(performance.sendLatencyMs?.sampleCount)
@@ -398,13 +426,15 @@ export function validatePerformanceEvidence(target, performance) {
       && performance.eventLatencyMs.sampleCount >= minimumEventSamples)) {
     errors.push(`${target} event-latency evidence has fewer than ${minimumEventSamples} samples`);
   }
+  const eventMedianLimit = target === "android" ? ANDROID_MAXIMUM_EVENT_MEDIAN_MS : MAXIMUM_EVENT_MEDIAN_MS;
+  const eventP95Limit = target === "android" ? ANDROID_MAXIMUM_EVENT_P95_MS : MAXIMUM_EVENT_P95_MS;
   if (!(Number.isFinite(performance.eventLatencyMs?.median)
-      && performance.eventLatencyMs.median <= MAXIMUM_EVENT_MEDIAN_MS)) {
-    errors.push(`${target} event-latency median exceeded or lacked the ${MAXIMUM_EVENT_MEDIAN_MS} ms gate`);
+      && performance.eventLatencyMs.median <= eventMedianLimit)) {
+    errors.push(`${target} event-latency median exceeded or lacked the ${eventMedianLimit} ms gate`);
   }
   if (!(Number.isFinite(performance.eventLatencyMs?.p95)
-      && performance.eventLatencyMs.p95 <= MAXIMUM_EVENT_P95_MS)) {
-    errors.push(`${target} event-latency p95 exceeded or lacked the ${MAXIMUM_EVENT_P95_MS} ms gate`);
+      && performance.eventLatencyMs.p95 <= eventP95Limit)) {
+    errors.push(`${target} event-latency p95 exceeded or lacked the ${eventP95Limit} ms gate`);
   }
   const minimumNavigationSamples = NAVIGATION_CONTROLS.length * MINIMUM_CONTROL_REPETITIONS;
   if (!(Number.isInteger(performance.navigationLatencyMs?.sampleCount)

@@ -1,4 +1,4 @@
-import { SHARED_QC_ASSISTANT_TOOLS, assistantAccessPermitsTool, assistantSystemInstructions, booleanAssistantArgument, isReadOnlyQcAssistantTool, numericAssistantArgument, type AssistantAccessMode, type AssistantToolCall, type AssistantToolDefinition } from "@ndsp-qc/core";
+import { SHARED_QC_ASSISTANT_TOOLS, assistantAccessPermitsTool, assistantSystemInstructions, booleanAssistantArgument, isReadOnlyQcAssistantTool, numericAssistantArgument, type AssistantAccessMode, type AssistantToolCall, type AssistantToolDefinition } from "@qc-remote/core";
 
 export type ChatRole = "user" | "assistant";
 export type ChatAttachment = { name: string; mediaType: string; data: string };
@@ -68,12 +68,12 @@ export const chatProviderDefaults: Record<ChatProviderId, ChatProviderDefinition
   "openai-responses": {
     label: "OpenAI API", shortLabel: "OpenAI", model: "gpt-5-mini", baseUrl: "https://api.openai.com/v1", endpointEditable: true,
     credentialLabel: "OpenAI project API key", setupUrl: "https://platform.openai.com/api-keys", pricingUrl: "https://openai.com/api/pricing/",
-    guidance: "OpenAI API billing is separate from ChatGPT. Create a project key, paste it once, and QC Control stores it in Windows Credential Manager."
+    guidance: "OpenAI API billing is separate from ChatGPT. Create a project key, paste it once, and QC Remote stores it in Windows Credential Manager."
   },
   "antigravity-cli": {
     label: "Google AI subscription (Antigravity)", shortLabel: "Google subscription", model: "gemini-3.7-flash-medium", baseUrl: "https://antigravity.google", endpointEditable: false,
     credentialLabel: "Google account", setupUrl: "https://antigravity.google/docs/cli/install/", pricingUrl: "https://antigravity.google/pricing",
-    guidance: "Uses Google's supported Antigravity CLI and the Google account signed in there. Eligible Google AI subscription quota applies; no API key is needed."
+    guidance: "Uses a separately installed Antigravity CLI and the account signed in there. Availability, eligibility, quota, and terms are controlled by that provider; QC Remote does not supply an account or API key."
   },
   "gemini-openai": {
     label: "Google Gemini API", shortLabel: "Gemini", model: "gemini-3.1-flash-lite", baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai", endpointEditable: false,
@@ -104,7 +104,7 @@ export const chatCredentialInputProps = {
 
 export function chatCredentialStatus(settings?: ChatSettings): string {
   if (!settings) return "Credential status unavailable";
-  if (settings.provider === "antigravity-cli") return settings.available ? "Official Antigravity CLI installed · Google-account sign-in" : settings.detail ?? "Antigravity CLI unavailable";
+  if (settings.provider === "antigravity-cli") return settings.available ? "Separate Antigravity CLI available · provider-managed sign-in" : settings.detail ?? "Antigravity CLI unavailable";
   if (settings.provider === "gemini-openai" && settings.oauthConfigured) {
     return settings.oauthProject
       ? `Google connected · quota project ${settings.oauthProject}`
@@ -126,16 +126,14 @@ const boolean = { type: "boolean" };
 
 export const qcChatTools: ChatTool[] = [
   ...SHARED_QC_ASSISTANT_TOOLS,
-  { name: "fetch_youtube_reference_audio", description: "Download an authorized excerpt from a public YouTube video as its original Opus/WebM or AAC/M4A audio, without playback or re-encoding, and attach it for analysis. Call this only after the user explicitly confirms they own the media or have permission to copy it.", inputSchema: objectSchema({ url: string, start_seconds: number, duration_seconds: number, user_confirmed_rights: boolean }, ["url", "start_seconds", "duration_seconds", "user_confirmed_rights"]) },
   { name: "save_current_unsaved_preset", description: "Save the active Unsaved preset into its current empty device slot under the supplied name. Use this when the user explicitly asks to save the current Unsaved preset; the app supplies the trusted setlist and slot.", inputSchema: objectSchema({ name: string }, ["name"]) }
 ];
 
 export function isReadOnlyChatTool(name: string): boolean {
-  return isReadOnlyQcAssistantTool(name) || name === "fetch_youtube_reference_audio";
+  return isReadOnlyQcAssistantTool(name);
 }
 
 export function assistantAccessPermitsChatTool(mode: AssistantAccessMode, name: string): boolean {
-  if (name === "fetch_youtube_reference_audio") return true;
   if (name === "save_current_unsaved_preset") return mode === "modify" || mode === "full";
   return assistantAccessPermitsTool(mode, name);
 }
@@ -143,7 +141,7 @@ export function assistantAccessPermitsChatTool(mode: AssistantAccessMode, name: 
 export function chatInstructions(): string {
   return assistantSystemInstructions([
     "When the active preset is named Unsaved and the user asks to save it in that current slot, use save_current_unsaved_preset rather than rename_current_preset or save_preset_as.",
-    "When the user supplies a YouTube URL for tone analysis and explicitly confirms they own the media or have permission to copy it, use fetch_youtube_reference_audio. Select only the useful excerpt (normally 15–30 seconds). Never set user_confirmed_rights true without that explicit confirmation."
+    "Analyze only media files the user attaches directly. Do not download, extract, or request copies from streaming-service URLs."
   ]);
 }
 

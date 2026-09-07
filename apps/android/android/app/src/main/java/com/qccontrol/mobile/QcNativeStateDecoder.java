@@ -179,8 +179,8 @@ final class QcNativeStateDecoder implements AutoCloseable {
         return one("readCurrentPreset", new JSObject().put("requestId", requestId));
     }
 
-    EncodedMessage screenSwipeCommand(int x, int y, int toX, int toY) throws Exception {
-        return one("screenSwipe", new JSObject()
+    List<EncodedMessage> screenSwipeCommands(int x, int y, int toX, int toY) throws Exception {
+        return commands("screenSwipe", new JSObject()
             .put("x", x).put("y", y).put("toX", toX).put("toY", toY));
     }
 
@@ -249,6 +249,19 @@ final class QcNativeStateDecoder implements AutoCloseable {
     String gatewayWriteReadbackMethod(String method) {
         String readMethod = nativeGatewayWriteReadbackMethod(method);
         return readMethod.isEmpty() ? null : readMethod;
+    }
+
+    String gatewayWritePreflightMethod(String method) {
+        String readMethod = nativeGatewayWritePreflightMethod(method);
+        return readMethod.isEmpty() ? null : readMethod;
+    }
+
+    boolean gatewayWritePreflightMatches(String method, JSONObject params, JSONObject response) {
+        return nativeGatewayWritePreflightMatches(method, params.toString(), response.toString()) == 1;
+    }
+
+    JSONObject composeGlobalTempoSettings(JSONObject global, JSONObject preset) throws Exception {
+        return new JSONObject(nativeComposeGlobalTempoSettings(global.toString(), preset.toString()));
     }
 
     PlannedGatewayWorkflow gatewayWorkflow(String method, JSObject args) throws Exception {
@@ -430,6 +443,10 @@ final class QcNativeStateDecoder implements AutoCloseable {
         long deadlineMs, long observedAtMs, long nowMs);
     private static native int nativeGatewayReadbackMatches(
         String method, String paramsJson, String responseJson);
+    private static native String nativeComposeGlobalTempoSettings(String globalJson, String presetJson);
+    private static native int nativeGatewayWritePreflightMatches(
+        String method, String paramsJson, String responseJson);
+    private static native String nativeGatewayWritePreflightMethod(String method);
     private static native String nativeGatewayWriteReadbackMethod(String method);
     private static native byte[] nativeEncodeFrame(int messageType, byte[] payload);
     private static native byte[] nativePushReport(long handle, byte[] report);

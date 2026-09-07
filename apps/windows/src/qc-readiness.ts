@@ -1,4 +1,4 @@
-import type { ConnectionState, RuntimeStatus } from "@ndsp-qc/client";
+import type { ConnectionState, RuntimeStatus } from "@qc-remote/client";
 
 /**
  * `gatewayAvailable` only means the local Rust process answered. Newer

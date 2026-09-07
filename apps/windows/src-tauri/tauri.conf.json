@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "QC Control",
+  "productName": "QC Remote",
   "version": "0.1.97",
   "identifier": "com.tonyxmelon.qcvoicecontrol",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "QC Control",
+        "title": "QC Remote",
         "width": 1440,
         "height": 820,
         "minWidth": 920,
@@ -34,19 +34,25 @@
       "nsis"
     ],
     "externalBin": [
-      "binaries/qc-device-broker",
-      "binaries/qc-media-fetch",
-      "binaries/qc-media-ffmpeg",
-      "binaries/qc-media-deno"
+      "binaries/qc-device-broker"
     ],
-    "shortDescription": "Safe desktop control for Neural DSP Quad Cortex",
-    "longDescription": "Unofficial Windows controller for a connected Neural DSP Quad Cortex with guarded live controls, workspaces, typed commands, and explicit device-save confirmation.",
+    "shortDescription": "Independent companion app for Quad Cortex devices",
+    "longDescription": "Unofficial, independently developed Windows controller for a connected Neural DSP Quad Cortex with guarded live controls, workspaces, typed commands, and explicit device-save confirmation. Not affiliated with or endorsed by Neural DSP Technologies Oy.",
     "windows": {
       "nsis": {
         "installMode": "currentUser",
-        "startMenuFolder": "QC Control",
+        "startMenuFolder": "QC Remote",
         "installerHooks": "./windows/hooks.nsh"
       }
+    },
+    "copyright": "Publisher and copyright ownership details will be identified before public release.",
+    "category": "Music",
+    "resources": {
+      "../../../THIRD_PARTY-NOTICES.md": "legal/THIRD_PARTY-NOTICES.md",
+      "../../../legal/THIRD_PARTY-LICENSE-INVENTORY.json": "legal/THIRD_PARTY-LICENSE-INVENTORY.json",
+      "../../../legal/THIRD_PARTY-LICENSE-TEXTS.txt": "legal/THIRD_PARTY-LICENSE-TEXTS.txt",
+      "../../../legal/THIRD_PARTY-SOURCE-OFFER.md": "legal/THIRD_PARTY-SOURCE-OFFER.md",
+      "../../../legal/COMMUNITY-PROTOCOL-LICENSE.txt": "legal/COMMUNITY-PROTOCOL-LICENSE.txt"
     }
   }
 }

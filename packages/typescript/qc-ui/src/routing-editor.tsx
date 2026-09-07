@@ -1,5 +1,5 @@
-import { QC_GRID_COLUMNS, type PresetSnapshot } from "@ndsp-qc/client";
-import { inputRouteOptions, outputRouteOptions, updateRouteDraft, type RouteDrafts } from "@ndsp-qc/core";
+import { QC_GRID_COLUMNS, type PresetSnapshot } from "@qc-remote/client";
+import { inputRouteOptions, outputRouteOptions, updateRouteDraft, type RouteDrafts } from "@qc-remote/core";
 import type { Dispatch, SetStateAction } from "react";
 
 export interface RoutingEditorProps {

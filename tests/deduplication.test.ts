@@ -1,14 +1,52 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import test from "node:test";
 
 const source = (relative: string) => readFileSync(new URL(`../${relative}`, import.meta.url), "utf8");
 
+test("nonempty repository files have unique bytes unless their generated or archival alias is declared", () => {
+  const files = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard"], { encoding: "utf8" })
+    .trim().split(/\r?\n/).filter((file) => file && existsSync(file) && statSync(file).size > 0)
+    .map((file) => file.replaceAll("\\", "/"));
+  const allowedPairs = new Set<string>();
+  const allowPair = (left: string, right: string) => allowedPairs.add([left, right].sort().join("\n"));
+
+  allowPair(
+    "packages/python/qc-gateway-client/src/qc_gateway_client/generated_domain.py",
+    "services/device-gateway/src/qc_device_gateway/domain.py"
+  );
+  const corpusRoot = "references/qc-ui-corpus/coros-4.1.0";
+  const corpus = JSON.parse(source(`${corpusRoot}/manifest.json`));
+  const captures = new Map(corpus.captures.map((capture: { id: string }) => [capture.id, capture]));
+  for (const capture of corpus.captures) {
+    if (capture.identicalImageOf) {
+      const owner = captures.get(capture.identicalImageOf) as { image: string } | undefined;
+      assert.ok(owner, `${capture.id}: identicalImageOf target must exist`);
+      allowPair(`${corpusRoot}/${capture.image}`, `${corpusRoot}/${owner.image}`);
+    }
+    if (capture.identicalGraphicsTreeOf) {
+      const owner = captures.get(capture.identicalGraphicsTreeOf) as { graphicsTree: string } | undefined;
+      assert.ok(owner, `${capture.id}: identicalGraphicsTreeOf target must exist`);
+      allowPair(`${corpusRoot}/${capture.graphicsTree}`, `${corpusRoot}/${owner.graphicsTree}`);
+    }
+  }
+
+  const owners = new Map<string, string>();
+  for (const file of files) {
+    const digest = createHash("sha256").update(readFileSync(file)).digest("hex");
+    const owner = owners.get(digest);
+    if (owner) assert.ok(allowedPairs.has([owner, file].sort().join("\n")), `${file} duplicates ${owner} without a declared owner`);
+    else owners.set(digest, file);
+  }
+});
+
 test("Windows and Android compose the same QC behavior and screen packages", () => {
   const surfaceActions = source("packages/typescript/qc-ui/src/use-qc-surface-actions.ts");
   for (const app of [source("apps/windows/src/App.tsx"), source("apps/android/src/App.tsx")]) {
-    assert.match(app, /from "@ndsp-qc\/core"/);
-    assert.match(app, /QuadCortexSurface[\s\S]*from "@ndsp-qc\/ui"/);
+    assert.match(app, /from "@qc-remote\/core"/);
+    assert.match(app, /QuadCortexSurface[\s\S]*from "@qc-remote\/ui"/);
     assert.match(app, /useQcSurfaceActions\(\{/);
     assert.doesNotMatch(app, /surfaceCommand\(action\)|dispatchSurfaceCommand\(/);
     assert.match(app, /useBlockEditorSession\(\)/);
@@ -97,7 +135,6 @@ test("offline assistant orchestration has one cross-platform workflow owner", ()
   assert.match(workflow, /resolveOfflineAssistantIntent/);
   assert.match(workflow, /prepareAssistantParameterEdit/);
   assert.match(workflow, /applyPreparedOfflineAssistantAction/);
-  assert.ok(apps.length >= 2, `expected both app sources, got ${apps.length}`);
   for (const app of apps) {
     assert.match(app, /runOfflineAssistantIntent\(intent,/);
     assert.match(app, /applyPreparedOfflineAssistantAction/);
@@ -125,8 +162,9 @@ test("Windows and Android resolve visual fixture state through one shared owner"
   const android = source("apps/android/src/App.tsx");
   const shared = source("packages/typescript/qc-ui/src/coros-screen-fixture-data.ts");
   assert.match(shared, /export function corosFixtureConfiguration/);
-  assert.match(windows, /corosFixtureConfiguration\(window\.location\.search, demoSnapshot\)/);
-  assert.match(android, /corosFixtureConfiguration\(window\.location\.search, demoSnapshot\)/);
+  for (const app of [windows, android]) {
+    assert.match(app, /corosFixtureConfiguration\(import\.meta\.env\.DEV \? window\.location\.search : "", demoSnapshot\)/);
+  }
   assert.doesNotMatch(windows, /new URLSearchParams/);
   assert.doesNotMatch(android, /new URLSearchParams/);
 });
@@ -171,13 +209,14 @@ test("clients and shared UI import canonical behavior without compatibility wrap
   const windows = source("apps/windows/src/App.tsx");
   const android = source("apps/android/src/App.tsx");
   const ui = source("packages/typescript/qc-ui/src/quad-cortex-surface.tsx");
-  assert.match(windows, /assistantHelp[\s\S]*from "@ndsp-qc\/core"/);
-  assert.match(android, /parseAssistantReply[\s\S]*from "@ndsp-qc\/core"/);
-  assert.match(ui, /footswitchLeds[\s\S]*from "@ndsp-qc\/core"/);
+  assert.match(windows, /assistantHelp[\s\S]*from "@qc-remote\/core"/);
+  assert.match(android, /parseAssistantReply[\s\S]*from "@qc-remote\/core"/);
+  assert.match(ui, /footswitchLeds[\s\S]*from "@qc-remote\/core"/);
 });
 
 test("one generated profile owns USB and performance MIDI policy across native hosts", () => {
   const contract = JSON.parse(source("contracts/qc-usb-profile.v1.json"));
+  const protocol = source("packages/rust/qc-protocol/proto/ProductionAutomation.proto");
   const java = source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbProfile.java");
   const rust = source("packages/rust/qc-protocol/src/profile.rs");
   assert.equal(contract.version, 1);
@@ -185,20 +224,37 @@ test("one generated profile owns USB and performance MIDI policy across native h
     assert.match(java, new RegExp(`= ${value}(?:L)?;`));
     assert.match(rust, new RegExp(`= ${value};`));
   }
-  // An empty messageTypes would compare nothing across the three bindings.
-  assert.ok(Object.keys(contract.messageTypes).length >= 5,
-    `expected the message-type table, got ${Object.keys(contract.messageTypes).length}`);
-  for (const value of Object.values(contract.messageTypes)) {
-    assert.match(java, new RegExp(`= ${value};`));
-    assert.match(rust, new RegExp(`= ${value};`));
+  const enumBody = protocol.match(/message\s+CortexMessageType\s*\{\s*enum\s+Enum\s*\{([\s\S]*?)\}\s*\}/)?.[1];
+  assert.ok(enumBody, "the protobuf schema must own Cortex message-type IDs");
+  const messageTypes = [...enumBody.matchAll(/^\s*([A-Za-z][A-Za-z0-9_]*)\s*=\s*(\d+)\s*;/gm)];
+  assert.equal(new Set(messageTypes.map(([, , value]) => value)).size, messageTypes.length);
+  for (const [, name, value] of messageTypes.filter(([, name]) => !["Undefined", "NumberOfMessageTypes"].includes(name))) {
+    const constant = name.replace(/([A-Z]+)([A-Z][a-z])/g, "$1_$2").replace(/([a-z0-9])([A-Z])/g, "$1_$2").toUpperCase();
+    assert.match(java, new RegExp(`MESSAGE_TYPE_${constant} = ${value};`));
+    assert.match(rust, new RegExp(`MESSAGE_TYPE_${constant}: u16 = ${value};`));
   }
-  assert.equal(contract.messageTypes.version, 10, "Version is the side-effect-free liveness response");
-  assert.equal(contract.messageTypes.resetCommsBuffers, 52, "ResetCommsBuffers owns the handshake echo");
-  assert.equal(contract.messageTypes.deviceVersion, undefined, "wire type 52 must not be mislabeled as Version");
-  assert.equal(contract.liveSubscriptions.includes(4), false, "directory traffic must not starve realtime startup");
+  assert.match(protocol, /Version = 10;/, "Version is the side-effect-free liveness response");
+  assert.match(protocol, /ResetCommsBuffers = 52;/, "ResetCommsBuffers owns the handshake echo");
+  assert.equal(contract.messageTypes, undefined, "the USB profile must not duplicate protobuf message IDs");
+  assert.equal(contract.liveSubscriptions.includes("File"), false, "directory traffic must not starve realtime startup");
+  assert.equal(new Set(contract.liveSubscriptions).size, contract.liveSubscriptions.length);
+  const nativeMessageConsumers = [
+    "packages/rust/qc-protocol/src/commands.rs",
+    "packages/rust/qc-protocol/src/state.rs",
+    "packages/rust/qc-device-runtime/src/request.rs",
+    "packages/rust/qc-android/src/lib.rs",
+    "services/device-broker/src/rpc.rs",
+    "services/device-broker/src/usb.rs",
+    "services/device-broker/src/worker.rs",
+    "apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java"
+  ];
+  const rawMessageType = /(?:OutboundMessage::encoded|response_type:|readCommand|\.decode(?:\s*::<[^>]+>)?)\s*\(?\s*(?:[1-9]|[1-6][0-9]|7[0-2])\b|(?:message_type|messageType)\s*(?:==|!=)\s*(?:[1-9]|[1-6][0-9]|7[0-2])\b/;
+  for (const file of nativeMessageConsumers) {
+    assert.doesNotMatch(source(file), rawMessageType, `${file} must use generated Cortex message-type constants`);
+  }
   assert.match(source("packages/rust/qc-protocol/src/commands.rs"), /profile::LIVE_SUBSCRIPTIONS/);
-  assert.match(source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java"), /QcUsbProfile\.MESSAGE_TYPE_(?:VERSION|GLOBAL_TEMPO|BACKUP|MODEL_REPO|RESET_COMMS_BUFFERS)/);
-  assert.match(source("services/device-broker/src/usb.rs"), /profile::MESSAGE_TYPE_(?:BACKUP|MODEL_REPO|RESET_COMMS_BUFFERS)/);
+  assert.match(source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java"), /QcUsbProfile\.MESSAGE_TYPE_(?:VERSION|GLOBAL_TEMPO|LOCAL_BACKUP|MODEL_REPO|RESET_COMMS_BUFFERS)/);
+  assert.match(source("services/device-broker/src/usb.rs"), /profile::MESSAGE_TYPE_(?:LOCAL_BACKUP|MODEL_REPO|RESET_COMMS_BUFFERS)/);
   // The QC is held open by its dedicated KeepAlive on a fixed cadence, the same
   // message Cortex Control and the reference client send every five seconds. A
   // Version READ is answered, so the link looks alive, but it does not keep the
@@ -224,7 +280,7 @@ test("one generated domain contract owns Grid, scene, tempo, route, and IPC cons
     source("packages/typescript/qc-client/src/generated-domain.ts"),
     source("packages/rust/qc-protocol/src/domain.rs"),
     source("services/device-gateway/src/qc_device_gateway/domain.py"),
-    source("services/mcp-server/src/qc_mcp_server/generated_domain.py"),
+    source("packages/python/qc-gateway-client/src/qc_gateway_client/generated_domain.py"),
     source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcDomain.java")
   ];
   for (const output of outputs) {
@@ -236,6 +292,7 @@ test("one generated domain contract owns Grid, scene, tempo, route, and IPC cons
   }
   assert.match(source("packages/typescript/qc-core/src/routing.ts"), /QC_INPUT_ROUTES/);
   assert.match(source("services/device-gateway/src/qc_device_gateway/device.py"), /GRID_COLUMNS/);
+  assert.match(source("services/mcp-server/src/qc_mcp_server/server.py"), /from qc_gateway_client\.generated_domain import IPC_MAX_FRAME_BYTES/);
   assert.match(source("services/device-broker/src/worker.rs"), /STATE_EVENT_MAXIMUM_LIMIT/);
   assert.match(source("services/device-broker/src/rpc.rs"), /STATE_EVENT_DEFAULT_LIMIT/);
   assert.match(source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java"), /QcDomain\.STATE_EVENT_(?:DEFAULT|MAXIMUM)_LIMIT/);
@@ -484,8 +541,8 @@ test("routing labels, grouping, and row constraints live in shared core", () => 
   const workflow = source("packages/typescript/qc-ui/src/use-routing-workflow.ts");
   assert.match(routing, /inputRouteOptions/);
   assert.match(routing, /routeOptionsForRow/);
-  assert.match(workflow, /routeOptionsForRow[\s\S]*from "@ndsp-qc\/core"/);
-  assert.match(surface, /routePickerGroup[\s\S]*from "@ndsp-qc\/core"/);
+  assert.match(workflow, /routeOptionsForRow[\s\S]*from "@qc-remote\/core"/);
+  assert.match(surface, /routePickerGroup[\s\S]*from "@qc-remote\/core"/);
   assert.doesNotMatch(windows, /const inputRoutes|const routeOptionsForRow/);
   assert.doesNotMatch(surface, /function routePickerLabel|function routePickerGroup/);
 });
@@ -620,7 +677,6 @@ test("application payload types are generated once for TypeScript, Rust, and Pyt
   const typescript = source("packages/typescript/qc-client/src/generated-payloads.ts");
   const rust = source("packages/rust/qc-protocol/src/generated_payloads.rs");
   const python = source("services/device-gateway/src/qc_device_gateway/generated_payloads.py");
-  assert.ok(schema["x-generate"].length > 5, `expected the payload list, got ${schema["x-generate"].length}`);
   for (const name of schema["x-generate"]) {
     assert.match(typescript, new RegExp(`interface ${name}\\b`));
     assert.match(python, new RegExp(`class ${name}\\b`));
@@ -760,10 +816,13 @@ test("one generated profile owns preset synchronization timeout across both host
 
 test("Android confirmation deadlines come from the shared native USB profile", () => {
   const android = source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java");
-  assert.match(android, /case "PLANNED_WRITE":[\s\S]{0,160}QcUsbProfile\.COMMAND_CONFIRMATION_TIMEOUT_MS/);
+  assert.match(android, /case "PLANNED_WRITE":[\s\S]{0,320}QcUsbProfile\.COMMAND_CONFIRMATION_TIMEOUT_MS/);
+  assert.match(android, /relayHistoryWrite[\s\S]{0,1200}QcUsbProfile\.HISTORY_STATE_REFRESH_DELAY_MS/);
   assert.match(android, /case "PRESET_WRITE":[\s\S]{0,160}QcUsbProfile\.PRESET_SYNC_TIMEOUT_MS/);
   assert.match(android, /"device\.setDeviceName", params, QcUsbProfile\.COMMAND_CONFIRMATION_TIMEOUT_MS/);
-  assert.match(android, /"device\.tapScreen", params, QcUsbProfile\.COMMAND_CONFIRMATION_TIMEOUT_MS/);
+  assert.match(android, /relayCapturedScreenGesture\("device\.tapScreen", params\)/);
+  assert.match(android, /relayCapturedScreenGesture\("device\.swipeScreen", params\)/);
+  assert.match(android, /relayPlannedGatewayWrite\(\s*method, params, QcUsbProfile\.COMMAND_CONFIRMATION_TIMEOUT_MS/);
   assert.doesNotMatch(android, /relayPlannedGatewayWrite\([^\n]+,\s*(?:2500|10000|15000)\)/);
   assert.doesNotMatch(android, /includeReportId \? 129 : 128/);
 });

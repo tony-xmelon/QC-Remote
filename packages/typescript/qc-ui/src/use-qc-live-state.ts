@@ -1,5 +1,5 @@
 import { useCallback, useRef } from "react";
-import type { QcStateUpdate } from "@ndsp-qc/core";
+import type { QcStateUpdate } from "@qc-remote/core";
 import type { BlockEditorSessionController } from "./use-block-editor-session";
 
 export interface QcLiveStateOptions {

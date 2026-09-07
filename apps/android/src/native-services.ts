@@ -1,8 +1,8 @@
 import { registerPlugin, type PluginListenerHandle } from "@capacitor/core";
-import { createGatewayClientTransport, type GatewayTransport, type NativeStateFrame, type PresetSnapshot } from "@ndsp-qc/client";
-import { createQcGatewayTransport, type AssistantAccessMode, type PublicRelayPort, type PublicRelayState, type PublicRelayStatus, type QcDeviceTransport, type QcStateUpdate } from "@ndsp-qc/core";
+import { createGatewayClientTransport, type GatewayTransport, type NativeStateFrame, type PresetSnapshot } from "@qc-remote/client";
+import { createQcGatewayTransport, type AssistantAccessMode, type PublicRelayPort, type PublicRelayState, type PublicRelayStatus, type QcDeviceTransport, type QcStateUpdate } from "@qc-remote/core";
 
-export type { QcStateUpdate } from "@ndsp-qc/core";
+export type { QcStateUpdate } from "@qc-remote/core";
 
 export type QcUsbDevice = {
   deviceId: number;
@@ -44,6 +44,10 @@ interface VoiceInputNativePlugin {
   addListener(eventName: "voiceState", listener: (result: { state: string }) => void): Promise<PluginListenerHandle>;
 }
 
+interface ScreenWakeNativePlugin {
+  setEnabled(options: { enabled: boolean }): Promise<{ enabled: boolean }>;
+}
+
 interface QcRelayNativePlugin {
   status(): Promise<PublicRelayStatus>;
   pair(options: { endpoint: string; pairingCode: string; deviceName?: string }): Promise<{ paired: boolean; endpoint: string }>;
@@ -56,13 +60,14 @@ interface QcRelayNativePlugin {
 export const GeminiNative = registerPlugin<GeminiNativePlugin>("Gemini");
 export const QcUsbNative = registerPlugin<QcUsbNativePlugin>("QcUsb");
 export const VoiceInputNative = registerPlugin<VoiceInputNativePlugin>("VoiceInput");
+export const ScreenWakeNative = registerPlugin<ScreenWakeNativePlugin>("ScreenWake");
 export const QcRelayNative = registerPlugin<QcRelayNativePlugin>("QcRelay");
 export const subscribeRelayState = (listener: (state: PublicRelayState) => void) =>
   QcRelayNative.addListener("relayState", ({ state }) => listener(state));
 
 export const publicRelay: PublicRelayPort = {
   status: () => QcRelayNative.status(),
-  async pair(endpoint, pairingCode, deviceName = "QC Control on Android") {
+  async pair(endpoint, pairingCode, deviceName = "QC Remote on Android") {
     await QcRelayNative.pair({ endpoint, pairingCode, deviceName });
     return QcRelayNative.status();
   },

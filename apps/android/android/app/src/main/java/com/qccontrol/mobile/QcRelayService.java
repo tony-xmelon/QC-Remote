@@ -144,19 +144,50 @@ public final class QcRelayService extends Service {
             QcUsbPlugin.invokeFromRelay(method, (JSONObject) (rawParams == JSONObject.NULL ? null : rawParams),
                     (JSONObject) (rawExpected == JSONObject.NULL ? null : rawExpected))
                 .whenComplete((result, error) -> {
+                    JSONObject reply;
                     try {
-                        JSONObject reply = error == null
+                        Throwable cause = unwrapCompletion(error);
+                        if (cause != null) android.util.Log.w(
+                            "QcRelayService", "QC relay invocation failed for " + method + ": "
+                                + cause.getClass().getSimpleName() + ": " + cause.getMessage());
+                        reply = error == null
                             ? validatedResult(id, method, result)
-                            : RelayProtocol.error(id, error instanceof QcUsbPlugin.RelayException
-                                ? ((QcUsbPlugin.RelayException) error).code : "DEVICE_ERROR",
-                                error.getMessage() == null ? "The device operation failed." : error.getMessage(), false);
+                            : RelayProtocol.error(id, cause instanceof QcUsbPlugin.RelayException
+                                ? ((QcUsbPlugin.RelayException) cause).code : "DEVICE_ERROR",
+                                cause == null || cause.getMessage() == null
+                                    ? "The device operation failed." : cause.getMessage(),
+                                cause instanceof QcUsbPlugin.RelayException
+                                    && ((QcUsbPlugin.RelayException) cause).retryable());
+                    } catch (Exception validationError) {
+                        android.util.Log.e("QcRelayService",
+                            "QC relay result validation failed for " + method + ": "
+                                + validationError.getMessage(), validationError);
+                        try {
+                            reply = RelayProtocol.error(id, "MALFORMED_RESPONSE",
+                                "The device returned a malformed result.", false);
+                        } catch (Exception encodingError) {
+                            android.util.Log.e("QcRelayService", "Could not encode relay validation error.", encodingError);
+                            return;
+                        }
+                    }
+                    try {
                         // WebSocket frames are ordered. Publish the post-operation
                         // USB state before the result so reset/reconnect callers
                         // cannot race the next one-second readiness heartbeat.
                         sendReadiness(webSocket);
                         sendResult(webSocket, id, reply);
-                    } catch (Exception ignored) {}
+                    } catch (Exception sendError) {
+                        android.util.Log.w("QcRelayService", "Could not send QC relay result for " + method + ".", sendError);
+                    }
                 });
+        }
+
+        private Throwable unwrapCompletion(Throwable error) {
+            Throwable cause = error;
+            while (cause instanceof java.util.concurrent.CompletionException && cause.getCause() != null) {
+                cause = cause.getCause();
+            }
+            return cause;
         }
 
         private JSONObject validatedResult(String id, String method, JSONObject result) throws Exception {

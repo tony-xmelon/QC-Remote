@@ -77,4 +77,4 @@ if (platform === "android") {
   if (nextCargoLock !== cargoLock) await writeFile(cargoLockPath, nextCargoLock);
 }
 
-console.log(request === "sync" ? `QC Control ${platform} version ${version} is synchronized.` : `QC Control ${platform} version ${current} → ${version}.`);
+console.log(request === "sync" ? `QC Remote ${platform} version ${version} is synchronized.` : `QC Remote ${platform} version ${current} → ${version}.`);

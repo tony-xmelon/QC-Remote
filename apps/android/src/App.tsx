@@ -1,20 +1,22 @@
 import { Capacitor } from "@capacitor/core";
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from "react";
-import { demoSnapshot, QC_SCENE_COUNT } from "@ndsp-qc/client";
-import { assistantToolActionPrompt, footswitchLeds, parseAssistantIntent, parseAssistantReply, recentModelConversation, runToolConversation, sceneLetter, textModelConversationPrompt, validateAssistantToolCalls, type AssistantAccessMode as ControlAccessMode, type AssistantToolCall, type PublicRelayState as RelayState } from "@ndsp-qc/core";
-import { formFactors, skins } from "@ndsp-qc/form-factors";
-import { QC_BRAND, QC_COLORS, QC_VISUAL_ASSETS } from "@ndsp-qc/theme";
-import { AddBlockPanel, applyPreparedOfflineAssistantAction, AssistantAccessSelect, AssistantAttachmentList, browserWorkflowPrompts, consumeQcNativeStateFrame, corosFixtureConfiguration, corOsUnavailableContextActionMessage, executeAndReconcileQcAction, GridManagementPanel, offlineAssistantEditConfirmation, parameterEditorAccent, parameterEditorControlSlots, parameterEditorPageSize, qcParameterEditorBindings, qcReadyLabel, qcRelayLabel, QcHardwareSwitch, QcMasterVolumeKnob, QcUiIcon, QuadCortexSurface, readAssistantAccessMode, RoutingEditor, runOfflineAssistantIntent, SceneEditor, useAssistantAutoScroll, useAssistantConversation, useBlockEditorSession, useContinuousControlWorkflow, usePublicRelayWorkflow, useQcConnectionWorkflow, useQcController, useQcLiveState, useQcSurfaceActions, useQcWorkflows, writeAssistantAccessMode, type CorOsContextAction, type CorOsScreenView } from "@ndsp-qc/ui";
-import { androidGatewayTransport, createAndroidQcTransport, GeminiNative, publicRelay, QcUsbNative, subscribeRelayState, VoiceInputNative } from "./native-services";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { demoSnapshot, QC_SCENE_COUNT } from "@qc-remote/client";
+import { assistantToolActionPrompt, footswitchLeds, parseAssistantIntent, parseAssistantReply, recentModelConversation, runToolConversation, sceneLetter, textModelConversationPrompt, validateAssistantToolCalls, type AssistantAccessMode as ControlAccessMode, type AssistantToolCall, type PublicRelayState as RelayState } from "@qc-remote/core";
+import { formFactors, skins } from "@qc-remote/form-factors";
+import { QC_BRAND, QC_COLORS, QC_LEGAL, QC_VISUAL_ASSETS } from "@qc-remote/theme";
+import { AddBlockPanel, applyPreparedOfflineAssistantAction, AssistantAccessSelect, AssistantAttachmentList, browserWorkflowPrompts, consumeQcNativeStateFrame, corosFixtureConfiguration, corOsUnavailableContextActionMessage, executeAndReconcileQcAction, GridManagementPanel, offlineAssistantEditConfirmation, parameterEditorAccent, parameterEditorControlSlots, parameterEditorPageSize, qcParameterEditorBindings, qcRelayLabel, QcHardwareSwitch, QcMasterVolumeKnob, QcUiIcon, QuadCortexSurface, readAssistantAccessMode, RoutingEditor, runOfflineAssistantIntent, SceneEditor, useAssistantAutoScroll, useAssistantConversation, useBlockEditorSession, useContinuousControlWorkflow, usePublicRelayWorkflow, useQcConnectionWorkflow, useQcController, useQcLiveState, useQcSurfaceActions, useQcWorkflows, writeAssistantAccessMode, type CorOsContextAction, type CorOsScreenView } from "@qc-remote/ui";
+import { androidGatewayTransport, createAndroidQcTransport, GeminiNative, publicRelay, QcUsbNative, ScreenWakeNative, subscribeRelayState, VoiceInputNative } from "./native-services";
 import { quotaSummary, recordGeminiUsage, type GeminiModelId, type GeminiQuotaLedger } from "./gemini-quota";
+import appPackage from "../package.json";
+import type { ConnectionState } from "@qc-remote/client";
 
 type AndroidGeminiModel = GeminiModelId;
 type AndroidAttachment = { name: string; mediaType: "image/png"; data: string };
 
 const formFactor = formFactors[0];
-const skin = skins.find((entry) => entry.id === "official-svg") ?? skins[0];
+const skin = skins.find((entry) => entry.id === formFactor.defaultSkinId) ?? skins[0];
 const { enabled: corpusFixtureEnabled, screenView: fixtureScreenView, initialSnapshot: fixtureInitialSnapshot } =
-  corosFixtureConfiguration(window.location.search, demoSnapshot);
+  corosFixtureConfiguration(import.meta.env.DEV ? window.location.search : "", demoSnapshot);
 const sceneFootswitches = Array.from({ length: QC_SCENE_COUNT }, (_, index) => ({ index, label: sceneLetter(index) }));
 const androidGeminiModels: ReadonlyArray<{ id: AndroidGeminiModel; label: string }> = [
   { id: "gemini-3.7-flash", label: "Gemini 3.7 Flash" },
@@ -25,6 +27,11 @@ const androidGeminiModels: ReadonlyArray<{ id: AndroidGeminiModel; label: string
 ];
 const androidModelStorageKey = "qc-control.android-gemini-model";
 const androidQuotaStorageKey = "qc-control.android-gemini-quota-v1";
+const androidChatCollapsedStorageKey = "qc-control.android-chat-collapsed-v1";
+const androidKeepScreenAwakeStorageKey = "qc-control.android-keep-screen-awake-v1";
+const androidOnlineModelConsentKey = "qc-remote.android-online-model-consent-v1";
+const androidVoiceProcessingConsentKey = "qc-remote.android-voice-processing-consent-v1";
+const screenDimAfterMs = 90_000;
 const legacyControlAccessModeKey = "qc-control.device-access-mode-v1";
 const qcRemoteScreen = {
   openIo: { x: 400, y: 8, toX: 400, toY: 220 },
@@ -38,8 +45,17 @@ function loadQuotaLedger(): GeminiQuotaLedger {
   } catch { return {}; }
 }
 
-function AppMark() {
-  return <span className="app-mark" aria-hidden="true"><img src={QC_VISUAL_ASSETS.appIcon.url} alt="" /></span>;
+function AppMark({ onClick }: { onClick: () => void }) {
+  return <button type="button" className="app-mark" onClick={onClick} aria-label={`About ${QC_BRAND.appName}`}><img src={QC_VISUAL_ASSETS.appIcon.url} alt="" /></button>;
+}
+
+function assistantWelcomeMessage(connection: ConnectionState, native: boolean): string {
+  if (!native) return "This browser preview cannot access Android USB. Install QC Remote on a phone to connect a Quad Cortex directly.";
+  if (connection.phase === "ready" && !connection.demo) return "Quad Cortex is connected directly over USB and ready. Type a request or use the microphone to speak.";
+  if (connection.phase === "syncing") return "Quad Cortex is connected over USB and its live state is synchronizing. You can type a request while that finishes.";
+  if (["discovering", "opening", "handshaking"].includes(connection.phase)) return `${connection.detail} I’ll confirm when the Quad Cortex is ready.`;
+  if (["needs-attention", "degraded"].includes(connection.phase)) return `${connection.detail} Tap USB for connection details, diagnostics, and reconnect actions.`;
+  return "No Quad Cortex is connected over USB. Connect it, then tap USB for connection details or type a request for help.";
 }
 
 export function App() {
@@ -55,18 +71,18 @@ export function App() {
   const editor = useBlockEditorSession();
   const { details: blockDetails } = editor;
   const [devicePending, setDevicePending] = useState(false);
-  const conversation = useAssistantConversation<AndroidAttachment>({
-    initialMessages: [{ id: 1, role: "assistant", text: "Ready. Connect the Quad Cortex by USB, type a request, or use the microphone to speak." }],
-    maximumInputLength: 2000
-  });
-  const { input: message, setInput: setMessage, messages, pending: busy } = conversation;
-  const assistantScroll = useAssistantAutoScroll(true, messages);
   const deviceConnection = useQcConnectionWorkflow({
     phase: native ? "discovering" : "disconnected",
     detail: native ? "Looking for the Quad Cortex…" : "Android USB is unavailable in browser preview.",
     demo: true
   });
   const { connection, transition: transitionConnection, connected: usbConnected, busy: usbBusy, appearance: usbState } = deviceConnection;
+  const conversation = useAssistantConversation<AndroidAttachment>({
+    initialMessages: [{ id: 1, role: "assistant", text: assistantWelcomeMessage(connection, native) }],
+    maximumInputLength: 2000
+  });
+  const { input: message, setInput: setMessage, messages, pending: busy } = conversation;
+  const assistantScroll = useAssistantAutoScroll(true, messages);
   const [selectedModel, setSelectedModel] = useState<AndroidGeminiModel>(() => {
     const saved = window.localStorage.getItem(androidModelStorageKey);
     return androidGeminiModels.some((model) => model.id === saved) ? saved as AndroidGeminiModel : "gemini-3.7-flash";
@@ -74,18 +90,60 @@ export function App() {
   const [quotaLedger, setQuotaLedger] = useState<GeminiQuotaLedger>(loadQuotaLedger);
   const [quotaState, setQuotaState] = useState<"unreported" | "available" | "exhausted">("unreported");
   const [quotaNow, setQuotaNow] = useState(Date.now());
+  const [chatCollapsed, setChatCollapsed] = useState(() => window.localStorage.getItem(androidChatCollapsedStorageKey) === "true");
+  const [keepScreenAwake, setKeepScreenAwake] = useState(() => window.localStorage.getItem(androidKeepScreenAwakeStorageKey) !== "false");
+  const [onlineModelsAllowed, setOnlineModelsAllowed] = useState(() => window.localStorage.getItem(androidOnlineModelConsentKey) === "accepted");
+  const [voiceProcessingAllowed, setVoiceProcessingAllowed] = useState(() => window.localStorage.getItem(androidVoiceProcessingConsentKey) === "accepted");
+  const [screenDimmed, setScreenDimmed] = useState(false);
   const [voiceState, setVoiceState] = useState("idle");
   const [controlAccessMode, setControlAccessMode] = useState<ControlAccessMode>(storedControlAccessMode);
   const relayWorkflow = usePublicRelayWorkflow({ relay: publicRelay, enabled: native, autoStart: true, subscribe: subscribeRelayState });
   const relayState: RelayState = relayWorkflow.status?.state ?? "stopped";
   const relayPaired = relayWorkflow.status?.paired ?? false;
-  const [workflowPanel, setWorkflowPanel] = useState<"block" | "add" | "routing" | "scene" | null>(null);
+  const [workflowPanel, setWorkflowPanel] = useState<"block" | "add" | "routing" | "scene" | "usb" | "remote" | "chat" | "about" | "display" | "privacy" | "legal" | "notices" | null>(null);
+  const [usbPanelDetail, setUsbPanelDetail] = useState("Checking direct USB status…");
   const [mobileScreenView, setMobileScreenView] = useState<CorOsScreenView | null>(null);
   const connectInFlight = useRef(false);
   const presetSynchronized = useRef(false);
   const usbSessionReady = useRef(false);
   const nativeStateSequence = useRef(0);
+  const screenDimTimer = useRef<number | undefined>(undefined);
   const appendAssistant = useCallback((text: string, attachments?: AndroidAttachment[]) => conversation.append("assistant", text, attachments), [conversation.append]);
+  const welcomeMessage = assistantWelcomeMessage(connection, native);
+  useEffect(() => {
+    conversation.setMessages((current) => {
+      // Keep the opening status live while the app starts, but never rewrite a
+      // conversation once the user or an operation has added context.
+      if (current.length !== 1 || current[0]?.id !== 1 || current[0]?.text === welcomeMessage) return current;
+      return [{ ...current[0], text: welcomeMessage }];
+    });
+  }, [conversation.setMessages, welcomeMessage]);
+  useEffect(() => {
+    if (!native) return;
+    const enabled = keepScreenAwake && usbConnected;
+    void ScreenWakeNative.setEnabled({ enabled });
+    return () => { void ScreenWakeNative.setEnabled({ enabled: false }); };
+  }, [keepScreenAwake, native, usbConnected]);
+  const changeKeepScreenAwake = (enabled: boolean) => {
+    setKeepScreenAwake(enabled);
+    window.localStorage.setItem(androidKeepScreenAwakeStorageKey, String(enabled));
+  };
+  const resetScreenDimmer = useCallback(() => {
+    if (!native || !keepScreenAwake || !usbConnected) return;
+    if (screenDimTimer.current !== undefined) window.clearTimeout(screenDimTimer.current);
+    setScreenDimmed(false);
+    screenDimTimer.current = window.setTimeout(() => setScreenDimmed(true), screenDimAfterMs);
+  }, [keepScreenAwake, native, usbConnected]);
+  useEffect(() => {
+    if (!native || !keepScreenAwake || !usbConnected) {
+      if (screenDimTimer.current !== undefined) window.clearTimeout(screenDimTimer.current);
+      screenDimTimer.current = undefined;
+      setScreenDimmed(false);
+      return;
+    }
+    resetScreenDimmer();
+    return () => { if (screenDimTimer.current !== undefined) window.clearTimeout(screenDimTimer.current); };
+  }, [keepScreenAwake, native, resetScreenDimmer, usbConnected]);
   const workflows = useQcWorkflows({
     controller: qcController,
     transport: qcTransport,
@@ -132,7 +190,6 @@ export function App() {
     notice: appendAssistant,
     fail: (error) => appendAssistant(error instanceof Error ? error.message : String(error))
   });
-  const selectedBlock = useMemo(() => snapshot.blocks.find((block) => block.id === selectedBlockId), [selectedBlockId, snapshot.blocks]);
   const parameterEditorBindings = qcParameterEditorBindings({
     snapshot,
     selectedBlockId,
@@ -269,6 +326,15 @@ export function App() {
     if (!native || usbBusy) return;
     await attemptUsbConnection(true);
   };
+  const openUsbStatusPanel = async () => {
+    setWorkflowPanel("usb");
+    try { setUsbPanelDetail(await usbDiagnostics()); }
+    catch (error) { setUsbPanelDetail(error instanceof Error ? error.message : "USB status could not be read."); }
+  };
+  const openRemoteStatusPanel = async () => {
+    setWorkflowPanel("remote");
+    if (native) await relayWorkflow.refresh().catch(() => undefined);
+  };
 
   const adjustEditorParameter = useCallback((role: string, delta: number) => {
     return parameterWorkflow.adjustEncoder(role, delta, appendAssistant, false);
@@ -349,7 +415,7 @@ export function App() {
     else appendAssistant(corOsUnavailableContextActionMessage(action));
   };
 
-  const localFallback = async (input: string): Promise<string> => {
+  const localFallback = async (input: string, remoteStatus = "Gemini is unavailable right now."): Promise<string> => {
     const intent = parseAssistantIntent(input);
     try {
       const outcome = await runOfflineAssistantIntent(intent, {
@@ -365,7 +431,7 @@ export function App() {
       if (outcome.kind === "response") {
         if (outcome.intent === "inspect") return outcome.detail;
         return native
-          ? `Gemini is unavailable right now. ${outcome.detail}`
+          ? `${remoteStatus} ${outcome.detail}`
           : "Browser preview is offline. On Android, Gemini chat, voice input, and direct Quad Cortex USB are enabled.";
       }
       if (outcome.kind === "prepared") {
@@ -458,7 +524,10 @@ export function App() {
     if (!submission) return;
     try {
       if (/^(usb\s+)?(diagnostics?|status)$/i.test(submission.promptText)) appendAssistant(await usbDiagnostics());
-      else if (native) await runGeminiConversation(submission.promptText);
+      else if (native && onlineModelsAllowed) await runGeminiConversation(submission.promptText);
+      else if (native) {
+        appendAssistant(await localFallback(submission.promptText, "Online model sharing is disabled; no data was sent."));
+      }
       else appendAssistant(await localFallback(submission.promptText));
     }
     catch { appendAssistant(await localFallback(submission.promptText)); }
@@ -470,6 +539,7 @@ export function App() {
   const toggleVoice = async () => {
     if (!native || busy) return;
     if (voiceState !== "idle") { await VoiceInputNative.stop(); return; }
+    if (!voiceProcessingAllowed) { setWorkflowPanel("privacy"); return; }
     setVoiceState("starting");
     try {
       const { transcript } = await VoiceInputNative.start();
@@ -512,12 +582,18 @@ export function App() {
     }
   };
 
-  return <main className="android-app">
+  const toggleChat = () => setChatCollapsed((collapsed) => {
+    const next = !collapsed;
+    window.localStorage.setItem(androidChatCollapsedStorageKey, String(next));
+    return next;
+  });
+
+  return <main className={`android-app${chatCollapsed ? " chat-collapsed" : ""}${screenDimmed ? " screen-dimmed" : ""}`} onPointerDown={resetScreenDimmer} onKeyDown={resetScreenDimmer} onTouchStart={resetScreenDimmer}>
     <header className="mobile-header">
-      <div className="mobile-brand"><AppMark /><span><strong>{QC_BRAND.appName}</strong><small>{snapshot.presetLocation} · {snapshot.presetName}</small></span></div>
+      <div className="mobile-brand"><AppMark onClick={() => setWorkflowPanel("about")} /><span><strong>{QC_BRAND.appName}</strong><small>v{appPackage.version}</small></span></div>
       <div className="connection-pills">
-        <button className={`connection-pill relay-${relayState}`} onClick={() => void configureRelay()} aria-label={relayPaired ? "Remote relay settings" : "Pair remote relay"}><i /> {qcRelayLabel(relayWorkflow.status)}</button>
-        <button className={`connection-pill ${usbState}`} onClick={() => void connectUsb()} aria-label="Connect Quad Cortex over USB"><i /> {qcReadyLabel(connection)}</button>
+        <button className={`connection-pill relay-${relayState}`} onClick={() => void openRemoteStatusPanel()} aria-haspopup="dialog" aria-expanded={workflowPanel === "remote"} aria-label={`${qcRelayLabel(relayWorkflow.status)}; open remote relay details`}><i /> {qcRelayLabel(relayWorkflow.status)}</button>
+        <button className={`connection-pill ${usbState}`} onClick={() => void openUsbStatusPanel()} aria-haspopup="dialog" aria-expanded={workflowPanel === "usb"} aria-label="USB; open Quad Cortex connection details"><i /> USB</button>
       </div>
     </header>
 
@@ -531,46 +607,48 @@ export function App() {
     </section>
 
     <nav className="quick-controls" aria-label="Quick device controls">
-      <div className="mobile-volume-control"><QcMasterVolumeKnob value={snapshot.masterVolume} onAction={handleSurfaceAction} /><small>VOLUME</small></div>
+      <div className="mobile-volume-control"><QcMasterVolumeKnob value={snapshot.masterVolume} readout={`${snapshot.masterVolume}`} onAction={handleSurfaceAction} /></div>
       <button className={`device-view-control mobile-io-control${ioViewOpen ? " is-active" : ""}`} onClick={toggleIoView} aria-pressed={ioViewOpen} aria-label={ioViewOpen ? "Hide I/O Settings quick control" : "Open I/O Settings"}><span>I/O</span></button>
       <button className={`device-view-control mobile-gig-control${gigViewOpen ? " is-active" : ""}`} onClick={toggleGigView} aria-pressed={gigViewOpen} aria-label={gigViewOpen ? "Hide Gig View quick control" : "Open Gig View"}><span>GIG</span></button>
       <div className="mobile-up-control"><QcHardwareSwitch role="bank:up" label={<QcUiIcon kind="up" />} ariaLabel="Previous preset" active={Boolean(parameterEditorBindings)} assigned={Boolean(parameterEditorBindings)} accent={QC_COLORS.hardware.whiteLed} onAction={handleSurfaceAction} /></div>
       {sceneFootswitches.map(({ index, label }) => {
         const slot = index < 4 ? index : index + 1;
         const led = mobileLed(slot, switchLeds[index]);
-        return <div className="mobile-encoder-control" style={{ gridColumn: index % 4 + 1, gridRow: index < 4 ? 2 : 3 } as CSSProperties} key={label}>
+        return <div className={`mobile-encoder-control mobile-encoder-${index}`} key={label}>
           <QcHardwareSwitch role={`footswitch:${label}`} label={label} active={led.active} assigned={led.assigned} accent={led.color} onAction={handleSurfaceAction} />
         </div>;
       })}
-      {(() => { const led = mobileLed(4, { active: false, assigned: false, color: QC_COLORS.hardware.whiteLed }); return <div className="mobile-down-control"><QcHardwareSwitch role="bank:down" label={<QcUiIcon kind="down" />} ariaLabel="Next preset" active={led.active} assigned={led.assigned} accent={led.color} onAction={handleSurfaceAction} /></div>; })()}
-      <div className="mobile-tempo-control"><QcHardwareSwitch role="tempo" label="TEMPO" active={parameterLeds ? parameterLeds[9].active : snapshot.tempoLedEnabled} assigned={parameterLeds ? parameterLeds[9].assigned : snapshot.tempoLedEnabled} accent={parameterLeds ? parameterLeds[9].color : QC_COLORS.device.tempoLed} pulseBpm={!parameterLeds && snapshot.tempoLedEnabled ? snapshot.tempo : undefined} pulseEpochMs={!parameterLeds ? snapshot.tempoPulseEpochMs : undefined} onAction={handleSurfaceAction} /></div>
+      {(() => { const led = mobileLed(4, { active: false, assigned: false, color: QC_COLORS.hardware.whiteLed }); return <div className="mobile-down-control"><QcHardwareSwitch role="bank:down" label={<span className="mobile-down-glyph"><QcUiIcon kind="up" /></span>} ariaLabel="Next preset" active={led.active} assigned={led.assigned} accent={led.color} onAction={handleSurfaceAction} /></div>; })()}
+      <div className="mobile-tempo-control"><QcHardwareSwitch role="tempo" label="" ariaLabel="Tap tempo" readout={`${snapshot.tempo}`} active={parameterLeds ? parameterLeds[9].active : snapshot.tempoLedEnabled} assigned={parameterLeds ? parameterLeds[9].assigned : snapshot.tempoLedEnabled} accent={parameterLeds ? parameterLeds[9].color : QC_COLORS.device.tempoLed} pulseBpm={!parameterLeds && snapshot.tempoLedEnabled ? snapshot.tempo : undefined} pulseEpochMs={!parameterLeds ? snapshot.tempoPulseEpochMs : undefined} onAction={handleSurfaceAction} /></div>
     </nav>
 
-    <section className="mobile-chat" aria-label="QC assistant">
-      <div className="chat-heading"><span><i /> {busy ? "GEMINI THINKING" : "QC ASSISTANT"}</span><small>{selectedBlock ? `${selectedBlock.name} selected` : usbConnected ? "QC connected" : "USB not connected"}</small></div>
-      <div ref={assistantScroll.containerRef} className="message-list" tabIndex={0} aria-live="polite" aria-label="Assistant conversation" onScroll={assistantScroll.onScroll} onWheel={assistantScroll.onUserScroll} onTouchMove={assistantScroll.onUserScroll} onPointerDown={assistantScroll.onUserScroll}>
-        {messages.map((entry) => <div key={entry.id} className={`message ${entry.role}`}><span>{entry.role === "user" ? "YOU" : "QC"}</span><div><p>{entry.text}</p><AssistantAttachmentList attachments={entry.attachments} imageClassName="message-image" /></div></div>)}
-        {busy && <div className="message assistant pending"><span>QC</span><p>•••</p></div>}
-      </div>
-      <div className="chat-model-bar">
-        <select value={selectedModel} aria-label="Gemini model" disabled={busy} onChange={(event) => {
-          const model = event.target.value as AndroidGeminiModel;
-          setSelectedModel(model);
-          setQuotaState("unreported");
-          window.localStorage.setItem(androidModelStorageKey, model);
-        }}>
-          {androidGeminiModels.map((model) => <option key={model.id} value={model.id}>{model.label}</option>)}
-        </select>
-        <AssistantAccessSelect value={controlAccessMode} ariaLabel="Assistant and remote device access" disabled={busy} onChange={(mode) => void changeControlAccessMode(mode)} />
-        <span title={`Device estimate for the current Pacific quota day. ${selectedQuota.dayRemaining} of ${selectedQuota.limits.requestsPerDay} daily requests left; ${selectedQuota.minuteRemaining} of ${selectedQuota.limits.requestsPerMinute} per-minute requests left; ${selectedQuota.minuteInputRemaining.toLocaleString()} of ${selectedQuota.limits.inputTokensPerMinute.toLocaleString()} input tokens/min left. Input ${selectedQuota.usage.input.toLocaleString()}, output ${selectedQuota.usage.output.toLocaleString()}, thinking ${selectedQuota.usage.thinking.toLocaleString()} tokens today.`}>
-          {quotaState === "exhausted" ? "LIMIT · " : ""}{selectedQuota.dayRemaining}/{selectedQuota.limits.requestsPerDay} day · {selectedQuota.minuteRemaining}/{selectedQuota.limits.requestsPerMinute} min · {selectedQuota.usage.total.toLocaleString()} tok
-        </span>
-      </div>
-      <form className="message-composer" onSubmit={submit}>
-        <button className={`voice-button ${voiceState !== "idle" ? "is-listening" : ""}`} type="button" disabled={!native || busy} onClick={() => void toggleVoice()} aria-label="Speak a command"><QcUiIcon kind="microphone" /></button>
-        <input value={message} onChange={(event) => setMessage(event.target.value)} placeholder={voiceState !== "idle" ? "Listening…" : `Ask ${QC_BRAND.appName}…`} aria-label={`Message ${QC_BRAND.appName}`} />
-        <button className="send-button" type="submit" disabled={!message.trim() || busy} aria-label="Send message"><QcUiIcon kind="send" /></button>
-      </form>
+    <section className={`mobile-chat${chatCollapsed ? " is-collapsed" : ""}`} aria-label="Chat">
+      <button className={`chat-toggle${busy ? " is-thinking" : ""}`} type="button" onClick={() => setWorkflowPanel("chat")} aria-haspopup="dialog" aria-expanded={workflowPanel === "chat"} aria-label={`${busy ? "Chat is thinking" : "Chat"}; open chat details`}><i /> {busy ? "THINKING" : "CHAT"}</button>
+      {!chatCollapsed && <>
+        <div ref={assistantScroll.containerRef} className="message-list" tabIndex={0} aria-live="polite" aria-label="Assistant conversation" onScroll={assistantScroll.onScroll} onWheel={assistantScroll.onUserScroll} onTouchMove={assistantScroll.onUserScroll} onPointerDown={assistantScroll.onUserScroll}>
+          {messages.map((entry) => <div key={entry.id} className={`message ${entry.role}`}><span>{entry.role === "user" ? "YOU" : "QC"}</span><div><p>{entry.text}</p><AssistantAttachmentList attachments={entry.attachments} imageClassName="message-image" /></div></div>)}
+          {busy && <div className="message assistant pending"><span>QC</span><p>•••</p></div>}
+        </div>
+        <form className="message-composer" onSubmit={submit}>
+          <button className={`voice-button ${voiceState !== "idle" ? "is-listening" : ""}`} type="button" disabled={!native || busy} onClick={() => void toggleVoice()} aria-label="Speak a command"><QcUiIcon kind="microphone" /></button>
+          <input value={message} onChange={(event) => setMessage(event.target.value)} placeholder={voiceState !== "idle" ? "Listening…" : `Ask ${QC_BRAND.appName}…`} aria-label={`Message ${QC_BRAND.appName}`} />
+          <button className="send-button" type="submit" disabled={!message.trim() || busy} aria-label="Send message"><QcUiIcon kind="send" /></button>
+        </form>
+        <div className="chat-model-bar">
+          <select value={selectedModel} aria-label="Gemini model" disabled={busy || !onlineModelsAllowed} onChange={(event) => {
+            const model = event.target.value as AndroidGeminiModel;
+            setSelectedModel(model);
+            setQuotaState("unreported");
+            window.localStorage.setItem(androidModelStorageKey, model);
+          }}>
+            {androidGeminiModels.map((model) => <option key={model.id} value={model.id}>{model.label}</option>)}
+          </select>
+          <AssistantAccessSelect value={controlAccessMode} ariaLabel="Assistant and remote device access" disabled={busy} onChange={(mode) => void changeControlAccessMode(mode)} />
+          <span title={`Device estimate for the current Pacific quota day. ${selectedQuota.dayRemaining} of ${selectedQuota.limits.requestsPerDay} daily requests left; ${selectedQuota.minuteRemaining} of ${selectedQuota.limits.requestsPerMinute} per-minute requests left; ${selectedQuota.minuteInputRemaining.toLocaleString()} of ${selectedQuota.limits.inputTokensPerMinute.toLocaleString()} input tokens/min left. Input ${selectedQuota.usage.input.toLocaleString()}, output ${selectedQuota.usage.output.toLocaleString()}, thinking ${selectedQuota.usage.thinking.toLocaleString()} tokens today.`}>
+            {quotaState === "exhausted" ? "LIMIT · " : ""}{selectedQuota.dayRemaining}/{selectedQuota.limits.requestsPerDay} day · {selectedQuota.minuteRemaining}/{selectedQuota.limits.requestsPerMinute} min · {selectedQuota.usage.total.toLocaleString()} tok
+          </span>
+        </div>
+      </>}
     </section>
 
     {workflowPanel && <div className="mobile-workflow-backdrop" role="presentation" onClick={() => setWorkflowPanel(null)}>
@@ -580,6 +658,14 @@ export function App() {
         {workflowPanel === "block" && <GridManagementPanel snapshot={snapshot} details={blockDetails} loading={gridWorkflow.detailsLoading} pending={devicePending} moveDestination={gridWorkflow.moveDestination} setMoveDestination={gridWorkflow.setMoveDestination} footswitchDraft={gridWorkflow.footswitchDraft} setFootswitchDraft={gridWorkflow.setFootswitchDraft} move={() => void gridWorkflow.move()} assignFootswitch={() => void gridWorkflow.assignFootswitch()} remove={() => void gridWorkflow.remove()} />}
         {workflowPanel === "add" && <AddBlockPanel snapshot={snapshot} filteredModels={gridWorkflow.filteredModels} loading={gridWorkflow.modelsLoading} pending={devicePending} modelFilter={gridWorkflow.modelFilter} setModelFilter={gridWorkflow.setModelFilter} addCell={gridWorkflow.addCell} setAddCell={gridWorkflow.setAddCell} addModelId={gridWorkflow.addModelId} setAddModelId={gridWorkflow.setAddModelId} add={() => void gridWorkflow.add()} cancel={() => setWorkflowPanel(null)} />}
         {workflowPanel === "scene" && <SceneEditor snapshot={snapshot} pending={devicePending} sourceScene={sceneWorkflow.sourceScene} setSourceScene={sceneWorkflow.setSourceScene} destinationScene={sceneWorkflow.destinationScene} setDestinationScene={sceneWorkflow.setDestinationScene} swap={sceneWorkflow.swap} setSwap={sceneWorkflow.setSwap} label={sceneWorkflow.label} setLabel={sceneWorkflow.setLabel} color={sceneWorkflow.color} setColor={sceneWorkflow.setColor} colors={sceneWorkflow.colors} copy={() => void sceneWorkflow.copy()} saveLabel={() => void sceneWorkflow.saveLabel()} saveColor={() => void sceneWorkflow.saveColor()} />}
+        {workflowPanel === "usb" && <><div className="dialog-kicker">DIRECT USB</div><h2 id="dialog-title">Quad Cortex connection</h2><p>{connection.detail || (usbConnected ? "The Quad Cortex is connected directly over USB." : "No Quad Cortex is connected directly over USB.")}</p><p className="mobile-status-detail">{usbPanelDetail}</p><div className="mobile-legal-actions"><button className="primary" disabled={!native || usbBusy} onClick={() => void connectUsb().then(openUsbStatusPanel)}>{usbConnected ? "Reconnect" : "Connect"}</button><button disabled={!native} onClick={() => void openUsbStatusPanel()}>Refresh</button></div></>}
+        {workflowPanel === "remote" && <><div className="dialog-kicker">REMOTE RELAY</div><h2 id="dialog-title">Remote access</h2><p>{!relayPaired ? "This phone is not paired to a remote relay." : relayState === "connected" ? "A paired remote client can reach this Quad Cortex." : relayState === "connecting" || relayState === "reconnecting" ? "The outbound relay is connecting." : "This phone is paired, but the relay is not connected."}</p><p className="mobile-legal-note">{QC_LEGAL.privacy.relay}</p>{relayWorkflow.status?.endpoint && <p className="mobile-status-detail">{relayWorkflow.status.endpoint}</p>}<div className="mobile-legal-actions"><button className="primary" disabled={!native || relayWorkflow.pending} onClick={() => void (relayPaired ? relayWorkflow.start() : configureRelay())}>{relayPaired ? "Connect" : "Pair"}</button><button disabled={!native || relayWorkflow.pending} onClick={() => void openRemoteStatusPanel()}>Refresh</button>{relayPaired && <button className="danger" disabled={relayWorkflow.pending} onClick={() => void configureRelay()}>Unpair</button>}</div></>}
+        {workflowPanel === "chat" && <><div className="dialog-kicker">CHAT</div><h2 id="dialog-title">Assistant status</h2><p>{busy ? "The assistant is preparing a response." : onlineModelsAllowed ? "Gemini chat is enabled for this device." : "Local assistant commands are available. Gemini chat is disabled."}</p><p className="mobile-status-detail">{androidGeminiModels.find((model) => model.id === selectedModel)?.label ?? selectedModel} · {quotaState === "exhausted" ? "Limit reached" : `${selectedQuota.dayRemaining}/${selectedQuota.limits.requestsPerDay} requests today`} · {messages.length} messages</p><div className="mobile-legal-actions"><button className="primary" onClick={() => { if (chatCollapsed) toggleChat(); setWorkflowPanel(null); }}>{chatCollapsed ? "Open Chat" : "Chat Open"}</button><button onClick={() => setWorkflowPanel("privacy")}>Chat settings</button><button className="danger" disabled={busy || messages.length === 0} onClick={() => { conversation.setMessages([]); setMessage(""); setWorkflowPanel(null); }}>Clear chat</button></div></>}
+        {workflowPanel === "about" && <><div className="dialog-kicker">ABOUT</div><h2 id="dialog-title">{QC_BRAND.appName} <small>{appPackage.version}</small></h2><p>An independent mobile companion for controlling a connected Quad Cortex.</p><p className="mobile-legal-note">{QC_LEGAL.independence}</p><p>{QC_LEGAL.copyright}</p><div className="mobile-legal-actions"><button onClick={() => setWorkflowPanel("display")}>Display</button><button onClick={() => setWorkflowPanel("privacy")}>Privacy</button><button onClick={() => setWorkflowPanel("legal")}>Legal</button><button onClick={() => setWorkflowPanel("notices")}>Notices</button></div></>}
+        {workflowPanel === "display" && <><div className="dialog-kicker">DISPLAY</div><h2 id="dialog-title">Screen wake</h2><p>Keep this screen on while QC Remote is in front and a Quad Cortex is connected. It automatically releases when you disconnect or leave the app.</p><label className="mobile-setting-toggle"><input type="checkbox" checked={keepScreenAwake} onChange={(event) => changeKeepScreenAwake(event.target.checked)} /> Keep screen awake while connected</label><div className="mobile-legal-actions"><button onClick={() => setWorkflowPanel("about")}>Back to About</button></div></>}
+        {workflowPanel === "privacy" && <><div className="dialog-kicker">PRIVACY</div><h2 id="dialog-title">Local control, optional services</h2><p>{QC_LEGAL.privacy.local}</p><p>{QC_LEGAL.privacy.models}</p><p>{QC_LEGAL.privacy.voice}</p><label className="mobile-setting-toggle"><input type="checkbox" checked={onlineModelsAllowed} onChange={(event) => { const allowed = event.target.checked; setOnlineModelsAllowed(allowed); window.localStorage.setItem(androidOnlineModelConsentKey, allowed ? "accepted" : "declined"); }} /> Allow messages, attachment names and types, and relevant device context to be sent to Gemini</label><label className="mobile-setting-toggle"><input type="checkbox" checked={voiceProcessingAllowed} onChange={(event) => { const allowed = event.target.checked; setVoiceProcessingAllowed(allowed); window.localStorage.setItem(androidVoiceProcessingConsentKey, allowed ? "accepted" : "declined"); if (!allowed && voiceState !== "idle") void VoiceInputNative.stop(); }} /> Allow microphone audio to be processed by Android's configured speech recognition service</label><div className="mobile-legal-actions"><button onClick={() => { conversation.setMessages([]); setMessage(""); setWorkflowPanel("about"); }}>Clear conversation</button><button onClick={() => setWorkflowPanel("about")}>Back to About</button></div></>}
+        {workflowPanel === "legal" && <><div className="dialog-kicker">LEGAL</div><h2 id="dialog-title">Independent companion</h2><p>{QC_LEGAL.independence}</p><p>{QC_LEGAL.trademarks}</p><p>{QC_LEGAL.productSafety}</p><p>{QC_LEGAL.copyright}</p><div className="mobile-legal-actions"><button onClick={() => setWorkflowPanel("about")}>Back to About</button></div></>}
+        {workflowPanel === "notices" && <><div className="dialog-kicker">THIRD-PARTY NOTICES</div><h2 id="dialog-title">Runtime components</h2>{QC_LEGAL.thirdParty.map((notice) => <p key={notice}>{notice}</p>)}<p><a href="./legal/THIRD_PARTY-NOTICES.md" target="_blank" rel="noreferrer">Open the complete locked dependency notices</a></p><p><a href="./legal/THIRD_PARTY-LICENSE-TEXTS.txt" target="_blank" rel="noreferrer">Open bundled license and NOTICE texts</a></p><p><a href="./legal/THIRD_PARTY-SOURCE-OFFER.md" target="_blank" rel="noreferrer">Open exact-version third-party source availability</a></p><p><a href="./legal/THIRD_PARTY-LICENSE-INVENTORY.json" target="_blank" rel="noreferrer">Open the machine-readable license inventory</a></p><div className="mobile-legal-actions"><button onClick={() => setWorkflowPanel("about")}>Back to About</button></div></>}
       </section>
     </div>}
   </main>;

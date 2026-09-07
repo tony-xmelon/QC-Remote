@@ -14,8 +14,7 @@ const contractFiles = [
   "contracts/qc-domain.v1.json",
   "contracts/qc-payloads.v1.schema.json",
   "contracts/qc-relay-profile.v1.json",
-  "contracts/qc-usb-profile.v1.json",
-  "contracts/windows-sidecars.v1.json"
+  "contracts/qc-usb-profile.v1.json"
 ];
 
 export const sha256 = (value) => createHash("sha256").update(value).digest("hex");
@@ -139,18 +138,6 @@ export function parseGradleDeclarations(source, variablesSource = "") {
   return [...components.values()].sort((left, right) => `${left.group}:${left.name}@${left.version ?? ""}`.localeCompare(`${right.group}:${right.name}@${right.version ?? ""}`));
 }
 
-export function sidecarComponents(contract) {
-  return (contract.components ?? []).map((component) => ({
-    type: "application",
-    name: component.name,
-    version: component.version,
-    purl: component.purl,
-    hashes: [{ alg: "SHA-256", content: component.sha256 }],
-    externalReferences: [{ type: "distribution", url: component.url }],
-    properties: [{ name: "qc:ecosystem", value: "windows-sidecar" }]
-  }));
-}
-
 function resolvedGradleComponents() {
   const androidRoot = resolve(repositoryRoot, "apps/android/android");
   const wrapper = resolve(androidRoot, process.platform === "win32" ? "gradlew.bat" : "gradlew");
@@ -162,11 +149,18 @@ function resolvedGradleComponents() {
     // invoked through CALL. Keep shell mode disabled so arguments are not
     // interpolated by Node and dependency resolution stays warning-free.
     const args = process.platform === "win32" ? ["/d", "/s", "/c", `call "${wrapper}" ${gradleArgs.join(" ")}`] : gradleArgs;
+    const commandPath = process.platform === "win32" ? "where.exe" : "which";
+    let javaHome;
+    try {
+      const javaPath = execFileSync(commandPath, ["java"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).split(/\r?\n/).find(Boolean)?.trim();
+      if (javaPath) javaHome = dirname(dirname(javaPath));
+    } catch {}
     const report = execFileSync(executable, args, {
       cwd: androidRoot,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],
       maxBuffer: 32 * 1024 * 1024,
+      env: javaHome ? { ...process.env, JAVA_HOME: javaHome } : process.env,
       ...(process.platform === "win32" ? { windowsVerbatimArguments: true } : {})
     });
     return parseGradleDependencyReport(report);
@@ -175,7 +169,7 @@ function resolvedGradleComponents() {
   }
 }
 
-function androidGradleInventory() {
+export function androidGradleInventory() {
   const resolved = resolvedGradleComponents();
   if (resolved.length) return { components: resolved, resolved: true };
   const androidRoot = resolve(repositoryRoot, "apps/android/android");
@@ -229,7 +223,7 @@ export function buildSbom(packageLock, cargoLocks, metadata = {}, gradle = [], e
     specVersion: "1.5",
     serialNumber: `urn:uuid:${uuidFromDigest(componentDigest)}`,
     version: 1,
-    metadata: { component: { type: "application", name: "QC Control", ...metadata } },
+    metadata: { component: { type: "application", name: "QC Remote", ...metadata } },
     components
   };
 }
@@ -248,11 +242,10 @@ export function generateReleaseProvenance({ artifacts = defaultArtifacts(), outp
   const packageLock = JSON.parse(readFileSync(resolve(repositoryRoot, "package-lock.json"), "utf8"));
   const generatedAt = new Date().toISOString();
   const gradle = androidGradleInventory();
-  const sidecars = sidecarComponents(JSON.parse(readFileSync(resolve(repositoryRoot, "contracts/windows-sidecars.v1.json"), "utf8")));
-  const sbom = buildSbom(packageLock, cargoLocks, { version: windowsPackage.version }, gradle.components, sidecars);
+  const sbom = buildSbom(packageLock, cargoLocks, { version: windowsPackage.version }, gradle.components);
   const manifest = {
     schemaVersion: 1,
-    product: "QC Control",
+    product: "QC Remote",
     generatedAt,
     source: { commit, dirty },
     applications: { windows: windowsPackage.version, android: androidPackage.version },
@@ -263,7 +256,7 @@ export function generateReleaseProvenance({ artifacts = defaultArtifacts(), outp
       cargo: sbom.components.filter((component) => component.properties?.some((property) => property.name === "qc:ecosystem" && property.value === "cargo")).length,
       gradle: gradle.components.length,
       gradleResolved: gradle.resolved,
-      windowsSidecars: sidecars.length
+      windowsSidecars: 0
     },
     artifacts: artifactRecords,
     sbom: { format: "CycloneDX", specVersion: sbom.specVersion, componentCount: sbom.components.length, file: "sbom.cdx.json", sha256: sha256(JSON.stringify(sbom, null, 2) + "\n") }

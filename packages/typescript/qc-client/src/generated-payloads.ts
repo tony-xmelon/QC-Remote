@@ -125,6 +125,7 @@ export interface ModeCycle {
 export interface TempoSettings {
   mode?: "PRESET" | "GLOBAL";
   bpm?: number;
+  globalBpm?: number;
   ledEnabled?: boolean;
   volumeDb?: number;
   running?: boolean;

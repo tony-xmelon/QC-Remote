@@ -299,6 +299,73 @@ test("device-global actions do not require an unrelated preset guard", async () 
   assert.deepEqual(calls, ["tuner", "volume"]);
 });
 
+test("new native protocol actions share one guarded cross-platform executor", async () => {
+  const calls: unknown[][] = [];
+  const gateway = {
+    graphicsTree: async () => ({ tree: "zenUI::RootGraphicsItem" }),
+    globalTempoSettings: async () => ({
+      mode: "GLOBAL", bpm: 110, globalBpm: 120, beats: []
+    }),
+    setGlobalTempo: async (...args: unknown[]) => {
+      calls.push(["global-tempo", ...args]);
+      return { detail: "global tempo set" };
+    },
+    setTunerMeter: async (...args: unknown[]) => {
+      calls.push(["tuner-meter", ...args]);
+      return { detail: "meter set" };
+    },
+    swipeScreen: async (...args: unknown[]) => {
+      calls.push(["swipe", ...args]);
+      return { detail: "swiped" };
+    }
+  } as unknown as GatewayTransport;
+  const context = { gateway, snapshot: demoSnapshot, connected: true };
+  const tree = await executeQcAction({ name: "get_graphics_tree", arguments: {} }, context);
+  assert.equal((tree.data as { tree: string }).tree, "zenUI::RootGraphicsItem");
+  await executeQcAction({
+    name: "set_global_tempo",
+    arguments: {
+      bpm: 121, expected_mode: "GLOBAL", expected_global_bpm: 120,
+      confirm_persistent_write: true
+    }
+  }, context);
+  await executeQcAction({
+    name: "set_tuner_meter",
+    arguments: { enabled: true, confirm_tuner_activation: true, confirm_risky_operation: true }
+  }, context);
+  await executeQcAction({
+    name: "swipe_screen",
+    arguments: { x: 10, y: 20, to_x: 30, to_y: 40, confirm_risky_operation: true }
+  }, context);
+  assert.deepEqual(calls, [
+    ["global-tempo", 121, "GLOBAL", 120],
+    ["tuner-meter", true, true],
+    ["swipe", 10, 20, 30, 40]
+  ]);
+});
+
+test("global tempo and screen swipe fail closed on stale or empty intent", async () => {
+  let writes = 0;
+  const gateway = {
+    globalTempoSettings: async () => ({ mode: "PRESET", bpm: 100, globalBpm: 120, beats: [] }),
+    setGlobalTempo: async () => { writes += 1; return { detail: "sent" }; },
+    swipeScreen: async () => { writes += 1; return { detail: "sent" }; }
+  } as unknown as GatewayTransport;
+  const context = { gateway, snapshot: demoSnapshot, connected: true };
+  await assert.rejects(() => executeQcAction({
+    name: "set_global_tempo",
+    arguments: {
+      bpm: 121, expected_mode: "PRESET", expected_global_bpm: 120,
+      confirm_persistent_write: true
+    }
+  }, context), /GLOBAL tempo mode/);
+  await assert.rejects(() => executeQcAction({
+    name: "swipe_screen",
+    arguments: { x: 10, y: 20, to_x: 10, to_y: 20, confirm_risky_operation: true }
+  }, context), /different pixel/);
+  assert.equal(writes, 0);
+});
+
 test("offline parameter phrases resolve identically for both app hosts", () => {
   const details = {
     row: 0, column: 0, modelId: 1, name: "Amp", category: "Amp", scene: 0,

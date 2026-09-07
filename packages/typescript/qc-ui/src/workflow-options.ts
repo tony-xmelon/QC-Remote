@@ -1,4 +1,4 @@
-import type { GatewayTransport, PresetSnapshot } from "@ndsp-qc/client";
+import type { GatewayTransport, PresetSnapshot } from "@qc-remote/client";
 import type { DeviceHistoryEntry } from "./use-device-history";
 
 export interface WorkflowPrompts {

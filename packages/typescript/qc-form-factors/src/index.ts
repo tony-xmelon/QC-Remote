@@ -37,7 +37,7 @@ export const largeQuadCortex: FormFactorManifest = {
   id: "quad-cortex-large",
   displayName: `${QC_BRAND.deviceName} — Large`,
   chassisAspectRatio: 29 / 19.5,
-  defaultSkinId: "official-svg",
+  defaultSkinId: "obsidian",
   controls: [
     ...sceneControls,
     { id: "bank-down", label: "BANK DOWN", role: "bank:down", group: "navigation" },
@@ -49,19 +49,7 @@ export const largeQuadCortex: FormFactorManifest = {
 export const formFactors = [largeQuadCortex];
 
 export const skins: SkinManifest[] = [
-  {
-    id: "official-svg",
-    displayName: "Official SVG Overlay",
-    className: "skin-official-svg",
-    svgAsset: {
-      url: QC_VISUAL_ASSETS.chassisOverlay.url,
-      sourceWidth: QC_VISUAL_ASSETS.chassisOverlay.sourceWidth,
-      sourceHeight: QC_VISUAL_ASSETS.chassisOverlay.sourceHeight,
-      crop: QC_VISUAL_ASSETS.chassisOverlay.crop,
-      sourceLabel: QC_VISUAL_ASSETS.chassisOverlay.source
-    }
-  },
   { id: "obsidian", displayName: "Graphite Hardware", className: "skin-obsidian" },
   { id: "high-contrast", displayName: "High Contrast", className: "skin-high-contrast" }
 ];
-import { QC_BRAND, QC_VISUAL_ASSETS } from "@ndsp-qc/theme";
+import { QC_BRAND } from "@qc-remote/theme";

@@ -7,7 +7,7 @@ export async function connectCdpPage(endpoint, urlPrefixes = ["http://tauri.loca
   const targets = await response.json();
   const target = targets.find((candidate) => candidate.type === "page"
     && urlPrefixes.some((prefix) => candidate.url?.startsWith(prefix)));
-  if (!target?.webSocketDebuggerUrl) throw new Error("A debuggable QC Control WebView was not found.");
+  if (!target?.webSocketDebuggerUrl) throw new Error("A debuggable QC Remote WebView was not found.");
 
   const socket = new WebSocket(target.webSocketDebuggerUrl);
   await new Promise((resolve, reject) => {

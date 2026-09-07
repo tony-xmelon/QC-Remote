@@ -1,7 +1,7 @@
 # QC Relay
 
 `qc-relay` is the authenticated routing core between a remote MCP resource server
-and the QC Control Android foreground service. It contains no raw USB, HID,
+and the QC Remote Android foreground service. It contains no raw USB, HID,
 protobuf, arbitrary-RPC, browser-cookie, consumer-login-token, or provider-secret
 surface.
 

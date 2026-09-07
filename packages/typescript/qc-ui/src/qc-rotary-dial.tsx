@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { QC_COLORS } from "@ndsp-qc/theme";
+import { QC_COLORS } from "@qc-remote/theme";
 import "./qc-rotary-dial.css";
 
 export type QcRotaryDialProps = {

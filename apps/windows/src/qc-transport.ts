@@ -1,5 +1,5 @@
-import type { GatewayTransport, PresetSnapshot } from "@ndsp-qc/client";
-import { createQcGatewayTransport, type QcDeviceTransport } from "@ndsp-qc/core";
+import type { GatewayTransport, PresetSnapshot } from "@qc-remote/client";
+import { createQcGatewayTransport, type QcDeviceTransport } from "@qc-remote/core";
 
 /**
  * Adapts the stable gateway.v1 domain API to the shared app transport.

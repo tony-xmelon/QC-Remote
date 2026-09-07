@@ -11,7 +11,7 @@ Reference: physical Quad Cortex, CorOS 4.1.0, 800x480 framebuffer corpus
 | Android | 70/70 (100%) | **83.78%** | **97.09%** |
 
 These are native-size measurements, not audit estimates. Both hosts render the
-same versioned `coros410` scratch-preset fixture through `@ndsp-qc/ui`; each
+same versioned `coros410` scratch-preset fixture through `@qc-remote/ui`; each
 script asserts that the captured element is exactly 800x480 before comparison.
 Structural match is edge F1 with a two-pixel tolerance. Color similarity is
 `1 - MAE`. These values are from the interactive app path: the capture driver
@@ -2152,7 +2152,7 @@ python tools/compare_qc_ui_corpus.py --coros 4.1.0 --renderer .artifacts/ui-wind
 ## Focused port onto the native shared architecture
 
 The corpus renderer is now an optional, query-selected layer in the current
-shared `@ndsp-qc/ui` surface. Normal Windows and Android launches retain the
+shared `@qc-remote/ui` surface. Normal Windows and Android launches retain the
 Rust/native live-state and workflow ownership from `codex/parity-hardening`;
 `?fixture=coros410&screen=<renderer>` selects deterministic reconstruction data
 for capture and comparison only. Legacy layout rules and measured color

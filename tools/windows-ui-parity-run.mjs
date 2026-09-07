@@ -40,7 +40,7 @@ const page = browser.contexts()
   .flatMap((context) => context.pages())
   .find((candidate) => candidate.url().startsWith("http://tauri.localhost/")
     || candidate.url().startsWith("http://127.0.0.1:1420/"));
-if (!page) throw new Error("A debuggable QC Control WebView was not found.");
+if (!page) throw new Error("A debuggable QC Remote WebView was not found.");
 
 /**
  * A rejected Tauri command carries a plain object, which Playwright reports as

@@ -37,12 +37,13 @@ let forwarded = false;
 let socket;
 try {
   const pid = adb("shell", "pidof", "com.qccontrol.mobile").split(/\s+/)[0];
-  if (!/^\d+$/.test(pid)) throw new Error("QC Control is not running on the Android device");
+  if (!/^\d+$/.test(pid)) throw new Error("QC Remote is not running on the Android device");
   adb("forward", `tcp:${port}`, `localabstract:webview_devtools_remote_${pid}`);
   forwarded = true;
   const targets = await (await fetch(`http://127.0.0.1:${port}/json`)).json();
-  const target = targets.find((candidate) => candidate.type === "page" && candidate.title === "QC Control");
-  if (!target?.webSocketDebuggerUrl) throw new Error("QC Control WebView target was not found");
+  const target = targets.find((candidate) =>
+    candidate.type === "page" && candidate.url?.startsWith("https://localhost/"));
+  if (!target?.webSocketDebuggerUrl) throw new Error("QC app WebView target was not found");
 
   socket = new WebSocket(target.webSocketDebuggerUrl);
   socket.addEventListener("message", (event) => {

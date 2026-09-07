@@ -1,5 +1,5 @@
 {
-  "name": "@ndsp-qc/windows",
+  "name": "@qc-remote/windows",
   "version": "0.1.97",
   "private": true,
   "type": "module",
@@ -11,11 +11,11 @@
     "tauri:build": "tauri build"
   },
   "dependencies": {
-    "@ndsp-qc/client": "0.1.0",
-    "@ndsp-qc/core": "0.1.0",
-    "@ndsp-qc/form-factors": "0.1.0",
-    "@ndsp-qc/theme": "0.1.0",
-    "@ndsp-qc/ui": "0.1.0",
+    "@qc-remote/client": "0.1.0",
+    "@qc-remote/core": "0.1.0",
+    "@qc-remote/form-factors": "0.1.0",
+    "@qc-remote/theme": "0.1.0",
+    "@qc-remote/ui": "0.1.0",
     "@tauri-apps/api": "^2.11.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"

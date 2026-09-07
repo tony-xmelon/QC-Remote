@@ -20,7 +20,7 @@ from urllib.request import Request, urlopen
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 MANUAL_URL = "https://neuraldsp.com/manual/quad-cortex"
-USER_AGENT = "ndsp-qc-ui-corpus/1.0"
+USER_AGENT = "qc-remote-ui-corpus/1.0"
 
 # Official alt text -> stable corpus id and deterministic shared-renderer state.
 # The sole QC mini-specific 800x480 frame is retained for provenance but is not

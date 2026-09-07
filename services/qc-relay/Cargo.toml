@@ -1,9 +1,10 @@
 [package]
 name = "qc-relay"
 version = "0.1.0"
+publish = false
 edition = "2021"
 license = "MIT"
-description = "Authenticated remote relay for QC Control devices"
+description = "Authenticated remote relay for QC Remote devices"
 
 [dependencies]
 qc-relay-protocol = { path = "../../packages/rust/qc-relay-protocol" }

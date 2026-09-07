@@ -1,10 +1,10 @@
 # Android client
 
-Capacitor/React Android composition root for QC Control. The portrait layout keeps the CorOS display and assistant visible, with five touch-friendly quick controls between them. Compact landscape uses a two-column screen/chat layout.
+Capacitor/React Android composition root for QC Remote. The portrait layout keeps the CorOS display and assistant visible, with five touch-friendly quick controls between them. Compact landscape uses a two-column screen/chat layout.
 
-The CorOS screen and parameter editor come from `@ndsp-qc/ui`; device state,
+The CorOS screen and parameter editor come from `@qc-remote/ui`; device state,
 footswitch semantics, surface commands, tempo, editor transitions, and chat
-intent validation come from `@ndsp-qc/core`. This app owns only Android
+intent validation come from `@qc-remote/core`. This app owns only Android
 lifecycle, permissions, Firebase/voice integration, and the Capacitor USB
 adapter.
 
@@ -22,7 +22,7 @@ secondary transport but is not required by the mobile app.
 Realtime work is split into permanent native lanes: the HID reader, HID command
 writer, performance-MIDI writer, and model-catalog parser cannot block one
 another. Each QC frame is timestamped and delivered to JavaScript as one batch;
-`@ndsp-qc/core` reconciles that batch with pending optimistic scene, preset,
+`@qc-remote/core` reconciles that batch with pending optimistic scene, preset,
 mode, tempo, and bypass commands and applies one UI commit. The shared
 `useQcController` binding also owns send/readback/rollback transactions, so an
 older failure or USB echo cannot undo a newer tap. Raw packets are not copied across the Capacitor
@@ -35,7 +35,7 @@ command selection, and complete protobuf frames are handled by the same Rust
 `qc-protocol::state::StateDecoder` used by Windows, compiled into the APK as
 `libqc_android.so` behind a narrow JNI facade. Raw packets never cross the
 Capacitor bridge, while UI reconciliation and command policy remain in
-`@ndsp-qc/core`. Transport constants and the realtime subscription order are
+`@qc-remote/core`. Transport constants and the realtime subscription order are
 generated from `contracts/qc-usb-profile.v1.json`; Grid, scene, tempo, routing,
 and IPC limits are generated from `contracts/qc-domain.v1.json`.
 

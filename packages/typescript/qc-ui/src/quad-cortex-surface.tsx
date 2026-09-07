@@ -1,8 +1,8 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode, type WheelEvent } from "react";
-import { QC_GRID_COLUMNS, QC_GRID_ROWS, type GridBlock, type PresetEntry, type PresetList, type PresetSnapshot } from "@ndsp-qc/client";
-import { footswitchLeds, routePickerGroup, routePickerLabel, sceneLetter as sceneLabel, type QcSurfaceAction } from "@ndsp-qc/core";
-import type { FormFactorManifest, HardwareControl, SkinManifest } from "@ndsp-qc/form-factors";
-import { QC_BRAND, QC_COLORS, QC_TYPOGRAPHY } from "@ndsp-qc/theme";
+import { QC_GRID_COLUMNS, QC_GRID_ROWS, type GridBlock, type PresetEntry, type PresetList, type PresetSnapshot } from "@qc-remote/client";
+import { footswitchLeds, routePickerGroup, routePickerLabel, sceneLetter as sceneLabel, type QcSurfaceAction } from "@qc-remote/core";
+import type { FormFactorManifest, HardwareControl, SkinManifest } from "@qc-remote/form-factors";
+import { QC_BRAND, QC_COLORS, QC_TYPOGRAPHY } from "@qc-remote/theme";
 import { officialBlockVisual } from "./block-visuals";
 import { CorOsParameterEditor, type CorOsParameterEditorProps } from "./parameter-editor";
 import { fixtureSnapshot, type CorOsScreenView } from "./coros-screen-fixture-data";
@@ -76,8 +76,8 @@ interface QuadCortexSurfaceProps {
   onCloseScreen?: () => void;
 }
 
-export function QcHardwareSwitch({ role, label, ariaLabel, active, assigned = false, accent, compact = false, pulseBpm, pulseEpochMs, onAction }: {
-  role: string; label: ReactNode; ariaLabel?: string; active?: boolean; assigned?: boolean; accent?: string; compact?: boolean; pulseBpm?: number; pulseEpochMs?: number; onAction: (action: HardwareAction) => void;
+export function QcHardwareSwitch({ role, label, ariaLabel, active, assigned = false, accent, compact = false, pulseBpm, pulseEpochMs, readout, onAction }: {
+  role: string; label: ReactNode; ariaLabel?: string; active?: boolean; assigned?: boolean; accent?: string; compact?: boolean; pulseBpm?: number; pulseEpochMs?: number; readout?: string; onAction: (action: HardwareAction) => void;
 }) {
   const drag = useRef<{ pointerId: number; lastY: number; rotated: boolean } | null>(null);
   const hideValueTimer = useRef<number | undefined>(undefined);
@@ -155,12 +155,12 @@ export function QcHardwareSwitch({ role, label, ariaLabel, active, assigned = fa
     onPointerUp={(event) => release(event)} onPointerCancel={(event) => release(event, true)} onKeyDown={keyboard} onKeyUp={(event) => { if (event.key === "Enter" || event.key === " ") setPressed(false); }} onBlur={() => setPressed(false)} onWheel={wheel}
   >
     <span ref={led} className="switch-led" aria-hidden="true" />
-    <span className="switch-ring" aria-hidden="true"><span className="switch-cap" /><span className={`rotation-readout${showValue ? " is-visible" : ""}`}>{encoderValue}</span></span>
+    <span className="switch-ring" aria-hidden="true"><span className="switch-cap" /><span className={`rotation-readout${showValue || readout !== undefined ? " is-visible" : ""}`}>{readout ?? encoderValue}</span></span>
     <span className="switch-label">{label}</span>
   </button>;
 }
 
-export function QcMasterVolumeKnob({ value, onAction }: { value: number; onAction: (action: HardwareAction) => void }) {
+export function QcMasterVolumeKnob({ value, readout, onAction }: { value: number; readout?: string; onAction: (action: HardwareAction) => void }) {
   const drag = useRef<{ pointerId: number; lastY: number } | null>(null);
   const hideValueTimer = useRef<number | undefined>(undefined);
   const [showValue, setShowValue] = useState(false);
@@ -191,7 +191,7 @@ export function QcMasterVolumeKnob({ value, onAction }: { value: number; onActio
     }} onWheel={(event) => {
       event.preventDefault();
       rotate(event.deltaY < 0 ? 1 : -1);
-    }}><span className="volume-pointer" /><span className={`rotation-readout${showValue ? " is-visible" : ""}`}>{value}</span></button>;
+    }}><span className="volume-pointer" /><span className={`rotation-readout${showValue || readout !== undefined ? " is-visible" : ""}`}>{readout ?? value}</span></button>;
 }
 
 function MasterVolume({ value, onAction }: { value: number; onAction: (action: HardwareAction) => void }) {
@@ -532,7 +532,7 @@ export function QuadCortexSurface({ formFactor, snapshot, selectedBlockId, skin,
     {skin.svgAsset && <div className="official-svg-viewport" aria-hidden="true"><img className="official-svg-source" src={`${skin.svgAsset.url}#qc-foreground`} alt="" style={svgCropStyle} /></div>}
     <div className="chassis-edge" aria-hidden="true" />
     <MasterVolume value={snapshot.masterVolume} onAction={onAction} />
-    <div className="device-plate"><QcHardwareIcon kind="brand-pulse" className="pulse-mark" /><span>{QC_BRAND.deviceWordmark}</span><small>{QC_BRAND.surfaceCaption}</small></div>
+    <div className="device-plate"><QcHardwareIcon kind="brand-pulse" className="pulse-mark" /><span>{QC_BRAND.appWordmark}</span><small>{QC_BRAND.surfaceCaption}</small></div>
     <div className="qc-screen-bezel">{fixtureOnly
       ? <div className="qc-screen-fixture-root"><Suspense fallback={null}><CorOsScreenFixture view={screenView} snapshot={displaySnapshot} gigPresetList={gigPresetList} onClose={onCloseScreen} /></Suspense></div>
       : <div className="qc-screen-fixture-root is-live-grid"><CorOsGrid snapshot={displaySnapshot} presetSlotAccent={presetSlotAccent} selectedBlockId={selectedBlockId} onAction={onAction} onOpenPreset={onOpenPreset} onUndo={onUndo} canUndo={canUndo} undoLabel={undoLabel} onSave={onSave} onOpenRouting={onOpenRouting} onRefresh={onRefresh} presetDirectory={presetDirectory} routingPicker={routingPicker} savePreset={savePreset} onContextAction={onContextAction} />{parameterEditor && <CorOsParameterEditor {...parameterEditor} />}</div>}

@@ -64,7 +64,7 @@ This is consistent with a device-produced protected/compressed container with a
 small fixed header. Its inner encoding and the exact `payload_hash` derivation
 remain intentionally undocumented by Neural DSP and should not be guessed.
 The complete JSON can nevertheless be exported, imported, and restored without
-opening the inner payload, which is how QC Control should preserve compatibility.
+opening the inner payload, which is how QC Remote should preserve compatibility.
 
 The `_meta.json` sidecar currently contains:
 
@@ -78,7 +78,7 @@ not part of the portable backup.
 
 The 4.1.0 installation on this machine stored the files below
 `%APPDATA%\Neural DSP\Cortex Control\Backups`. The official manual currently
-documents a slightly different Windows path, so QC Control must not depend on a
+documents a slightly different Windows path, so QC Remote must not depend on a
 hard-coded Cortex Control directory.
 
 ## Device backup protocol
@@ -96,7 +96,7 @@ enum includes `CREATE`, `UPDATE`, `READ`, `UPLOAD`, and `DOWNLOAD`.
 `BackupsForward` supports create/update, download, rename, delete, list,
 fetch-URL, and upload-status operations for Cortex Cloud forwarding. This means
 standalone backup support can be implemented directly over the Quad Cortex USB
-protocol; QC Control does not need or use Cortex Control at runtime.
+protocol; QC Remote does not need or use Cortex Control at runtime.
 
 This direct path was verified against the connected Quad Cortex. A native
 `CREATE` request returned 12 ordered JSON chunks (11 full chunks and one final
@@ -146,12 +146,12 @@ shape (`operation`, `url`, `timeout`, `is_multipart`, repeated `headers`, and a
 byte `payload`), but not the codec that protects the live body.
 
 This is transport packaging and a private service protocol, not a stable file
-format that QC Control should manufacture or depend on. Native device presets
+format that QC Remote should manufacture or depend on. Native device presets
 remain `.pb`; complete device backups remain the portable JSON wrapper described
 above. For a standalone library export, preserve the original `.pb` files and a
 separate index rather than relabeling a private Cloud transaction as a file.
 
-## Implementation policy for QC Control
+## Implementation policy for QC Remote
 
 1. Export/import individual presets as untouched `.pb` bytes.
 2. Export a library as an index plus untouched `.pb` files only after all raw

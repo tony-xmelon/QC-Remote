@@ -1,5 +1,5 @@
-import type { BlockDetails, BlockParameter, GatewayTransport, GridBlock, PresetSnapshot } from "@ndsp-qc/client";
-import { sceneLetter } from "@ndsp-qc/core";
+import type { BlockDetails, BlockParameter, GatewayTransport, GridBlock, PresetSnapshot } from "@qc-remote/client";
+import { sceneLetter } from "@qc-remote/core";
 import { parameterNormalizedValue } from "./parameter-model.ts";
 
 export interface AssistantParameterEdit {

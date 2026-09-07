@@ -1,5 +1,5 @@
-import type { GridBlock } from "@ndsp-qc/client";
-import { QC_COLORS } from "@ndsp-qc/theme";
+import type { GridBlock } from "@qc-remote/client";
+import { QC_COLORS } from "@qc-remote/theme";
 
 export type OfficialBlockVisualKey =
   | "plugin" | "amp" | "capture" | "cab" | "overdrive" | "delay" | "reverb"

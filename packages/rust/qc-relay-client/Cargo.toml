@@ -1,9 +1,10 @@
 [package]
 name = "qc-relay-client"
 version = "0.1.0"
+publish = false
 edition = "2021"
 license = "MIT"
-description = "Reusable outbound public-relay client for QC Control device hosts"
+description = "Reusable outbound public-relay client for QC Remote device hosts"
 
 [dependencies]
 async-trait = "0.1"

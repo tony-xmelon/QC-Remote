@@ -1,15 +1,21 @@
 package com.qccontrol.mobile;
 
+import android.Manifest;
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Build;
 import androidx.core.content.ContextCompat;
 import com.getcapacitor.JSObject;
+import com.getcapacitor.PermissionState;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.getcapacitor.annotation.Permission;
+import com.getcapacitor.annotation.PermissionCallback;
 import java.io.IOException;
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -21,7 +27,10 @@ import okhttp3.Response;
 import org.json.JSONObject;
 import java.net.URI;
 
-@CapacitorPlugin(name = "QcRelay")
+@CapacitorPlugin(
+    name = "QcRelay",
+    permissions = @Permission(alias = "notifications", strings = { Manifest.permission.POST_NOTIFICATIONS })
+)
 public final class QcRelayPlugin extends Plugin {
     private final OkHttpClient http = new OkHttpClient();
     private volatile String relayState = "stopped";
@@ -48,6 +57,22 @@ public final class QcRelayPlugin extends Plugin {
     }
 
     @PluginMethod public void pair(PluginCall call) {
+        if (needsNotificationPermission()) {
+            explainNotificationPermission(call, "pairNotificationPermission");
+            return;
+        }
+        beginPair(call);
+    }
+
+    @PermissionCallback private void pairNotificationPermission(PluginCall call) {
+        if (needsNotificationPermission()) {
+            call.reject("Notification permission is required while the remote relay is active.", "NOTIFICATION_PERMISSION_DENIED");
+            return;
+        }
+        beginPair(call);
+    }
+
+    private void beginPair(PluginCall call) {
         String endpoint = normalizedEndpoint(call.getString("endpoint", ""));
         String pairingCode = call.getString("pairingCode", "").trim();
         String deviceName = call.getString("deviceName", android.os.Build.MODEL).trim();
@@ -84,7 +109,45 @@ public final class QcRelayPlugin extends Plugin {
         } catch (Exception error) { call.reject("Pairing request is invalid.", "INVALID_PAIRING", error); }
     }
 
-    @PluginMethod public void start(PluginCall call) { if (!new RelayCredentialStore(getContext()).paired()) { call.reject("Pair this phone first.", "PAIRING_REQUIRED"); return; } startService(); call.resolve(); }
+    @PluginMethod public void start(PluginCall call) {
+        if (!new RelayCredentialStore(getContext()).paired()) { call.reject("Pair this phone first.", "PAIRING_REQUIRED"); return; }
+        if (needsNotificationPermission()) {
+            explainNotificationPermission(call, "startNotificationPermission");
+            return;
+        }
+        startRelay(call);
+    }
+
+    @PermissionCallback private void startNotificationPermission(PluginCall call) {
+        if (needsNotificationPermission()) {
+            call.reject("Notification permission is required while the remote relay is active.", "NOTIFICATION_PERMISSION_DENIED");
+            return;
+        }
+        startRelay(call);
+    }
+
+    private void startRelay(PluginCall call) { startService(); call.resolve(); }
+
+    private boolean needsNotificationPermission() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+            && getPermissionState("notifications") != PermissionState.GRANTED;
+    }
+
+    /** Explain the one persistent relay notification before Android shows its system permission prompt. */
+    private void explainNotificationPermission(PluginCall call, String callback) {
+        if (getActivity() == null) {
+            call.reject("Notification permission is required while the remote relay is active.", "NOTIFICATION_PERMISSION_DENIED");
+            return;
+        }
+        getActivity().runOnUiThread(() -> new AlertDialog.Builder(getActivity())
+            .setTitle("Allow Remote notifications?")
+            .setMessage("Remote access keeps a secure connection to your Quad Cortex while " + getContext().getString(R.string.app_name) + " is in the background. "
+                + "Android requires one low-priority, ongoing notification for that connection. USB control and chat do not use notifications.")
+            .setNegativeButton("Not now", (dialog, which) -> call.reject(
+                "Notification permission is required while the remote relay is active.", "NOTIFICATION_PERMISSION_DENIED"))
+            .setPositiveButton("Continue", (dialog, which) -> requestPermissionForAlias("notifications", call, callback))
+            .show());
+    }
     @PluginMethod public void setAccessMode(PluginCall call) {
         try {
             String mode = call.getString("mode", RelayAccessPolicy.FULL);

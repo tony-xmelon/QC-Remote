@@ -1,4 +1,4 @@
-import type { BlockDetails, PresetSnapshot } from "@ndsp-qc/client";
+import type { BlockDetails, PresetSnapshot } from "@qc-remote/client";
 
 export interface QcCommandResult {
   detail?: string;

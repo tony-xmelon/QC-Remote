@@ -1,6 +1,6 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
-import type { GridBlock, PresetList, PresetSnapshot } from "@ndsp-qc/client";
-import { QC_COLORS } from "@ndsp-qc/theme";
+import type { GridBlock, PresetList, PresetSnapshot } from "@qc-remote/client";
+import { QC_COLORS } from "@qc-remote/theme";
 import { officialBlockVisual } from "./block-visuals";
 import { openSplitPath } from "./coros-ui";
 import { QcDeviceGlyph } from "./device-glyph";
@@ -29,12 +29,9 @@ type OfficialGigMode = "preset" | "scene" | "stomp" | "hybrid";
 
 function GigStompGlyph({ index }: { index: number }) {
   if (index === 6) return <svg viewBox="0 0 70 70" aria-hidden="true"><rect x="3" y="3" width="64" height="64" rx="14" fill="#050506" stroke="#4f765f" strokeWidth="2.4" /><g fill="none" stroke="#f2f2f2" strokeWidth="2" strokeLinejoin="round"><rect x="24" y="21" width="22" height="22" rx="2" /><rect x="17" y="28" width="22" height="22" rx="2" /><path d="M28 21v-5h22v22h-4" /></g></svg>;
-  const tiles: Array<[[number, number], string]> = [
-    [[320, 82], "#2df36a"], [[560, 0], "#6d3405"], [[400, 0], "#6d3405"], [[400, 0], "#6d3405"],
-    [[320, 0], "#ff2727"], [[0, 82], "#8b8500"], [[400, 82], "#4f765f"], [[240, 82], "#050506"]
-  ];
-  const [tile, color] = tiles[index];
-  return <svg viewBox={`${tile[0]} ${tile[1]} 70 70`} aria-hidden="true"><image href="/qc-block-samples.svg" x="0" y="0" width="710" height="152" /><rect x={tile[0] + 3} y={tile[1] + 3} width="64" height="64" rx="14" fill="none" stroke="#000" strokeWidth="5" /><rect x={tile[0] + 3} y={tile[1] + 3} width="64" height="64" rx="14" fill="none" stroke={color} strokeWidth="2.4" /></svg>;
+  const colors = ["#2df36a", "#ff7000", "#ff7000", "#ff7000", "#ff2727", "#ffd236", "#4f765f", "#00ffdd"];
+  const labels = ["WAH", "DRV", "DRV", "DRV", "LOP", "PIT", "MULTI", "RVB"];
+  return <svg viewBox="0 0 70 70" aria-hidden="true"><rect x="4" y="4" width="62" height="62" rx="14" fill="#050506" stroke={colors[index]} strokeWidth="2.4" /><circle cx="35" cy="27" r="9" fill="none" stroke={colors[index]} strokeWidth="2.5" /><text x="35" y="50" textAnchor="middle" fill="#f2f2f2" fontSize="8" fontWeight="800">{labels[index]}</text></svg>;
 }
 
 function OfficialGigModeIcon({ mode }: { mode: OfficialGigMode }) {

@@ -55,7 +55,19 @@ struct Session {
     principal_id: PrincipalId,
     ready: AtomicBool,
     outbound: mpsc::Sender<DeviceFrame>,
+    dispatch: Mutex<()>,
     pending: Mutex<HashMap<String, oneshot::Sender<Result<Value, RelayError>>>>,
+}
+
+fn request_timeout(base: Duration, rpc: &str) -> Duration {
+    if matches!(
+        rpc,
+        "device.createBackup" | "device.copyPreset" | "device.duplicateSetlist"
+    ) {
+        base.max(Duration::from_secs(195))
+    } else {
+        base
+    }
 }
 
 pub struct DeviceConnection {
@@ -89,6 +101,7 @@ impl RelayHub {
             principal_id: credential.principal_id,
             ready: AtomicBool::new(false),
             outbound: tx,
+            dispatch: Mutex::new(()),
             pending: Mutex::new(HashMap::new()),
         });
         if let Some(old) = self
@@ -182,6 +195,10 @@ impl RelayHub {
         {
             return Err(RelayError::DeviceOffline);
         }
+        // One physical QC session is stateful. Serialize requests through the
+        // device response so concurrent Streamable HTTP calls cannot reorder
+        // rapid writes or let a later read overtake an earlier mutation.
+        let _dispatch = session.dispatch.lock().await;
         let id = Uuid::new_v4().to_string();
         let (tx, rx) = oneshot::channel();
         session.pending.lock().await.insert(id.clone(), tx);
@@ -195,14 +212,11 @@ impl RelayHub {
             session.pending.lock().await.remove(&id);
             return Err(RelayError::Disconnected);
         }
-        // Backups are progress-checked by the native host and can legitimately
-        // outlive the ordinary request window. Keep the shorter deadline for
-        // every other action so a disconnected device still fails promptly.
-        let request_timeout = if policy.rpc == "device.createBackup" {
-            self.inner.timeout.max(Duration::from_secs(195))
-        } else {
-            self.inner.timeout
-        };
+        // Backups and multi-stage preset copies are progress-checked by the
+        // native host and can legitimately outlive the ordinary request
+        // window. Keep the shorter deadline for all single-stage actions so a
+        // disconnected device still fails promptly.
+        let request_timeout = request_timeout(self.inner.timeout, policy.rpc);
         match tokio::time::timeout(request_timeout, rx).await {
             Ok(Ok(result)) => result,
             Ok(Err(_)) => Err(RelayError::Disconnected),
@@ -355,5 +369,23 @@ impl DeviceConnection {
 async fn fail_all(session: &Session, error: RelayError) {
     for (_, pending) in session.pending.lock().await.drain() {
         let _ = pending.send(Err(error.clone()));
+    }
+}
+
+#[cfg(test)]
+mod timeout_tests {
+    use super::*;
+
+    #[test]
+    fn long_running_workflows_outlive_the_ordinary_relay_window() {
+        let ordinary = Duration::from_secs(75);
+        for rpc in [
+            "device.createBackup",
+            "device.copyPreset",
+            "device.duplicateSetlist",
+        ] {
+            assert_eq!(request_timeout(ordinary, rpc), Duration::from_secs(195));
+        }
+        assert_eq!(request_timeout(ordinary, "device.setParameter"), ordinary);
     }
 }
