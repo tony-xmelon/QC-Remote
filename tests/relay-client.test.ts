@@ -12,7 +12,11 @@ const relayWorkflow = readFileSync(new URL("../packages/typescript/qc-ui/src/use
 
 test("shared contract assigns every write to exactly one cumulative access tier", () => {
   const assigned = new Map<string, string>();
-  for (const [tier, names] of Object.entries(contract.accessTiers as Record<string, string[]>)) {
+  const tiers = Object.entries(contract.accessTiers as Record<string, string[]>);
+  // Empty tiers, or no tiers at all, would assign nothing and still pass.
+  assert.ok(tiers.length >= 2, `expected the access tiers, got ${tiers.length}`);
+  for (const [tier, names] of tiers) {
+    assert.ok(names.length >= 1, `tier ${tier} lists no writes`);
     for (const name of names) {
       assert.equal(assigned.has(name), false, `${name} is assigned more than once`);
       assigned.set(name, tier);
@@ -27,6 +31,7 @@ test("shared contract assigns every write to exactly one cumulative access tier"
 });
 
 test("Windows outbound relay shares the generated MCP action boundary", () => {
+  assert.ok(contract.actions.length > 50, `expected the action contract, got ${contract.actions.length}`);
   for (const action of contract.actions) {
     assert.match(generatedRust, new RegExp(`"${action.rpc.replace(".", "\\.")}"`));
   }

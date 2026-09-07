@@ -97,6 +97,7 @@ test("offline assistant orchestration has one cross-platform workflow owner", ()
   assert.match(workflow, /resolveOfflineAssistantIntent/);
   assert.match(workflow, /prepareAssistantParameterEdit/);
   assert.match(workflow, /applyPreparedOfflineAssistantAction/);
+  assert.ok(apps.length >= 2, `expected both app sources, got ${apps.length}`);
   for (const app of apps) {
     assert.match(app, /runOfflineAssistantIntent\(intent,/);
     assert.match(app, /applyPreparedOfflineAssistantAction/);
@@ -184,6 +185,9 @@ test("one generated profile owns USB and performance MIDI policy across native h
     assert.match(java, new RegExp(`= ${value}(?:L)?;`));
     assert.match(rust, new RegExp(`= ${value};`));
   }
+  // An empty messageTypes would compare nothing across the three bindings.
+  assert.ok(Object.keys(contract.messageTypes).length >= 5,
+    `expected the message-type table, got ${Object.keys(contract.messageTypes).length}`);
   for (const value of Object.values(contract.messageTypes)) {
     assert.match(java, new RegExp(`= ${value};`));
     assert.match(rust, new RegExp(`= ${value};`));
@@ -616,6 +620,7 @@ test("application payload types are generated once for TypeScript, Rust, and Pyt
   const typescript = source("packages/typescript/qc-client/src/generated-payloads.ts");
   const rust = source("packages/rust/qc-protocol/src/generated_payloads.rs");
   const python = source("services/device-gateway/src/qc_device_gateway/generated_payloads.py");
+  assert.ok(schema["x-generate"].length > 5, `expected the payload list, got ${schema["x-generate"].length}`);
   for (const name of schema["x-generate"]) {
     assert.match(typescript, new RegExp(`interface ${name}\\b`));
     assert.match(python, new RegExp(`class ${name}\\b`));
