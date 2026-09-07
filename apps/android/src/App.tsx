@@ -88,7 +88,8 @@ export function App() {
   const relayWorkflow = usePublicRelayWorkflow({ relay: publicRelay, enabled: native, autoStart: true, subscribe: subscribeRelayState });
   const relayState: RelayState = relayWorkflow.status?.state ?? "stopped";
   const relayPaired = relayWorkflow.status?.paired ?? false;
-  const [workflowPanel, setWorkflowPanel] = useState<"block" | "add" | "routing" | "scene" | "about" | "display" | "privacy" | "legal" | "notices" | null>(null);
+  const [workflowPanel, setWorkflowPanel] = useState<"block" | "add" | "routing" | "scene" | "usb" | "remote" | "about" | "display" | "privacy" | "legal" | "notices" | null>(null);
+  const [usbPanelDetail, setUsbPanelDetail] = useState("Checking direct USB status…");
   const [mobileScreenView, setMobileScreenView] = useState<CorOsScreenView | null>(null);
   const connectInFlight = useRef(false);
   const presetSynchronized = useRef(false);
@@ -303,6 +304,15 @@ export function App() {
   const connectUsb = async () => {
     if (!native || usbBusy) return;
     await attemptUsbConnection(true);
+  };
+  const openUsbStatusPanel = async () => {
+    setWorkflowPanel("usb");
+    try { setUsbPanelDetail(await usbDiagnostics()); }
+    catch (error) { setUsbPanelDetail(error instanceof Error ? error.message : "USB status could not be read."); }
+  };
+  const openRemoteStatusPanel = async () => {
+    setWorkflowPanel("remote");
+    if (native) await relayWorkflow.refresh().catch(() => undefined);
   };
 
   const adjustEditorParameter = useCallback((role: string, delta: number) => {
@@ -560,8 +570,8 @@ export function App() {
     <header className="mobile-header">
       <div className="mobile-brand"><AppMark onClick={() => setWorkflowPanel("about")} /><span><strong>{QC_BRAND.appName}</strong><small>v{appPackage.version}</small></span></div>
       <div className="connection-pills">
-        <button className={`connection-pill relay-${relayState}`} onClick={() => void configureRelay()} aria-label={relayPaired ? "Remote relay settings" : "Pair remote relay"}><i /> {qcRelayLabel(relayWorkflow.status)}</button>
-        <button className={`connection-pill ${usbState}`} onClick={() => void connectUsb()} aria-label="Connect Quad Cortex over USB"><i /> USB</button>
+        <button className={`connection-pill relay-${relayState}`} onClick={() => void openRemoteStatusPanel()} aria-haspopup="dialog" aria-expanded={workflowPanel === "remote"} aria-label={`${qcRelayLabel(relayWorkflow.status)}; open remote relay details`}><i /> {qcRelayLabel(relayWorkflow.status)}</button>
+        <button className={`connection-pill ${usbState}`} onClick={() => void openUsbStatusPanel()} aria-haspopup="dialog" aria-expanded={workflowPanel === "usb"} aria-label="USB; open Quad Cortex connection details"><i /> USB</button>
       </div>
     </header>
 
@@ -626,6 +636,8 @@ export function App() {
         {workflowPanel === "block" && <GridManagementPanel snapshot={snapshot} details={blockDetails} loading={gridWorkflow.detailsLoading} pending={devicePending} moveDestination={gridWorkflow.moveDestination} setMoveDestination={gridWorkflow.setMoveDestination} footswitchDraft={gridWorkflow.footswitchDraft} setFootswitchDraft={gridWorkflow.setFootswitchDraft} move={() => void gridWorkflow.move()} assignFootswitch={() => void gridWorkflow.assignFootswitch()} remove={() => void gridWorkflow.remove()} />}
         {workflowPanel === "add" && <AddBlockPanel snapshot={snapshot} filteredModels={gridWorkflow.filteredModels} loading={gridWorkflow.modelsLoading} pending={devicePending} modelFilter={gridWorkflow.modelFilter} setModelFilter={gridWorkflow.setModelFilter} addCell={gridWorkflow.addCell} setAddCell={gridWorkflow.setAddCell} addModelId={gridWorkflow.addModelId} setAddModelId={gridWorkflow.setAddModelId} add={() => void gridWorkflow.add()} cancel={() => setWorkflowPanel(null)} />}
         {workflowPanel === "scene" && <SceneEditor snapshot={snapshot} pending={devicePending} sourceScene={sceneWorkflow.sourceScene} setSourceScene={sceneWorkflow.setSourceScene} destinationScene={sceneWorkflow.destinationScene} setDestinationScene={sceneWorkflow.setDestinationScene} swap={sceneWorkflow.swap} setSwap={sceneWorkflow.setSwap} label={sceneWorkflow.label} setLabel={sceneWorkflow.setLabel} color={sceneWorkflow.color} setColor={sceneWorkflow.setColor} colors={sceneWorkflow.colors} copy={() => void sceneWorkflow.copy()} saveLabel={() => void sceneWorkflow.saveLabel()} saveColor={() => void sceneWorkflow.saveColor()} />}
+        {workflowPanel === "usb" && <><div className="dialog-kicker">DIRECT USB</div><h2 id="dialog-title">Quad Cortex connection</h2><p>{connection.detail || (usbConnected ? "The Quad Cortex is connected directly over USB." : "No Quad Cortex is connected directly over USB.")}</p><p className="mobile-status-detail">{usbPanelDetail}</p><div className="mobile-legal-actions"><button className="primary" disabled={!native || usbBusy} onClick={() => void connectUsb().then(openUsbStatusPanel)}>{usbConnected ? "Reconnect" : "Connect"}</button><button disabled={!native} onClick={() => void openUsbStatusPanel()}>Refresh</button></div></>}
+        {workflowPanel === "remote" && <><div className="dialog-kicker">REMOTE RELAY</div><h2 id="dialog-title">Remote access</h2><p>{!relayPaired ? "This phone is not paired to a remote relay." : relayState === "connected" ? "A paired remote client can reach this Quad Cortex." : relayState === "connecting" || relayState === "reconnecting" ? "The outbound relay is connecting." : "This phone is paired, but the relay is not connected."}</p>{relayWorkflow.status?.endpoint && <p className="mobile-status-detail">{relayWorkflow.status.endpoint}</p>}<div className="mobile-legal-actions"><button className="primary" disabled={!native || relayWorkflow.pending} onClick={() => void (relayPaired ? relayWorkflow.start() : configureRelay())}>{relayPaired ? "Connect" : "Pair"}</button><button disabled={!native || relayWorkflow.pending} onClick={() => void openRemoteStatusPanel()}>Refresh</button>{relayPaired && <button className="danger" disabled={relayWorkflow.pending} onClick={() => void configureRelay()}>Unpair</button>}</div></>}
         {workflowPanel === "about" && <><div className="dialog-kicker">ABOUT</div><h2 id="dialog-title">{QC_BRAND.appName} <small>{appPackage.version}</small></h2><p>An independent mobile companion for controlling a connected Quad Cortex.</p><p className="mobile-legal-note">{QC_LEGAL.independence}</p><p>{QC_LEGAL.copyright}</p><div className="mobile-legal-actions"><button onClick={() => setWorkflowPanel("display")}>Display</button><button onClick={() => setWorkflowPanel("privacy")}>Privacy</button><button onClick={() => setWorkflowPanel("legal")}>Legal</button><button onClick={() => setWorkflowPanel("notices")}>Notices</button></div></>}
         {workflowPanel === "display" && <><div className="dialog-kicker">DISPLAY</div><h2 id="dialog-title">Screen wake</h2><p>Keep this screen on while QC Remote is in front and a Quad Cortex is connected. It automatically releases when you disconnect or leave the app.</p><label className="mobile-setting-toggle"><input type="checkbox" checked={keepScreenAwake} onChange={(event) => changeKeepScreenAwake(event.target.checked)} /> Keep screen awake while connected</label><div className="mobile-legal-actions"><button onClick={() => setWorkflowPanel("about")}>Back to About</button></div></>}
         {workflowPanel === "privacy" && <><div className="dialog-kicker">PRIVACY</div><h2 id="dialog-title">Local control, optional services</h2><p>{QC_LEGAL.privacy.local}</p><p>{QC_LEGAL.privacy.models}</p><p>{QC_LEGAL.privacy.voice}</p><label className="mobile-setting-toggle"><input type="checkbox" checked={onlineModelsAllowed} onChange={(event) => { const allowed = event.target.checked; setOnlineModelsAllowed(allowed); window.localStorage.setItem(androidOnlineModelConsentKey, allowed ? "accepted" : "declined"); }} /> Allow messages, attachments, and relevant device context to be sent to Gemini</label><div className="mobile-legal-actions"><button onClick={() => { conversation.setMessages([]); setMessage(""); setWorkflowPanel("about"); }}>Clear conversation</button><button onClick={() => setWorkflowPanel("about")}>Back to About</button></div></>}

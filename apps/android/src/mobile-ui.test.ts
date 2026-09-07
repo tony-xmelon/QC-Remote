@@ -12,6 +12,10 @@ test("the mobile control deck follows the physical three-row QC layout", () => {
   assert.match(appSource, /Array\.from\(\{ length: QC_SCENE_COUNT \}/, "A through H must come from the shared scene definition");
   assert.match(appSource, /QcMasterVolumeKnob value=\{snapshot\.masterVolume\} readout=\{`\$\{snapshot\.masterVolume\}`\}/);
   assert.match(appSource, /<small>v\{appPackage\.version\}<\/small>/, "the compact header identifies the app version instead of duplicating the QC preset title");
+  assert.match(appSource, /openUsbStatusPanel/, "USB status opens a live details panel rather than immediately reconnecting");
+  assert.match(appSource, /openRemoteStatusPanel/, "Remote status opens a live details panel rather than immediately unpairing");
+  assert.match(appSource, /DIRECT USB[\s\S]*Quad Cortex connection/);
+  assert.match(appSource, /REMOTE RELAY[\s\S]*Remote access/);
   assert.match(appSource, /ScreenWakeNative\.setEnabled\(\{ enabled \}\)/, "the foreground Android activity stays awake only for a live USB session");
   assert.match(appSource, /screenDimAfterMs = 90_000/);
   assert.match(appSource, /onPointerDown=\{resetScreenDimmer\}/);
