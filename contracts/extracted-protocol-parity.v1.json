@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "extensions": [
+    {
+      "id": "tuner-meter",
+      "messageType": 6,
+      "schemaMessage": "TunerMessage",
+      "schemaFields": ["enable_meter", "meter"],
+      "rust": { "path": "packages/rust/qc-protocol/src/commands.rs", "symbols": ["set_tuner_meter"] },
+      "python": { "path": "services/device-gateway/src/qc_device_gateway/protocol_extensions.py", "symbols": ["tuner_meter_message", "send_tuner_meter"] }
+    },
+    {
+      "id": "global-tempo",
+      "messageType": 33,
+      "schemaMessage": "GlobalTempoMessage",
+      "schemaFields": ["params"],
+      "rust": { "path": "packages/rust/qc-protocol/src/commands.rs", "symbols": ["set_global_tempo"] },
+      "python": { "path": "services/device-gateway/src/qc_device_gateway/protocol_extensions.py", "symbols": ["global_tempo_message", "send_global_tempo"] }
+    },
+    {
+      "id": "system-time-sync",
+      "messageType": 43,
+      "schemaMessage": "SystemTimeSyncMessage",
+      "schemaFields": ["ms_since_epoch"],
+      "rust": { "path": "packages/rust/qc-protocol/src/commands.rs", "symbols": ["sync_system_time"] },
+      "python": { "path": "services/device-gateway/src/qc_device_gateway/protocol_extensions.py", "symbols": ["system_time_sync_message", "sync_system_time"] }
+    },
+    {
+      "id": "remote-graphics-tree",
+      "messageType": 72,
+      "schemaMessage": "RemoteControlMessage",
+      "schemaFields": ["graphics_tree"],
+      "rust": { "path": "packages/rust/qc-protocol/src/commands.rs", "symbols": ["read_graphics_tree"] },
+      "rustDecode": { "path": "packages/rust/qc-protocol/src/responses.rs", "symbols": ["decode_graphics_tree"] },
+      "python": { "path": "services/device-gateway/src/qc_device_gateway/remote_control.py", "symbols": ["capture_graphics_tree"] }
+    }
+  ]
+}

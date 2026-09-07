@@ -515,7 +515,15 @@ class PyQuadCortexDevice:
         # reads, keepalive, and reconnection readiness happen off the Python/UI
         # threads. Source/dev environments without the broker retain the direct
         # transport as a compatibility fallback.
-        self._qc = connect_native() if native_broker_enabled() else pyquadcortex.connect()
+        use_native_broker = native_broker_enabled()
+        self._qc = connect_native() if use_native_broker else pyquadcortex.connect()
+        if not use_native_broker:
+            # The Rust broker includes SystemTimeSync in its initialization
+            # plan. Keep the development-only direct Python fallback wire-
+            # compatible without making ordinary tests or imports require a QC.
+            from .protocol_extensions import sync_system_time
+
+            sync_system_time(self._qc, int(time.time() * 1000))
         self._connected_at = _utc_now()
         self._remember_position(self._read_position_state())
         return self.connection_state("Quad Cortex handshake complete")

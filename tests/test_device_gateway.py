@@ -20,6 +20,13 @@ from qc_device_gateway.generated_gateway_dispatch import GATEWAY_API_VERSION
 from qc_device_gateway.service import GatewayService
 from qc_device_gateway.device import PyQuadCortexDevice, _block_color, _catalog_audit, _conditional_parameter_hidden, _device_type_name, _editor_parameter_state, _factory_model_metadata, _format_parameter_number, _parameter_enabled, _png_response, _protocol_symbol, _stomp_color, send_qc_midi_cc
 from qc_device_gateway.native_transport import NativeBrokerError, NativeBrokerTransport, _broker_result, _gunzip_bounded
+from qc_device_gateway.protocol_extensions import (
+    global_tempo_message,
+    send_global_tempo,
+    send_tuner_meter,
+    system_time_sync_message,
+    tuner_meter_message,
+)
 from qc_device_gateway.remote_control import _legacy_message_class, swipe_screen
 
 
@@ -43,6 +50,44 @@ class RemoteControlCompatibilityTests(unittest.TestCase):
 
     def test_capture_cli_midi_helper_is_public(self):
         self.assertTrue(callable(send_qc_midi_cc))
+
+
+class ExtractedProtocolParityTests(unittest.TestCase):
+    def test_tuner_meter_matches_the_sparse_rust_message(self):
+        self.assertEqual(tuner_meter_message(True).SerializeToString(), b"\x08\x01\x30\x01")
+        self.assertEqual(tuner_meter_message(False).SerializeToString(), b"\x08\x01\x30\x00")
+
+    def test_global_tempo_matches_the_rust_scale_and_field_indexes(self):
+        message = global_tempo_message(75)
+        self.assertEqual(message.action, 1)
+        self.assertEqual(len(message.params), 1)
+        self.assertEqual(message.params[0].index, 0)
+        self.assertAlmostEqual(message.params[0].param_values[0].float_value, 0.175)
+        self.assertEqual(global_tempo_message(0).params[0].param_values[0].float_value, 0.0)
+        self.assertEqual(global_tempo_message(10_000).params[0].param_values[0].float_value, 1.0)
+        with self.assertRaises(TypeError):
+            global_tempo_message(True)
+
+    def test_system_time_sync_matches_the_rust_sparse_shape(self):
+        now_ms = 1_788_711_237_617
+        message = system_time_sync_message(now_ms)
+        self.assertEqual(message.action, 1)
+        self.assertEqual(message.ms_since_epoch, now_ms)
+        self.assertFalse(message.HasField("request_id"))
+
+    def test_protocol_helpers_send_exactly_one_message(self):
+        from pyquadcortex import registry
+
+        sent = []
+        qc = SimpleNamespace(_t=SimpleNamespace(send=sent.append))
+        send_tuner_meter(qc, True)
+        send_global_tempo(qc, 75)
+        self.assertEqual(len(sent), 2)
+        self.assertEqual(sent[0].SerializeToString(), b"\x08\x01\x30\x01")
+        self.assertAlmostEqual(sent[1].params[0].param_values[0].float_value, 0.175)
+        self.assertEqual(registry._TYPE_BY_CLASS[type(sent[0])], 6)
+        self.assertEqual(registry._TYPE_BY_CLASS[type(sent[1])], 33)
+        self.assertEqual(registry._TYPE_BY_CLASS[type(system_time_sync_message(1))], 43)
 
 
 class PositionState:
@@ -467,10 +512,15 @@ class DevicePositionTests(unittest.TestCase):
         module = SimpleNamespace(QuadCortex=QuadCortex, connect=lambda: session)
         device = PyQuadCortexDevice()
         device._read_position_state = lambda: PositionState("/media/p4/Presets/My Presets", 0)
-        with patch.dict(sys.modules, {"pyquadcortex": module}):
+        with patch.dict(sys.modules, {"pyquadcortex": module}), patch(
+            "qc_device_gateway.protocol_extensions.sync_system_time"
+        ) as sync_system_time:
             device.reconnect()
         self.assertEqual(QuadCortex._SUBSCRIBE_TYPES, ("ModuleStats", "RecallPreset", "Scene"))
         self.assertIs(device._qc, session)
+        sync_system_time.assert_called_once()
+        self.assertIs(sync_system_time.call_args.args[0], session)
+        self.assertIsInstance(sync_system_time.call_args.args[1], int)
 
     def test_disconnect_reports_real_disconnected_state_not_demo_mode(self):
         device = PyQuadCortexDevice()

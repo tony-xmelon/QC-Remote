@@ -36,6 +36,7 @@
     "mcp-parity:check": "node tools/verify-mcp-platform-parity.mjs",
     "parity:pyquadcortex": "node tools/verify-pyquadcortex-parity.mjs",
     "parity:pyquadcortex:github": "node tools/verify-pyquadcortex-parity.mjs --github",
+    "parity:protocol-extensions": "node tools/verify-extracted-protocol-parity.mjs",
     "native:runtime-boundary": "node tools/verify-native-runtime-boundary.mjs",
     "test": "npm run native:runtime-boundary && npm run test:core && npm run test:frontend && npm test --workspace @ndsp-qc/android",
     "test:assistant": "npm run test:frontend",
