@@ -20,11 +20,15 @@ test("visual fixture query state is identical for every host", () => {
 test("physical search fixtures own deterministic typography without inheriting the Grid layout", () => {
   const fixtureSource = readFileSync(new URL("../packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", import.meta.url), "utf8");
   const fixtureStyles = readFileSync(new URL("../packages/typescript/qc-ui/src/remaining-fixtures-fixes.css", import.meta.url), "utf8");
+  const measuredStyles = readFileSync(new URL("../packages/typescript/qc-ui/src/remaining-fixtures-zenio.css", import.meta.url), "utf8");
   assert.match(fixtureSource, /className="capture-search-keyboard"/);
   assert.doesNotMatch(fixtureSource, /className="qc-screen capture-search-keyboard"/);
   assert.match(fixtureStyles, /\.capture-search-keyboard,.qc-screen\.capture-search-results\{position:absolute;inset:0;overflow:hidden;background:#101310;color:#ecefec;container-type:inline-size\}/);
   assert.match(fixtureSource, /<h1 className=\{query \? "is-query" : ""\}>/);
   assert.match(fixtureStyles, /\.capture-search-keyboard>h1\.is-query\{color:#2df36a\}/);
+  assert.match(fixtureSource, /className="capture-clear-searches"/);
+  assert.match(measuredStyles, /grid-template-columns: repeat\(10, 8\.875cqw\)/, "Search keys must use the measured fixed tracks without fractional drift");
+  assert.match(measuredStyles, /grid-template-columns: 14cqw 8\.875cqw 48\.375cqw 8\.875cqw 14cqw/, "Search bottom row must preserve the native key widths");
 });
 
 test("typography references render the captured state instead of a generic substitute", () => {

@@ -1,21 +1,62 @@
 /* Final, state-specific measurements from the CorOS 4.1.0 zenUI corpus. */
-.capture-search-keyboard > main {
-  top: 28.5cqw;
-  grid-template-rows: repeat(4, 7.125cqw);
-  gap: 1.125cqw;
-}
-.capture-search-keyboard > main > div { height: 7.125cqw; gap: 1cqw; }
-.capture-search-keyboard > main > div:nth-child(2) { grid-template-columns: repeat(9, 9cqw); }
-.capture-search-keyboard > main > div:nth-child(3) { grid-template-columns: 14.25cqw repeat(7, 1fr) 14.25cqw; }
-.capture-search-keyboard > main > div:nth-child(4) { grid-template-columns: 14.25cqw 9cqw 1fr 9cqw 14.25cqw; }
 .capture-search-keyboard > main button { height: 100%; font-weight: 400; }
 .capture-search-keyboard > main button { position: relative; }
 .capture-search-keyboard > main button small { position: absolute; right: .75cqw; top: .35cqw; color: #737773; font-size: 1.375cqw; font-weight: 400; }
 .capture-search-keyboard > main > div:nth-child(4) button:nth-child(2),
 .capture-search-keyboard > main > div:nth-child(4) button:nth-child(4) { color: #304030; }
 .capture-search-keyboard > main button svg { width: 2.75cqw; height: 2.75cqw; }
-.capture-recent-searches button { top: -2.75cqw; right: 1cqw; }
 
+/* Measured from the native 800x480 SearchDialog framebuffer. Fixed track widths
+   prevent fractional grid distribution from accumulating horizontal drift. */
+.capture-search-keyboard { padding: 0; background: #101010; }
+.capture-search-keyboard > header { padding: 0 1cqw; }
+.capture-search-keyboard > header button:last-child { background: #081008; }
+.capture-search-keyboard > h1 { top: calc(10.25cqw + 5px); }
+.capture-search-keyboard > small { top: calc(18.375cqw - 1px); }
+.capture-recent-searches {
+  position: absolute;
+  left: 2cqw;
+  top: calc(22cqw + 3px);
+  height: 30px;
+  gap: 1cqw;
+  padding: 0;
+}
+.capture-recent-searches b {
+  height: 30px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: #181c18;
+}
+.capture-recent-searches b:nth-child(1) { width: 49px; }
+.capture-recent-searches b:nth-child(2) { width: 84px; }
+.capture-recent-searches b:nth-child(3) { width: 44px; }
+.capture-search-keyboard > .capture-clear-searches {
+  position: absolute;
+  right: 2cqw;
+  top: 18.375cqw;
+  padding: 0;
+  background: transparent;
+  color: #aaa;
+  font-size: 1.75cqw;
+}
+.capture-search-keyboard > main {
+  left: .875cqw;
+  right: auto;
+  top: 28cqw;
+  width: 98.125cqw;
+  grid-template-rows: repeat(4, 7cqw);
+  gap: 1cqw;
+}
+.capture-search-keyboard > main > div:nth-child(1) { grid-template-columns: repeat(10, 8.875cqw); }
+.capture-search-keyboard > main > div:nth-child(2) {
+  width: 87.875cqw;
+  margin: 0 auto;
+  grid-template-columns: repeat(9, 8.875cqw);
+}
+.capture-search-keyboard > main > div:nth-child(3) { grid-template-columns: 14cqw repeat(7, 8.875cqw) 14cqw; }
+.capture-search-keyboard > main > div:nth-child(4) { grid-template-columns: 14cqw 8.875cqw 48.375cqw 8.875cqw 14cqw; }
+.capture-search-keyboard > main button { background: #212421; }
 .capture-library-browser > aside > button { grid-template-columns: 4.375cqw 1fr 5cqw; }
 .capture-library-browser > aside > button span { padding-left: .25cqw; font-weight: 400; }
 .capture-library-browser > aside > i ~ button { padding-left: 4cqw; grid-template-columns: 4.375cqw 1fr 3cqw; }
