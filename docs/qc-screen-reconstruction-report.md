@@ -871,6 +871,62 @@ Each needs its own Grid content read off the frame, which is why they are listed
 rather than approximated: mapping them to a view that draws a different Grid
 would report coverage the reconstruction does not have.
 
+### The last fifteen: the whole corpus is scored
+
+The fifteen screens no fixture drew have been built, read off the captures and
+their graphics trees. **All 119 corpus frames now render and score** - median
+0.0251, worst 0.0633, every one under 0.07, 85 under 0.03, and 116 of the 119
+agreeing on 70% or more of their edges (92 on 80%, 49 on 90%).
+
+**Eight are one widget.** The preset menu, the two route lists and the scene
+selector are the same 270px panel over the Grid, scrolled by whole cells, under
+an `rgba(89,89,89,.74)` scrim - fitted from two samples, the page at `#424142`
+and white text at `#848684`. Their rows come from the frames' own trees; the
+scene selector raises no scrim, which is how its page stays `#000000`.
+
+| frame | closest view before | after |
+| --- | --- | --- |
+| `grid-context-menu` | 0.51 | **0.014 / 0.86** |
+| `grid-context-menu-favorite` | 0.37 | **0.015 / 0.85** |
+| `grid-context-menu-bottom` | 0.41 | **0.017 / 0.85** |
+| `input-route-selector` | 0.52 | **0.022 / 0.76** |
+| `input-route-selector-top` | 0.29 | **0.016 / 0.81** |
+| `output-route-selector` | 0.53 | **0.019 / 0.76** |
+| `output-route-selector-top` | 0.35 | **0.021 / 0.77** |
+| `grid-scene-selector` | 0.69 | **0.027 / 0.82** |
+
+Two things the frames settled that guesswork would not: the 32H chain runs
+**seven** blocks, which is only knowable because `input-route-selector.png`
+shows slots 3 to 6 where `grid-scene-selector.png` shows 0 to 4; and CorOS fits
+the preset name to the room it has - `pyquadcortex scratch` sets 40px where
+`QC MCP TEST_2` sets 58.
+
+**Three are the GIG view in its other modes**, which the existing view already
+knew how to draw:
+
+| frame | before | after |
+| --- | --- | --- |
+| `gig-view-preset` | 0.089 / 0.31 | **0.044 / 0.94** |
+| `gig-view-scene` | 0.098 / 0.32 | **0.033 / 0.91** |
+| `gig-view-hybrid` | 0.141 / 0.31 | **0.063 / 0.83** |
+
+Hybrid is the one worth recording: the unit puts **presets over scenes**, not
+the scenes-over-stomps the manual shows, and its scene row keeps the
+footswitch's own letter and colour while taking its name from the preset's
+first four scenes - so the badge reads F while the lit tile is `stereo`. The
+preset in view also takes its preset's colour: 7B is `#0875e7` where 32H is
+`#ff2421`.
+
+**Four more.** `capture-type.tree.txt` has `zenUI::Grid` at its root and nothing
+else - the type picker never came up, so that capture is simply the Grid in 2F
+(0.59 -> **0.034 / 0.75**). `device-browser-neural-capture` is the browser with
+the Captures Library open (0.52 -> **0.031 / 0.86**). The two
+`device-browser-middle-*` frames are its category list scrolled seven and three
+of its 78px rows; the list now matches row for row, but they were captured in
+3C over a four-row Grid the browser's snapshot does not hold, so they sit at
+**0.040 / 0.56** and **0.042 / 0.57** - the last two frames below 70%, and the
+residual is that Grid, not the browser.
+
 ## Improvements in this pass
 
 - Ran Neural Captures on the unit with the owner's approval and recorded

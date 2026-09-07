@@ -974,7 +974,9 @@ test("preset bank, slot, and name use natural inline text flow", () => {
 test("physical device browser preserves its measured Grid chrome and selected slot", () => {
   const fixtureSource = readFileSync(new URL("../packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", import.meta.url), "utf8");
   const fixtureStyles = readFileSync(new URL("../packages/typescript/qc-ui/src/fixture-live-surface.css", import.meta.url), "utf8");
-  assert.match(fixtureSource, /CorOsOfficialGrid snapshot=\{snapshot\} browserChrome/);
+  // The browser draws the Grid it was captured over; the two scrolled frames
+  // were taken in 3C, so the snapshot it passes is per-view.
+  assert.match(fixtureSource, /CorOsOfficialGrid snapshot=\{gridSnapshot\} browserChrome/);
   assert.match(fixtureSource, /className="coros-device-empty-slot"/);
   assert.match(fixtureStyles, /\.coros-device-empty-slot \{[^}]*z-index: 31;[^}]*left: 322px;[^}]*top: 206px;/);
   assert.match(fixtureStyles, /\.coros-device-dismiss \{[^}]*background: #dfe3de49;/);

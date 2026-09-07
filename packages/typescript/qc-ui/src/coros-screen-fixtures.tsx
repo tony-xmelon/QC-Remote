@@ -428,7 +428,7 @@ function SceneTileTools() {
   </span>;
 }
 
-function CorOsGigView({ snapshot, presetList, onClose, liveTuner = false }: { snapshot: PresetSnapshot; presetList?: PresetList; onClose: () => void; liveTuner?: boolean }) {
+function CorOsGigView({ snapshot, presetList, onClose, liveTuner = false, presetTone = "#ff2727" }: { snapshot: PresetSnapshot; presetList?: PresetList; onClose: () => void; liveTuner?: boolean; presetTone?: string }) {
   const gridBlocks = snapshot.blocks.filter((block) => block.column >= 0 && block.column < 8);
   const assignments = Array.from({ length: 8 }, (_, index) => snapshot.blocks
     .filter((block) => block.footswitch === index)
@@ -443,7 +443,7 @@ function CorOsGigView({ snapshot, presetList, onClose, liveTuner = false }: { sn
     const active = position === snapshot.presetPosition;
     const entry = listedPresets.find((candidate) => candidate.position === position);
     const name = active ? snapshot.presetName : entry?.name ?? "Unsaved";
-    return <button key={index} className={`gig-preset-tile${active ? " is-active" : ""}`}><span>{Math.floor(position / 8) + 1}<b style={{ color: letterColors[index] }}>{String.fromCharCode(65 + index)}</b></span><strong>{name}</strong></button>;
+    return <button key={index} className={`gig-preset-tile${active ? " is-active" : ""}`} style={active ? { "--gig-preset-tone": presetTone } as CSSProperties : undefined}><span>{Math.floor(position / 8) + 1}<b style={{ color: letterColors[index] }}>{String.fromCharCode(65 + index)}</b></span><strong>{name}</strong></button>;
   });
   const sceneTiles = Array.from({ length: 8 }, (_, index) => <button key={index} className={`gig-scene-tile${index === snapshot.activeScene ? " is-active" : ""}`} style={{ "--gig-color": sceneColors[index], "--gig-letter": sceneLetterColors[index] } as CSSProperties}><SceneTileTools /><b>{String.fromCharCode(65 + index)}</b><strong>{snapshot.scenes[index] ?? `Scene ${String.fromCharCode(65 + index)}`}</strong></button>);
   const stompTiles = assignments.map((assigned, index) => {
@@ -815,7 +815,7 @@ function CorOsLooperEditor() {
   return <section className="qc-screen coros-looper" aria-label="Looper X editor"><header><button aria-label="Open Looper menu"><QcUiIcon kind="more" /></button><span><small>LOOPER</small><strong>Looper X</strong></span><i /><button className="looper-params"><QcEditorIcon kind="looper" />Params</button><button className="looper-scene"><QcEditorIcon kind="scene-previous" /><b>A</b><QcEditorIcon kind="scene-next" /></button><button aria-label="Confirm"><QcEditorIcon kind="confirm" /></button></header><div className="looper-timeline"><span>USE <b>●</b> TO START RECORDING</span><span>USE <b className="looper-close-caret">⌃</b> TO CLOSE THE LOOPER VIEW</span><em>AVAILABLE 4:43</em></div><div className="looper-actions">{actions.map(([label, glyph, key], index) => <button key={label} className={index === 2 || index === 4 ? "" : "is-dim"}><small>{label}</small><strong>{glyph}</strong><b>{key}</b></button>)}</div></section>;
 }
 
-type CaptureLibraryView = "device-favorites" | "device-recents" | "device-search" | "device-search-entry" | "device-search-suggestions" | "device-search-results";
+type CaptureLibraryView = "device-favorites" | "device-recents" | "device-browser-neural-capture" | "device-search" | "device-search-entry" | "device-search-suggestions" | "device-search-results";
 
 function CaptureLibraryRail() {
   return <nav className="capture-library-rail">{COROS_DEVICE_CATEGORIES.slice(0, 6).map(([label, glyph], index) => <button key={label} className={index === 2 ? "is-active" : ""}><i><DeviceCategoryGlyph label={label} fallback={glyph} /></i></button>)}</nav>;
@@ -832,7 +832,11 @@ function CorOsCaptureLibrary({ view }: { view: CaptureLibraryView }) {
   if (view === "device-search-suggestions") return <CaptureLibraryKeyboard query="gary" />;
   if (view === "device-search" || view === "device-search-results") return <section className="qc-screen capture-search-results"><header><button><QcDirectoryIcon kind="search" /> gary</button><i /><button><QcDirectoryIcon kind="grid" /> (0)</button><button className="is-active"><QcLibraryIcon kind="capture-library" /> (1)</button><button><QcLibraryIcon kind="capture-header" /> (0)</button><button aria-label="Filter"><QcDirectoryIcon kind="filter" /></button><button aria-label="Arrange"><QcDirectoryIcon kind="arrange" /></button><button aria-label="Done"><QcDirectoryIcon kind="done" /></button></header><main><h2>DEVICE DIRECTORIES <b>⌄</b></h2><article><strong>JQ~Marshall JMP (Gary Moore)~</strong><small>Josepqr</small><em>J</em></article><h2>DOWNLOADS <b>⌄</b></h2><p>No results</p></main></section>;
   const recent = view === "device-recents";
-  return <section className="qc-screen capture-library-browser"><CaptureLibraryRail /><header><span>Add device</span>{!recent && <button aria-label="Filter"><QcDirectoryIcon kind="filter" /></button>}{!recent && <button aria-label="Arrange"><QcDirectoryIcon kind="arrange" /></button>}<button aria-label="Search"><QcDirectoryIcon kind="search" /></button><button aria-label="Close"><QcUiIcon kind="close" /></button></header><aside><button className={!recent ? "is-active" : ""}><b><QcLibraryIcon kind="heart" /></b><span>Favorites</span></button><button className={recent ? "is-active" : ""}><b><QcLibraryIcon kind="clock" /></b><span>Recent</span></button><button><b><QcDirectoryIcon kind="download" /></b><span>Downloads</span></button><button><b><QcLibraryIcon kind="capture-library" /></b><span>Captures Library</span><small>2127</small></button><i />{["Factory Captures V1","Factory Captures V2","My Captures"].map(label => <button key={label}><b><QcDirectoryIcon kind="folder" /></b><span>{label}</span></button>)}</aside><main><DeviceWaveformGlyph className="capture-library-placeholder" /></main></section>;
+  const library = view === "device-browser-neural-capture";
+  const captures = ["4-Comp Custom 1", "4-Comp Custom 2", "4-Comp Custom 3", "4-Comp Custom 4", "4-Comp Custom 5", "4-Comp Custom 6", "4-Comp Custom 7"];
+  return <section className="qc-screen capture-library-browser"><CaptureLibraryRail /><header><span>Add device</span>{!recent && <button aria-label="Filter"><QcDirectoryIcon kind="filter" /></button>}{!recent && <button aria-label="Arrange"><QcDirectoryIcon kind="arrange" /></button>}<button aria-label="Search"><QcDirectoryIcon kind="search" /></button><button aria-label="Close"><QcUiIcon kind="close" /></button></header><aside><button className={!recent && !library ? "is-active" : ""}><b><QcLibraryIcon kind="heart" /></b><span>Favorites</span></button><button className={recent ? "is-active" : ""}><b><QcLibraryIcon kind="clock" /></b><span>Recent</span></button><button><b><QcDirectoryIcon kind="download" /></b><span>Downloads</span></button><button className={library ? "is-active" : ""}><b><QcLibraryIcon kind="capture-library" /></b><span>Captures Library</span><small>2127</small></button><i />{["Factory Captures V1","Factory Captures V2","My Captures"].map(label => <button key={label}><b><QcDirectoryIcon kind="folder" /></b><span>{label}</span></button>)}</aside><main>{library
+      ? <div className="capture-library-rows">{captures.map((name) => <button key={name}><span>{name}<small>NeuralDSP</small></span><b>4</b></button>)}<aside className="capture-library-index">{["#", "•", "A", "•", "I", "•", "R", "•", "Z"].map((label, index) => <span key={`${label}-${index}`}>{label}</span>)}</aside></div>
+      : <DeviceWaveformGlyph className="capture-library-placeholder" />}</main></section>;
 }
 
 function CorOsDevicePresetScreen({ save = false, view = "factory" }: { save?: boolean; view?: "factory" | "user" | "actions" | "official-actions" | "official-factory" }) {
@@ -911,6 +915,108 @@ function CorOsAssignmentScreen({ view }: { view: "stomp-assignment" | "scene-ass
 
 function BlockContextIcon({ kind }: { kind: "change" | "copy" | "paste" | "reset" | "save" | "expression" | "bypass" | "model-update" | "model-downgrade" | "remove" }) {
   return <QcEditorIcon kind={kind === "bypass" ? "mute" : kind} />;
+}
+
+type GridPopupView = "capture-type" | "grid-context-menu" | "grid-context-menu-favorite" | "grid-context-menu-bottom"
+  | "input-route-selector" | "input-route-selector-top"
+  | "output-route-selector" | "output-route-selector-top" | "grid-scene-selector";
+
+type PopupCell = { label: string; caption?: boolean; icon?: ReactNode; note?: string; active?: boolean };
+
+// `grid-context-menu.tree.txt` lists the preset menu in one table, captions
+// included; the three frames of it differ only in how far it is scrolled.
+const GRID_MENU_CELLS: Array<[string, string]> = [
+  ["FILE", ""], ["Create New", "add"], ["Save as...", "save-as"], ["Edit Details", "edit"],
+  ["Copy Scene A", "copy"], ["Swap Scene A", "change"], ["Preset MIDI Out", "midi"],
+  ["Add to favorites", "favorite"], ["Delete Preset", "delete"], ["QUAD CORTEX", ""],
+  ["New Neural Capture", "capture"], ["Modes Configuration", "modes"], ["Tempo", "tempo"],
+  ["CPU Monitor", "cpu"], ["Settings", "settings"],
+];
+
+const ROUTE_INPUT_CELLS: Array<[string, string]> = [
+  ["MONO", ""], ["Input 1", "→"], ["Input 2", "→"], ["Return 1", "FX"], ["Return 2", "FX"],
+  ["USB input 5", "USB"], ["USB input 6", "USB"], ["USB input 7", "USB"], ["USB input 8", "USB"],
+  ["STEREO", ""], ["Input 1/2", "⇉"], ["Return 1/2", "FX"], ["USB input 5/6", "USB"],
+  ["USB input 7/8", "USB"], ["Not In Use", "+"],
+];
+
+const ROUTE_OUTPUT_CELLS: Array<[string, string]> = [
+  ["STEREO", ""], ["Multiple Outputs", "⇉"], ["Output 1/2", "⇉"], ["Output 3/4", "⇉"],
+  ["Send 1/2", "FX"], ["USB Output 3/4", "USB"], ["USB Output 5/6", "USB"], ["USB Output 7/8", "USB"],
+  ["MONO", ""], ["Output 1", "→"], ["Output 2", "→"], ["Output 3", "→"], ["Output 4", "→"],
+  ["Send 1", "FX"], ["Send 2", "FX"], ["USB Output 3", "USB"], ["USB Output 4", "USB"],
+  ["USB Output 5", "USB"], ["USB Output 6", "USB"], ["USB Output 7", "USB"], ["USB Output 8", "USB"],
+  ["OTHER", ""], ["Row 3", "→"], ["Row 4", "→"], ["Row 3/4", "⇉"], ["Not In Use", "+"],
+];
+
+function RouteGlyph({ kind }: { kind: string }) {
+  if (kind === "→") return <svg className="route-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12h13m-4-4 4 4-4 4M20 5v14" /></svg>;
+  if (kind === "⇉") return <svg className="route-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 8h13M11 4l4 4-4 4M2 17h13m-4-4 4 4-4 4M20 3v18" /></svg>;
+  if (kind === "FX") return <svg className="route-glyph" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="13" height="10" rx="2" /><path d="M18 12h4m-3-3 3 3-3 3" /></svg>;
+  if (kind === "USB") return <svg className="route-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V4m0 0-3 3m3-3 3 3M12 14l5-4V7m-5 10-5-4V9" /><circle cx="17" cy="6" r="1.6" /></svg>;
+  return <b className="route-plus">＋</b>;
+}
+
+function GridMenuIcon({ kind }: { kind: string }) {
+  if (kind === "copy" || kind === "change") return <QcEditorIcon kind={kind as "copy" | "change"} />;
+  return <QcUiIcon kind={kind as Parameters<typeof QcUiIcon>[0]["kind"]} />;
+}
+
+// Grid, popup box and scroll offset for each frame, all read off the captures.
+const GRID_POPUP_STATE: Record<GridPopupView, {
+  slot: string; letter: string; tone: string; name: string; mode: "STOMP" | "PRESET";
+  blocks: Array<[number, string, string]>; highlight?: "input" | "output";
+  kind: "menu" | "input" | "output" | "scene" | "none"; offset: number;
+}> = {
+  "capture-type": { slot: "2", letter: "F", tone: "#6748ff", name: "QC MCP TEST", mode: "PRESET", blocks: [[0, "#2df36a", "Utility"]], kind: "none", offset: 0 },
+  "grid-context-menu": { slot: "32", letter: "H", tone: "#ff2421", name: "pyquadcortex scratch", mode: "STOMP", blocks: [[0, "#949694", "Utility"], [1, "#ff7100", "Overdrive"], [2, "#525152", "Modulation"], [3, "#ff2421", "Amp"], [4, "#6748ff", "Cab"], [5, "#16dfcc", "Equalizer"], [6, "#16dfcc", "Reverb"]], kind: "menu", offset: 0 },
+  "grid-context-menu-favorite": { slot: "5", letter: "C", tone: "#ff7100", name: "Ilia", mode: "PRESET", blocks: [[1, "#16dfcc", "Reverb"], [2, "#ff2421", "Amp"]], kind: "menu", offset: 420 },
+  "grid-context-menu-bottom": { slot: "2", letter: "F", tone: "#6748ff", name: "QC MCP TEST_2", mode: "PRESET", blocks: [[0, "#2df36a", "Utility"]], kind: "menu", offset: 480 },
+  "input-route-selector": { slot: "32", letter: "H", tone: "#ff2421", name: "pyquadcortex scratch", mode: "STOMP", blocks: [[0, "#949694", "Utility"], [1, "#ff7100", "Overdrive"], [2, "#525152", "Modulation"], [3, "#ff2421", "Amp"], [4, "#6748ff", "Cab"], [5, "#16dfcc", "Equalizer"], [6, "#16dfcc", "Reverb"]], highlight: "input", kind: "input", offset: 480 },
+  "input-route-selector-top": { slot: "5", letter: "C", tone: "#ff7100", name: "Ilia", mode: "PRESET", blocks: [[1, "#16dfcc", "Reverb"], [2, "#ff2421", "Amp"]], highlight: "input", kind: "input", offset: 0 },
+  "output-route-selector": { slot: "32", letter: "H", tone: "#ff2421", name: "pyquadcortex scratch", mode: "STOMP", blocks: [[0, "#949694", "Utility"], [1, "#ff7100", "Overdrive"], [2, "#525152", "Modulation"], [3, "#ff2421", "Amp"], [4, "#6748ff", "Cab"], [5, "#16dfcc", "Equalizer"], [6, "#16dfcc", "Reverb"]], highlight: "output", kind: "output", offset: 1152 },
+  "output-route-selector-top": { slot: "5", letter: "C", tone: "#ff7100", name: "Ilia", mode: "PRESET", blocks: [[1, "#16dfcc", "Reverb"], [2, "#ff2421", "Amp"]], highlight: "output", kind: "output", offset: 0 },
+  "grid-scene-selector": { slot: "32", letter: "H", tone: "#ff2421", name: "pyquadcortex scratch", mode: "STOMP", blocks: [[0, "#949694", "Utility"], [1, "#ff7100", "Overdrive"], [2, "#525152", "Modulation"], [3, "#ff2421", "Amp"], [4, "#6748ff", "Cab"], [5, "#16dfcc", "Equalizer"], [6, "#16dfcc", "Reverb"]], kind: "scene", offset: 0 },
+};
+
+function CorOsGridPopup({ view }: { view: GridPopupView }) {
+  const state = GRID_POPUP_STATE[view];
+  const scenes = ["Default scene", "Scene B", "Scene C", "Scene D", "Scene E", "Scene F", "Scene G", "Scene H"];
+  const source = state.kind === "menu" ? GRID_MENU_CELLS : state.kind === "input" ? ROUTE_INPUT_CELLS : ROUTE_OUTPUT_CELLS;
+  const cells: PopupCell[] = state.kind === "scene"
+    ? scenes.map((label, index) => ({ label, active: index === 0 }))
+    : source.map(([label, icon]) => ({
+        label,
+        caption: !icon,
+        icon: state.kind === "menu" ? (icon ? <GridMenuIcon kind={icon} /> : undefined) : icon ? <RouteGlyph kind={icon} /> : undefined,
+        note: label === "Multiple Outputs" ? "1/2 + 3/4 + USB 3/4" : undefined,
+        active: label === "Input 1" || label === "Multiple Outputs",
+      }));
+  return <section className={`qc-screen coros-grid-popup is-${state.kind}`} aria-label={view.replaceAll("-", " ")}>
+    <div className="popup-grid">
+      <header><strong><span>{state.slot}</span><b style={{ color: state.tone }}>{state.letter}</b></strong><h1 style={{ fontSize: `${state.name.length > 15 ? 40 : 58}px`, marginTop: state.name.length > 15 ? "11px" : "6px" }}>{state.name}</h1>
+        <nav><i><GridToolbarIcon kind="undo" /></i><b>A</b><i><GridToolbarIcon kind="save" /></i><i><QcUiIcon kind="more" /></i></nav>
+        <em><svg viewBox="0 0 24 24" aria-hidden="true"><ModeGlyph mode={state.mode} /></svg>{state.mode}</em></header>
+      <main>
+        <span className={`popup-route${state.highlight === "input" ? " is-open" : ""}`}>In<br />1</span>
+        <i className="popup-cable" />
+        {state.blocks.map(([index, tone, label]) => <i key={index} className="popup-block" style={{ left: `${69 + Number(index) * 86}px`, borderColor: tone, color: tone }}><DeviceCategoryGlyph label={label as string} fallback="" /></i>)}
+        <span className={`popup-output${state.highlight === "output" ? " is-open" : ""}`}>Multi<br />Out</span>
+        {[1, 2, 3].map((row) => <span key={row} className="popup-plus" style={{ top: `${13 + row * 94}px` }}>＋</span>)}
+        {[1, 2, 3].map((row) => <span key={`r${row}`} className="popup-plus is-right" style={{ top: `${13 + row * 94}px` }}>＋</span>)}
+      </main>
+    </div>
+    {state.kind !== "scene" && state.kind !== "none" && <i className="popup-scrim" />}
+    {state.kind !== "none" && <aside className="popup-panel">
+      <div className="popup-list" style={{ top: `${-state.offset}px` }}>
+        {cells.map((cell, index) => <div key={`${cell.label}-${index}`} className={`popup-cell${cell.caption ? " is-caption" : ""}${cell.active ? " is-active" : ""}`}>
+          {state.kind === "scene" ? <b className="scene-badge">{String.fromCharCode(65 + index)}</b> : cell.icon}
+          <span>{cell.label}{cell.note && <small>{cell.note}</small>}</span>
+        </div>)}
+      </div>
+      <i className="popup-scrollbar" />
+    </aside>}
+  </section>;
 }
 
 function CorOsBlockContext() {
@@ -1034,13 +1140,18 @@ function CorOsOfficialGrid({ snapshot, children, browserChrome = false }: { snap
   </div>;
 }
 
-function CorOsCorpusDeviceBrowser({ snapshot, view }: { snapshot: PresetSnapshot; view: "corpus-device-browser-root" | "corpus-device-browser-models" | "corpus-device-browser-models-clean" }) {
-  const models = view !== "corpus-device-browser-root";
-  return <CorOsOfficialGrid snapshot={snapshot} browserChrome>
+function CorOsCorpusDeviceBrowser({ snapshot, view }: { snapshot: PresetSnapshot; view: "corpus-device-browser-root" | "corpus-device-browser-models" | "corpus-device-browser-models-clean" | "device-browser-middle-deep" | "device-browser-middle-reverb" }) {
+  const models = view === "corpus-device-browser-models" || view === "corpus-device-browser-models-clean";
+  // device-browser-middle-deep.png opens on Compressor and -reverb on Cab:
+  // the same list, scrolled seven and three of its 78px rows.
+  const scrolled = view === "device-browser-middle-deep" ? 7 : view === "device-browser-middle-reverb" ? 3 : 0;
+  // Both middle frames were taken in 3C, not the root frame's 32H.
+  const gridSnapshot = scrolled ? { ...snapshot, presetLocation: "3C", presetName: "12 String Bass" } : snapshot;
+  return <CorOsOfficialGrid snapshot={gridSnapshot} browserChrome>
     <svg className="coros-device-empty-slot" viewBox="0 0 70 70" aria-hidden="true"><rect width="70" height="70" rx="14" fill="#050505" /><path d="M25 35h20M35 25v20" fill="none" stroke="#dedede" strokeWidth="1.7" strokeLinecap="round" /></svg>
     <button className="coros-device-dismiss" aria-label="Close device browser" />
     <section className="coros-device-browser" aria-label="Virtual Device browser">
-      <nav>{CORPUS_DEVICE_CATEGORIES.map(([label, glyph, color]) => <button key={label} data-category={label} className={models && label === "Overdrive" ? "is-active" : ""} style={{ "--device-color": color } as CSSProperties}><i><DeviceCategoryGlyph label={label} fallback={glyph} /></i><span>{label === "Equalizer" ? "EQ" : label}</span>{label === "Delay" && <b>New</b>}</button>)}</nav>
+      <nav style={scrolled ? { marginTop: `${-scrolled * 78}px` } : undefined}>{CORPUS_DEVICE_CATEGORIES.map(([label, glyph, color]) => <button key={label} data-category={label} className={models && label === "Overdrive" ? "is-active" : ""} style={{ "--device-color": color } as CSSProperties}><i><DeviceCategoryGlyph label={label} fallback={glyph} /></i><span>{label === "Equalizer" ? "EQ" : label}</span>{label === "Delay" && <b>New</b>}</button>)}</nav>
       {models && <div className="coros-device-models"><header><button className="is-active">GUITAR</button><button>BASS</button></header>{CORPUS_OVERDRIVE_MODELS.map((model, index) => <button key={model}><span>{index === 0 ? <b className="device-model-pin"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 2 8 8-4 1-4 4v4l-2 2-3-6-6-3 2-2h4l4-4Z" /></svg></b> : null}{model}</span><i><DevicePresetGlyph /></i></button>)}</div>}
     </section>
     {models && view !== "corpus-device-browser-models-clean" && <aside className="coros-device-preset-tip"><button aria-label="Dismiss Virtual Device Presets tip">×</button><strong>VIRTUAL DEVICE PRESETS</strong><span>Tap ▱ next to each virtual device to access its Factory and User Presets.</span></aside>}
@@ -1064,13 +1175,17 @@ function IconographyAuditFixture() {
 export function CorOsScreenFixture({ view, snapshot, gigPresetList, onClose = () => undefined }: { view: CorOsScreenView; snapshot: PresetSnapshot; gigPresetList?: PresetList; onClose?: () => void }) {
   if ((view as string) === "iconography-audit") return <IconographyAuditFixture />;
   if (view === "grid-official-brit") return <CorOsOfficialGrid snapshot={snapshot} />;
-  if (view === "corpus-device-browser-root" || view === "corpus-device-browser-models" || view === "corpus-device-browser-models-clean") return <CorOsCorpusDeviceBrowser snapshot={snapshot} view={view} />;
+  if (view === "corpus-device-browser-root" || view === "corpus-device-browser-models" || view === "corpus-device-browser-models-clean" || view === "device-browser-middle-deep" || view === "device-browser-middle-reverb") return <CorOsCorpusDeviceBrowser snapshot={snapshot} view={view} />;
   if (view.startsWith("fixture-")) return <CorOsRemainingFixture view={view as RemainingFixtureView} />;
   if (view.startsWith("recovery-") || view.startsWith("overlay-")) return <CorOsSystemFixture view={view as SystemFixtureView} />;
   if (view === "tuner-live-enabled") return <CorOsTuner liveTuner onClose={onClose} />;
   if (view.startsWith("gig-official-")) return <CorOsOfficialGig mode={view.replace("gig-official-", "") as OfficialGigMode} />;
   if (view === "device-presets-official") return <CorOsDevicePresetScreen view="official-factory" />;
   if (view === "gig" || view === "gig-live-tuner") return <CorOsGigView snapshot={snapshot} presetList={gigPresetList} liveTuner={view === "gig-live-tuner"} onClose={onClose} />;
+  if (view === "gig-view-preset" || view === "gig-view-scene") return <CorOsGigView snapshot={{ ...snapshot, mode: view === "gig-view-preset" ? "PRESET" : "SCENE" }} presetList={gigPresetList} onClose={onClose} />;
+  // gig-view-hybrid.png was taken in 7B with scene F live, and its two rows are
+  // presets over scenes.
+  if (view === "gig-view-hybrid") return <CorOsGigView snapshot={{ ...snapshot, mode: "HYBRID", footswitchModes: ["PRESET", "SCENE"], presetLocation: "7B", presetName: "Top 3 Acoustic Sims", presetPosition: 49, activeScene: 5,  scenes: ["Scene A", "Scene B", "Scene C", "Scene D", "mono", "stereo", "chor", "fx"] }} presetList={{ setlistKey: snapshot.setlistKey, setlistName: "My Presets", currentPosition: 49, folders: [], presets: [{ position: 48, location: "7A", name: "Acoustic sim-_1", instrument: 0 }, { position: 49, location: "7B", name: "Top 3 Acoustic Sims", instrument: 0 }, { position: 50, location: "7C", name: "XUSH 12string Bass", instrument: 0 }, { position: 51, location: "7D", name: "QC-MCP-TEST-mtniwb_1", instrument: 0 }] }} presetTone="#0875e7" onClose={onClose} />;
   if (view === "tuner") return <CorOsTuner onClose={onClose} />;
   if (view === "tempo") return <CorOsTempo bpm={snapshot.tempo} onClose={onClose} />;
   if (view === "midi-out") return <CorOsMidiOut onClose={onClose} />;
@@ -1082,13 +1197,14 @@ export function CorOsScreenFixture({ view, snapshot, gigPresetList, onClose = ()
   if (view === "device-preset-actions-official") return <CorOsDevicePresetScreen view="official-actions" />;
   if (view === "modes-official") return <CorOsOfficialModes onClose={onClose} />;
   if (view === "splitter-placement" || view === "splitter-editor" || view === "mixer-editor" || view === "empty-slot") return <CorOsRoutingScreen view={view} snapshot={snapshot} />;
-  if (view === "device-search" || view === "device-search-entry" || view === "device-search-suggestions" || view === "device-search-results" || view === "device-favorites" || view === "device-recents") return <CorOsCaptureLibrary view={view} />;
+  if (view === "device-search" || view === "device-search-entry" || view === "device-search-suggestions" || view === "device-search-results" || view === "device-favorites" || view === "device-recents" || view === "device-browser-neural-capture") return <CorOsCaptureLibrary view={view} />;
   if (view === "plugin-folders" || view === "plugin-list" || view === "plugin-models" || view === "plugin-locked" || view === "plugin-refresh") return <CorOsDeviceBrowserFixture view={view} />;
   if (view === "looper-editor") return <CorOsLooperEditor />;
   if (view === "device-presets" || view === "device-presets-user" || view === "device-preset-actions" || view === "device-preset-save") return <CorOsDevicePresetScreen save={view === "device-preset-save"} view={view === "device-presets-user" ? "user" : view === "device-preset-actions" ? "actions" : "factory"} />;
   if (view === "expression-parameter" || view === "expression-bypass") return <ExpressionChooser trim={view === "expression-parameter"} />;
   if (view === "stomp-assignment" || view === "scene-assignment") return <CorOsAssignmentScreen view={view} />;
   if (view === "block-context") return <CorOsBlockContext />;
+  if (view === "capture-type" || view === "grid-scene-selector" || view.endsWith("-route-selector") || view.endsWith("-route-selector-top") || view.startsWith("grid-context-menu")) return <CorOsGridPopup view={view as GridPopupView} />;
   if (view === "directory-new-folder") return <CorOsDirectoryNameScreen />;
   if (view === "directory-filter") return <CorOsOfficialDirectory view="directory-captures" filter />;
   if (view.startsWith("directory-")) return (["directory-presets", "directory-captures", "directory-irs", "directory-plugins", "directory-favorites", "directory-search-results", "directory-nested", "directory-cloud-upload"] as string[]).includes(view) ? <CorOsOfficialDirectory view={view as OfficialDirectoryView} /> : <CorOsDirectoryFixture view={view as DirectoryFixtureView} />;
