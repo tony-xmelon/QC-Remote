@@ -349,3 +349,16 @@
 .capture-editor-panel > main { position: absolute; left: 8px; right: 8px; top: 60px; height: 107px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; }
 .capture-editor-panel > main > section { padding: 9px; border: 0; background: #292c29; }
 
+/* device-favorites.png / device-recents.png: the rail and the empty pane are
+   #181c18, the rail's active tile is 70px, the folder rows keep their names on
+   one line, and the pane holds the 105x124 zigzag at (527, 194) in #101010 -
+   the same placeholder the plugin directory draws. */
+.qc-screen.capture-library-browser { background: #181c18; }
+.capture-library-rail { background: #181c18; }
+.capture-library-rail button i { width: 8.75cqw; height: 8.75cqw; }
+.capture-library-browser > main { background: #181c18; }
+.capture-library-browser > main .capture-library-placeholder { width: 13.125cqw; height: 15.5cqw; fill: none; stroke: #101010; stroke-width: 14; stroke-linecap: butt; stroke-linejoin: miter; }
+.capture-library-browser > aside > button { grid-template-columns: 5.5cqw 1fr auto; padding: 0 1cqw 0 2cqw; }
+.capture-library-browser > aside > i ~ button { padding-left: 3.5cqw; }
+.capture-library-browser > aside button span { white-space: nowrap; }
+

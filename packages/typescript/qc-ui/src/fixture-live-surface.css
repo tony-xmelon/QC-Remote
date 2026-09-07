@@ -848,7 +848,7 @@
 
 /* expression-parameter.png: the trim hint spans the left of the panel with the
    two range knobs beside it, and neither tile is assigned. */
-.expression-bypass-official .expression-switch-panel.is-trim { grid-template-columns: 46% 27% 27%; }
+
 .expression-bypass-official .expression-switch-panel .trim-hint { display: grid; align-content: center; gap: .6cqw; padding: 0 1.5cqw; text-align: left; }
 .expression-bypass-official .expression-switch-panel .trim-hint span { color: #e7e3e7; font-size: 2cqw; }
 .expression-bypass-official .expression-switch-panel .trim-hint span b { display: inline-block; width: 2.4cqw; vertical-align: -.3cqw; color: #42fb63; }
@@ -888,6 +888,8 @@
 .coros-directory-fixture.is-physical-context .directory-fixture-items button:has(> .preset-select) { grid-template-columns: 39px 1fr; padding-left: 21px; }
 .coros-directory-fixture.is-physical-context .directory-fixture-items button > .preset-select { width: 22px; height: 22px; border: 2px solid #fff; border-radius: 6px; }
 .coros-directory-fixture.is-physical-context .directory-fixture-items button.is-empty .physical-preset-name { color: #adaaad; }
+/* 4F is both the slot in view and still unsaved; the frame paints it green. */
+.coros-directory-fixture.is-physical-context .directory-fixture-items button.is-current .physical-preset-name { color: #42fb63; }
 
 /* directory-copy.png: the dialog is 472x434 at (164, 22). Its paragraph is
    376 wide so it breaks after "paste", and the options are 366-wide rows at
@@ -964,16 +966,16 @@
 /* stomp-assignment.png: the dialog is 420x294 at (190, 93) on #101010, its
    latch pills start at x 260 and 390, and CANCEL / UNASSIGN are 174x44 at
    x 222 and 404 on the y 311 line. */
-.coros-assignment .assignment-stomp-dialog { position: absolute; left: 190px; top: 93px; width: 420px; height: 294px; padding: 0; border: 0; border-radius: 8px; background: #101010; box-shadow: none; }
-.coros-assignment .assignment-stomp-dialog h1 { position: absolute; left: 0; right: 0; top: 40px; margin: 0; color: #f2f2f2; font: 400 21px Arial,sans-serif; text-align: center; }
-.coros-assignment .assignment-stomp-dialog p { position: absolute; left: 0; right: 0; top: 93px; margin: 0; color: #d6d9d7; font: 17px Arial,sans-serif; text-align: center; }
-.coros-assignment .assignment-stomp-latch { position: absolute; left: 70px; top: 139px; height: 50px; display: flex; gap: 20px; }
-.coros-assignment .assignment-stomp-latch button { box-sizing: border-box; width: 111px; height: 50px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 0; border: 2px solid #188a29; border-radius: 8px; background: #102818; color: #42fb63; font: 17px Arial,sans-serif; }
-.coros-assignment .assignment-stomp-latch button:last-child { width: 151px; border-color: transparent; background: #181c18; color: #f2f2f2; }
-.coros-assignment .assignment-stomp-latch button svg { width: 22px; height: 22px; fill: currentColor; stroke: none; }
-.coros-assignment .assignment-stomp-dialog footer { position: absolute; left: 32px; top: 218px; display: flex; gap: 8px; padding: 0; }
-.coros-assignment .assignment-stomp-dialog footer button { box-sizing: border-box; width: 174px; height: 44px; padding: 0; border-radius: 8px; background: #000; color: #f2f2f2; font: 17px Arial,sans-serif; }
-.coros-assignment .assignment-stomp-dialog footer button.is-primary { background: #1838ff; }
+.qc-screen.coros-assignment .assignment-stomp-message > .assignment-stomp-dialog { position: absolute; left: 190px; top: 93px; box-sizing: border-box; width: 420px; height: 294px; display: block; padding: 0; border: 0; border-radius: 8px; background: #101010; box-shadow: none; }
+.qc-screen.coros-assignment .assignment-stomp-dialog h1 { position: absolute; left: 0; right: 0; top: 40px; margin: 0; color: #f2f2f2; font: 400 21px Arial,sans-serif; text-align: center; }
+.qc-screen.coros-assignment .assignment-stomp-dialog p { position: absolute; left: 0; right: 0; top: 93px; margin: 0; color: #d6d9d7; font: 17px Arial,sans-serif; text-align: center; }
+.qc-screen.coros-assignment .assignment-stomp-latch { position: absolute; left: 70px; top: 139px; width: auto; height: 50px; display: flex; gap: 0; margin: 0; padding: 0; border-radius: 0; background: transparent; }
+.qc-screen.coros-assignment .assignment-stomp-latch button { box-sizing: border-box; width: 128px; height: 50px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 0; border: 2px solid #188a29; border-radius: 8px; background: #102818; color: #42fb63; font: 17px Arial,sans-serif; }
+.qc-screen.coros-assignment .assignment-stomp-latch button:last-child { width: 152px; border-color: transparent; background: #181c18; color: #f2f2f2; }
+.qc-screen.coros-assignment .assignment-stomp-latch button svg { width: 22px; height: 22px; fill: currentColor; stroke: none; }
+.qc-screen.coros-assignment .assignment-stomp-dialog footer { position: absolute; left: 32px; top: 218px; display: flex; gap: 8px; padding: 0; }
+.qc-screen.coros-assignment .assignment-stomp-dialog footer button { box-sizing: border-box; width: 174px; height: 44px; padding: 0; border-radius: 8px; background: #000; color: #f2f2f2; font: 17px Arial,sans-serif; }
+.qc-screen.coros-assignment .assignment-stomp-dialog footer button.is-primary { background: #1838ff; }
 
 /* cloud-upload-overwrite.png: in upload mode the cloud button is picked out in
    a green-bordered tile, the one remaining tool keeps the sort slot at x 614,

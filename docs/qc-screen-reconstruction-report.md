@@ -754,6 +754,59 @@ keyboard, and the I/O pages by 0.005 because they share one layout. **No mapping
 errors remain.** After the audit the 94 sit at a 0.0251 median, worst 0.0574,
 65 under 0.03, 88 under 0.04, and 90 agreeing on 70% or more of their edges.
 
+### The seventh pass: the last four below 70% edge agreement
+
+The four frames still under 0.7 edge agreement were taken, and every one was a
+layout the unit draws in its standard five-cell strip:
+
+| frame | before | after | what the frame shows |
+| --- | --- | --- | --- |
+| `expression-parameter` | 0.054 / 0.66 | **0.024 / 0.86** | the same 156px cells as the other editors, not three columns of 46/27/27 |
+| `device-recents` | 0.030 / 0.69 | **0.017 / 0.80** | search and close only, rows on one line, the pane's zigzag placeholder |
+| `device-favorites` | 0.030 / 0.69 | **0.018 / 0.79** | the rail and pane are `#181c18`, not `#151a16` |
+| `stomp-assignment` | 0.038 / 0.69 | **0.025 / 0.81** | the latch pills butt together, 128 and 152 wide from x 260 |
+
+`expression-bypass` came with them - the parameter grid had been forcing its
+second tile onto a new row, so NOISE REDUCTION and BYPASS stood one above the
+other on both screens where the frames have them side by side: 0.033 / 0.79 to
+**0.028 / 0.86**.
+
+**All 94 addressable frames now agree on 70% or more of their edges**, 74 on 80%
+or more and 42 on 90% or more. The median is 0.0243 and the worst 0.0569.
+
+#### A class of silent failure, and a check for it
+
+The stomp dialog would not take its measurements however specific the selector
+got. The cause is `@scope`: **scoping proximity is settled before specificity**,
+so a rule written after the block loses to any scoped rule that declares the
+same property on the same element, whatever the selectors say. The probe that
+settled it is worth keeping:
+
+```
+.capture-official-error > main > nav div.is-pending b     unscoped, (0,3,4)
+.capture-official-progress > main > nav div:last-child b  scoped,   (0,2,4)  <- wins
+```
+
+An earlier pass in this session had reached the opposite conclusion, because the
+case that prompted it turned out to be an unterminated brace. The reading now
+has a machine behind it: `audit_scope.mjs` renders every fixture, walks the
+stylesheets, and reports any unscoped declaration whose property is decided by a
+scoped rule instead. It found four, two of them defects:
+
+- the sanity-error screen's Training stage kept the progress screen's white
+  badge instead of its own `#606460` - the rules have been moved inside the
+  block, and `capture-sanity-error` went 0.057 / 0.75 to **0.057 / 0.78**;
+- the preset row in view lost its green whenever the slot was also unsaved,
+  which is exactly the row (`4F`) four directory frames were captured on.
+
+The other two are deliberate scoped overrides - the settings screens' `display`
+and the block context's darker page - and the check now reports none besides.
+
+Re-running the frame-against-every-render audit afterwards found no mapping
+errors: only the near-ties that are screens differing by a word
+(`copy-scene-destination`), by a caret (`device-search`), or by one I/O page's
+contents, plus the three frames the corpus stores twice.
+
 ## Improvements in this pass
 
 - Ran Neural Captures on the unit with the owner's approval and recorded
