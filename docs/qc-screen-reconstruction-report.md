@@ -311,22 +311,72 @@ tall after the device turned out to have five items rather than four, and how
 its `["Edit","Copy","Cut","Delete"]` pin outlived the discovery of *Paste to
 replace*.
 
-Re-measuring the three overlays we have fresh captures for found one real error
-and one small one:
+Every one of those blocks has now been re-measured against the frame it claims.
+Nine of the fourteen numbers were already right; five were not:
 
-| overlay | pinned | measured on the device |
+| claim | pinned | measured on the device |
 | --- | --- | --- |
 | directory item menu | left 528, width 256, **height 208** | left 528, width 256, **height 260** |
-| confirmation dialog | left 190, width 420, height 230 | exact match |
 | block context menu | **left 30, width 322** | **left 32, width 320** |
+| System brightness values | **right-aligned** | **left-aligned at x=743** |
+| System brightness LEDs row | **16 of 32 bars** | **32 of 32** |
+| MIDI Out disabled trash fill | **#101510** | **#081008** |
+| Reverb category glyph | **isometric hexagon**, ink 30x33.5 | **cabinet projection**, ink 30x30 |
+| confirmation dialog | left 190, width 420, height 230 | exact match |
+| plugin-folder and directory panels | top 60, content bottom 472 | exact match |
+| LIVE TUNER track and ring | 24x48 track, 20x20 ring, 3px stroke | exact match |
 
-The menu is bottom-anchored at y=472, so its fifth item grew it upward: top 264
-became 212 and height 208 became 260. Both are corrected.
+The item menu is bottom-anchored at y=472, so its fifth item grew it upward: top
+264 became 212 and height 208 became 260.
 
-`tools/verify_overlay_geometry.py` now measures those overlays in the captured
-frames and compares them with the stylesheet, so the numbers are checked against
-the hardware instead of against themselves. It runs in the release preflight as
-*Overlay geometry against captured frames*.
+The brightness column is the one worth dwelling on. `right: 1.75cqw` puts a
+two-digit value's right edge at exactly the x the device draws it, so *Screen 16*
+and *LEDs 32* agreed to the pixel and the rule looked measured. Only the
+single-digit *Dimmed LEDs 2* separates the two alignments, and it begins at 743
+like the others rather than ending at 762 like a right-aligned value would. The
+frame the test named had the disproof in it the whole time.
+
+`tools/verify_screen_geometry.py` now measures all of these in the captured
+frames and compares them with the rules that claim them, so the numbers are
+checked against the hardware instead of against themselves. Where a stylesheet
+value cannot be placed in screen coordinates - the tuner's offsets are relative
+to a footer section no rule positions absolutely - it measures the sizes and
+says plainly that it is not checking the offsets, rather than inventing an
+anchor. It runs in the release preflight as *Screen geometry against captured
+frames*, and each of the five corrections above was put back to confirm the tool
+reports it.
+
+Two frames are involved and they are not interchangeable: `plugin-folders.png`
+in the physical corpus is the device browser, while `.plugin-folders-official`
+reconstructs `official-plugin-folders.png` from the published screenshots. The
+first measurement of that panel used the wrong one and read a full-bleed layout
+into a rule describing a card with an 8px gutter.
+
+### What is still only pinned
+
+Forty-one measurements now come off the frames, and `block-visuals.test.ts`
+carries a test tying every device-geometry selector it pins to one of them, so a
+new pinned number without a measurement fails. Three groups of numbers in that
+file are still pins rather than evidence, and are worth naming rather than
+leaving to be rediscovered:
+
+- **The tuner's FREQ encoder.** We draw it as a gradient annulus; the device
+  draws a ring with a pointer. Measured across its widest scan-line the device
+  knob is 63px, matching the declared 62px; measured down its tallest column it
+  is 59px, because its lower edge fades into the footer fill. The two renderings
+  have no shared boundary at the precision the claim asserts, so no measurement
+  was added rather than one picked for agreeing.
+- **The EQ underlay and the plugin-list panel insets** inside the interaction
+  fixtures block. These describe elements drawn behind an overlay; identifying
+  their edges in the dimmed frame needs a predicate per element, which has not
+  been written.
+- **The MIDI Out expression-pedal clip paths** and the directory context
+  header's last button. Measurable in principle, not yet measured.
+
+`framebuffer capture drivers disable host LCD text artifacts` and the vendored
+sprite checksum are self-anchored by nature - one asserts a flag in our capture
+tools, the other pins a vendored asset's bytes - and are correctly classified as
+such rather than being device claims at all.
 
 ## Improvements in this pass
 

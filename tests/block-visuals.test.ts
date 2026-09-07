@@ -106,15 +106,27 @@ test("framebuffer capture drivers disable host LCD text artifacts", () => {
 
 test("official tuner retains the measured 440 Hz encoder geometry", () => {
   const css = readFileSync("packages/typescript/qc-ui/src/official-tuner.css", "utf8");
+  // The LIVE TUNER track and its selection ring are measured against
+  // tuner.png and tuner-live-enabled.png by tools/verify_screen_geometry.py.
+  // The encoder itself is not: we draw it as a gradient annulus and the device
+  // draws a ring with a pointer, so the two have no shared boundary to compare
+  // at this precision. Its numbers below are a pin, not evidence.
   assert.match(css, /\.tuner-official \.tuner-frequency > i \{[^}]*top: \.55cqw;[^}]*width: 7\.75cqw;[^}]*height: 7\.75cqw;/s);
   assert.match(css, /\.tuner-official > footer > section:last-child label \{[^}]*padding-left: 5\.5cqw;[^}]*translateY\(1\.25cqw\)/s);
   assert.match(css, /\.tuner-official > footer > section:last-child::before \{[^}]*left: 2cqw;[^}]*width: 3cqw;[^}]*height: 6cqw;/s);
   assert.match(css, /\.tuner-official > footer > section:last-child::after \{[^}]*border: \.375cqw solid #40f860;/s);
 });
 
-test("official device-preset actions retain the observed sixth category glyph", () => {
+test("official device-preset actions draw the observed sixth category glyph", () => {
   const css = readFileSync("packages/typescript/qc-ui/src/official-device-browser.css", "utf8");
   assert.match(css, /\.coros-device-presets\.is-official-actions > nav button:nth-child\(6\) i > span \{[^}]*width: 5cqw;[^}]*data:image\/svg\+xml/);
+  // official-device-preset-actions.png draws Reverb as two squares joined at
+  // their corners - a cabinet projection with a square 30x30 ink box - not the
+  // isometric hexagon that used to stand here, which would paint 30x33.5.
+  for (const path of ["M5 12h15v15H5z", "M12.5 4.5h15v15h-15z"]) {
+    assert.ok(css.includes(path), `the Reverb glyph must draw ${path}`);
+  }
+  assert.doesNotMatch(css, /M5 10 16 4l11 6v13l-11 6-11-6Z/);
 });
 
 test("official low-score refinements retain their measured geometry and glyphs", () => {
@@ -190,15 +202,70 @@ test("official MIDI Out retains the measured disabled header action", () => {
   const css = readFileSync("packages/typescript/qc-ui/src/official-settings-midi.css", "utf8");
   const fixtureCss = readFileSync("packages/typescript/qc-ui/src/remaining-fixtures-fixes.css", "utf8");
   assert.match(css, /\.coros-midi-out > header > span \{[^}]*translateY\(-1px\)/);
-  assert.match(css, /\.coros-midi-out > header \.midi-trash \{[^}]*width: 8\.25cqw;[^}]*translateX\(-\.375cqw\);[^}]*background: #101510;/);
+  // preset-midi-out.png fills that button with #081008, not the #101510 this
+  // claimed to have measured; the width was right at 66px.
+  assert.match(css, /\.coros-midi-out > header \.midi-trash \{[^}]*width: 8\.25cqw;[^}]*translateX\(-\.375cqw\);[^}]*background: #081008;/);
   assert.match(fixtureCss, /\.coros-midi-out \.midi-expression label div\{[^}]*clip-path:polygon\(1% 0,99% 0,100% 2%,91% 98%,89% 100%,11% 100%,9% 98%,0 2%\)/);
   assert.match(fixtureCss, /\.coros-midi-out \.midi-expression label div>i\{[^}]*left:\.75cqw;right:\.75cqw;[^}]*clip-path:polygon/);
 });
 
-test("official System brightness values remain right-aligned", () => {
+test("official System brightness values keep the alignment the device uses", () => {
   const css = readFileSync("packages/typescript/qc-ui/src/official-settings-device.css", "utf8");
+  const fixture = readFileSync("packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", "utf8");
   assert.match(css, /\.settings-system-detail > div span \{ position: relative; top: 1\.375cqw; \}/);
-  assert.match(css, /\.settings-system-detail > div strong \{ position: absolute; right: 1\.75cqw; top: 1\.375cqw; \}/);
+  // settings-system.png draws 16, 32 and 2 all beginning at x=743. Right
+  // alignment agrees with the device only while every value has the same digit
+  // count, which is why `right: 1.75cqw` looked measured for so long.
+  assert.match(css, /\.settings-system-detail > div strong \{ position: absolute; left: 56\.75cqw; right: auto; top: 1\.375cqw; \}/);
+  assert.doesNotMatch(css, /\.settings-system-detail > div strong \{[^}]*right: 1\.75cqw/);
+  // The same frame shows the LEDs row at 32 of 32 bars, not 16.
+  assert.match(fixture, /\["LEDs", "32", 32\]/);
+});
+
+// Every rule above pins a number that is supposed to have come off a device
+// frame, but a test that reads our own stylesheet cannot tell a measurement from
+// an invention - that is how the item menu kept a four-entry height and the
+// brightness column kept an alignment the device does not use. The measuring is
+// done by tools/verify_screen_geometry.py against the frames themselves; this
+// keeps the two lists tied together, so a new pinned number without a
+// measurement, or a measurement whose frame has gone missing, fails here.
+test("every pinned device geometry is measured against a captured frame", () => {
+  const verifier = readFileSync("tools/verify_screen_geometry.py", "utf8");
+  const claims = [
+    ".coros-directory-fixture .directory-item-menu",
+    ".coros-physical-confirmation > aside",
+    ".qc-screen.coros-block-context > aside",
+    ".plugin-folders-official > main",
+    ".directory-official > main",
+    ".coros-midi-out > header .midi-trash",
+    ".tuner-official > footer > section:last-child::before",
+    ".tuner-official > footer > section:last-child::after",
+    ".settings-system-detail > div strong",
+    ".physical-keyboard-rows button",
+    ".coros-device-presets.is-official-actions > nav button:nth-child(6) i > span"
+  ];
+  for (const selector of claims) {
+    assert.ok(verifier.includes(`"${selector}"`), `${selector} pins device geometry with no frame measurement`);
+  }
+  const frames = [
+    "references/qc-ui-corpus/coros-4.1.0/directory-item-context.png",
+    "references/qc-ui-corpus/coros-4.1.0/generic-confirmation.png",
+    "references/qc-ui-corpus/coros-4.1.0/block-context.png",
+    "references/qc-ui-corpus/coros-4.1.0/preset-midi-out.png",
+    "references/qc-ui-corpus/coros-4.1.0/settings-system.png",
+    "references/qc-ui-corpus/coros-4.1.0/tuner.png",
+    "references/qc-ui-corpus/coros-4.1.0/tuner-live-enabled.png",
+    "references/qc-ui-corpus/coros-4.1.0/onscreen-keyboard.png",
+    "references/qc-ui-official-manual/coros-4.1.0/official-plugin-folders.png",
+    "references/qc-ui-official-manual/coros-4.1.0/official-directory-presets.png",
+    "references/qc-ui-official-manual/coros-4.1.0/official-directory-plugin-presets.png",
+    "references/qc-ui-official-manual/coros-4.1.0/official-device-preset-actions.png"
+  ];
+  for (const frame of frames) {
+    assert.ok(verifier.includes(frame.split("/").pop()!), `${frame} is not measured`);
+    assert.ok(readFileSync(frame).length > 0, `${frame} is missing from the corpus`);
+  }
+  assert.equal(claims.length + frames.length, 23);
 });
 
 test("vendored block sprite remains byte-identical to the verified Neural DSP SVG", () => {
