@@ -58,32 +58,45 @@
 .coros-global-eq > header span small { font-size: 1.75cqw; }
 .coros-global-eq > header span strong { font-size: 2.25cqw; }
 .coros-global-eq > header { grid-template-columns: 5.5cqw 1fr 10cqw 12.25cqw; }
+.coros-global-eq > header .global-eq-more > svg { width: 3cqw; height: 3cqw; margin: auto; display: block; }
+.coros-global-eq > header button:last-child > svg { width: 3cqw; height: 3cqw; margin: auto; display: block; }
 .coros-global-eq > header .global-eq-power { position: relative; display: grid; place-items: center; }
 .coros-global-eq > header .global-eq-power i { position: absolute; left: .375cqw; top: 1.5cqw; width: .75cqw; height: 2.5cqw; margin: 0; }
 .coros-global-eq, .coros-global-eq * { font-family: Roboto, Arial, sans-serif; }
+.coros-global-eq { background: #101010; }
 .coros-global-eq .global-eq-graph { height: 52.5%; }
 .coros-global-eq .global-eq-tabs { height: 10.42%; }
 .global-eq-graph .eq-axis-labels text { fill: #303330; font-size: 12px; }
 .global-eq-graph circle.is-active + text { fill: #0a74e0; }
 .global-eq-graph circle { r: 20px; }
 .global-eq-graph circle.is-active { r: 26px; }
-.global-eq-graph svg > g:last-child > g:nth-child(1) { transform: translate(1px, 1px); }
+.global-eq-graph svg > g:last-child > g:nth-child(1) { transform: translateY(1px); }
 .global-eq-graph svg > g:last-child > g:nth-child(2) { transform: translateX(1px); }
 .global-eq-graph svg > g:last-child > g:nth-child(4) { transform: translateY(2px); }
 .global-eq-tabs { width: 65.5cqw; gap: .5cqw; padding: 0 0 0 3cqw; }
 .global-eq-tabs button { font-size: 2cqw; }
+.global-eq-tabs button { background: #181c18; }
+.global-eq-tabs button.is-active { background: #282c28; }
 .global-eq-controls > section { padding: 1.25cqw; }
 .global-eq-controls { margin-top: .5cqw; }
 .global-eq-controls > section > span { font-size: 2cqw; }
 .global-eq-controls > section > span:first-child { position: relative; top: -.125cqw; }
 .global-eq-controls > section:first-child button { inset: 6.875cqw 1.25cqw auto; height: 4.75cqw; font-size: 1.75cqw; }
+.global-eq-controls > section:first-child button { display: grid; grid-template-columns: 3cqw 1fr 3cqw; align-items: center; padding: 0 .625cqw 0 1cqw; }
+.global-eq-controls > section:first-child button > svg { width: 3cqw; height: 3cqw; }
+.global-eq-controls > section:first-child button > b { font-weight: 400; transform: translateX(-2px); }
+.global-eq-controls > section:first-child button > svg:last-child { opacity: .38; }
 .global-eq-controls .io-dial-wrap { inset: 4.625cqw 1cqw auto; height: 8cqw; }
-.global-eq-controls .io-dial { right: -.1875cqw; width: 8.375cqw; height: 8.375cqw; }
-.global-eq-controls .io-dial { background: radial-gradient(circle at center, #282c28 0 68%, transparent 70%), conic-gradient(from 220deg, #0874e0 0 22%, #101010 22%); }
-.global-eq-controls > section:nth-child(4) .io-dial { background: radial-gradient(circle at center, #282c28 0 68%, transparent 70%), conic-gradient(from 220deg, #203820 0 18%, #101010 18%); }
-.global-eq-controls .io-dial b { height: 3.5cqw; }
+.global-eq-controls .io-dial { right: -.1875cqw; width: 8.75cqw; height: 8.75cqw; border: 0; background: conic-gradient(from 220deg, #104468 0 39%, #182018 39% 78%, transparent 78%); }
+.global-eq-controls .io-dial::before { position: absolute; inset: .625cqw; border-radius: 50%; background: #181818; content: ""; }
+.global-eq-controls .io-dial::after { position: absolute; inset: 1.5cqw; border-radius: 50%; background: #202820; content: ""; }
+.global-eq-controls > section:nth-child(3) .io-dial { background: conic-gradient(from 220deg, #0874e0 0 14%, #101010 14% 78%, transparent 78%); }
+.global-eq-controls > section:nth-child(3) .io-dial::after { background: #202420; }
+.global-eq-controls > section:nth-child(4) .io-dial { background: conic-gradient(from 220deg, #182018 0 78%, transparent 78%); }
+.global-eq-controls .io-dial b { position: absolute; z-index: 1; left: calc(50% - .125cqw); top: .875cqw; width: .25cqw; height: 3.5cqw; margin: 0; background: #707870; transform-origin: 50% 100%; }
+.global-eq-controls > section:nth-child(3) .io-dial b { background: #f8fcf8; }
 .global-eq-controls > section:nth-child(2) .io-dial b { transform: rotate(0deg); }
-.global-eq-controls > section:nth-child(3) .io-dial b { transform: rotate(-90deg); }
+.global-eq-controls > section:nth-child(3) .io-dial b { transform: rotate(-98deg); }
 .global-eq-controls > section:nth-child(4) .io-dial b { transform: rotate(-135deg); }
 .global-eq-controls .io-dial-wrap > strong { left: .5cqw; bottom: 1.325cqw; font-size: 1.75cqw; }
 .global-eq-bypass button { width: 8.25cqw; height: 5.5cqw; margin: 2.375cqw 0 0 0; font-size: 3cqw; transform: translateX(-1px); }
@@ -153,7 +166,7 @@
 .capture-official-save > main > small:first-child,
 .capture-official-save > main > h1 { position: relative; top: .375cqw; }
 .capture-official-save > main > small:nth-of-type(2) { position: relative; top: .125cqw; }
-.coros-global-eq .global-eq-graph { background: #070808; }
+.coros-global-eq .global-eq-graph { background: #101010; }
 .coros-global-eq .global-eq-controls { background: #282c28; }
 .coros-global-eq > header button:last-child { background: #282c28; }
 

@@ -12,13 +12,20 @@
     "interface.add", "interface.file", "interface.check",
     "interface.midi", "interface.modes", "interface.tempo", "interface.settings",
     "settings.connection", "settings.updates", "settings.brightness", "settings.power",
-    "settings.volume", "settings.storage", "settings.factory-reset",
+    "settings.volume", "settings.storage", "settings.factory-reset", "eq.high-pass",
     "interface.previous-cab", "interface.next-cab", "device-category.cab", "device-category.overdrive",
     "device-category.wah", "route.analog-input", "route.send"
   ],
   "description": "Authoritative evidence ledger for every typed glyph exposed by the shared QC UI. official-vector entries have exact path and palette evidence; screen-frame glyph entries require crop-level structural scoring; device-category *-tile entries are exact screen-palette anchors for the surrounding icon outline.",
   "qualityGates": { "exactColorMatchPercent": 100, "minimumMeanStructuralMatchPercent": 99.8, "minimumIndividualStructuralMatchPercent": 98 },
   "families": [
+    {
+      "type": "QcEqIconName",
+      "variants": ["high-pass"],
+      "evidence": "screen-frame",
+      "sources": ["official-global-eq"],
+      "paletteTokens": ["captured.iconPrimary"]
+    },
     {
       "type": "QcSettingsIconName",
       "variants": ["connection", "updates", "brightness", "power", "volume", "storage", "factory-reset"],
@@ -179,6 +186,7 @@
     { "icon": "settings.volume", "variant": "volume", "screen": "official-settings-system", "crop": [24, 318, 24, 24], "referenceBackground": "#282c28", "rendererBackground": "#282c28", "expectedColors": ["#f8fcf8", "#909490"], "paletteTokens": ["captured.iconPrimary", "captured.looperRing"] },
     { "icon": "settings.storage", "variant": "storage", "screen": "official-settings-system", "crop": [24, 378, 24, 24], "referenceBackground": "#282c28", "rendererBackground": "#282c28", "expectedColors": ["#f8fcf8", "#909490"], "paletteTokens": ["captured.iconPrimary", "captured.looperRing"] },
     { "icon": "settings.factory-reset", "variant": "factory-reset", "screen": "official-settings-system", "crop": [24, 438, 24, 24], "referenceBackground": "#282c28", "rendererBackground": "#282c28", "expectedColors": ["#f8fcf8"], "paletteTokens": ["captured.iconPrimary"] },
+    { "icon": "eq.high-pass", "variant": "high-pass", "screen": "official-global-eq", "crop": [26, 428, 24, 24], "referenceBackground": "#000000", "rendererBackground": "#000000", "expectedColors": ["#f8fcf8"], "paletteTokens": ["captured.iconPrimary"] },
     { "icon": "device-category.plugins", "variant": "Plugins", "screen": "official-device-browser-amp", "crop": [31, 28, 40, 40], "referenceBackground": "#181c18", "rendererBackground": "#181c18", "expectedColors": ["#f8fcf8"], "paletteTokens": ["captured.iconPrimary"] },
     { "icon": "device-category.amp", "variant": "Amp", "screen": "official-device-browser-amp", "crop": [31, 106, 40, 40], "referenceBackground": "#000000", "rendererBackground": "#101010", "expectedColors": ["#f8fcf8"], "paletteTokens": ["captured.iconPrimary"] },
     { "icon": "device-category.capture", "variant": "Neural Capture", "screen": "official-device-browser-amp", "crop": [31, 184, 40, 40], "referenceBackground": "#181c18", "rendererBackground": "#181c18", "expectedColors": ["#f8fcf8", "#505050"], "paletteTokens": ["captured.iconPrimary", "captured.categoryCaptureMuted"] },

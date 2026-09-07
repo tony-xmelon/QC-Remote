@@ -4,7 +4,7 @@ import { QC_COLORS, QC_REFERENCE_ICON_RASTERS } from "@ndsp-qc/theme";
 import { officialBlockVisual } from "./block-visuals";
 import { openSplitPath } from "./coros-ui";
 import { QcDeviceGlyph } from "./device-glyph";
-import { QcDirectoryIcon, QcEditorIcon, QcHardwareIcon, QcIoIcon, QcLibraryIcon, QcModeGlyph, QcScreenHeaderGlyph, QcSettingsIcon, QcUiIcon, type QcIoIconName, type QcSettingsIconName } from "./theme-icons";
+import { QcDirectoryIcon, QcEditorIcon, QcEqIcon, QcHardwareIcon, QcIoIcon, QcLibraryIcon, QcModeGlyph, QcScreenHeaderGlyph, QcSettingsIcon, QcUiIcon, type QcIoIconName, type QcSettingsIconName } from "./theme-icons";
 import "./fixture-live-surface.css";
 import "./remaining-fixtures.css";
 import "./remaining-fixtures-fixes.css";
@@ -503,10 +503,10 @@ function CorOsIoSettings({ initialView, onClose }: { initialView: IoView; onClos
 function CorOsGlobalEq({ onClose }: { onClose: () => void }) {
   const verticals = [46, 79, 105, 125, 143, 158, 172, 184, 263, 343, 369, 389, 407, 422, 436, 448, 527, 574, 607, 633, 653, 671, 686, 700, 712, 791].map((pixel) => pixel / 8);
   return <section className="coros-global-eq" aria-label="Global EQ">
-    <header><button className="global-eq-more">⋮</button><span><small>GLOBAL EQ</small><strong>Parametric-5</strong></span><button className="global-eq-power"><i /> ON</button><button aria-label="Close Global EQ" onClick={onClose}>✓</button></header>
+    <header><button className="global-eq-more" aria-label="Global EQ menu"><QcUiIcon kind="more" /></button><span><small>GLOBAL EQ</small><strong>Parametric-5</strong></span><button className="global-eq-power"><i /> ON</button><button aria-label="Close Global EQ" onClick={onClose}><QcUiIcon kind="check" /></button></header>
     <div className="global-eq-graph"><div>{verticals.map((left) => <i key={left} style={{ left: `${left}%` }} />)}</div><svg viewBox="0 0 800 255" preserveAspectRatio="none"><g className="eq-axis-labels"><text x="208" y="13">100</text><text x="471" y="13">1k</text><text x="736" y="13">10k</text></g><path d="M25 252 C78 186 99 110 243 104 C400 125 513 115 513 146 C540 115 590 105 644 104 C700 95 750 82 800 80" /><g>{[[104,158],[243,105],[513,146],[607,126],[644,104]].map(([x,y], index) => <g key={index}><circle cx={x} cy={y} r="18" className={index === 0 ? "is-active" : ""} /><text x={x} y={y + 5}>{index + 1}</text></g>)}</g></svg></div>
     <div className="global-eq-tabs">{[1,2,3,4,5].map((tab) => <button key={tab} className={tab === 1 ? "is-active" : ""}>{tab}</button>)}<button>OUT</button></div>
-    <div className="global-eq-controls"><section><span>TYPE</span><button>⌁　HI PASS　⌄</button></section>{[["GAIN","0.0 dB"],["FREQ","50 Hz"],["Q","0.10"]].map(([label,value]) => <section key={label}><span>{label}</span><IoDial value={value} /></section>)}<section className="global-eq-bypass"><span>BYPASS 1</span><button><ExpressionPowerIcon /></button></section></div>
+    <div className="global-eq-controls"><section><span>TYPE</span><button><QcEqIcon kind="high-pass" /><b>HI PASS</b><QcUiIcon kind="down" /></button></section>{[["GAIN","0.0 dB"],["FREQ","50 Hz"],["Q","0.10"]].map(([label,value]) => <section key={label}><span>{label}</span><IoDial value={value} /></section>)}<section className="global-eq-bypass"><span>BYPASS 1</span><button><ExpressionPowerIcon /></button></section></div>
   </section>;
 }
 

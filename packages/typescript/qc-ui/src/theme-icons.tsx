@@ -3,6 +3,7 @@ import { QC_COLORS, QC_REFERENCE_ICON_RASTERS, QC_TYPOGRAPHY } from "@ndsp-qc/th
 
 export type QcDirectoryIconName = "grid" | "download" | "cloud" | "cloud-upload" | "folder" | "new-folder" | "sort" | "filter" | "arrange" | "upload" | "search" | "trash" | "done";
 export type QcEditorIconName = "save" | "change" | "copy" | "paste" | "reset" | "expression" | "looper" | "mute" | "model-update" | "model-downgrade" | "remove" | "assignment-expression" | "band-power" | "footswitch" | "scene-previous" | "scene-next" | "bypass" | "confirm" | "waveform";
+export type QcEqIconName = "high-pass";
 export type QcHardwareIconName = "power" | "brand-pulse";
 export type QcIoIconName = "header" | "usb" | "jack" | "midi" | "combo" | "headphone-active" | "input" | "headphones-symbol" | "linked";
 export type QcLibraryIconName = "capture-library" | "capture-header" | "heart" | "clock" | "binoculars" | "broken-heart" | "neural-mark";
@@ -54,6 +55,10 @@ export function QcPresetStackIcon() {
 
 export function QcSettingsIcon({ kind, className }: { kind: QcSettingsIconName; className?: string }) {
   return <QcReferenceRasterLayers icon={`settings.${kind}` as ReferenceRasterName} className={`qc-settings-icon qc-settings-icon-${kind}${className ? ` ${className}` : ""}`} />;
+}
+
+export function QcEqIcon({ kind, className }: { kind: QcEqIconName; className?: string }) {
+  return <QcReferenceRasterLayers icon={`eq.${kind}` as ReferenceRasterName} className={`qc-eq-icon qc-eq-icon-${kind}${className ? ` ${className}` : ""}`} />;
 }
 
 /** Shared app/CorOS glyph vocabulary. Text characters must not be used as icons. */

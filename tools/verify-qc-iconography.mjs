@@ -72,6 +72,7 @@ const familyPrefixes = {
   QcUiIconName: "interface",
   QcDirectoryIconName: "directory",
   QcEditorIconName: "editor",
+  QcEqIconName: "eq",
   QcHardwareIconName: "hardware",
   QcIoIconName: "io",
   QcLibraryIconName: "library",

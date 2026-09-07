@@ -146,6 +146,9 @@ test("official low-score refinements retain their measured geometry and glyphs",
   assert.match(captureCss, /\.capture-official-progress section > em \{[^}]*width: 2\.75cqw;[^}]*border-top-color: #eee;[^}]*rotate\(-17deg\)/);
   assert.match(captureCss, /\.capture-official-progress > main > nav div:last-child b \{ color: #eee; \}/);
   assert.match(captureCss, /\.coros-global-eq \.global-eq-tabs \{ height: 10\.42%; \}/);
+  assert.match(captureCss, /\.coros-global-eq \{ background: #101010; \}/);
+  assert.match(captureCss, /\.global-eq-tabs button \{ background: #181c18; \}/);
+  assert.match(captureCss, /\.global-eq-tabs button\.is-active \{ background: #282c28; \}/);
   assert.match(captureCss, /\.global-eq-controls \{ margin-top: \.5cqw; \}/);
   assert.match(captureCss, /\.global-eq-controls \.io-dial-wrap \{ inset: 4\.625cqw 1cqw auto; height: 8cqw; \}/);
   assert.match(settingsCss, /\.coros-settings-official\.settings-system,\.coros-settings-official\.settings-system \* \{ font-family: Roboto, Arial, sans-serif; \}/);
@@ -162,7 +165,9 @@ test("official low-score refinements retain their measured geometry and glyphs",
   assert.match(settingsCss, /\.settings-info \.information-table:last-child > span:nth-child\(2\),[\s\S]*?min-height: 6\.125cqw;/);
   assert.match(settingsCss, /\.coros-settings-captured \.settings-edit > svg \{ width: 3cqw; height: 3cqw;/);
   assert.match(fixture, /className="settings-edit"[\s\S]*?M11 14 20 5l-3-3-9 9-1 4 4-1Z/);
-  assert.match(captureCss, /\.global-eq-controls \.io-dial \{ right: -\.1875cqw; width: 8\.375cqw; height: 8\.375cqw; \}/);
+  assert.match(captureCss, /\.global-eq-controls \.io-dial \{ right: -\.1875cqw; width: 8\.75cqw; height: 8\.75cqw; border: 0;/);
+  assert.match(captureCss, /\.global-eq-controls \.io-dial::before \{[^}]*inset: \.625cqw;[^}]*background: #181818;/);
+  assert.match(captureCss, /\.global-eq-controls \.io-dial::after \{[^}]*inset: 1\.5cqw;[^}]*background: #202820;/);
   assert.match(remainingCss, /\.coros-device-presets\.is-official-factory section:nth-child\(2\) header \.preset-close\{[^}]*transform:translateX\(\.75cqw\);font-size:0\}/);
   assert.match(remainingCss, /\.coros-device-presets\.is-official-factory section:nth-child\(2\) header \.preset-confirm\{[^}]*transform:translateX\(\.25cqw\);font-size:0\}/);
   assert.match(remainingCss, /\.coros-device-presets\.is-official-actions::after\{[^}]*background:transparent;/);
