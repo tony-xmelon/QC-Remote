@@ -885,6 +885,9 @@ pub fn decode_global_tempo_settings(payload: &[u8]) -> Result<TempoSettings, Res
     }
     let mut settings = decode_tempo_settings(&message.params);
     settings.mode = Some(decode_tempo_mode(payload)?.mode);
+    if settings.bpm.is_none() {
+        return Err(ResponseDecodeError::Incomplete("GlobalTempo BPM parameter"));
+    }
     Ok(settings)
 }
 
@@ -1324,6 +1327,16 @@ mod tests {
         assert_eq!(settings.sound.as_deref(), Some("COWBELL"));
         assert_eq!(settings.routing.as_deref(), Some("OUT 3/4"));
         assert_eq!(settings.beats, vec!["DOWN"]);
+        let sparse_mode_echo = pa::GlobalTempoMessage {
+            action: pa::message_action::Enum::Update as i32,
+            params: vec![parameter(1, 1.0)],
+            ..Default::default()
+        }
+        .encode_to_vec();
+        assert!(matches!(
+            decode_global_tempo_settings(&sparse_mode_echo),
+            Err(ResponseDecodeError::Incomplete("GlobalTempo BPM parameter"))
+        ));
         let clock = pa::GlobalTempoMessage {
             metronome_status: Some(pa::global_tempo_message::MetronomeStatus::MetronomeStatus(
                 Default::default(),

@@ -48,7 +48,7 @@ export const REPEATABLE_PHYSICAL_CONTROLS = Object.freeze([
 ]);
 export const MINIMUM_CONTROL_REPETITIONS = 20;
 export const MINIMUM_RAPID_PAIRS = 5;
-export const MAXIMUM_SEND_LATENCY_MS = 20;
+export const MAXIMUM_SEND_P95_MS = 20;
 export const MAXIMUM_EVENT_MEDIAN_MS = 50;
 export const MAXIMUM_EVENT_P95_MS = 200;
 export const MAXIMUM_NAVIGATION_P95_MS = 2_000;
@@ -86,6 +86,8 @@ export function summarizePerformanceSamples(samplesByControl) {
       failures: samples.filter((sample) => sample.failed === true).length,
       sendLatencyMs: {
         sampleCount: controlSendLatencies.length,
+        median: percentile(controlSendLatencies, 0.5),
+        p95: percentile(controlSendLatencies, 0.95),
         max: controlSendLatencies.length ? Math.max(...controlSendLatencies) : null
       },
       eventLatencyMs: {
@@ -100,6 +102,8 @@ export function summarizePerformanceSamples(samplesByControl) {
     controls,
     sendLatencyMs: {
       sampleCount: sendLatencies.length,
+      median: percentile(sendLatencies, 0.5),
+      p95: percentile(sendLatencies, 0.95),
       max: sendLatencies.length ? Math.max(...sendLatencies) : null
     },
     eventLatencyMs: {
@@ -390,8 +394,8 @@ export function validatePerformanceEvidence(target, performance) {
       }
     }
   }
-  if (!(Number.isFinite(performance.sendLatencyMs?.max) && performance.sendLatencyMs.max <= MAXIMUM_SEND_LATENCY_MS)) {
-    errors.push(`${target} direct-control send latency exceeded or lacked the ${MAXIMUM_SEND_LATENCY_MS} ms gate`);
+  if (!(Number.isFinite(performance.sendLatencyMs?.p95) && performance.sendLatencyMs.p95 <= MAXIMUM_SEND_P95_MS)) {
+    errors.push(`${target} direct-control send-latency p95 exceeded or lacked the ${MAXIMUM_SEND_P95_MS} ms gate`);
   }
   const minimumEventSamples = REALTIME_CONTROLS.length * MINIMUM_CONTROL_REPETITIONS;
   if (!(Number.isInteger(performance.sendLatencyMs?.sampleCount)

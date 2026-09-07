@@ -402,6 +402,9 @@ async function main() {
         await mkdir(dirname(screenPath), { recursive: true });
         await writeFile(screenPath, Buffer.from(screen.pngBase64, "base64"));
       }
+      const irLoaderModel = (models.models ?? []).find((model) =>
+        /ir loader|impulse response/i.test(`${model.category ?? ""} ${model.name ?? ""}`));
+      const suggestedIr = irs.entries?.[0];
       console.log(JSON.stringify({
         discovery: true,
         target: config.target,
@@ -415,7 +418,11 @@ async function main() {
         suggestedLibraryFixtures: {
           pinnedModelId: pinned.models?.[0] ?? models.models?.[0]?.id,
           capture: redactEvidence(captures.entries?.[0]),
-          ir: redactEvidence(irs.entries?.[0])
+          ir: suggestedIr ? {
+            ...redactEvidence(suggestedIr),
+            modelId: irLoaderModel?.id,
+            slot: 0
+          } : undefined
         }
       }, null, 2));
     } finally {
@@ -1063,14 +1070,20 @@ async function main() {
       verified("show_gig_view", { width: gigScreen.width, height: gigScreen.height, sha256: screenDigest(gigScreen) });
       await transport.call("show_gig_view", { shown: false });
 
-      const modeBySlot = ["PRESET", "SCENE", "STOMP"];
+      const modeBySlot = new Map(
+        (currentSnapshot.modeSlots ?? []).map((entry) => [entry.slot, entry.mode])
+      );
+      const selectedMode = modeBySlot.get(config.performance.modeSlot);
+      const restoredMode = modeBySlot.get(config.performance.restoreModeSlot);
+      assert(selectedMode, `The QC did not report configured mode slot ${config.performance.modeSlot}.`);
+      assert(restoredMode, `The QC did not report configured restore mode slot ${config.performance.restoreModeSlot}.`);
       await call("select_mode_slot", { slot: config.performance.modeSlot, expected_preset_name: currentSnapshot.presetName });
-      currentSnapshot = await waitForSnapshot((value) => value.mode === modeBySlot[config.performance.modeSlot]);
-      assert(currentSnapshot.mode === modeBySlot[config.performance.modeSlot], "Mode-slot selection did not reach authoritative device state.");
+      currentSnapshot = await waitForSnapshot((value) => value.mode === selectedMode);
+      assert(currentSnapshot.mode === selectedMode, "Mode-slot selection did not reach authoritative device state.");
       verified("select_mode_slot", { mode: currentSnapshot.mode, observedAt: currentSnapshot.observedAt });
       await transport.call("select_mode_slot", { slot: config.performance.restoreModeSlot, expected_preset_name: currentSnapshot.presetName });
-      currentSnapshot = await waitForSnapshot((value) => value.mode === modeBySlot[config.performance.restoreModeSlot]);
-      assert(currentSnapshot.mode === modeBySlot[config.performance.restoreModeSlot], "Mode-slot restoration did not reach authoritative device state.");
+      currentSnapshot = await waitForSnapshot((value) => value.mode === restoredMode);
+      assert(currentSnapshot.mode === restoredMode, "Mode-slot restoration did not reach authoritative device state.");
 
       await call("control_looper", { command: "open", value: null });
       const looperScreen = await transport.call("capture_screen", {});

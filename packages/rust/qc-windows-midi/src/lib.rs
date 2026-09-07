@@ -42,7 +42,14 @@ impl PerformanceMidi {
             let gap = Duration::from_millis(qc_protocol::profile::PERFORMANCE_MIDI_GAP_MS);
             if elapsed < gap {
                 throttle_delay = gap - elapsed;
-                std::thread::sleep(throttle_delay);
+                // Windows' ordinary Sleep timer can overshoot this 8 ms device
+                // pacing interval by tens of milliseconds. The wait is short,
+                // bounded, and only occurs for back-to-back performance MIDI,
+                // so keep it precise instead of injecting audible control lag.
+                let deadline = Instant::now() + throttle_delay;
+                while Instant::now() < deadline {
+                    std::hint::spin_loop();
+                }
             }
         }
         self.warm_up()?;

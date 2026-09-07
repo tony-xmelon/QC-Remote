@@ -17,6 +17,11 @@ use std::sync::{mpsc, Arc, Mutex, MutexGuard};
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
+// A complete IR library can publish more than a thousand frames at once. State
+// queries remain ordered behind those frames so they observe a coherent
+// decoder, but must allow enough time for that finite burst to drain.
+const STATE_DECODER_QUERY_TIMEOUT: Duration = Duration::from_secs(10);
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BrokerStatus {
@@ -119,6 +124,11 @@ const SUBSCRIBER_QUEUE_CAPACITY: usize = qc_protocol::domain::STATE_EVENT_DEFAUL
 // coalesced, but allow another request soon enough to recover within the normal
 // 45-second authoritative verification window.
 const PRESET_LIBRARY_REFRESH_COALESCE: Duration = Duration::from_secs(8);
+// The USB reader itself blocks on a permanent native RX thread. This short
+// broker-side receive poll only multiplexes completed reports with outbound
+// commands; keeping the old 50 ms wait added a full UI frame (and sometimes
+// more) before realtime HID commands could even be submitted.
+const CONNECTED_IO_POLL_MS: i32 = 5;
 const PRESET_LIBRARY_VERIFY_TIMEOUT: Duration = Duration::from_secs(45);
 
 trait RecoverPoison<T> {
@@ -317,7 +327,7 @@ impl DeviceController {
             .send(StateDecoderCommand::BlockDetails(row, column, sender))
             .map_err(|error| error.to_string())?;
         receiver
-            .recv_timeout(Duration::from_secs(2))
+            .recv_timeout(STATE_DECODER_QUERY_TIMEOUT)
             .map_err(|error| error.to_string())
     }
 
@@ -338,7 +348,7 @@ impl DeviceController {
             ))
             .map_err(|error| error.to_string())?;
         receiver
-            .recv_timeout(Duration::from_secs(2))
+            .recv_timeout(STATE_DECODER_QUERY_TIMEOUT)
             .map_err(|error| error.to_string())
     }
 
@@ -379,7 +389,7 @@ impl DeviceController {
             .send(StateDecoderCommand::ListModels(sender))
             .map_err(|error| error.to_string())?;
         receiver
-            .recv_timeout(Duration::from_secs(2))
+            .recv_timeout(STATE_DECODER_QUERY_TIMEOUT)
             .map_err(|error| error.to_string())
     }
 
@@ -1365,7 +1375,7 @@ fn run(
         }
 
         if let Some(connected) = connection.as_mut() {
-            match connected.usb.read_message(50) {
+            match connected.usb.read_message(CONNECTED_IO_POLL_MS) {
                 Ok(Some(message)) => {
                     session.read_succeeded();
                     session.state_observed(

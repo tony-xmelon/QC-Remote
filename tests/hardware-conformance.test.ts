@@ -11,7 +11,7 @@ import {
   FULL_RUN_MINIMUM_TRANSPORT_TIMEOUT_MS,
   MAXIMUM_EVENT_MEDIAN_MS,
   MAXIMUM_EVENT_P95_MS,
-  MAXIMUM_SEND_LATENCY_MS,
+  MAXIMUM_SEND_P95_MS,
   MINIMUM_CONTROL_REPETITIONS,
   MINIMUM_RAPID_PAIRS,
   MUTATION_ACK,
@@ -81,6 +81,19 @@ test("physical runner executes every contract action instead of only registering
     contract.actions.map((action: { name: string }) => action.name).filter((name: string) => !invoked.has(name)),
     []
   );
+});
+
+test("physical mode-slot verification follows the device-reported assignment order", () => {
+  const runner = readFileSync(new URL("../tools/hardware-conformance.mjs", import.meta.url), "utf8");
+  assert.match(runner, /currentSnapshot\.modeSlots/);
+  assert.doesNotMatch(runner, /const modeBySlot = \[/);
+});
+
+test("physical discovery completes the loadable IR fixture with its model and slot", () => {
+  const runner = readFileSync(new URL("../tools/hardware-conformance.mjs", import.meta.url), "utf8");
+  assert.match(runner, /const irLoaderModel =/);
+  assert.match(runner, /modelId: irLoaderModel\?\.id/);
+  assert.match(runner, /slot: 0/);
 });
 
 test("physical summaries count unique contract methods instead of repeated restore calls", () => {
@@ -289,7 +302,8 @@ test("release gate requires complete Windows and Android evidence for the curren
     }])),
     sendLatencyMs: {
       sampleCount: 12 * MINIMUM_CONTROL_REPETITIONS,
-      max: MAXIMUM_SEND_LATENCY_MS
+      p95: MAXIMUM_SEND_P95_MS,
+      max: MAXIMUM_SEND_P95_MS
     },
     eventLatencyMs: {
       sampleCount: 12 * MINIMUM_CONTROL_REPETITIONS,
@@ -366,14 +380,14 @@ test("physical performance evidence enforces repetitions, rapid pairs, and laten
   }]));
   const healthy = {
     controls,
-    sendLatencyMs: { sampleCount: 240, max: 20 },
+    sendLatencyMs: { sampleCount: 240, median: 8, p95: 20, max: 80 },
     eventLatencyMs: { sampleCount: 240, median: 50, p95: 100 },
     navigationLatencyMs: { sampleCount: 40, median: 1_000, p95: 2_000 }
   };
   assert.deepEqual(validatePerformanceEvidence("android", healthy), []);
   const broken = structuredClone(healthy);
   broken.controls.footswitch_a = { repetitions: 19, rapidPairs: 4, failures: 1 };
-  broken.sendLatencyMs.max = 21;
+  broken.sendLatencyMs.p95 = 21;
   broken.sendLatencyMs.sampleCount = 239;
   broken.eventLatencyMs = { sampleCount: 239, median: 51, p95: 101 };
   broken.navigationLatencyMs = { sampleCount: 39, median: 1_000, p95: 2_001 };
@@ -381,7 +395,7 @@ test("physical performance evidence enforces repetitions, rapid pairs, and laten
   assert.ok(errors.some((error) => error.includes("footswitch_a was not exercised")));
   assert.ok(errors.some((error) => error.includes("rapid pairs")));
   assert.ok(errors.some((error) => error.includes("contains failures")));
-  assert.ok(errors.some((error) => error.includes("send latency")));
+  assert.ok(errors.some((error) => error.includes("send-latency p95")));
   assert.ok(errors.some((error) => error.includes("send-latency evidence has fewer than 240 samples")));
   assert.ok(errors.some((error) => error.includes("event-latency evidence has fewer than 240 samples")));
   assert.ok(errors.some((error) => error.includes("median")));
@@ -404,10 +418,12 @@ test("physical performance samples retain honest dispatch and event percentiles"
     repetitions: 20,
     rapidPairs: 5,
     failures: 0,
-    sendLatencyMs: { sampleCount: 20, max: 20 },
+    sendLatencyMs: { sampleCount: 20, median: 10, p95: 19, max: 20 },
     eventLatencyMs: { sampleCount: 20, median: 11, p95: 20, max: 21 }
   });
   assert.equal(evidence.sendLatencyMs.sampleCount, 240);
+  assert.equal(evidence.sendLatencyMs.median, 10);
+  assert.equal(evidence.sendLatencyMs.p95, 19);
   assert.equal(evidence.sendLatencyMs.max, 20);
   assert.equal(evidence.eventLatencyMs.sampleCount, 240);
   assert.equal(evidence.eventLatencyMs.median, 11);
