@@ -155,7 +155,11 @@ hardware conformance run.
     Cortex Control sends it during ordinary block editing (see the wire
     section below), and `pyquadcortex`'s enum does not know the type exists
   - Cloud forwarding and account: 18, 29, 30, 31, 41, 45, 46
-  - telemetry, meters and logs: 5, 7, 26, 37, 44
+  - telemetry, meters and logs: 5, 7, 26, 37, 44. Measured: **none of them
+    answers a READ**, so they are subscription-gated push streams rather than
+    request/response types, and none appears in the handshake's
+    live-subscription list. Cortex Control presumably subscribes while its
+    meter and diagnostics screens are open.
   - updater and calibration: 61, 62
   - other: 39 RecentSearches, 55 GigViewButton, 59 PresetSpeedTest,
     63 NeuralCapture2, 64 Serialization

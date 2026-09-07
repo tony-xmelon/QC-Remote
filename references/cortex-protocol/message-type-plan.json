@@ -5,7 +5,7 @@
   "categories": {
     "factory": "Manufacturing and production test. Reaching these from a controller is meaningless outside Neural DSP's line, and several write calibration or serialization data that must not be guessed at.",
     "cloud": "Cortex Cloud account, product entitlement and download plumbing. Needs Neural DSP account credentials and a server contract that is not in the binary's descriptors; the device-side half alone is not usable.",
-    "telemetry": "Continuous meter, load and log streams. They report; nothing about controlling a device depends on them, and subscribing costs bandwidth on a link that already paces poorly.",
+    "telemetry": "Continuous meter, load and log streams. Measured: none of them answers a READ, so they are subscription-gated pushes rather than request/response types, and none is in the handshake's live-subscription list. They report; nothing about controlling a device depends on them, and subscribing costs bandwidth on a link that already paces poorly.",
     "unestablished": "Observed or declared, but the contract is not understood well enough to send safely. Recorded with what is known so it can be finished rather than forgotten."
   },
   "types": [
@@ -13,13 +13,13 @@
       "number": 5,
       "name": "IOMeter",
       "category": "telemetry",
-      "note": "Input and output level meters. The I/O screens we drive read levels from the settings replies instead."
+      "note": "Input and output level meters. A READ on type 5 draws no reply on CorOS 4.1.0 (measured), so it is a subscription-gated push stream rather than a request/response type; it is not in the handshake's live-subscription list, and the I/O screens we drive read levels from the settings replies instead."
     },
     {
       "number": 7,
       "name": "Diagnostics",
       "category": "telemetry",
-      "note": "SOC2ARM comms diagnostics counters, including the four USB-audio counters newer firmware added."
+      "note": "SOC2ARM comms diagnostics counters, including the four USB-audio counters newer firmware added. A READ draws no reply (measured): push-only, like the other meters."
     },
     {
       "number": 18,
@@ -31,7 +31,7 @@
       "number": 26,
       "name": "CPULoad",
       "category": "telemetry",
-      "note": "The CPU monitor screen is reconstructed from state we already hold."
+      "note": "A READ draws no reply (measured): push-only. The CPU monitor screen is reconstructed from state we already hold."
     },
     {
       "number": 29,
@@ -53,7 +53,7 @@
       "number": 37,
       "name": "GridModelMeter",
       "category": "telemetry",
-      "note": "Per-block meter feed. Observed around block edits alongside ModelPreset; see type 71."
+      "note": "Per-block meter feed, observed around block edits alongside ModelPreset. A READ draws no reply (measured): push-only."
     },
     {
       "number": 39,
@@ -69,7 +69,8 @@
     {
       "number": 44,
       "name": "Logs",
-      "category": "telemetry"
+      "category": "telemetry",
+      "note": "A READ draws no reply (measured): push-only."
     },
     {
       "number": 45,
