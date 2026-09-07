@@ -13,7 +13,7 @@
   container-type: inline-size;
   height: 60cqw;
   overflow: hidden;
-  background: #0b0c0b;
+  background: #101010;
   color: #e8eae8;
   font-size: 2cqw;
 }
@@ -48,7 +48,8 @@
   top: 8.5cqw;
   margin: 0;
   text-align: center;
-  line-height: 1.45;
+  /* The frame's three lines start at 73, 94 and 115: a 21px pitch. */
+  line-height: 1.3125;
   color: #e8eae8;
 }
 
@@ -67,11 +68,13 @@
   display: block;
   width: 4.25cqw;
   height: 4.25cqw;
-  color: #6d726d;
+  color: #525152;
 }
 
-.capture-jack-xlr, .capture-jack-input { width: 5.75cqw; height: 5.75cqw; }
-.capture-jack-usb { width: 4cqw; height: 4cqw; }
+/* capture-connect-input-2.png: the four combo jacks are 52px across, the
+   USB jack 28; every jack centre already matches. */
+.capture-jack-xlr, .capture-jack-input { width: 6.5cqw; height: 6.5cqw; }
+.capture-jack-usb { width: 3.5cqw; height: 3.5cqw; }
 
 .capture-jack svg {
   width: 100%;
@@ -85,7 +88,7 @@
 .capture-jack .jack-core { stroke-width: 1.8; }
 .capture-jack .jack-pin { fill: currentColor; stroke: none; }
 .capture-jack-usb svg { fill: currentColor; stroke: none; }
-.capture-jack-usb .jack-core { fill: #0b0c0b; }
+.capture-jack-usb .jack-core { fill: #101010; }
 
 .capture-jack.is-green { color: #2df36a; }
 .capture-jack.is-white { color: #f4f6f4; }
@@ -99,7 +102,7 @@
   top: 50%;
   width: 5.25cqw;
   height: 1.5px;
-  background: #6d726d;
+  background: #525152;
   transform: translate(-50%, -50%) rotate(-45deg);
 }
 
@@ -152,7 +155,7 @@
   left: 50%;
   width: 1px;
   height: 3.25cqw;
-  background: #6d726d;
+  background: #525152;
 }
 
 .capture-annotation.is-up::before { bottom: calc(100% + .5cqw); }
@@ -164,8 +167,8 @@
   left: 50%;
   width: .9cqw;
   height: .9cqw;
-  border-left: 1px solid #6d726d;
-  border-top: 1px solid #6d726d;
+  border-left: 1px solid #525152;
+  border-top: 1px solid #525152;
 }
 
 .capture-annotation.is-up::after {
@@ -182,7 +185,8 @@
   position: absolute;
   left: 38.5cqw;
   right: 1.5cqw;
-  top: 37.125cqw;
+  /* capture-connect-input-2.png: the box runs y 293..410. */
+  top: 36.625cqw;
   display: grid;
   grid-template-columns: 1fr 6cqw;
   align-items: center;
@@ -204,7 +208,8 @@
   grid-column: 1;
   margin: .5cqw 0 0;
   font-size: 1.875cqw;
-  line-height: 1.35;
+  /* Its four lines sit on an 18px pitch. */
+  line-height: 1.2;
 }
 
 .capture-tube-warning svg {

@@ -603,6 +603,111 @@ a placeholder (`QC-MCP-TEST-mtniwbfb-R`) rather than the name in the frame it
 reconstructs. The name now matches the capture, and the render's glyph columns
 land within 7px of the device's across the whole title.
 
+### The sixth pass: the last four, and what they uncovered
+
+The four screens the fifth pass catalogued were taken, and finishing them
+opened a second front. **All 94 addressable frames now score under 0.06** - the
+gap list is empty for the first time. The median is 0.0251, 65 sit under 0.03,
+88 under 0.04, and 90 of the 94 agree on 70% or more of their edges.
+
+| frame | before | after | what was wrong |
+| --- | --- | --- | --- |
+| `looper-editor` | 0.067 / 0.81 | **0.017 / 0.89** | six of the eight tiles are unassigned: `#080c08` with their ink at 7.5% |
+| `directory-copy` | 0.067 / 0.63 | **0.031 / 0.92** | wrong underlay, and `<b>` became a flex item so each option split into three columns |
+| `capture-sanity-error` | 0.062 / 0.61 | 0.057 / 0.75 | body copy and panel height |
+| `capture-connect-input-2` | 0.081 / 0.71 | 0.056 / 0.82 | jack rows and warning box |
+
+**Five frames were being compared with the wrong screen.** Their own CorOS
+trees say what they are: `overlay-error.tree.txt` is a `SearchResultsDialog`,
+`device-search.tree.txt` a `SearchDialog`, `overlay-busy` and `plugin-folders`
+are both `Grid` + device browser. They were captured under the name of the step
+being exercised rather than of the screen the unit showed. Pointing each at the
+view that draws it is the whole fix:
+
+| frame | was scored against | actually drawn by | mae | edge f1 |
+| --- | --- | --- | --- | --- |
+| `overlay-busy` | the Saving-preset toast | `plugin-refresh` | 0.172 -> **0.026** | 0.06 -> **0.85** |
+| `overlay-error` | the Action-unavailable dialog | `device-search` | 0.133 -> **0.024** | 0.01 -> **0.70** |
+| `plugin-folders` | the plugin folder browser | `plugin-list` | 0.088 -> **0.030** | 0.12 -> **0.81** |
+| `device-search` | the results list | `device-search-suggestions` | 0.106 -> **0.020** | 0.18 -> **0.79** |
+| `directory-search` | a list with a search field | `device-search-entry` | 0.070 -> **0.014** | 0.20 -> **0.84** |
+
+`device-search-entry.png` and `directory-search.png` are the same screen to the
+pixel apart from one column: the caret's phase. That is what made the sixth
+mislabelled frame - `directory-new-folder` - decidable too: naming a folder is
+not a dialog on the unit, it is the full keyboard with the name selected in
+`#42fb63` on `#102818`, a close at the left and a `#1838ff` save at the right.
+The NAME / CANCEL / CREATE dialog was an invention; it is gone, and the frame
+went 0.077 / 0.24 to **0.016 / 0.87**.
+
+**Every USB-captured directory frame draws the same layout.** `directory-sort`,
+`directory-categories`, `directory-copy` and `directory-arrange` were drawing
+the manual's compact list while their frames show what `directory-item-context`
+shows - 60px folder rows, a 2x7 bank grid, 52px preset rows, all of them
+captured in bank 4 of My Presets. Two claims that had been pinned by the visual
+contract turned out to record inventions rather than the frames, and both pins
+were re-pointed at the evidence:
+
+- the header's second slot is a plain white cloud-upload glyph in all six of
+  those frames, not the red signal-error icon `PhysicalDirectoryStatusIcon`
+  drew;
+- the preset rows are `4A`..`4H`, not `2A`..`2G`.
+
+Multi Select is a header, not a bottom bar: a 98x44 select-all tile at x 8, the
+title in `#42fb63` from x 115, then 64x44 actions on a 74px pitch ending at 674
+and a done tick at 694. `directory-copy` is the same mode with one action fewer,
+which is why the actions are placed from the right.
+
+| frame | before | after |
+| --- | --- | --- |
+| `directory-arrange` | 0.043 / 0.36 | **0.031 / 0.86** |
+| `directory-categories` | 0.050 / 0.47 | **0.028 / 0.83** |
+| `directory-sort` | 0.028 / 0.52 | **0.021 / 0.78** |
+| `directory-filter` | 0.035 / 0.45 | **0.019 / 0.81** |
+| `directory-irs` | 0.056 / 0.40 | **0.011 / 0.75** |
+| `directory-item-context` | 0.014 / 0.88 | **0.013 / 0.92** |
+
+`directory-filter` was over the wrong directory entirely: the funnel was
+captured in Neural Captures, inside the Fuzz folder. `directory-irs` was
+captured inside an empty My IRs, so the pane holds only the placeholder
+waveform - the seven IR rows with tick and trash buttons were invented.
+
+**The assignment screens are the block-context screen.** `scene-assignment` and
+`stomp-assignment` were drawing four outlined empty slots - the device browser's
+placeholder grid - where the frames show the Grid, its preset title and the
+editor action bar, with the block's own card at the left of the bar and a strip
+of five 156px parameter cells between y 256 and 363. The underlay is now one
+component shared with `block-context`, which is unchanged at 0.018 / 0.97.
+
+| frame | before | after |
+| --- | --- | --- |
+| `scene-assignment` | 0.051 / 0.26 | **0.020 / 0.80** |
+| `stomp-assignment` | 0.041 / 0.49 | **0.038 / 0.69** |
+
+**Four more came out of the same reading.** Once the structure was right the
+remaining screens were mostly showing the wrong *state*:
+
+| frame | before | after | what the frame shows |
+| --- | --- | --- | --- |
+| `directory-favorites` | 0.032 / 0.59 | **0.014 / 0.93** | one favourite, `Fender Deluxe 212`, and no A-Z rail |
+| `io-headphones` | 0.038 / 0.66 | **0.028 / 0.78** | two 107px panels from y 257, not one 248px block from 225 |
+| `global-eq` | 0.056 / 0.70 | **0.051 / 0.79** | the EQ is off and every band flat - a straight line with the nodes on it |
+| `cloud-upload-overwrite` | 0.034 / 0.62 | **0.033 / 0.71** | upload mode: a green-bordered cloud, one tool, upload tiles on the rows |
+
+`INPUT 1` carried a white ring on every I/O page; the frames ring it only on the
+input page, and in `#42fb63` rather than white.
+
+One thing the frames cannot settle: CorOS shrinks a long preset name to fit, so
+`Top 3 Acoustic Sims` sets its header at 66/47px against block-context's 71/58.
+That is fitted from the two frames, not derived.
+
+And one wrap the fixtures cannot reproduce. The paste dialog's body breaks after
+`paste` on the unit, which needs a measure of about 376px; in our face the
+second line then needs 409px, and no single size makes both true, because our
+bold is wider relative to the roman than the device's. The measure is set so the
+paragraph takes two lines with a break one word later - closer than the three
+lines an exact-width box produced.
+
 ## Improvements in this pass
 
 - Ran Neural Captures on the unit with the owner's approval and recorded

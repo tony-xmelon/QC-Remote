@@ -61,7 +61,8 @@
 .io-ports button:nth-child(10), .io-ports button:nth-child(11) { transform: translateX(-2.375cqw); }
 .io-ports button:nth-child(12) { transform: translateX(-1.875cqw); }
 .coros-io-settings .io-editor { transform: translateY(-.25cqw); }
-.io-editor.is-headphones { position: absolute; left: 1%; right: 1%; top: 28.125cqw; height: 31cqw; display: grid; grid-template-columns: 19.5cqw 19.875cqw 1fr; grid-template-rows: 17.5cqw 13.5cqw; transform: none; }
+.io-editor.is-headphones { position: absolute; left: 1%; right: 1%; top: 32.125cqw; height: 27cqw; display: grid; grid-template-columns: 19.5cqw 19.875cqw 1fr; grid-template-rows: 107px 109px; transform: none; }
+.io-editor.is-headphones::after { content: ""; position: absolute; left: 0; right: 0; top: 107px; height: 2px; background: #101010; }
 .io-editor.is-headphones > section { position: relative; border-right: 1px solid #171918; }
 .io-editor.is-headphones > section > span,.io-headphone-meter > span { position: absolute; left: 1cqw; top: 1.125cqw; color: #e9ebe9; font-size: 2cqw; }
 .io-editor.is-headphones .io-dial-wrap { inset: 4.875cqw 1cqw auto; height: 8cqw; }

@@ -55,15 +55,22 @@ test("physical interaction fixtures preserve the captured CorOS overlay structur
   // `directory-item-context.tree.txt` is the evidence.
   assert.match(fixture, /\["Edit", "Copy", "Cut", "Paste to replace", "Delete"\]/);
   assert.match(fixture, /DirectoryIcon kind="folder" number=\{4\}/);
-  assert.match(fixture, /function PhysicalDirectoryStatusIcon/);
+  // Six directory frames show a plain white cloud-upload in that header slot;
+  // the red signal-error glyph this used to draw is on none of them.
+  assert.match(fixture, /itemContext \? <DirectoryIcon kind="cloud-upload" \/> : "☁"/);
+  assert.doesNotMatch(fixture, /PhysicalDirectoryStatusIcon/);
   assert.match(fixture, /function PluginLockIcon/);
-  assert.match(fixture, /className="physical-preset-name">\{`2\$\{String\.fromCharCode\(65 \+ index\)\} \$\{name\}`\}/);
+  // Every physical directory frame was captured in bank 4 of My Presets.
+  assert.match(fixture, /className="physical-preset-name">\{`4\$\{String\.fromCharCode\(65 \+ index\)\} \$\{name\}`\}/);
   assert.match(fixture, /"Save Current Parameters as\.\.\."/);
   assert.match(fixture, /function BlockContextIcon/);
   // block-context.png shows the Grid above an editor action bar with an empty
   // parameter area below - not the full-screen EQ editor this used to draw,
   // which is a real CorOS layout but not the one behind this menu.
-  assert.match(fixture, /className="physical-grid-underlay"/);
+  assert.match(fixture, /physical-grid-underlay/);
+  // scene-assignment.png and stomp-assignment.png draw the same Grid and
+  // action bar, so all three share one component.
+  assert.match(fixture, /<PhysicalEditorUnderlay slot="4" letter="E" title="QC MCP TEST_2" \/>/);
   assert.doesNotMatch(fixture, /physical-eq-/);
   for (const kind of ["change", "copy", "paste", "reset", "save", "expression", "bypass"]) {
     assert.match(fixture, new RegExp(`\\["${kind}"`));

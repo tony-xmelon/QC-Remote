@@ -146,3 +146,10 @@
 .directory-upload-official .directory-official-list > button { border-bottom: 0; }
 
 }
+
+/* directory-irs.png: My IRs is open and empty, so the pane holds only the
+   placeholder waveform on #181c18, and the library row carries its count. */
+.directory-irs-official .directory-official-list { display: grid; place-items: center; background: #181c18; }
+.directory-irs-official .ir-directory-logo { width: 13.75cqw; height: 16.25cqw; fill: none; stroke: #101010; stroke-width: 12; stroke-linecap: butt; stroke-linejoin: miter; }
+.directory-official nav button > em { color: #c8ccc8; font-size: 2cqw; font-style: normal; text-align: right; }
+
