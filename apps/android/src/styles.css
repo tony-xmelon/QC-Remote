@@ -127,6 +127,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .mobile-legal-note { padding: 10px; border-left: 3px solid var(--qc-palette-58df82); border-radius: 0 8px 8px 0; background: var(--qc-palette-0c0f12); color: var(--qc-palette-d6d9dd) !important; }
 .mobile-legal-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 .mobile-legal-actions button { min-height: 36px; padding: 0 13px; border: 1px solid var(--qc-palette-394049); border-radius: 9px; background: var(--qc-palette-1a1f25); color: var(--qc-palette-dce1e5); font: inherit; }
+.mobile-setting-toggle { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 10px; border: 1px solid var(--qc-palette-2c343c); border-radius: 10px; background: var(--qc-palette-12161a); color: var(--qc-palette-e0e4e7); font-size: 13px; }
+.mobile-setting-toggle input { width: 18px; height: 18px; accent-color: var(--qc-palette-55e282); }
 .mobile-workflow-panel .routing-editor, .mobile-workflow-panel .block-management, .mobile-workflow-panel .add-block-form, .mobile-workflow-panel .scene-editor { display: grid; gap: 10px; }
 .mobile-workflow-panel .routing-editor section { display: grid; gap: 7px; padding: 10px; border: 1px solid var(--qc-palette-292f35); border-radius: 12px; background: var(--qc-palette-0c0f12); }
 .mobile-workflow-panel label { display: grid; grid-template-columns: minmax(74px, .6fr) minmax(0, 1fr) auto; align-items: center; gap: 7px; color: var(--qc-palette-abb3ba); font-size: 11px; }

@@ -5,7 +5,7 @@ import { assistantToolActionPrompt, footswitchLeds, parseAssistantIntent, parseA
 import { formFactors, skins } from "@ndsp-qc/form-factors";
 import { QC_BRAND, QC_COLORS, QC_LEGAL, QC_VISUAL_ASSETS } from "@ndsp-qc/theme";
 import { AddBlockPanel, applyPreparedOfflineAssistantAction, AssistantAccessSelect, AssistantAttachmentList, browserWorkflowPrompts, consumeQcNativeStateFrame, corosFixtureConfiguration, corOsUnavailableContextActionMessage, executeAndReconcileQcAction, GridManagementPanel, offlineAssistantEditConfirmation, parameterEditorAccent, parameterEditorControlSlots, parameterEditorPageSize, qcParameterEditorBindings, qcRelayLabel, QcHardwareSwitch, QcMasterVolumeKnob, QcUiIcon, QuadCortexSurface, readAssistantAccessMode, RoutingEditor, runOfflineAssistantIntent, SceneEditor, useAssistantAutoScroll, useAssistantConversation, useBlockEditorSession, useContinuousControlWorkflow, usePublicRelayWorkflow, useQcConnectionWorkflow, useQcController, useQcLiveState, useQcSurfaceActions, useQcWorkflows, writeAssistantAccessMode, type CorOsContextAction, type CorOsScreenView } from "@ndsp-qc/ui";
-import { androidGatewayTransport, createAndroidQcTransport, GeminiNative, publicRelay, QcUsbNative, subscribeRelayState, VoiceInputNative } from "./native-services";
+import { androidGatewayTransport, createAndroidQcTransport, GeminiNative, publicRelay, QcUsbNative, ScreenWakeNative, subscribeRelayState, VoiceInputNative } from "./native-services";
 import { quotaSummary, recordGeminiUsage, type GeminiModelId, type GeminiQuotaLedger } from "./gemini-quota";
 import appPackage from "../package.json";
 
@@ -27,6 +27,7 @@ const androidGeminiModels: ReadonlyArray<{ id: AndroidGeminiModel; label: string
 const androidModelStorageKey = "qc-control.android-gemini-model";
 const androidQuotaStorageKey = "qc-control.android-gemini-quota-v1";
 const androidChatCollapsedStorageKey = "qc-control.android-chat-collapsed-v1";
+const androidKeepScreenAwakeStorageKey = "qc-control.android-keep-screen-awake-v1";
 const legacyControlAccessModeKey = "qc-control.device-access-mode-v1";
 const qcRemoteScreen = {
   openIo: { x: 400, y: 8, toX: 400, toY: 220 },
@@ -77,18 +78,29 @@ export function App() {
   const [quotaState, setQuotaState] = useState<"unreported" | "available" | "exhausted">("unreported");
   const [quotaNow, setQuotaNow] = useState(Date.now());
   const [chatCollapsed, setChatCollapsed] = useState(() => window.localStorage.getItem(androidChatCollapsedStorageKey) === "true");
+  const [keepScreenAwake, setKeepScreenAwake] = useState(() => window.localStorage.getItem(androidKeepScreenAwakeStorageKey) !== "false");
   const [voiceState, setVoiceState] = useState("idle");
   const [controlAccessMode, setControlAccessMode] = useState<ControlAccessMode>(storedControlAccessMode);
   const relayWorkflow = usePublicRelayWorkflow({ relay: publicRelay, enabled: native, autoStart: true, subscribe: subscribeRelayState });
   const relayState: RelayState = relayWorkflow.status?.state ?? "stopped";
   const relayPaired = relayWorkflow.status?.paired ?? false;
-  const [workflowPanel, setWorkflowPanel] = useState<"block" | "add" | "routing" | "scene" | "about" | "privacy" | "legal" | "notices" | null>(null);
+  const [workflowPanel, setWorkflowPanel] = useState<"block" | "add" | "routing" | "scene" | "about" | "display" | "privacy" | "legal" | "notices" | null>(null);
   const [mobileScreenView, setMobileScreenView] = useState<CorOsScreenView | null>(null);
   const connectInFlight = useRef(false);
   const presetSynchronized = useRef(false);
   const usbSessionReady = useRef(false);
   const nativeStateSequence = useRef(0);
   const appendAssistant = useCallback((text: string, attachments?: AndroidAttachment[]) => conversation.append("assistant", text, attachments), [conversation.append]);
+  useEffect(() => {
+    if (!native) return;
+    const enabled = keepScreenAwake && usbConnected;
+    void ScreenWakeNative.setEnabled({ enabled });
+    return () => { void ScreenWakeNative.setEnabled({ enabled: false }); };
+  }, [keepScreenAwake, native, usbConnected]);
+  const changeKeepScreenAwake = (enabled: boolean) => {
+    setKeepScreenAwake(enabled);
+    window.localStorage.setItem(androidKeepScreenAwakeStorageKey, String(enabled));
+  };
   const workflows = useQcWorkflows({
     controller: qcController,
     transport: qcTransport,
@@ -590,7 +602,8 @@ export function App() {
         {workflowPanel === "block" && <GridManagementPanel snapshot={snapshot} details={blockDetails} loading={gridWorkflow.detailsLoading} pending={devicePending} moveDestination={gridWorkflow.moveDestination} setMoveDestination={gridWorkflow.setMoveDestination} footswitchDraft={gridWorkflow.footswitchDraft} setFootswitchDraft={gridWorkflow.setFootswitchDraft} move={() => void gridWorkflow.move()} assignFootswitch={() => void gridWorkflow.assignFootswitch()} remove={() => void gridWorkflow.remove()} />}
         {workflowPanel === "add" && <AddBlockPanel snapshot={snapshot} filteredModels={gridWorkflow.filteredModels} loading={gridWorkflow.modelsLoading} pending={devicePending} modelFilter={gridWorkflow.modelFilter} setModelFilter={gridWorkflow.setModelFilter} addCell={gridWorkflow.addCell} setAddCell={gridWorkflow.setAddCell} addModelId={gridWorkflow.addModelId} setAddModelId={gridWorkflow.setAddModelId} add={() => void gridWorkflow.add()} cancel={() => setWorkflowPanel(null)} />}
         {workflowPanel === "scene" && <SceneEditor snapshot={snapshot} pending={devicePending} sourceScene={sceneWorkflow.sourceScene} setSourceScene={sceneWorkflow.setSourceScene} destinationScene={sceneWorkflow.destinationScene} setDestinationScene={sceneWorkflow.setDestinationScene} swap={sceneWorkflow.swap} setSwap={sceneWorkflow.setSwap} label={sceneWorkflow.label} setLabel={sceneWorkflow.setLabel} color={sceneWorkflow.color} setColor={sceneWorkflow.setColor} colors={sceneWorkflow.colors} copy={() => void sceneWorkflow.copy()} saveLabel={() => void sceneWorkflow.saveLabel()} saveColor={() => void sceneWorkflow.saveColor()} />}
-        {workflowPanel === "about" && <><div className="dialog-kicker">ABOUT</div><h2 id="dialog-title">{QC_BRAND.appName} <small>{appPackage.version}</small></h2><p>An independent mobile companion for controlling a connected Quad Cortex.</p><p className="mobile-legal-note">{QC_LEGAL.independence}</p><p>{QC_LEGAL.copyright}</p><div className="mobile-legal-actions"><button onClick={() => setWorkflowPanel("privacy")}>Privacy</button><button onClick={() => setWorkflowPanel("legal")}>Legal</button><button onClick={() => setWorkflowPanel("notices")}>Notices</button></div></>}
+        {workflowPanel === "about" && <><div className="dialog-kicker">ABOUT</div><h2 id="dialog-title">{QC_BRAND.appName} <small>{appPackage.version}</small></h2><p>An independent mobile companion for controlling a connected Quad Cortex.</p><p className="mobile-legal-note">{QC_LEGAL.independence}</p><p>{QC_LEGAL.copyright}</p><div className="mobile-legal-actions"><button onClick={() => setWorkflowPanel("display")}>Display</button><button onClick={() => setWorkflowPanel("privacy")}>Privacy</button><button onClick={() => setWorkflowPanel("legal")}>Legal</button><button onClick={() => setWorkflowPanel("notices")}>Notices</button></div></>}
+        {workflowPanel === "display" && <><div className="dialog-kicker">DISPLAY</div><h2 id="dialog-title">Screen wake</h2><p>Keep this screen on while QC Control is in front and a Quad Cortex is connected. It automatically releases when you disconnect or leave the app.</p><label className="mobile-setting-toggle"><input type="checkbox" checked={keepScreenAwake} onChange={(event) => changeKeepScreenAwake(event.target.checked)} /> Keep screen awake while connected</label><div className="mobile-legal-actions"><button onClick={() => setWorkflowPanel("about")}>Back to About</button></div></>}
         {workflowPanel === "privacy" && <><div className="dialog-kicker">PRIVACY</div><h2 id="dialog-title">Local control, optional services</h2><p>{QC_LEGAL.privacy.local}</p><p>{QC_LEGAL.privacy.models}</p><p>{QC_LEGAL.privacy.voice}</p><div className="mobile-legal-actions"><button onClick={() => setWorkflowPanel("about")}>Back to About</button></div></>}
         {workflowPanel === "legal" && <><div className="dialog-kicker">LEGAL</div><h2 id="dialog-title">Independent companion</h2><p>{QC_LEGAL.independence}</p><p>{QC_LEGAL.trademarks}</p><p>{QC_LEGAL.productSafety}</p><p>{QC_LEGAL.copyright}</p><div className="mobile-legal-actions"><button onClick={() => setWorkflowPanel("about")}>Back to About</button></div></>}
         {workflowPanel === "notices" && <><div className="dialog-kicker">THIRD-PARTY NOTICES</div><h2 id="dialog-title">Runtime components</h2>{QC_LEGAL.thirdParty.map((notice) => <p key={notice}>{notice}</p>)}<div className="mobile-legal-actions"><button onClick={() => setWorkflowPanel("about")}>Back to About</button></div></>}

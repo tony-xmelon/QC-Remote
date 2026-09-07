@@ -44,6 +44,10 @@ interface VoiceInputNativePlugin {
   addListener(eventName: "voiceState", listener: (result: { state: string }) => void): Promise<PluginListenerHandle>;
 }
 
+interface ScreenWakeNativePlugin {
+  setEnabled(options: { enabled: boolean }): Promise<{ enabled: boolean }>;
+}
+
 interface QcRelayNativePlugin {
   status(): Promise<PublicRelayStatus>;
   pair(options: { endpoint: string; pairingCode: string; deviceName?: string }): Promise<{ paired: boolean; endpoint: string }>;
@@ -56,6 +60,7 @@ interface QcRelayNativePlugin {
 export const GeminiNative = registerPlugin<GeminiNativePlugin>("Gemini");
 export const QcUsbNative = registerPlugin<QcUsbNativePlugin>("QcUsb");
 export const VoiceInputNative = registerPlugin<VoiceInputNativePlugin>("VoiceInput");
+export const ScreenWakeNative = registerPlugin<ScreenWakeNativePlugin>("ScreenWake");
 export const QcRelayNative = registerPlugin<QcRelayNativePlugin>("QcRelay");
 export const subscribeRelayState = (listener: (state: PublicRelayState) => void) =>
   QcRelayNative.addListener("relayState", ({ state }) => listener(state));

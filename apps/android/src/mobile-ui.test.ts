@@ -11,6 +11,8 @@ test("the mobile control deck follows the physical three-row QC layout", () => {
   assert.equal(domain.limits.scenes, 8);
   assert.match(appSource, /Array\.from\(\{ length: QC_SCENE_COUNT \}/, "A through H must come from the shared scene definition");
   assert.match(appSource, /QcMasterVolumeKnob value=\{snapshot\.masterVolume\} readout=\{`\$\{snapshot\.masterVolume\}`\}/);
+  assert.match(appSource, /ScreenWakeNative\.setEnabled\(\{ enabled \}\)/, "the foreground Android activity stays awake only for a live USB session");
+  assert.match(appSource, /Keep screen awake while connected/);
   assert.match(appSource, /const toggleIoView = async \(\) => \{[\s\S]*QcUsbNative\.swipeScreen\(qcRemoteScreen\.openIo\)[\s\S]*setMobileScreenView\("io-overview"\)/);
   assert.match(appSource, /else if \(ioViewOpen\) await QcUsbNative\.tapScreenDirect\(qcRemoteScreen\.done\)/);
   assert.match(appSource, /const toggleGigView = async \(\) => \{[\s\S]*androidGatewayTransport\.showGigView\(true\)[\s\S]*setMobileScreenView\("gig"\)/);

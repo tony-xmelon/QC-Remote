@@ -13,6 +13,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(QcUsbPlugin.class);
         registerPlugin(QcRelayPlugin.class);
         registerPlugin(VoiceInputPlugin.class);
+        registerPlugin(ScreenWakePlugin.class);
         FirebaseApp.initializeApp(this);
         FirebaseAppCheck.getInstance().installAppCheckProviderFactory(
             PlayIntegrityAppCheckProviderFactory.getInstance()
