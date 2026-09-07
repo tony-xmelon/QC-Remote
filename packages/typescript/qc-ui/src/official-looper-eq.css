@@ -134,14 +134,14 @@
 .capture-official-progress section > em { right: 2cqw; top: 18.625cqw; width: 2.75cqw; height: 2.75cqw; border: .375cqw solid #505450; border-top-color: #eee; border-right-color: #eee; border-radius: 50%; color: transparent; font-size: 0; transform: rotate(-17deg); }
 .capture-kinds button > svg { width: 6cqw; height: 6cqw; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .capture-kinds button > i:empty { width: 2.75cqw; height: 2.75cqw; border: .2cqw solid #111; border-radius: 50%; background: repeating-linear-gradient(to bottom, #eee 0 .22cqw, #222 .22cqw .45cqw); }
-.capture-official-save > main { margin-top: 3.75cqw; }
+.capture-official-save > main { margin-top: 3.125cqw; }
 .capture-official-save > header { gap: 2.25cqw; }
 .capture-official-save > header .capture-folder { width: 20.375cqw; }
 .capture-official-save > header > button:nth-child(3) { width: 9.5cqw; }
 .qc-screen.capture-official-save { background: #101010; }
 .capture-official-save > header > button { background: #292c29; }
 .capture-official-save > header .capture-note { background: #102818; }
-.capture-official-save > header .capture-save-now { background: #1838f8; }
+.capture-official-save > header .capture-save-now { background: #081008; color: #29382c; }
 .capture-official-save > header button > svg { width: 3cqw; height: 3cqw; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .capture-official-save > header .capture-folder { display: flex; align-items: center; gap: 1.625cqw; padding: 0 1.25cqw; }
 .capture-official-save > header .capture-folder > svg { fill: currentColor; stroke: currentColor; }
@@ -154,10 +154,10 @@
 .capture-official-save .capture-kinds button:nth-child(6) { --capture-kind-color: #803c08; }
 .capture-official-save .capture-instruments button { background: #181c18; }
 .capture-official-save .capture-instruments button.is-active { background: #f8fcf8; }
-.capture-official-save .capture-kinds { height: 15.5cqw; gap: 1.625cqw; }
+.capture-official-save .capture-kinds { height: 15.125cqw; gap: 1.625cqw; }
 .capture-official-save > main > small:nth-of-type(2) { margin-bottom: 2.5cqw; }
 .capture-official-save > main > small:first-child,
-.capture-official-save > main > h1 { position: relative; top: .375cqw; }
+.capture-official-save > main > h1 { position: relative; top: 0; }
 .capture-official-save > main > small:nth-of-type(2) { position: relative; top: .125cqw; }
 .coros-global-eq .global-eq-graph { background: #070808; }
 .coros-global-eq .global-eq-controls { background: #292c29; }

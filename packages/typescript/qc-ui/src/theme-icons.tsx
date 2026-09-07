@@ -2,7 +2,7 @@ import type { PresetSnapshot } from "@ndsp-qc/client";
 import { QC_COLORS, QC_REFERENCE_ICON_RASTERS, QC_TYPOGRAPHY } from "@ndsp-qc/theme";
 
 export type QcDirectoryIconName = "grid" | "download" | "cloud" | "cloud-upload" | "folder" | "new-folder" | "sort" | "filter" | "arrange" | "upload" | "search" | "trash" | "done";
-export type QcEditorIconName = "save" | "change" | "copy" | "paste" | "reset" | "expression" | "looper" | "mute" | "model-update" | "model-downgrade" | "remove" | "assignment-expression" | "band-power" | "footswitch" | "scene-previous" | "scene-next" | "bypass" | "confirm" | "waveform";
+export type QcEditorIconName = "save" | "change" | "copy" | "paste" | "reset" | "expression" | "looper" | "mute" | "model-update" | "model-downgrade" | "remove" | "assignment-expression" | "band-power" | "footswitch" | "momentary" | "scene-previous" | "scene-next" | "bypass" | "confirm" | "waveform";
 export type QcEqIconName = "high-pass";
 export type QcHardwareIconName = "power" | "brand-pulse";
 export type QcIoIconName = "header" | "usb" | "jack" | "midi" | "combo" | "headphone-active" | "input" | "headphones-symbol" | "linked";
@@ -435,13 +435,13 @@ export function QcEditorIcon({ kind }: { kind: QcEditorIconName }) {
   if (kind === "band-power")
     return (
       <svg viewBox="0 0 24 24" shapeRendering="crispEdges" data-qc-icon={kind} aria-hidden="true">
-        <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M11 6h2v1h-2ZM6 7h2v1h-2ZM11 7h2v1h-2ZM16 7h2v1h-2ZM5 8h3v1h-3ZM11 8h2v1h-2ZM16 8h3v1h-3ZM4 9h4v1h-4ZM11 9h2v1h-2ZM16 9h4v1h-4ZM3 10h4v1h-4ZM11 10h2v1h-2ZM17 10h4v1h-4ZM3 11h3v1h-3ZM11 11h2v1h-2ZM18 11h3v1h-3ZM2 12h3v1h-3ZM11 12h2v1h-2ZM19 12h3v1h-3ZM2 13h3v1h-3ZM11 13h2v1h-2ZM19 13h3v1h-3ZM2 14h3v1h-3ZM11 14h2v1h-2ZM19 14h3v1h-3ZM2 15h2v1h-2ZM20 15h2v1h-2ZM2 16h2v1h-2ZM20 16h2v1h-2ZM2 17h3v1h-3ZM19 17h3v1h-3ZM2 18h3v1h-3ZM19 18h3v1h-3ZM2 19h3v1h-3ZM19 19h3v1h-3ZM3 20h3v1h-3ZM18 20h3v1h-3ZM3 21h4v1h-4ZM17 21h4v1h-4ZM4 22h4v1h-4ZM16 22h4v1h-4ZM5 23h6v1h-6ZM13 23h6v1h-6Z" />
+        <path fill="currentColor" stroke="none" d="M11 6h2v1h-2ZM6 7h2v1h-2ZM11 7h2v1h-2ZM16 7h2v1h-2ZM5 8h3v1h-3ZM11 8h2v1h-2ZM16 8h3v1h-3ZM4 9h4v1h-4ZM11 9h2v1h-2ZM16 9h4v1h-4ZM3 10h4v1h-4ZM11 10h2v1h-2ZM17 10h4v1h-4ZM3 11h3v1h-3ZM11 11h2v1h-2ZM18 11h3v1h-3ZM2 12h3v1h-3ZM11 12h2v1h-2ZM19 12h3v1h-3ZM2 13h3v1h-3ZM11 13h2v1h-2ZM19 13h3v1h-3ZM2 14h3v1h-3ZM11 14h2v1h-2ZM19 14h3v1h-3ZM2 15h2v1h-2ZM20 15h2v1h-2ZM2 16h2v1h-2ZM20 16h2v1h-2ZM2 17h3v1h-3ZM19 17h3v1h-3ZM2 18h3v1h-3ZM19 18h3v1h-3ZM2 19h3v1h-3ZM19 19h3v1h-3ZM3 20h3v1h-3ZM18 20h3v1h-3ZM3 21h4v1h-4ZM17 21h4v1h-4ZM4 22h4v1h-4ZM16 22h4v1h-4ZM5 23h6v1h-6ZM13 23h6v1h-6Z" />
       </svg>
     );
   if (kind === "footswitch")
     return (
       <svg viewBox="0 0 24 24" shapeRendering="crispEdges" data-qc-icon={kind} aria-hidden="true">
-        <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M18 3h2v1h-2ZM10 4h1v1h-1ZM17 4h3v1h-3ZM8 5h4v1h-4ZM16 5h6v1h-6ZM7 6h15v1h-15ZM6 7h16v1h-16ZM4 8h18v1h-18ZM3 9h14v1h-14ZM18 9h5v1h-5ZM2 10h13v1h-13ZM16 10h7v1h-7ZM1 11h10v1h-10ZM12 11h8v1h-8ZM0 12h7v1h-7ZM8 12h8v1h-8ZM0 13h4v1h-4ZM5 13h7v1h-7ZM1 14h8v1h-8ZM0 15h5v1h-5ZM6 16h3v1h-3ZM5 17h4v1h-4ZM5 18h4v1h-4ZM2 19h10v1h-10ZM2 20h10v1h-10ZM2 21h10v1h-10ZM2 22h10v1h-10ZM2 23h10v1h-10Z" />
+        <path fill="currentColor" stroke="none" d="M18 3h2v1h-2ZM10 4h1v1h-1ZM17 4h3v1h-3ZM8 5h4v1h-4ZM16 5h6v1h-6ZM7 6h15v1h-15ZM6 7h16v1h-16ZM4 8h18v1h-18ZM3 9h14v1h-14ZM18 9h5v1h-5ZM2 10h13v1h-13ZM16 10h7v1h-7ZM1 11h10v1h-10ZM12 11h8v1h-8ZM0 12h7v1h-7ZM8 12h8v1h-8ZM0 13h4v1h-4ZM5 13h7v1h-7ZM1 14h8v1h-8ZM0 15h5v1h-5ZM6 16h3v1h-3ZM5 17h4v1h-4ZM5 18h4v1h-4ZM2 19h10v1h-10ZM2 20h10v1h-10ZM2 21h10v1h-10ZM2 22h10v1h-10ZM2 23h10v1h-10Z" />
       </svg>
     );
   if (kind === "assignment-expression")
@@ -450,6 +450,8 @@ export function QcEditorIcon({ kind }: { kind: QcEditorIconName }) {
         <path d="M6 18h12l-1.6-8.4H8.1L6 18Zm2.2-8.4 1-3.6h5.7l1.5 3.6M9 21h6" />
       </svg>
     );
+  if (kind === "momentary")
+    return <svg viewBox="0 0 24 24" data-qc-icon={kind} aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor" stroke="none" /><path d="m13.2 3.8-7 10.1h4.6l-1 6.3 7.5-10.7h-4.7z" fill="#101010" stroke="none" /></svg>;
   if (kind === "waveform") return (
     <svg viewBox="0 0 80 32" aria-hidden="true">
       <path d="M2 16h11l7-12 14 24L48 4l7 12h23" />

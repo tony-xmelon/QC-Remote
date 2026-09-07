@@ -434,6 +434,8 @@ function CorOsOfficialDirectory({
               <FavoriteIcon kind="heart" />
               <span>{category}</span>
             </>
+          ) : irs ? (
+            <><DeviceCategoryGlyph label="Impulse Response" fallback="" /><span>{category}</span></>
           ) : (
             <>≋　{category}</>
           )}
@@ -2411,7 +2413,7 @@ function RoutingEditorHeaderControls() {
 }
 
 function CorOsRoutingScreen({ view, snapshot }: { view: "splitter-placement" | "splitter-editor" | "mixer-editor" | "empty-slot"; snapshot: PresetSnapshot }) {
-  if (view === "empty-slot") return <section className="qc-screen empty-slot-official" aria-label="Empty-slot device browser"><nav className="empty-slot-categories">{COROS_DEVICE_CATEGORIES.slice(0, 6).map(([label, glyph, color], index) => <button key={label} style={{ "--device-color": color } as CSSProperties}><i><DeviceCategoryGlyph label={label} fallback={glyph} /></i><span>{label}</span>{index === 0 && <b>New</b>}</button>)}</nav><section className="empty-slot-grid"><header><span className="empty-undo"><GridToolbarIcon kind="undo" /></span><b>A</b><span className="empty-save"><GridToolbarIcon kind="save" /></span><span className="empty-more"><GridToolbarIcon kind="more" /></span></header><div className="empty-mode"><GridToolbarIcon kind="mode" /><strong>PRESET</strong></div><main><i>＋</i><i>Multi<br />Out</i><i>＋</i><i>＋</i><i>＋</i></main></section></section>;
+  if (view === "empty-slot") return <section className="qc-screen empty-slot-official" aria-label="Empty-slot device browser"><nav className="empty-slot-categories">{COROS_DEVICE_CATEGORIES.slice(0, 6).map(([label, glyph, color]) => <button key={label} style={{ "--device-color": color } as CSSProperties}><i><DeviceCategoryGlyph label={label} fallback={glyph} /></i><span>{label}</span></button>)}</nav><PluginGridUnderlay reference /></section>;
   const placement = view === "splitter-placement";
   const splitter = view === "splitter-editor" || placement;
   if (splitter) return <section className="qc-screen coros-splitter-physical" aria-label={placement ? "Splitter and Mixer placement handles" : "Splitter parameter editor"}>
@@ -2488,6 +2490,10 @@ function PluginModelGlyph({ name, kind }: { name: string; kind: "amp" | "cab" | 
   return <svg viewBox="0 0 70 70" aria-hidden="true"><QcDeviceGlyph block={block} x={35} y={35} size={70} /></svg>;
 }
 
+function PluginGridUnderlay({ reference = false }: { reference?: boolean }) {
+  return <div className={`plugin-grid-underlay${reference ? " is-reference-grid" : ""}`}><header><strong>{reference ? <>4<span>E</span></> : <>2<span>F</span></>}</strong><em>{reference ? "QC MCP T" : "QC MCP TEST"}</em></header><main><i className="underlay-input">In<br />1</i>{reference && <i className="underlay-gate"><DeviceCategoryGlyph label="Utility" fallback="" /></i>}<i className="underlay-plus">＋</i><i className="underlay-add">＋</i><i className="underlay-row-2">＋</i><i className="underlay-row-3">{reference ? <>In<br />1</> : "＋"}</i><i className="underlay-row-4">＋</i></main></div>;
+}
+
 function CorOsDeviceBrowserFixture({ view }: { view: "device-search" | "device-favorites" | "plugin-folders" | "plugin-list" | "plugin-list-reference" | "plugin-models" | "plugin-locked" | "plugin-refresh" }) {
   if (view === "plugin-folders") return <section className="qc-screen plugin-folders-official" aria-label="Plugin folders"><header><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H4m0 0 6-6m-6 6 6 6" /></svg></button><button className="plugin-folder-category"><DeviceCategoryGlyph label="Plugins" fallback="" /><span>Plugins</span><small>▼</small></button><span /><button><DirectoryIcon kind="arrange" /></button><button><DirectoryIcon kind="search" /></button><button><DirectoryIcon kind="done" /></button></header><main><nav><button><b><DirectoryIcon kind="folder" /></b><span><small>Plugins</small>Parallax X</span></button>{["Artists", "Neural DSP", "User"].map(label => <button key={label}><b><DirectoryIcon kind="folder" /></b><span>{label}</span>{label === "User" && <i>⋮</i>}</button>)}</nav><section><button><span>Default<small>Bass</small></span><i>D</i><b><GridToolbarIcon kind="export" /></b></button></section></main></section>;
   const plugins = view.startsWith("plugin-");
@@ -2512,7 +2518,7 @@ function CorOsDeviceBrowserFixture({ view }: { view: "device-search" | "device-f
       </main>
       {pluginModels && <><header className="plugin-model-header"><strong>{lockedPlugin ? "Plugin license not found" : "Add device"}</strong><button><GridToolbarIcon kind="refresh" /></button><button>×</button></header><section className="plugin-model-list">{pluginModelRows.map(([name, kind]) => <button key={name}><i className={kind === "cab" ? "is-cab" : kind === "drive" ? "is-drive" : ""}><PluginModelGlyph name={name} kind={kind} /></i>{lockedPlugin && <i className="plugin-model-lock"><PluginLockIcon /></i>}<span>{name}</span><em><DevicePresetGlyph /></em></button>)}</section></>}
     </div>
-    {pluginList ? <div className={`plugin-grid-underlay${referenceGrid ? " is-reference-grid" : ""}`}><header><strong>{referenceGrid ? <>4<span>E</span></> : <>2<span>F</span></>}</strong><em>{referenceGrid ? "QC MCP T" : "QC MCP TEST"}</em></header><main><i className="underlay-input">In<br />1</i>{referenceGrid && <i className="underlay-gate"><PluginGridGlyph kind="gate" /></i>}<i className="underlay-plus">＋</i><i className="underlay-add">＋</i><i className="underlay-row-2">＋</i><i className="underlay-row-3">{referenceGrid ? <>In<br />1</> : "＋"}</i><i className="underlay-row-4">＋</i></main></div> : <div className="browser-grid-ghost"><b>3B</b><span>SCENE</span><i>＋</i><i>＋</i><i>＋</i></div>}
+    {pluginList ? <PluginGridUnderlay reference={referenceGrid} /> : <div className="browser-grid-ghost"><b>3B</b><span>SCENE</span><i>＋</i><i>＋</i><i>＋</i></div>}
   </section>;
 }
 
@@ -2536,7 +2542,7 @@ function CaptureLibraryKeyboard({ query = "" }: { query?: string }) {
 function CorOsCaptureLibrary({ view }: { view: CaptureLibraryView }) {
   if (view === "device-search-entry") return <CaptureLibraryKeyboard />;
   if (view === "device-search-suggestions") return <CaptureLibraryKeyboard query="gary" />;
-  if (view === "device-search" || view === "device-search-results") return <section className="qc-screen capture-search-results"><header><button><QcDirectoryIcon kind="search" /> gary</button><i /><button><QcDirectoryIcon kind="grid" /> (0)</button><button className="is-active"><QcLibraryIcon kind="capture-library" /> (1)</button><button><QcLibraryIcon kind="capture-header" /> (0)</button><button aria-label="Filter"><QcDirectoryIcon kind="filter" /></button><button aria-label="Arrange"><QcDirectoryIcon kind="arrange" /></button><button aria-label="Done"><QcDirectoryIcon kind="done" /></button></header><main><h2>DEVICE DIRECTORIES <b>⌄</b></h2><article><strong>JQ~Marshall JMP (Gary Moore)~</strong><small>Josepqr</small><em>J</em></article><h2>DOWNLOADS <b>⌄</b></h2><p>No results</p></main></section>;
+  if (view === "device-search" || view === "device-search-results") return <section className="qc-screen capture-search-results"><header><button><QcDirectoryIcon kind="search" /></button><i /><button><QcDirectoryIcon kind="grid" /> (0)</button><button className="is-active"><QcLibraryIcon kind="capture-library" /> (1)</button><button><QcLibraryIcon kind="capture-header" /> (0)</button><button aria-label="Filter"><QcDirectoryIcon kind="filter" /></button><button aria-label="Arrange"><QcDirectoryIcon kind="arrange" /></button><button aria-label="Done"><QcDirectoryIcon kind="done" /></button></header><main><h2>DEVICE DIRECTORIES <b>⌄</b></h2><article><strong>JQ~Marshall JMP (Gary Moore)~</strong><small>Josepqr</small><em>J</em></article><h2>DOWNLOADS <b>⌄</b></h2><p>No results</p></main></section>;
   const recent = view === "device-recents";
   const captures = view === "device-browser-neural-capture";
   const captureRows = Array.from({ length: 7 }, (_, index) => `4-Comp Custom ${index + 1}`);
@@ -2678,10 +2684,10 @@ function ExpressionChooser({ trim }: { trim: boolean }) {
 // The Grid, its title and the editor action bar are one screen on the unit:
 // `block-context.png`, `scene-assignment.png` and `stomp-assignment.png` all
 // draw it and differ only in what sits over it.
-function PhysicalEditorUnderlay({ slot, letter, title, scene = "A", category, device, blocks = 0, output = ["Multi", "Out"], fit = false, children }: { slot: string; letter: string; title: string; scene?: string; category?: string; device?: string; blocks?: number; output?: [string, string]; fit?: boolean; children?: ReactNode }) {
+function PhysicalEditorUnderlay({ slot, letter, title, scene = "A", mode = "STOMP", category, device, blocks = 0, output = ["Multi", "Out"], fit = false, children }: { slot: string; letter: string; title: string; scene?: string; mode?: PresetSnapshot["mode"]; category?: string; device?: string; blocks?: number; output?: [string, string]; fit?: boolean; children?: ReactNode }) {
   return <div className={`physical-grid-underlay${fit ? " is-long-title" : ""}`}>
     <div className="underlay-grid">
-      <header><strong><span>{slot}</span>{letter}</strong><h1>{title}</h1><nav><i><GridToolbarIcon kind="undo" /></i><b>{scene}</b><i><GridToolbarIcon kind="save" /></i><i><QcUiIcon kind="more" /></i></nav><em><svg viewBox="0 0 24 24" aria-hidden="true"><ModeGlyph mode="STOMP" /></svg>STOMP</em></header>
+      <header><strong><span>{slot}</span>{letter}</strong><h1>{title}</h1><nav><i><GridToolbarIcon kind="undo" /></i><b>{scene}</b><i><GridToolbarIcon kind="save" /></i><i><QcUiIcon kind="more" /></i></nav><em><svg viewBox="0 0 24 24" aria-hidden="true"><ModeGlyph mode={mode} /></svg>{mode}</em></header>
       <main><span className="underlay-route">In<br />1</span><i className="underlay-cable" />{Array.from({ length: blocks }, (_, index) => <i key={index} className={`underlay-block is-block-${index + 1}`} />)}<span className="underlay-output">{output[0]}<br />{output[1]}</span></main>
     </div>
     {category && <button className="underlay-editor-more"><QcUiIcon kind="more" /></button>}
@@ -2704,7 +2710,7 @@ function CorOsAssignmentScreen({ view }: { view: "stomp-assignment" | "scene-ass
     <PhysicalEditorUnderlay slot="4" letter={scene ? "E" : "B"} title={scene ? "QC MCP TEST_2*" : "Top 3 Acoustic Sims"} scene={scene ? "A" : "F"} category={scene ? "UTILITY" : "NEURAL CAPTURE"} device={scene ? "Adaptive Gate" : "Akustyczna"} blocks={scene ? 1 : 2} output={scene ? ["Multi", "Out"] : ["Row", "3/4"]} fit={!scene}>
       <div className="assignment-parameters">{Array.from({ length: 5 }, (_, index) => parameters[index]).map((parameter, index) => <section key={index}>{parameter && <><span>{parameter[0]}</span>{scene && <em>A B<br />C D</em>}<i className="assignment-knob"><b /></i><strong>{parameter[1]}</strong></>}</section>)}</div>
     </PhysicalEditorUnderlay>
-    {!scene && <div className="assignment-stomp-message"><aside className="assignment-stomp-dialog"><h1>Assign footswitch</h1><p>Press the target footswitch to assign</p><div className="assignment-stomp-latch"><button className="is-active"><QcEditorIcon kind="footswitch" />Latching</button><button><QcEditorIcon kind="band-power" />Momentary</button></div><footer><button>CANCEL</button><button className="is-primary">UNASSIGN</button></footer></aside></div>}
+    {!scene && <div className="assignment-stomp-message"><aside className="assignment-stomp-dialog"><h1>Assign footswitch</h1><p>Press the target footswitch to assign</p><div className="assignment-stomp-latch"><button className="is-active"><QcEditorIcon kind="footswitch" />Latching</button><button><QcEditorIcon kind="momentary" />Momentary</button></div><footer><button>CANCEL</button><button className="is-primary">UNASSIGN</button></footer></aside></div>}
   </section>;
 }
 
@@ -2726,7 +2732,7 @@ function CorOsBlockContext() {
     ["remove", "Remove block from the grid", ""],
   ];
   return <section className="qc-screen coros-block-context" aria-label="Block contextual actions">
-    <PhysicalEditorUnderlay slot="4" letter="E" title="QC MCP TEST_2" />
+    <PhysicalEditorUnderlay slot="4" letter="E" title="QC MCP TEST_2" mode="PRESET" />
     <i className="block-context-scrim" />
     <aside>{rows.map(([kind, label, className], index) => <button key={label} className={`${className}${index === 3 ? " has-gap" : ""}`}><span><BlockContextIcon kind={kind} /></span>{label}</button>)}</aside>
   </section>;
