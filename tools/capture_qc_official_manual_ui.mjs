@@ -17,6 +17,22 @@ const requestedHosts = new Set((process.env.QC_CAPTURE_HOSTS ?? "windows,android
 const forcedFont = process.env.QC_FORCE_FONT?.trim();
 const captures = manifest.captures.filter((capture) => capture.renderer && (!requestedIds.size || requestedIds.has(capture.id)));
 
+async function waitForVisualAssets(page) {
+  await page.evaluate(async () => {
+    const sources = [...document.querySelectorAll("svg image")]
+      .map((element) => element.getAttribute("href") ?? element.getAttribute("xlink:href"))
+      .filter(Boolean);
+    await Promise.all([...new Set(sources)].map((source) => new Promise((resolve) => {
+      const image = new Image();
+      image.onload = resolve;
+      image.onerror = resolve;
+      image.src = source;
+      if (image.complete) resolve();
+    })));
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  });
+}
+
 const browser = await chromium.launch({ headless: true, executablePath: process.env.QC_BROWSER_EXECUTABLE, args: ["--disable-lcd-text"] });
 const windowsCss = `
   html, body, #root { width: 802px !important; height: 482px !important; overflow: hidden !important; }
@@ -50,9 +66,12 @@ async function captureHost(host, baseUrl, viewport, css) {
     }
     await page.goto(url.href, { waitUntil: "networkidle" });
     if (css) await page.addStyleTag({ content: css });
+    await page.evaluate(() => document.fonts.ready);
+    await waitForVisualAssets(page);
     if (forcedFont) {
       await page.addStyleTag({ content: `html body .qc-screen-bezel, html body .qc-screen-bezel * { font-family: ${JSON.stringify(forcedFont)} !important; }` });
       await page.evaluate(() => document.fonts.ready);
+      await waitForVisualAssets(page);
     }
     if (process.env.QC_CAPTURE_DEBUG_STYLES) {
       const styles = await page.evaluate(() => Object.fromEntries([".qc-screen-bezel", ".qc-screen-fixture-root", ".qc-screen", ".coros-device-browser-official"].map((selector) => {
@@ -64,6 +83,7 @@ async function captureHost(host, baseUrl, viewport, css) {
       console.log(`${host}/${capture.id} styles ${JSON.stringify(styles)}`);
     }
     await page.locator(".dialog-close").click({ timeout: 1000 }).catch(() => undefined);
+    await waitForVisualAssets(page);
     const screen = page.locator(".qc-screen-bezel");
     const box = await screen.boundingBox();
     if (process.env.QC_CAPTURE_DEBUG_BOX) console.log(`${host}/${capture.id} box ${JSON.stringify(box)}`);

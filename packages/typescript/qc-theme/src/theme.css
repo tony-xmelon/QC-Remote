@@ -1,7 +1,30 @@
-@import "@fontsource-variable/arimo";
-@import "@fontsource-variable/arimo/wght-italic.css";
-@import "@fontsource-variable/roboto";
-@import "@fontsource-variable/roboto/wght-italic.css";
+/*
+ * ZenUI embeds and registers these exact IBM Plex Sans Regular, Medium, and
+ * Bold files. Their hashes also match Cortex Control's shared copies.
+ */
+@font-face {
+  font-family: "QC CorOS IBM Plex Sans";
+  src: url("../assets/fonts/IBMPlexSans.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 100 400;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "QC CorOS IBM Plex Sans";
+  src: url("../assets/fonts/IBMPlexSans-Medium.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 500 600;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "QC CorOS IBM Plex Sans";
+  src: url("../assets/fonts/IBMPlexSans-Bold.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700 900;
+  font-display: block;
+}
 
 :root {
   --qc-transparent: transparent;
@@ -97,10 +120,10 @@
   --qc-app-warning: #e8b957;
   --qc-app-danger: #f26d6d;
 
-  --qc-font-device: "Arimo Variable", Arial, Helvetica, sans-serif;
-  --qc-font-device-plain: "Arimo Variable", Arial, Helvetica, sans-serif;
-  --qc-font-device-route: "Arimo Variable", Arial, Helvetica, sans-serif;
-  --qc-font-control: "Arimo Variable", Arial, sans-serif;
+  --qc-font-device: "QC CorOS IBM Plex Sans", sans-serif;
+  --qc-font-device-plain: "QC CorOS IBM Plex Sans", sans-serif;
+  --qc-font-device-route: "QC CorOS IBM Plex Sans", sans-serif;
+  --qc-font-control: "QC CorOS IBM Plex Sans", sans-serif;
   --qc-font-app: Inter, "Segoe UI Variable", "Segoe UI", sans-serif;
   --qc-font-mono: "DM Mono", "Cascadia Mono", Consolas, monospace;
   --qc-screen-aspect: 1.6666667;

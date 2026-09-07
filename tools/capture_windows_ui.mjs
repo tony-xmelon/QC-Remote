@@ -15,6 +15,22 @@ const shouldCapture = (id) => !requestedIds.size || requestedIds.has(id);
 let captureCount = 0;
 await mkdir(outputDirectory, { recursive: true });
 
+async function waitForVisualAssets(page) {
+  await page.evaluate(async () => {
+    const sources = [...document.querySelectorAll("svg image")]
+      .map((element) => element.getAttribute("href") ?? element.getAttribute("xlink:href"))
+      .filter(Boolean);
+    await Promise.all([...new Set(sources)].map((source) => new Promise((resolve) => {
+      const image = new Image();
+      image.onload = resolve;
+      image.onerror = resolve;
+      image.src = source;
+      if (image.complete) resolve();
+    })));
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  });
+}
+
 const browser = await chromium.launch({ headless: true, executablePath: process.env.QC_BROWSER_EXECUTABLE, args: ["--disable-lcd-text"] });
 const page = await browser.newPage({ viewport: { width: 802, height: 482 }, deviceScaleFactor: 1 });
 page.setDefaultTimeout(10000);
@@ -35,15 +51,18 @@ async function load(extra = {}) {
   await page.goto(url.href, { waitUntil: "networkidle" });
   await page.addStyleTag({ content: captureCss });
   await page.evaluate(() => document.fonts.ready);
+  await waitForVisualAssets(page);
   if (forcedFont) {
     await page.addStyleTag({ content: `html body .qc-screen-bezel, html body .qc-screen-bezel * { font-family: ${JSON.stringify(forcedFont)} !important; }` });
     await page.evaluate(() => document.fonts.ready);
+    await waitForVisualAssets(page);
   }
   await page.locator(".dialog-close").click({ timeout: 1000 }).catch(() => undefined);
 }
 
 async function capture(id) {
   if (!shouldCapture(id)) return;
+  await waitForVisualAssets(page);
   const screen = page.locator(".qc-screen-bezel");
   const box = await screen.boundingBox();
   if (!box || Math.round(box.width) !== 800 || Math.round(box.height) !== 480) throw new Error(`${id}: expected 800x480, got ${box?.width}x${box?.height}`);

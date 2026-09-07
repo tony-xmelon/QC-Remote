@@ -16,10 +16,10 @@ export { QC_REFERENCE_ICON_RASTERS } from "./reference-icon-rasters.ts";
 export const QC_COLORS = colorTheme;
 
 export const QC_TYPOGRAPHY = {
-  device: '"Arimo Variable", Arial, Helvetica, sans-serif',
-  devicePlain: '"Arimo Variable", Arial, Helvetica, sans-serif',
-  deviceRoute: '"Arimo Variable", Arial, Helvetica, sans-serif',
-  control: '"Arimo Variable", Arial, sans-serif',
+  device: '"QC CorOS IBM Plex Sans", sans-serif',
+  devicePlain: '"QC CorOS IBM Plex Sans", sans-serif',
+  deviceRoute: '"QC CorOS IBM Plex Sans", sans-serif',
+  control: '"QC CorOS IBM Plex Sans", sans-serif',
   app: 'Inter, "Segoe UI Variable", "Segoe UI", sans-serif',
   mono: '"DM Mono", "Cascadia Mono", Consolas, monospace'
 } as const;

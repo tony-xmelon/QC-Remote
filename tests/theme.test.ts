@@ -14,13 +14,14 @@ test("device typography ships deterministic Windows and Android faces", () => {
   const themeCss = read("packages/typescript/qc-theme/src/theme.css");
   const deviceCss = read("packages/typescript/qc-ui/src/qc-device-typography.css");
   const themePackage = JSON.parse(read("packages/typescript/qc-theme/package.json"));
-  assert.match(themeCss, /@fontsource-variable\/arimo/);
-  assert.match(themeCss, /@fontsource-variable\/roboto/);
-  assert.equal(themePackage.dependencies["@fontsource-variable/arimo"], "^5.3.0");
-  assert.equal(themePackage.dependencies["@fontsource-variable/roboto"], "^5.3.0");
+  assert.equal(themePackage.dependencies, undefined);
+  assert.doesNotMatch(themeCss, /@fontsource/);
+  assert.equal(sha256("packages/typescript/qc-theme/assets/fonts/IBMPlexSans.ttf"), "1306c741d8d26fab364dd6d4b0dc73852de42d42523979f452c77e2e7753dbce");
+  assert.equal(sha256("packages/typescript/qc-theme/assets/fonts/IBMPlexSans-Medium.ttf"), "d19b58422cc69c86166ed39dc28b3151b27482a64e7661bd642c5d5f7b9e7f95");
+  assert.equal(sha256("packages/typescript/qc-theme/assets/fonts/IBMPlexSans-Bold.ttf"), "afb18cee6998d476be0964c0058cfcceb02f066cc6319c1edeff49aa78cd3517");
   assert.match(deviceCss, /html body #root#root \.qc-screen-bezel \*/);
-  assert.match(deviceCss, /font-family: "Arimo Variable"/);
-  assert.match(deviceCss, /font-family: "Roboto Variable"/);
+  assert.match(deviceCss, /font-family: "QC CorOS IBM Plex Sans"/);
+  assert.match(deviceCss, /font-synthesis: none/);
 });
 
 test("shared theme retains every measured native QC color", () => {
@@ -84,7 +85,7 @@ test("shared theme retains every measured native QC color", () => {
   assert.equal(QC_GEOMETRY.screen.height, 480);
   assert.equal(QC_GEOMETRY.grid.rows, 4);
   assert.equal(QC_GEOMETRY.grid.columns, 6);
-  assert.match(QC_TYPOGRAPHY.device, /Arimo Variable/);
+  assert.match(QC_TYPOGRAPHY.device, /QC CorOS IBM Plex Sans/);
 });
 
 test("theme CSS mirrors the typed tokens and is loaded by both apps", () => {

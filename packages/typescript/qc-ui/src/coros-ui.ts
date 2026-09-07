@@ -37,8 +37,8 @@ export function presetTitlePresentation(name: string, dirty: boolean) {
 
 export function presetTitleLayout(locationWidth: number, titleWidthAtFullSize: number) {
   // CorOS uses a tighter inline gap for the ordinary one-digit bank ("2E")
-  // than for a two-digit bank ("32H"). Arimo's digit metrics make that
-  // distinction explicit here instead of relying on an OS font fallback.
+  // than for a two-digit bank ("32H"). Keep that measured distinction
+  // explicit instead of relying on platform-dependent font fallback metrics.
   const gutter = locationWidth < 100 ? 24 : 38;
   const start = 14 + Math.max(0, locationWidth) + gutter;
   const maxWidth = Math.max(180, PRESET_TITLE_RIGHT_EDGE - start);

@@ -5,12 +5,15 @@
   "coverageLedger": "references/qc-ui-coverage/coros-4.1.0/coverage.json",
   "coordinateSpace": { "width": 800, "height": 480 },
   "sourceEvidence": {
-    "product": "Cortex Control 4.1.0",
-    "installedExecutable": "C:\\Program Files\\Neural DSP\\Cortex Control\\Cortex Control.exe",
-    "executableSha256": "9BE548FB6CBD2E8C80715015C2A2F0F248C9B01A7165004E2B017FFE2B14E65A",
-    "embeddedResourceNames": ["IBMPlexSans-Light.ttf", "IBMPlexSans-Regular.ttf", "IBMPlexSans-Medium.ttf", "IBMPlexSans-LightItalic.ttf"],
-    "scope": "Cortex Control desktop chrome, not proof of the CorOS framebuffer face",
-    "note": "The desktop executable embeds IBM Plex Sans, but the full physical-framebuffer comparison scores lower when IBM Plex is forced across CorOS. CorOS reconstruction therefore retains the empirically superior bundled Arimo/Roboto mapping until firmware font resources can be extracted directly."
+    "product": "CorOS ZenUI",
+    "firmwareSha256": "E07EF68E76FBAD372590B24B32F9AA11A1BB3582D679ED89AC4C7863BC6378B1",
+    "firmwarePath": "/opt/neuraldsp/ZenUI",
+    "zenUiSha256": "C5CCC3859C0D365956C094A3864FB08CA36DF31CB0D24AD04FCF3BCD5AD88CD7",
+    "registeredResourceNames": ["IBMPlexSans-Regular.ttf", "IBMPlexSans-Medium.ttf", "IBMPlexSans-Bold.ttf"],
+    "registeredFamily": "IBM Plex Sans",
+    "embeddedStyles": ["Regular", "Medium", "Bold"],
+    "scope": "The physical CorOS renderer: ZenUI embeds these resources and calls QFontDatabase::addApplicationFont.",
+    "note": "Each resource is byte-identical to Cortex Control 4.1.0's shared copy. The app ships one canonical set for Windows and Android."
   },
   "dimensions": [
     "text",
@@ -36,12 +39,12 @@
     "position"
   ],
   "fontRoles": {
-    "deviceCondensed": "Arial Narrow",
-    "devicePlain": "Arial",
-    "deviceRoute": "Helvetica Neue",
-    "deviceRoboto": "Roboto"
+    "device": "QC CorOS IBM Plex Sans",
+    "regular": "IBMPlexSans-Regular.ttf",
+    "medium": "IBMPlexSans-Medium.ttf",
+    "bold": "IBMPlexSans-Bold.ttf"
   },
-  "bundledFamilies": ["Arimo Variable", "Roboto Variable"],
+  "bundledFamilies": ["QC CorOS IBM Plex Sans"],
   "qualityGates": {
     "canonicalStateCoveragePercent": 100,
     "dualHostMetadataPercent": 100,
