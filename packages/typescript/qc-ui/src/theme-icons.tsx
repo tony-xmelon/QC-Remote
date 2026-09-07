@@ -6,7 +6,7 @@ export type QcEditorIconName = "save" | "change" | "copy" | "paste" | "reset" | 
 export type QcEqIconName = "high-pass";
 export type QcHardwareIconName = "power" | "brand-pulse";
 export type QcIoIconName = "header" | "usb" | "jack" | "midi" | "combo" | "headphone-active" | "input" | "headphones-symbol" | "linked";
-export type QcLibraryIconName = "capture-library" | "capture-header" | "heart" | "clock" | "binoculars" | "broken-heart" | "neural-mark";
+export type QcLibraryIconName = "capture-library" | "capture-header" | "impulse-response" | "heart" | "clock" | "binoculars" | "broken-heart" | "neural-mark";
 export type QcCaptureFilterIconName = "Default" | "Amp" | "Combo Amp" | "Amp + Cab" | "Cab" | "Overdrive" | "Fuzz" | "Compressor";
 export type QcScreenHeaderGlyphName = "undo" | "save" | "export" | "menu";
 export type QcSettingsIconName = "connection" | "updates" | "brightness" | "power" | "volume" | "storage" | "factory-reset";
@@ -410,6 +410,12 @@ export function QcLibraryIcon({ kind, className }: { kind: QcLibraryIconName; cl
         <path d="M16 4h5v1h-5ZM17 16h5v1h-5ZM16 20h3v1h-3Z" fill={QC_COLORS.captured.captureStripeSoft} stroke="none" />
         <path d="M12 4h4v1h-4ZM12 8h11v1H12ZM12 12h11v1H12ZM12 16h5v1H12ZM12 20h4v1H12Z" fill={QC_COLORS.captured.captureStripeLight} stroke="none" />
         <path d="M12 1h4v1h-4ZM12 5h9v1h-9ZM12 9h11v1H12ZM12 13h11v1H12ZM12 17h10v1H12ZM12 21h6v1H12Z" fill={QC_COLORS.captured.iconPrimary} stroke="none" />
+      </svg>
+    );
+  if (kind === "impulse-response")
+    return (
+      <svg className={classes} viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M2 3v18M6 7v10M10 5v14M14 10v4M18 8v8M22 11v2" fill="none" stroke={QC_COLORS.captured.iconPrimary} strokeWidth="1.8" strokeLinecap="butt" />
       </svg>
     );
   if (kind === "binoculars") return <QcReferenceRaster icon="library.binoculars" color={QC_COLORS.captured.iconPrimary} className={classes} crisp={false} />;

@@ -453,7 +453,7 @@ function CorOsOfficialDirectory({
               <span>{category}</span>
             </>
           ) : irs ? (
-            <><DeviceCategoryGlyph label="Impulse Response" fallback="" /><span>{category}</span></>
+            <><QcLibraryIcon kind="impulse-response" /><span>{category}</span></>
           ) : (
             <>≋　{category}</>
           )}
@@ -573,9 +573,11 @@ function CorOsOfficialDirectory({
             >
               <b>
                 {glyph === "□" ? (
-                  <DirectoryIcon kind="folder" />
+                  <DirectoryIcon kind={(irs || captures) && label === "New Folder" ? "new-folder" : "folder"} />
                 ) : glyph === "lock" ? (
                   <PluginLockIcon />
+                ) : irs && label === "IRs Library" ? (
+                  <QcLibraryIcon kind="impulse-response" />
                 ) : captures && label === "Captures Library" ? (
                   <CaptureLibraryIcon />
                 ) : (
@@ -600,7 +602,7 @@ function CorOsOfficialDirectory({
               viewBox="0 0 120 140"
               aria-hidden="true"
             >
-              <path d="M0 70h14l16-62 26 126 18-74 14 34 10-24h22" />
+              <path d="M0 70h20L38 0l34 140 20-78h14l14 0" />
             </svg>
           ) : (
             rows.map((name, index) => (
@@ -1154,7 +1156,7 @@ function PhysicalGridUnderlay({ rows = 1, lit = false }: { rows?: 1 | 2; lit?: b
 function CorOsDeleteConfirmation({ variant = "delete" }: { variant?: "delete" | "overwrite" }) {
   const copy = variant === "overwrite"
     ? { title: "Preset already exists", body: "Preset Top 3 Acoustic Sims already exists. Overwrite?", confirm: "OVERWRITE", label: "Overwrite cloud preset confirmation" }
-    : { title: "ALI The List", body: "Are you sure you want to delete this preset?", confirm: "DELETE PRESET", label: "Delete preset confirmation" };
+    : { title: "QC MCP TEST_2", body: "Are you sure you want to delete this preset?", confirm: "DELETE PRESET", label: "Delete preset confirmation" };
   // The delete variant is raised from the Grid and the overwrite variant from
   // the Directory; the frames show each behind its own dialog.
   const overGrid = variant !== "overwrite";
@@ -2563,7 +2565,7 @@ function CorOsDeviceBrowserFixture({ view }: { view: "device-search" | "device-f
 
 function CorOsLooperEditor() {
   const actions = [["DUPLICATE", "×1", "A"], ["ONE SHOT", "↻", "B"], ["HALF SPEED", "1/2", "C"], ["PUNCH IN", "▰", "D"], ["RECORD", "●", "E"], ["PLAY", "▶", "F"], ["REVERSE", "◀◀", "G"], ["UNDO", "↶", "H"]];
-  return <section className="qc-screen coros-looper" aria-label="Looper X editor"><header><button aria-label="Open Looper menu"><QcUiIcon kind="more" /></button><span><small>LOOPER</small><strong>Looper X</strong></span><i /><button className="looper-params"><QcEditorIcon kind="looper" />Params</button><button className="looper-scene"><QcEditorIcon kind="scene-previous" /><b>A</b><QcEditorIcon kind="scene-next" /></button><button aria-label="Confirm"><QcEditorIcon kind="confirm" /></button></header><div className="looper-timeline"><span>USE <b>●</b> TO START RECORDING</span><span>USE <b className="looper-close-caret">⌃</b> TO CLOSE THE LOOPER VIEW</span><em>AVAILABLE 4:43</em></div><div className="looper-actions">{actions.map(([label, glyph, key], index) => <button key={label} className={index === 2 || index === 4 ? "" : "is-dim"}><small>{label}</small><strong>{glyph}</strong><b>{key}</b></button>)}</div></section>;
+  return <section className="qc-screen coros-looper" aria-label="Looper X editor"><header><button aria-label="Open Looper menu"><QcUiIcon kind="more" /></button><span><small>LOOPER</small><strong>Looper X <QcPresetStackIcon /></strong></span><i /><button className="looper-params"><QcEditorIcon kind="looper" />Params</button><button className="looper-scene"><QcEditorIcon kind="scene-previous" /><b>A</b><QcEditorIcon kind="scene-next" /></button><button aria-label="Confirm"><QcEditorIcon kind="confirm" /></button></header><div className="looper-timeline"><span>USE <b>●</b> TO START RECORDING</span><span>USE <b className="looper-close-caret">⌃</b> TO CLOSE THE LOOPER VIEW</span><em>AVAILABLE 4:43</em></div><div className="looper-actions">{actions.map(([label, glyph, key], index) => <button key={label} className={index === 2 || index === 4 ? "" : "is-dim"}><small>{label}</small><strong>{glyph}</strong><b>{key}</b></button>)}</div></section>;
 }
 
 type CaptureLibraryView = "device-browser-neural-capture" | "device-favorites" | "device-recents" | "device-search" | "device-search-entry" | "device-search-suggestions" | "device-search-results";
@@ -2651,12 +2653,12 @@ function ExpressionChooser({ trim }: { trim: boolean }) {
           <section className="switch-delay">
             <span>MIN RANGE</span>
             <b>0.00 %</b>
-            <QcRotaryDial className="capture-level-dial" progress={0} />
+            <QcRotaryDial className="capture-level-dial" progress={0} angle={135} accent="#101210" />
           </section>
           <section className="switch-delay">
             <span>MAX RANGE</span>
             <b>100 %</b>
-            <QcRotaryDial className="capture-level-dial" progress={74} />
+            <QcRotaryDial className="capture-level-dial" progress={74} angle={45} />
           </section>
         </main>
       ) : (
@@ -2689,7 +2691,7 @@ function ExpressionChooser({ trim }: { trim: boolean }) {
           <section className="switch-delay">
             <span>SWITCH DELAY</span>
             <b>600 ms</b>
-            <QcRotaryDial className="capture-level-dial" />
+            <QcRotaryDial className="capture-level-dial" progress={31} angle={-135} />
           </section>
           <section className="switch-latch">
             <span>LATCH EMULATION</span>

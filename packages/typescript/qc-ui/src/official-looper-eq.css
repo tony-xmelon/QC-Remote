@@ -20,18 +20,20 @@
 .coros-looper > header button:last-child > svg { width: 3.5cqw; height: 3.5cqw; transform: translate(1px, 3px); }
 .coros-looper > header span small { font-size: 1.75cqw; }
 .coros-looper > header span strong { font-size: 2cqw; }
-.qc-screen.coros-looper > .looper-timeline { gap: 2.5cqw; padding: 1cqw; border: 0; background: linear-gradient(to bottom, #292c29 0 52%, #181c18 52% 100%); font-size: 2cqw; }
+.coros-looper > header span strong { display: flex; align-items: center; gap: .75cqw; transform: translateY(-1px); }
+.coros-looper > header span strong svg { width: 2.25cqw; height: 2.25cqw; fill: none; stroke: #f82420; stroke-width: 2; }
+.qc-screen.coros-looper > .looper-timeline { gap: 2cqw; padding: .75cqw 1cqw 1cqw; border: 0; background: linear-gradient(to bottom, #292c29 0 52%, #181c18 52% 100%); font-size: 2cqw; }
 .looper-actions { background: #101010; }
 .looper-actions button { background: #292c29; }
 .looper-timeline span:first-child b { display: inline-block; width: 2.25cqw; height: 2.25cqw; border-radius: 50%; background: #f82420; color: transparent; vertical-align: -.35cqw; }
 .looper-timeline .looper-close-caret { display: inline-block; margin: 0 .75cqw; color: #eee; font-size: 3cqw; font-weight: 400; line-height: .5; }
 .looper-timeline em { top: 1cqw; right: 1cqw; font-size: 2cqw; }
-.looper-actions { gap: 1cqw; padding: 1.125cqw 1cqw 1cqw; }
+.looper-actions { gap: 1cqw; padding: .875cqw 1cqw 1cqw; }
 .looper-actions button { border-radius: 1cqw; }
-.looper-actions button small { top: .9cqw; left: 1.25cqw; font-size: 2cqw; }
+.looper-actions button small { top: .375cqw; left: 1.25cqw; font-size: 2cqw; }
 .looper-actions button strong { font-size: 5cqw; }
-.looper-actions button strong { position: relative; top: 1.125cqw; }
-.looper-actions button b { top: .9cqw; right: 1.75cqw; font-size: 5cqw; }
+.looper-actions button strong { position: relative; top: 1cqw; }
+.looper-actions button b { top: 0; right: 1.75cqw; font-size: 5cqw; }
 
 /* looper-editor.png: only the two assigned footswitches are lit. The other six
    tiles sit on #080c08 with their label, key letter and glyph at #182018 -

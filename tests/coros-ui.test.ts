@@ -1044,6 +1044,6 @@ test("measured Flanger pagination and Looper action geometry stay shared", () =>
   const looperStyles = readFileSync(new URL("../packages/typescript/qc-ui/src/official-looper-eq.css", import.meta.url), "utf8");
   assert.match(editorStyles, /\.editor-digital-flanger > header \.editor-pages \{ left: 61%; width: 19\.5%;[^}]*padding-left: \.125%;/);
   assert.match(fixtureSource, /\["HALF SPEED", "1\/2", "C"\]/);
-  assert.match(looperStyles, /\.looper-timeline \{ gap: 2\.5cqw;/);
+  assert.match(looperStyles, /\.qc-screen\.coros-looper > \.looper-timeline \{ gap: 2cqw; padding: \.75cqw/);
   assert.match(looperStyles, /button:nth-child\(8\) strong \{[^}]*width: 5\.75cqw;[^}]*transform: translateY\(2px\);/);
 });

@@ -21,8 +21,8 @@
 .expression-switch-panel label > i { grid-row: 1 / 3; width: 2.75cqw; height: 5.75cqw; border-radius: 1.5cqw; background: #101210; }
 .expression-switch-panel label > i::after { content: ""; display: block; width: 2.25cqw; height: 2.25cqw; margin: 3.15cqw .25cqw .25cqw; border: .375cqw solid #40f860; border-radius: 50%; }
 .expression-switch-panel label small { color: #929692; font-size: 1.75cqw; }
-.expression-switch-panel .switch-delay b { display: block; margin-top: 5.5cqw; font-size: 2cqw; font-weight: 400; }
-.expression-switch-panel .switch-delay .capture-level-dial { right: 1.25cqw; bottom: 1.25cqw; width: 8.25cqw; height: 8.25cqw; }
+.expression-switch-panel .switch-delay b { display: block; margin-top: 5cqw; font-size: 2cqw; font-weight: 400; }
+.expression-switch-panel .switch-delay .capture-level-dial { right: 1.25cqw; bottom: .75cqw; width: 8.25cqw; height: 8.25cqw; }
 .expression-switch-panel .switch-latch { opacity: .35; }
 .expression-switch-panel .switch-latch > span { font-size: 1.75cqw; white-space: nowrap; }
 .expression-parameter-grid { height: 27cqw; margin: .375cqw 1cqw 1cqw; display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: 13.5cqw 13.5cqw; overflow: hidden; border-radius: 0 0 1cqw 1cqw; background: #181c18; }

@@ -29,6 +29,8 @@
 .directory-official nav button { width: 100%; height: 7.5cqw; display: grid; grid-template-columns: 5cqw 1fr 4cqw; align-items: center; padding: 0 2cqw; background: transparent; text-align: left; font-size: 2cqw; }
 .directory-official nav button.is-active { background: #181c18; color: #2df36a; }
 .directory-captures-official nav button.is-active .qc-library-icon-capture-library { color: var(--qc-icon-primary); }
+.directory-captures-official nav button { grid-template-columns: 4.625cqw 1fr 4cqw; }
+.directory-captures-official nav button:nth-child(2) { height: 6.5cqw; }
 .directory-official nav button.is-child { width: calc(100% - 2cqw); margin-left: 2cqw; }
 .directory-official nav button.is-muted { color: var(--qc-icon-muted); }
 .directory-official nav button b { font-size: 3cqw; font-weight: 400; }
@@ -53,6 +55,9 @@
 .directory-favorites-official .directory-official-list > button > i b:last-child svg { fill: var(--qc-icon-primary); }
 .directory-favorites-official .directory-official-list .qc-library-icon-binoculars { translate: 1px -1px; }
 .directory-irs-official .directory-official-list > button { grid-template-columns: 1fr 17.25cqw; padding-right: 1cqw; }
+.directory-irs-official > header .directory-official-category > .qc-library-icon { flex: 0 0 3cqw; }
+.directory-irs-official nav button.is-child { width: 100%; margin-left: 0; }
+.directory-irs-official nav .qc-library-icon-impulse-response { width: 3cqw; height: 3cqw; }
 .directory-irs-official .directory-official-list > button > i > b:first-child > span { width: 3cqw; height: 3cqw; display: grid; place-items: center; border-radius: 50%; background: #2df36a; color: #071008; font-size: 2cqw; }
 .directory-irs-official .directory-official-list > button > i > b svg { width: 3cqw; height: 3cqw; fill: none; color: var(--qc-icon-primary); }
 .directory-irs-official .directory-official-list .qc-directory-icon-trash { translate: 1px -2px; }
@@ -166,6 +171,6 @@
 /* directory-irs.png: My IRs is open and empty, so the pane holds only the
    placeholder waveform on #181c18, and the library row carries its count. */
 .directory-irs-official .directory-official-list { display: grid; place-items: center; background: #181c18; }
-.directory-irs-official .ir-directory-logo { width: 13.75cqw; height: 16.25cqw; fill: none; stroke: #101010; stroke-width: 12; stroke-linecap: butt; stroke-linejoin: miter; }
+.directory-irs-official .ir-directory-logo { width: 13.125cqw; height: 15.625cqw; fill: none; stroke: #101010; stroke-width: 12; stroke-linecap: butt; stroke-linejoin: miter; }
 .directory-official nav button > em { color: #c8ccc8; font-size: 2cqw; font-style: normal; text-align: right; }
 
