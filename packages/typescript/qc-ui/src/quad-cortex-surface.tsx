@@ -322,7 +322,6 @@ function CorOsGrid({ snapshot, presetSlotAccent, selectedBlockId, onAction, onOp
     baseline: presetTitleBaseline
   } = presetTitleLayout(presetLocationWidth, presetTitleWidthAtFullSize);
   const routes = rowY.map((_, row) => snapshot.routes.find((route) => route.row === row));
-  const compactCaptureRoute = screenBlocks.length === 1 && screenBlocks[0]?.glyph === "capture-wave" && screenBlocks[0].row === 0;
   const displayInput = (row: number) => {
     const input = routes[row]?.input;
     if (input && input !== "Internal") return input;
@@ -429,9 +428,9 @@ function CorOsGrid({ snapshot, presetSlotAccent, selectedBlockId, onAction, onOp
       <QcScreenHeaderGlyph kind="menu" />
       <g transform="translate(656 60)" color={QC_COLORS.hardware.whiteLed}><QcModeGlyph mode={snapshot.mode} /></g><text x="692" y="80" fill={QC_COLORS.hardware.whiteLed} fontFamily={QC_TYPOGRAPHY.devicePlain} fontWeight="800" fontSize="21.5">{snapshot.mode}</text>
       <g fill={QC_COLORS.captured.routePill} stroke={QC_COLORS.captured.screen} strokeWidth="1.2" fontFamily={QC_TYPOGRAPHY.deviceRoute} textAnchor="middle">
-        {rowY.flatMap((y, row) => [<rect key={`in-${row}`} x="8" y={y - 39} width="44" height="78" rx="15" />, <rect key={`out-${row}`} x={compactCaptureRoute && row === 0 ? 170 : 748} y={y - 39} width="44" height="78" rx="15" />])}
+        {rowY.flatMap((y, row) => [<rect key={`in-${row}`} x="8" y={y - 39} width="44" height="78" rx="15" />, <rect key={`out-${row}`} x="748" y={y - 39} width="44" height="78" rx="15" />])}
         {rowY.flatMap((_, row) => [connectionMark("input", row), connectionMark("output", row)])}
-        {rowY.map((y, row) => <g key={`rails-${row}`}>{railLabel(displayInput(row), 30, y)}{railLabel(displayOutput(row), compactCaptureRoute && row === 0 ? 192 : 770, y)}</g>)}
+        {rowY.map((y, row) => <g key={`rails-${row}`}>{railLabel(displayInput(row), 30, y)}{railLabel(displayOutput(row), 770, y)}</g>)}
       </g>
       <g fill="none" stroke={QC_COLORS.captured.routeRail} strokeWidth="2">{rowY.map((_, row) => rowRail(row))}</g>
       {rowY.map((_, row) => splitPath(row))}

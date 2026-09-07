@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "corosVersion": "4.1.0",
-  "description": "Typography parity contract for every canonical CorOS app state. Coverage is inherited from the executable 103-state screen ledger; every rendered text run is measured for content, line geometry, face, size, weight, style, color, background, alignment, direction, writing mode, spacing, and wrapping on Windows and Android.",
+  "description": "Typography parity contract for every canonical CorOS app state. Coverage is inherited from the executable 104-state screen ledger; every rendered text run is measured for content, line geometry, face, size, weight, style, color, background, alignment, direction, writing mode, spacing, and wrapping on Windows and Android.",
   "coverageLedger": "references/qc-ui-coverage/coros-4.1.0/coverage.json",
   "coordinateSpace": { "width": 800, "height": 480 },
   "sourceEvidence": {
@@ -48,9 +48,9 @@
   "contentIdentityTokens": {
     "capture-type": ["2", "F", "QC", "MCP", "TEST", "PRESET", "Multi", "Out"],
     "fixture-editor-capture": ["1", "D", "Fender", "Deluxe", "Reverb", "Neural", "Capture", "Keeley", "BD-2", "Gain", "Bass", "Mid", "Treble", "Volume"],
-    "device-search-entry": ["Search", "Recently", "searched", "gary", "whammy", "still", "Space", "Done"],
+    "device-search-entry": ["Search", "Recently", "searched", "Clear", "all", "Space", "Done"],
     "io-headphones": ["I/O", "Settings", "Headphones", "HP", "Level", "Multi", "Out"],
-    "official-gig-view-preset": ["1", "A", "Brit", "2203", "B", "Plexi100", "Normal", "H", "D-Cell", "Ch3"],
+    "official-gig-view-preset": ["1A", "1B", "Brit", "2203", "Plexi100", "Normal", "1H", "D-Cell", "Ch3"],
     "official-global-eq": ["Global", "EQ", "Parametric-5", "Gain", "Freq", "Bypass"],
     "official-settings-system": ["System", "Brightness", "Screen", "LEDs", "Dimmed", "Power", "Functions", "Factory", "Reset"]
   },

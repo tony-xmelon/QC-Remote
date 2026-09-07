@@ -21,6 +21,7 @@ test("physical search fixtures own deterministic typography without inheriting t
   const fixtureSource = readFileSync(new URL("../packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", import.meta.url), "utf8");
   const fixtureStyles = readFileSync(new URL("../packages/typescript/qc-ui/src/remaining-fixtures-fixes.css", import.meta.url), "utf8");
   const measuredStyles = readFileSync(new URL("../packages/typescript/qc-ui/src/remaining-fixtures-zenio.css", import.meta.url), "utf8");
+  assert.match(fixtureSource, /import "\.\/remaining-fixtures-zenio\.css";/, "measured ZenUI corrections must stay wired into the fixture bundle");
   assert.match(fixtureSource, /className="capture-search-keyboard"/);
   assert.doesNotMatch(fixtureSource, /className="qc-screen capture-search-keyboard"/);
   assert.match(fixtureStyles, /\.capture-search-keyboard,.qc-screen\.capture-search-results\{position:absolute;inset:0;overflow:hidden;background:#101310;color:#ecefec;container-type:inline-size\}/);
@@ -51,16 +52,22 @@ test("typography references render the captured state instead of a generic subst
   assert.equal(modal.presetName, "Ilia");
   assert.equal(modal.routes[0].outputId, 19);
   assert.deepEqual(modal.blocks.map(({ category, row, column, bypassed }) => ({ category, row, column, bypassed })), [
-    { category: "Cab", row: 0, column: 1, bypassed: undefined },
-    { category: "Looper", row: 0, column: 2, bypassed: undefined }
+    { category: "Reverb", row: 0, column: 1, bypassed: true },
+    { category: "Looper", row: 0, column: 2, bypassed: true }
   ]);
   const browser = corosFixtureConfiguration("?fixture=coros410&variant=reference-browser", demoSnapshot).initialSnapshot;
   assert.equal(browser.presetLocation, "2F");
   assert.equal(browser.presetName, "QC MCP TEST");
+  const deepBrowser = corosFixtureConfiguration("?fixture=coros410&variant=deep-browser", demoSnapshot).initialSnapshot;
+  assert.equal(deepBrowser.presetLocation, "3C");
+  assert.equal(deepBrowser.presetName, "12 String B");
+  assert.equal(deepBrowser.blocks.length, 12);
+  assert.match(windowsCapture, /id === "device-browser-neural-capture" \? "device-browser-neural-capture"/);
+  assert.match(androidCapture, /id === "device-browser-neural-capture" \? "device-browser-neural-capture"/);
   const capture = corosFixtureConfiguration("?fixture=coros410&variant=capture-type", demoSnapshot).initialSnapshot;
-  assert.equal(capture.presetLocation, "2E");
-  assert.equal(capture.presetPosition, 12);
-  assert.equal(capture.blocks[0]?.glyph, undefined);
+  assert.equal(capture.presetLocation, "2F");
+  assert.equal(capture.presetPosition, 13);
+  assert.equal(capture.blocks[0]?.glyph, "capture-wave");
 });
 
 test("Neural Capture editor uses the shared measured rotary controls", () => {
@@ -131,7 +138,7 @@ test("neutral Grid colors match the native QC capture", () => {
   assert.match(themeSource, /"utilityMark": "#949694"/);
   assert.match(surfaceSource, /fill=\{QC_COLORS\.captured\.routePill\}/);
   assert.match(surfaceSource, /stroke=\{QC_COLORS\.captured\.utilityMark\}/);
-  assert.match(surfaceSource, /compactCaptureRoute && row === 0 \? 170 : 748/, "Capture Type must retain the device's compact output endpoint");
+  assert.doesNotMatch(surfaceSource, /compactCaptureRoute/, "Capture Type must keep the output endpoint at the physical right edge");
   assert.match(surfaceSource, /strokeWidth="2"/, "route rails and endpoint marks must retain their measured two-pixel weight");
   assert.doesNotMatch(surfaceSource, /titlePresentation\.dimmed \? "#29292b"/);
 });

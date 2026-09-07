@@ -288,8 +288,16 @@
 .capture-editor-physical>header>strong{color:#b00084}
 .capture-editor-physical>header>strong span{color:#939793}
 .capture-editor-physical>header>h1{margin-top:3.75cqw;color:#8d8d8f;font-size:5.25cqw;line-height:5.25cqw;letter-spacing:.03em}
+.capture-editor-physical>header>em{margin-left:7cqw}
+.capture-editor-physical>header>nav{position:relative;display:block;padding:0}
+.capture-editor-physical>header>nav>*{position:absolute;top:1.5cqw}
+.capture-editor-physical>header>nav>*:nth-child(1){left:1cqw}
+.capture-editor-physical>header>nav>*:nth-child(2){left:7cqw}
+.capture-editor-physical>header>nav>*:nth-child(3){left:13.25cqw}
+.capture-editor-physical>header>nav>*:nth-child(4){left:20.375cqw}
 .capture-editor-grid{height:11.75cqw}
 .capture-editor-panel>main i{right:1.5cqw}
+.capture-editor-panel>main .capture-editor-dial{position:absolute;right:.875cqw;bottom:0;width:9cqw;height:9cqw}
 .capture-editor-panel>main strong{bottom:1.875cqw}
 
 /* Physical zenUI Capture Library states. Keep the rail, directory and keyboard

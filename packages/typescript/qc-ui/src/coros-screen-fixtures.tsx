@@ -23,6 +23,7 @@ import "./official-modes.css";
 import "./official-settings-device.css";
 import "./official-tuner.css";
 import "./qc-device-typography.css";
+import "./remaining-fixtures-zenio.css";
 
 type OfficialGigMode = "preset" | "scene" | "stomp" | "hybrid";
 
@@ -788,14 +789,14 @@ function CorOsRemainingFixture({ view }: { view: RemainingFixtureView }) {
           <h1>Fender Deluxe Reverb</h1>
           <nav>
             <i>
-              <GridToolbarIcon kind="undo" />
+              <svg viewBox="607 11 26 27" aria-hidden="true"><QcScreenHeaderGlyph kind="undo" /></svg>
             </i>
             <b>A</b>
             <i>
-              <GridToolbarIcon kind="save" />
+              <svg viewBox="704 12 24 23" aria-hidden="true"><QcScreenHeaderGlyph kind="save" /></svg>
             </i>
             <i>
-              <QcUiIcon kind="more" />
+              <svg viewBox="762 12 7 23" aria-hidden="true"><QcScreenHeaderGlyph kind="menu" /></svg>
             </i>
           </nav>
           <em>
@@ -848,6 +849,7 @@ function CorOsRemainingFixture({ view }: { view: RemainingFixtureView }) {
                   className="capture-editor-dial"
                   angle={Number(offset)}
                   progress={(140 + Number(offset)) / 3.6}
+                  accent="#969b97"
                   pointerStart={36}
                 />
                 <strong>{value}</strong>
@@ -1908,7 +1910,7 @@ type IoView = "overview" | "input" | "output" | "send-return" | "usb" | "headpho
 const IO_PORTS: Array<{ id: IoView; label: string; sub: string; kind?: "square" | "midi" | "input" | "combo"; paired?: boolean }> = [
   { id: "usb", label: "", sub: "USB", kind: "square" }, { id: "send-return", label: "EXP 2", sub: "EXP 1", paired: true },
   { id: "send-return", label: "", sub: "MIDI OUT", kind: "midi" }, { id: "send-return", label: "", sub: "MIDI IN", kind: "midi" },
-  { id: "output", label: "", sub: "OUT 2/R", kind: "combo", paired: true }, { id: "output", label: "", sub: "OUT 1/L", kind: "combo", paired: true },
+  { id: "output", label: "", sub: "OUT 2/R", kind: "combo" }, { id: "output", label: "", sub: "OUT 1/L", kind: "combo" },
   { id: "headphones", label: "♧", sub: "CAPTURE OUT", paired: true }, { id: "output", label: "OUT 4/R", sub: "OUT 3/L", paired: true },
   { id: "send-return", label: "RET 2", sub: "RET 1", paired: true }, { id: "send-return", label: "SEND 2", sub: "SEND 1", paired: true },
   { id: "input", label: "INPUT 2", sub: "", kind: "input" }, { id: "input", label: "INPUT 1", sub: "", kind: "input" }
@@ -1925,13 +1927,13 @@ function IoDial({ value, ...dial }: { value: string } & QcRotaryDialProps) {
 
 function IoPortGlyph({
   kind = "jack",
-  primary = false,
+  active = false,
 }: {
   kind?: "square" | "midi" | "input" | "combo" | "jack";
-  primary?: boolean;
+  active?: boolean;
 }) {
-  const iconKind: QcIoIconName = kind === "square" ? "usb" : kind;
-  return <QcIoIcon kind={iconKind} className={primary ? "is-primary" : undefined} />;
+  const iconKind: QcIoIconName = active && kind === "jack" ? "headphone-active" : kind === "square" ? "usb" : kind;
+  return <QcIoIcon kind={iconKind} />;
 }
 
 function IoHeadphonesGlyph() {
@@ -1945,19 +1947,19 @@ function CorOsIoSettings({
   initialView: IoView;
   onClose: () => void;
 }) {
-  const [view, setView] = useState<IoView>(
-    initialView === "overview" ? "input" : initialView,
-  );
+  const [view, setView] = useState<IoView>(initialView);
   const [globalEqOpen, setGlobalEqOpen] = useState(false);
   if (globalEqOpen)
     return <CorOsGlobalEq onClose={() => setGlobalEqOpen(false)} />;
   const title =
-    view === "input"
+    view === "overview"
+      ? "Output 3/4"
+      : view === "input"
       ? "Input 1"
       : view === "output"
-        ? "Output 1/L"
+        ? "Output 1/2"
         : view === "send-return"
-          ? "Return 1"
+          ? "Send 1"
           : view === "usb"
             ? "USB"
             : "Headphones";
@@ -1974,6 +1976,8 @@ function CorOsIoSettings({
           "OUT 7/8",
         ]
       : [];
+  const activePort = (index: number) => view === "overview" ? index === 7 : view === "output" ? index === 4 || index === 5 : view === "send-return" ? index === 9 : view === "headphones" ? index === 6 : IO_PORTS[index]?.id === view && (view !== "input" || index === IO_PORTS.length - 1);
+  const activeHalf = (index: number) => view === "send-return" && index === 9 ? " is-active-secondary" : view === "headphones" && index === 6 ? " is-active-primary" : "";
   return (
     <section
       className={`coros-io-settings is-${view}`}
@@ -1998,7 +2002,7 @@ function CorOsIoSettings({
         {IO_PORTS.map((port, index) => (
           <button
             key={`${port.label}-${index}`}
-            className={`${port.id === view && (view !== "input" || index === IO_PORTS.length - 1) ? "is-active" : ""} is-${port.kind ?? "jack"}${port.paired ? " is-paired" : ""}`}
+            className={`${activePort(index) ? `is-active${activeHalf(index)}` : ""} is-${port.kind ?? "jack"}${port.paired ? " is-paired" : ""}`}
             onClick={() => setView(port.id)}
           >
             <span
@@ -2008,24 +2012,16 @@ function CorOsIoSettings({
             >
               {port.id === "headphones" ? <IoHeadphonesGlyph /> : port.label}
             </span>
-            <i>
-              {port.id === "headphones" && port.id === view ? (
-                <QcIoIcon kind="headphone-active" />
-              ) : (
-                <IoPortGlyph
-                  kind={port.kind ?? "jack"}
-                  primary={index === IO_PORTS.length - 1 && view === "input"}
-                />
-              )}
-            </i>
+            <i><IoPortGlyph kind={port.kind ?? "jack"} active={activePort(index) && activeHalf(index) !== " is-active-secondary"} /></i>
             {port.paired && (
               <i>
-                <IoPortGlyph />
+                <IoPortGlyph active={activePort(index) && activeHalf(index) === " is-active-secondary"} />
               </i>
             )}
             <small>{port.sub}</small>
           </button>
         ))}
+        {view === "headphones" && <><i className="io-port-link io-port-link-main"><QcIoIcon kind="linked" /></i><i className="io-port-link io-port-link-capture"><QcIoIcon kind="linked" /></i></>}
         {view === "usb" && (
           <div className="io-input-selectors">
             <button>1</button>
@@ -2057,7 +2053,6 @@ function CorOsIoSettings({
         </div>
       ) : view === "headphones" ? (
         <div className="io-editor is-headphones">
-          <QcIoIcon kind="linked" className="io-linked" />
           <section>
             <span>HP LEVEL</span>
             <IoDial value="0.0 dB" />
@@ -2079,6 +2074,22 @@ function CorOsIoSettings({
             <i />
           </div>
         </div>
+      ) : view === "overview" || view === "output" ? (
+        <div className={`io-editor is-output-stereo is-${view}`}>
+          {[0, 1].map((row) => <div className="io-output-row" key={row}>
+            <section><span>{view === "overview" ? `OUT ${row + 3} LEVEL` : `OUT ${row + 1} LEVEL`}</span><IoDial value="0.0 dB" /></section>
+            {view === "output" && <section className="io-switch"><span>GROUND LIFT</span><label><i />On</label><label><i className="is-active" />Off</label></section>}
+            <div className="io-inline-meter"><span>OUT LEVEL</span><strong>-40.0 <small>dB</small></strong><i /></div>
+            <div className="io-inline-meter"><span>LIMITER</span><strong>0.0 <small>dB</small></strong><i /></div>
+            <section className="io-switch"><span>MUTE</span><label><i />On</label><label><i className="is-active" />Off</label></section>
+          </div>)}
+        </div>
+      ) : view === "send-return" ? (
+        <div className="io-editor is-send-physical"><div className="io-output-row">
+          <section><span>SEND 1 LEVEL</span><IoDial value="0.0" /></section>
+          <div className="io-inline-meter"><span>SEND 1 LEVEL</span><strong>-40.0 <small>dB</small></strong><i /></div>
+          <div className="io-inline-meter"><span>LIMITER</span><strong>0.0 <small>dB</small></strong><i /></div>
+        </div></div>
       ) : (
         <div className="io-editor is-analog">
           <section>
@@ -2482,7 +2493,7 @@ function CorOsLooperEditor() {
   return <section className="qc-screen coros-looper" aria-label="Looper X editor"><header><button aria-label="Open Looper menu"><QcUiIcon kind="more" /></button><span><small>LOOPER</small><strong>Looper X</strong></span><i /><button className="looper-params"><QcEditorIcon kind="looper" />Params</button><button className="looper-scene"><QcEditorIcon kind="scene-previous" /><b>A</b><QcEditorIcon kind="scene-next" /></button><button aria-label="Confirm"><QcEditorIcon kind="confirm" /></button></header><div className="looper-timeline"><span>USE <b>●</b> TO START RECORDING</span><span>USE <b className="looper-close-caret">⌃</b> TO CLOSE THE LOOPER VIEW</span><em>AVAILABLE 4:43</em></div><div className="looper-actions">{actions.map(([label, glyph, key], index) => <button key={label} className={index === 2 || index === 4 ? "" : "is-dim"}><small>{label}</small><strong>{glyph}</strong><b>{key}</b></button>)}</div></section>;
 }
 
-type CaptureLibraryView = "device-favorites" | "device-recents" | "device-search" | "device-search-entry" | "device-search-suggestions" | "device-search-results";
+type CaptureLibraryView = "device-browser-neural-capture" | "device-favorites" | "device-recents" | "device-search" | "device-search-entry" | "device-search-suggestions" | "device-search-results";
 
 function CaptureLibraryRail() {
   return <nav className="capture-library-rail">{COROS_DEVICE_CATEGORIES.slice(0, 6).map(([label, glyph], index) => <button key={label} className={index === 2 ? "is-active" : ""}><i><DeviceCategoryGlyph label={label} fallback={glyph} /></i></button>)}</nav>;
@@ -2499,7 +2510,9 @@ function CorOsCaptureLibrary({ view }: { view: CaptureLibraryView }) {
   if (view === "device-search-suggestions") return <CaptureLibraryKeyboard query="gary" />;
   if (view === "device-search" || view === "device-search-results") return <section className="qc-screen capture-search-results"><header><button><QcDirectoryIcon kind="search" /> gary</button><i /><button><QcDirectoryIcon kind="grid" /> (0)</button><button className="is-active"><QcLibraryIcon kind="capture-library" /> (1)</button><button><QcLibraryIcon kind="capture-header" /> (0)</button><button aria-label="Filter"><QcDirectoryIcon kind="filter" /></button><button aria-label="Arrange"><QcDirectoryIcon kind="arrange" /></button><button aria-label="Done"><QcDirectoryIcon kind="done" /></button></header><main><h2>DEVICE DIRECTORIES <b>⌄</b></h2><article><strong>JQ~Marshall JMP (Gary Moore)~</strong><small>Josepqr</small><em>J</em></article><h2>DOWNLOADS <b>⌄</b></h2><p>No results</p></main></section>;
   const recent = view === "device-recents";
-  return <section className="qc-screen capture-library-browser"><CaptureLibraryRail /><header><span>Add device</span><button aria-label="Filter"><QcDirectoryIcon kind="filter" /></button><button aria-label="Arrange"><QcDirectoryIcon kind="arrange" /></button><button aria-label="Search"><QcDirectoryIcon kind="search" /></button><button aria-label="Close"><QcUiIcon kind="close" /></button></header><aside><button className={!recent ? "is-active" : ""}><b><QcLibraryIcon kind="heart" /></b><span>Favorites</span></button><button className={recent ? "is-active" : ""}><b><QcLibraryIcon kind="clock" /></b><span>Recent</span></button><button><b><QcDirectoryIcon kind="download" /></b><span>Downloads</span></button><button><b><QcLibraryIcon kind="capture-library" /></b><span>Captures Library</span><small>2127</small></button><i />{["Factory Captures V1","Factory Captures V2","My Captures"].map(label => <button key={label}><b><QcDirectoryIcon kind="folder" /></b><span>{label}</span></button>)}</aside><main><i><DeviceCategoryGlyph label="Neural Capture" fallback="" /></i></main></section>;
+  const captures = view === "device-browser-neural-capture";
+  const captureRows = Array.from({ length: 7 }, (_, index) => `4-Comp Custom ${index + 1}`);
+  return <section className={`qc-screen capture-library-browser${captures ? " is-capture-directory" : ""}`}><CaptureLibraryRail /><header><span>Add device</span>{!recent && <><button aria-label="Filter"><QcDirectoryIcon kind="filter" /></button><button aria-label="Arrange"><QcDirectoryIcon kind="arrange" /></button></>}<button aria-label="Search"><QcDirectoryIcon kind="search" /></button><button aria-label="Close"><QcUiIcon kind="close" /></button></header><aside><button className={!recent && !captures ? "is-active" : ""}><b><QcLibraryIcon kind="heart" /></b><span>Favorites</span></button><button className={recent ? "is-active" : ""}><b><QcLibraryIcon kind="clock" /></b><span>Recent</span></button><button><b><QcDirectoryIcon kind="download" /></b><span>Downloads</span></button><button className={captures ? "is-active" : ""}><b><QcLibraryIcon kind="capture-library" /></b><span>Captures Library</span><small>2127</small></button><i />{["Factory Captures V1","Factory Captures V2","My Captures"].map(label => <button key={label}><b><QcDirectoryIcon kind="folder" /></b><span>{label}</span></button>)}</aside><main>{captures ? <section className="capture-directory-list">{captureRows.map(name => <button key={name}><span>{name}<small>NeuralDSP</small></span><b>4</b></button>)}<aside>{["#","•","A","•","I","•","R","•","Z"].map((label, index) => <span key={`${label}-${index}`}>{label}</span>)}</aside></section> : <i><QcLibraryIcon kind="neural-mark" /></i>}</main></section>;
 }
 
 function CorOsDevicePresetScreen({ save = false, view = "factory" }: { save?: boolean; view?: "factory" | "user" | "actions" | "official-actions" | "official-factory" }) {
@@ -2840,6 +2853,7 @@ export function CorOsScreenFixture({ view, snapshot, gigPresetList, onClose = ()
   if (view === "device-preset-actions-official") return <CorOsDevicePresetScreen view="official-actions" />;
   if (view === "modes-official") return <CorOsOfficialModes onClose={onClose} />;
   if (view === "splitter-placement" || view === "splitter-editor" || view === "mixer-editor" || view === "empty-slot") return <CorOsRoutingScreen view={view} snapshot={snapshot} />;
+  if (view === "device-browser-neural-capture") return <CorOsCaptureLibrary view={view} />;
   if (view === "device-search" || view === "device-search-entry" || view === "device-search-suggestions" || view === "device-search-results" || view === "device-favorites" || view === "device-recents") return <CorOsCaptureLibrary view={view} />;
   if (view === "plugin-folders" || view === "plugin-list" || view === "plugin-models" || view === "plugin-locked" || view === "plugin-refresh") return <CorOsDeviceBrowserFixture view={view} />;
   if (view === "looper-editor") return <CorOsLooperEditor />;
