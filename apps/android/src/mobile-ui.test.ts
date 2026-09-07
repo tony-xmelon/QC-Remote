@@ -23,7 +23,7 @@ test("the mobile control deck follows the physical three-row QC layout", () => {
   assert.match(appSource, /footswitchLeds\(snapshot\)/);
   assert.match(appSource, /useQcWorkflows\(\{/);
   assert.match(performanceWorkflow, /controller\.beginFootswitch/);
-  assert.match(appSource, /QcHardwareSwitch role="tempo" label="TEMPO" readout=\{`\$\{snapshot\.tempo\}`\}/);
+  assert.match(appSource, /QcHardwareSwitch role="tempo" label="" ariaLabel="Tap tempo" readout=\{`\$\{snapshot\.tempo\}`\}/);
   assert.match(appSource, /useContinuousControlWorkflow\(\{/);
   assert.match(appSource, /adjustEditorParameter\(role, delta\)/);
   assert.doesNotMatch(appSource, /> BLOCK<\/button>/);
@@ -34,14 +34,17 @@ test("the mobile control deck follows the physical three-row QC layout", () => {
   assert.doesNotMatch(appSource, />SCENES<\/button>/);
   assert.match(styles, /grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
   assert.match(styles, /grid-template-rows: repeat\(3, minmax\(66px, 1fr\)\)/);
-  assert.match(styles, /\.quick-controls \.switch-ring \{ width: 50px;/);
-  assert.match(styles, /\.mobile-encoder-control \.switch-label \{ position: absolute; left: calc\(50% \+ 13px\);/);
+  assert.match(styles, /\.quick-controls \.switch-ring \{ order: 3; width: 50px;/);
+  assert.match(styles, /\.quick-controls \.switch-label \{ order: 1; align-self: end;/);
+  assert.match(styles, /\.quick-controls \.switch-led \{ position: relative; order: 2; width: 10px;/);
+  assert.match(styles, /\.quick-controls \.switch-ring \{ order: 3; width: 50px;/);
   assert.match(styles, /\.mobile-up-control \{ grid-column: 5; grid-row: 1; \}/);
   assert.match(styles, /\.mobile-down-control \{ grid-column: 5; grid-row: 2; \}/);
   assert.match(styles, /\.mobile-tempo-control \{ grid-column: 5; grid-row: 3; \}/);
   assert.match(styles, /\.hardware-switch\.is-tempo-pulse\.is-active \.switch-led::before/);
   assert.match(styles, /\.mobile-down-glyph \{ display: inline-grid; transform: rotate\(180deg\); \}/);
   assert.match(styles, /\.mobile-volume-control \{ grid-column: 1; grid-row: 1;/);
+  assert.match(styles, /@media \(orientation: landscape\)[\s\S]*grid-template-columns: repeat\(7, minmax\(0, 1fr\)\)/);
 });
 
 test("tapping a live Grid block opens the shared parameter editor and commits over USB", () => {
@@ -108,6 +111,19 @@ test("Android chat is a compact, persistent, collapsible panel", () => {
   assert.match(styles, /\.message-list \{[^}]*padding: 45px 12px 12px;/);
   assert.match(appSource, /<form className="message-composer"[\s\S]*<div className="chat-model-bar">/);
   assert.match(styles, /\.android-app\.chat-collapsed/);
+});
+
+test("Android exposes shared About, privacy, legal, and third-party notices", () => {
+  const appSource = readFileSync(new URL("./App.tsx", import.meta.url), "utf8");
+  const themeSource = readFileSync(new URL("../../../packages/typescript/qc-theme/src/legal.ts", import.meta.url), "utf8");
+
+  assert.match(appSource, /QC_LEGAL/);
+  assert.match(appSource, /About \$\{QC_BRAND\.appName\}/);
+  for (const panel of ["about", "privacy", "legal", "notices"]) {
+    assert.match(appSource, new RegExp(`workflowPanel === "${panel}"`));
+  }
+  assert.match(themeSource, /not affiliated with, authorized, sponsored, endorsed, or supported/);
+  assert.match(themeSource, /identify the product with which this application is compatible/);
 });
 
 test("assistant and relay access defaults to full control and enforces four tiers", () => {
