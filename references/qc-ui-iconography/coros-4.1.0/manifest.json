@@ -4,7 +4,9 @@
   "canonicalRasterIcons": [
     "directory.download", "directory.cloud", "directory.cloud-upload-header", "directory.trash",
     "library.clock", "library.binoculars", "library.neural-mark", "screen-header.export", "mode.hybrid", "editor.looper",
-    "editor.confirm", "editor.paste", "editor.remove", "interface.add", "interface.file",
+    "editor.change", "editor.copy", "editor.paste", "editor.reset", "editor.save", "editor.expression",
+    "editor.mute", "editor.model-update", "editor.model-downgrade", "editor.remove", "editor.confirm",
+    "interface.add", "interface.file",
     "interface.midi", "interface.modes", "interface.tempo", "interface.settings",
     "interface.previous-cab", "interface.next-cab", "device-category.cab", "device-category.overdrive",
     "device-category.wah", "route.analog-input", "route.send"

@@ -64,8 +64,8 @@ test("physical interaction fixtures preserve the captured CorOS overlay structur
   }
   assert.match(fixture, /dy=\{browserChrome \? -11 : 0\}/);
   assert.match(css, /\.qc-screen\.coros-block-context > aside \{[^}]*left: 30px;[^}]*width: 322px;/s);
-  assert.match(css, /\.qc-screen\.coros-block-context > aside button \{[^}]*grid-template-columns: 57px 1fr;[^}]*font: 16px Roboto,Arial,sans-serif;/s);
-  assert.match(css, /\.coros-block-context > \.block-context-scrim \{[^}]*rgba\(71,74,71,\.92\)/s);
+  assert.match(css, /\.qc-screen\.coros-block-context > aside button \{[^}]*grid-template-columns: 57px 1fr;[^}]*font: 300 16px Roboto,Arial,sans-serif;/s);
+  assert.match(css, /\.coros-block-context > \.block-context-scrim \{[^}]*rgba\(78,81,78,\.84\)/s);
   assert.match(css, /\.coros-block-context > aside button span svg \{[^}]*width: 24px;[^}]*height: 24px;/s);
   assert.match(css, /\.physical-eq-underlay header nav \.physical-eq-confirm \{[^}]*width: 98px;/s);
   assert.match(css, /\.physical-eq-underlay footer::before \{[^}]*top: -45px;/s);

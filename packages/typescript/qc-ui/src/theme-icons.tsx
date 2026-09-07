@@ -16,6 +16,11 @@ function QcReferenceRaster({ icon, color, className, crisp = true }: { icon: Ref
   return <svg className={className} viewBox={`0 0 ${raster.width} ${raster.height}`} shapeRendering={crisp ? "crispEdges" : "auto"} aria-hidden="true"><path d={path} fill={color} stroke="none" /></svg>;
 }
 
+function QcReferenceRasterLayers({ icon, className }: { icon: ReferenceRasterName; className?: string }) {
+  const raster = QC_REFERENCE_ICON_RASTERS[icon];
+  return <svg className={className} viewBox={`0 0 ${raster.width} ${raster.height}`} aria-hidden="true">{Object.entries(raster.paths).map(([color, path]) => <path key={color} d={path} fill={color} stroke="none" />)}</svg>;
+}
+
 function referencePath(icon: ReferenceRasterName, index = 0) {
   return Object.values(QC_REFERENCE_ICON_RASTERS[icon].paths)[index];
 }
@@ -24,8 +29,14 @@ function directoryReferenceIcon(kind: QcDirectoryIconName): "directory.download"
   return kind === "download" ? "directory.download" : kind === "cloud" ? "directory.cloud" : kind === "cloud-upload" ? "directory.cloud-upload-header" : kind === "trash" ? "directory.trash" : undefined;
 }
 
-function editorReferenceIcon(kind: QcEditorIconName): "editor.confirm" | "editor.paste" | "editor.remove" | undefined {
-  return kind === "confirm" ? "editor.confirm" : kind === "paste" ? "editor.paste" : kind === "remove" ? "editor.remove" : undefined;
+function editorReferenceIcon(kind: QcEditorIconName): ReferenceRasterName | undefined {
+  const icons = {
+    change: "editor.change", copy: "editor.copy", paste: "editor.paste", reset: "editor.reset",
+    save: "editor.save", expression: "editor.expression", mute: "editor.mute",
+    "model-update": "editor.model-update", "model-downgrade": "editor.model-downgrade",
+    remove: "editor.remove", confirm: "editor.confirm"
+  } as const;
+  return kind in icons ? icons[kind as keyof typeof icons] : undefined;
 }
 
 export function QcPresetStackIcon() {
@@ -456,25 +467,10 @@ export function QcLibraryIcon({ kind, className }: { kind: QcLibraryIconName; cl
 
 export function QcEditorIcon({ kind }: { kind: QcEditorIconName }) {
   const referenceIcon = editorReferenceIcon(kind);
-  if (referenceIcon) return <QcReferenceRaster icon={referenceIcon} color={referenceIcon === "editor.paste" ? QC_COLORS.captured.editorDisabled : referenceIcon === "editor.confirm" ? QC_COLORS.captured.iconPrimary : QC_COLORS.captured.primaryText} />;
+  if (referenceIcon) return <QcReferenceRasterLayers icon={referenceIcon} />;
   if (kind === "looper") {
     return <svg viewBox="0 0 26 24" shapeRendering="crispEdges" aria-hidden="true"><path d={referencePath("editor.looper", 1)} fill={QC_COLORS.captured.looperRing} stroke="none" /><path d={referencePath("editor.looper", 0)} fill={QC_COLORS.captured.iconPrimary} stroke="none" /></svg>;
   }
-  if (kind === "model-update")
-    return (
-      <svg viewBox="0 0 24 24" shapeRendering="crispEdges" data-qc-icon={kind} aria-hidden="true">
-        <path fill={QC_COLORS.captured.editorDisabled} stroke="none" d="M7 3h10v1h-10ZM5 4h14v1h-14ZM4 5h7v1h-7ZM13 5h7v1h-7ZM4 6h7v1h-7ZM13 6h7v1h-7ZM3 7h7v1h-7ZM14 7h7v1h-7ZM3 8h6v1h-6ZM15 8h6v1h-6ZM3 9h6v1h-6ZM15 9h6v1h-6ZM3 10h5v1h-5ZM16 10h5v1h-5ZM3 11h4v1h-4ZM17 11h4v1h-4ZM3 12h7v1h-7ZM14 12h7v1h-7ZM3 13h7v1h-7ZM14 13h7v1h-7ZM3 14h7v1h-7ZM14 14h7v1h-7ZM3 15h7v1h-7ZM14 15h7v1h-7ZM3 16h7v1h-7ZM14 16h7v1h-7ZM4 17h6v1h-6ZM14 17h6v1h-6ZM4 18h16v1h-16ZM5 19h14v1h-14ZM7 20h10v1h-10Z" />
-        <path fill={QC_COLORS.captured.editorDisabledShadow} stroke="none" d="M7 1h10v1h-10ZM5 2h14v1h-14ZM3 3h2v1h-2ZM18 3h3v1h-3ZM3 4h1v1h-1ZM20 4h1v1h-1ZM2 5h2v1h-2ZM21 5h1v1h-1ZM2 6h1v1h-1ZM12 6h1v1h-1ZM21 6h1v1h-1ZM1 7h2v1h-2ZM11 7h2v1h-2ZM21 7h2v1h-2ZM1 8h2v1h-2ZM10 8h4v1h-4ZM21 8h2v1h-2ZM1 9h2v1h-2ZM9 9h6v1h-6ZM21 9h2v1h-2ZM1 10h2v1h-2ZM9 10h7v1h-7ZM21 10h2v1h-2ZM1 11h2v1h-2ZM11 11h2v1h-2ZM21 11h2v1h-2ZM1 12h2v1h-2ZM11 12h2v1h-2ZM21 12h2v1h-2ZM1 13h2v1h-2ZM11 13h2v1h-2ZM21 13h2v1h-2ZM1 14h2v1h-2ZM11 14h2v1h-2ZM21 14h2v1h-2ZM1 15h2v1h-2ZM11 15h2v1h-2ZM21 15h2v1h-2ZM1 16h2v1h-2ZM11 16h2v1h-2ZM21 16h2v1h-2ZM2 17h1v1h-1ZM11 17h2v1h-2ZM21 17h1v1h-1ZM2 18h2v1h-2ZM20 18h2v1h-2ZM3 19h1v1h-1ZM20 19h1v1h-1ZM3 20h3v1h-3ZM19 20h2v1h-2ZM5 21h14v1h-14ZM7 22h10v1h-10Z" />
-        <path fill={QC_COLORS.captured.editorDisabledAccent} stroke="none" d="M5 3h1v1h-1ZM4 4h1v1h-1ZM19 4h1v1h-1ZM20 5h1v1h-1ZM11 6h1v1h-1ZM10 7h1v1h-1ZM8 10h1v1h-1ZM8 11h3v1h-3ZM13 11h3v1h-3ZM4 19h1v1h-1ZM19 19h1v1h-1ZM18 20h1v1h-1Z" />
-        <path fill={QC_COLORS.captured.editorDisabledEdge} stroke="none" d="M13 7h1v1h-1Z" />
-      </svg>
-    );
-  if (kind === "model-downgrade")
-    return (
-      <svg viewBox="0 0 24 24" shapeRendering="crispEdges" data-qc-icon={kind} aria-hidden="true">
-        <path fill={QC_COLORS.captured.editorDisabled} stroke="none" d="M11 6h2v1h-2ZM11 7h2v1h-2ZM11 8h2v1h-2ZM11 9h2v1h-2ZM11 10h2v1h-2ZM11 11h2v1h-2ZM8 12h8v1h-8ZM8 13h8v1h-8ZM9 14h6v1h-6ZM10 15h4v1h-4ZM10 16h4v1h-4ZM11 17h2v1h-2Z" />
-      </svg>
-    );
   if (kind === "band-power")
     return (
       <svg viewBox="0 0 24 24" shapeRendering="crispEdges" data-qc-icon={kind} aria-hidden="true">
@@ -491,51 +487,6 @@ export function QcEditorIcon({ kind }: { kind: QcEditorIconName }) {
     return (
       <svg viewBox="0 0 24 24" shapeRendering="crispEdges" data-qc-icon={kind} aria-hidden="true">
         <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M10 2h2v1h-2ZM5 3h2v1h-2ZM10 3h2v1h-2ZM15 3h2v1h-2ZM4 4h3v1h-3ZM10 4h2v1h-2ZM15 4h3v1h-3ZM3 5h4v1h-4ZM10 5h2v1h-2ZM15 5h4v1h-4ZM2 6h4v1h-4ZM10 6h2v1h-2ZM16 6h4v1h-4ZM2 7h3v1h-3ZM10 7h2v1h-2ZM17 7h3v1h-3ZM1 8h3v1h-3ZM10 8h2v1h-2ZM18 8h3v1h-3ZM1 9h3v1h-3ZM10 9h2v1h-2ZM18 9h3v1h-3ZM1 10h3v1h-3ZM10 10h2v1h-2ZM18 10h3v1h-3ZM1 11h2v1h-2ZM19 11h2v1h-2ZM1 12h2v1h-2ZM19 12h2v1h-2ZM1 13h3v1h-3ZM18 13h3v1h-3ZM1 14h3v1h-3ZM18 14h3v1h-3ZM1 15h3v1h-3ZM18 15h3v1h-3ZM2 16h3v1h-3ZM17 16h3v1h-3ZM2 17h4v1h-4ZM16 17h4v1h-4ZM3 18h4v1h-4ZM15 18h4v1h-4ZM4 19h6v1h-6ZM12 19h6v1h-6ZM5 20h12v1h-12ZM7 21h8v1h-8Z" />
-      </svg>
-    );
-  if (kind === "change")
-    return (
-      <svg viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
-        <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M17 3h3v1h-3ZM18 4h3v1h-3ZM19 5h3v1h-3ZM20 6h3v1h-3ZM2 7h21v1h-21ZM19 8h3v1h-3ZM19 9h2v1h-2ZM18 10h2v1h-2ZM18 11h1v1h-1ZM6 13h3v1h-3ZM5 14h3v1h-3ZM4 15h3v1h-3ZM3 16h3v1h-3ZM3 17h21v1h-21ZM4 18h3v1h-3ZM5 19h2v1h-2ZM6 20h2v1h-2ZM7 21h1v1h-1Z" />
-        <path fill={QC_COLORS.captured.editorMuted} stroke="none" d="M17 2h2v1h-2ZM17 4h1v1h-1ZM21 4h1v1h-1ZM18 5h1v1h-1ZM22 5h1v1h-1ZM2 6h18v1h-18ZM23 6h1v1h-1ZM23 7h1v1h-1ZM2 8h17v1h-17ZM22 8h1v1h-1ZM18 9h1v1h-1ZM21 9h1v1h-1ZM17 10h1v1h-1ZM20 10h1v1h-1ZM17 11h1v1h-1ZM19 11h1v1h-1ZM7 12h2v1h-2ZM18 12h1v1h-1ZM4 14h1v1h-1ZM8 14h1v1h-1ZM3 15h1v1h-1ZM7 15h1v1h-1ZM2 16h1v1h-1ZM6 16h18v1h-18ZM2 17h1v1h-1ZM3 18h1v1h-1ZM7 18h17v1h-17ZM4 19h1v1h-1ZM7 19h1v1h-1ZM5 20h1v1h-1ZM8 20h1v1h-1ZM6 21h1v1h-1ZM8 21h1v1h-1ZM7 22h1v1h-1Z" />
-      </svg>
-    );
-  if (kind === "copy")
-    return (
-      <svg viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
-        <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M9 1h14v1h-14ZM8 2h16v1h-16ZM8 3h4v1h-4ZM20 3h4v1h-4ZM8 4h3v1h-3ZM21 4h3v1h-3ZM22 5h2v1h-2ZM22 6h2v1h-2ZM3 7h14v1h-14ZM22 7h2v1h-2ZM2 8h16v1h-16ZM22 8h2v1h-2ZM2 9h4v1h-4ZM14 9h4v1h-4ZM22 9h2v1h-2ZM2 10h3v1h-3ZM15 10h3v1h-3ZM22 10h2v1h-2ZM2 11h2v1h-2ZM16 11h2v1h-2ZM22 11h2v1h-2ZM2 12h2v1h-2ZM16 12h2v1h-2ZM22 12h2v1h-2ZM2 13h2v1h-2ZM16 13h2v1h-2ZM21 13h3v1h-3ZM2 14h2v1h-2ZM16 14h2v1h-2ZM20 14h4v1h-4ZM2 15h2v1h-2ZM16 15h2v1h-2ZM20 15h4v1h-4ZM2 16h2v1h-2ZM16 16h2v1h-2ZM20 16h3v1h-3ZM2 17h2v1h-2ZM16 17h2v1h-2ZM2 18h2v1h-2ZM16 18h2v1h-2ZM2 19h3v1h-3ZM15 19h3v1h-3ZM2 20h4v1h-4ZM14 20h4v1h-4ZM2 21h16v1h-16ZM3 22h14v1h-14Z" />
-      </svg>
-    );
-  if (kind === "reset")
-    return (
-      <svg viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
-        <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M12 0h2v1h-2ZM10 1h4v1h-4ZM9 2h8v1h-8ZM8 3h11v1h-11ZM9 4h11v1h-11ZM11 5h3v1h-3ZM17 5h4v1h-4ZM12 6h2v1h-2ZM18 6h4v1h-4ZM19 7h4v1h-4ZM20 8h3v1h-3ZM21 9h3v1h-3ZM21 10h3v1h-3ZM21 11h3v1h-3ZM2 12h2v1h-2ZM22 12h2v1h-2ZM2 13h2v1h-2ZM22 13h2v1h-2ZM2 14h3v1h-3ZM21 14h3v1h-3ZM2 15h3v1h-3ZM21 15h3v1h-3ZM2 16h3v1h-3ZM21 16h3v1h-3ZM3 17h3v1h-3ZM20 17h3v1h-3ZM3 18h3v1h-3ZM20 18h3v1h-3ZM4 19h3v1h-3ZM19 19h3v1h-3ZM4 20h5v1h-5ZM17 20h5v1h-5ZM5 21h7v1h-7ZM14 21h7v1h-7ZM7 22h12v1h-12ZM9 23h8v1h-8Z" />
-      </svg>
-    );
-  if (kind === "save")
-    return (
-      <svg viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
-        <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M2 1h17v1h-17ZM2 2h1v1h-1ZM18 2h2v1h-2ZM2 3h1v1h-1ZM19 3h2v1h-2ZM2 4h1v1h-1ZM20 4h2v1h-2ZM2 5h1v1h-1ZM21 5h1v1h-1ZM2 6h1v1h-1ZM21 6h1v1h-1ZM2 7h1v1h-1ZM21 7h1v1h-1ZM2 8h1v1h-1ZM21 8h1v1h-1ZM2 9h1v1h-1ZM21 9h1v1h-1ZM2 10h1v1h-1ZM21 10h1v1h-1ZM2 11h1v1h-1ZM21 11h1v1h-1ZM2 12h1v1h-1ZM21 12h1v1h-1ZM2 13h1v1h-1ZM21 13h1v1h-1ZM2 14h1v1h-1ZM21 14h1v1h-1ZM2 15h1v1h-1ZM21 15h1v1h-1ZM2 16h1v1h-1ZM21 16h1v1h-1ZM2 17h1v1h-1ZM21 17h1v1h-1ZM2 18h1v1h-1ZM21 18h1v1h-1ZM2 19h1v1h-1ZM21 19h1v1h-1ZM2 20h20v1h-20Z" />
-        <path fill={QC_COLORS.captured.editorSaveMid} stroke="none" d="M3 0h15v1h-15ZM1 2h1v1h-1ZM3 2h1v1h-1ZM17 2h1v1h-1ZM1 3h1v1h-1ZM18 3h1v1h-1ZM1 4h1v1h-1ZM19 4h1v1h-1ZM1 5h1v1h-1ZM20 5h1v1h-1ZM22 5h1v1h-1ZM1 6h1v1h-1ZM22 6h1v1h-1ZM1 7h1v1h-1ZM22 7h1v1h-1ZM1 8h1v1h-1ZM22 8h1v1h-1ZM1 9h1v1h-1ZM22 9h1v1h-1ZM1 10h1v1h-1ZM22 10h1v1h-1ZM1 11h1v1h-1ZM22 11h1v1h-1ZM1 12h1v1h-1ZM22 12h1v1h-1ZM1 13h1v1h-1ZM22 13h1v1h-1ZM1 14h1v1h-1ZM22 14h1v1h-1ZM1 15h1v1h-1ZM22 15h1v1h-1ZM1 16h1v1h-1ZM22 16h1v1h-1ZM1 17h1v1h-1ZM22 17h1v1h-1ZM1 18h1v1h-1ZM22 18h1v1h-1ZM1 19h1v1h-1ZM3 19h1v1h-1ZM20 19h1v1h-1ZM22 19h1v1h-1ZM3 21h18v1h-18Z" />
-        <path fill={QC_COLORS.captured.editorSaveDark} stroke="none" d="M2 0h1v1h-1ZM18 0h1v1h-1ZM1 1h1v1h-1ZM19 1h1v1h-1ZM4 2h13v1h-13ZM20 2h1v1h-1ZM3 3h1v1h-1ZM21 3h1v1h-1ZM3 4h1v1h-1ZM22 4h1v1h-1ZM3 5h1v1h-1ZM5 5h6v1h-6ZM13 5h3v1h-3ZM3 6h1v1h-1ZM5 6h6v1h-6ZM13 6h3v1h-3ZM20 6h1v1h-1ZM3 7h1v1h-1ZM5 7h6v1h-6ZM13 7h3v1h-3ZM20 7h1v1h-1ZM3 8h1v1h-1ZM5 8h11v1h-11ZM20 8h1v1h-1ZM3 9h1v1h-1ZM5 9h11v1h-11ZM20 9h1v1h-1ZM3 10h1v1h-1ZM5 10h11v1h-11ZM20 10h1v1h-1ZM3 11h1v1h-1ZM20 11h1v1h-1ZM3 12h1v1h-1ZM20 12h1v1h-1ZM3 13h1v1h-1ZM20 13h1v1h-1ZM3 14h1v1h-1ZM20 14h1v1h-1ZM3 15h1v1h-1ZM20 15h1v1h-1ZM3 16h1v1h-1ZM20 16h1v1h-1ZM3 17h1v1h-1ZM20 17h1v1h-1ZM3 18h1v1h-1ZM20 18h1v1h-1ZM4 19h16v1h-16ZM1 20h1v1h-1ZM22 20h1v1h-1ZM2 21h1v1h-1ZM21 21h1v1h-1Z" />
-      </svg>
-    );
-  if (kind === "expression")
-    return (
-      <svg viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
-        <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M9 1h8v1h-8ZM9 2h1v1h-1ZM16 2h1v1h-1ZM9 3h1v1h-1ZM16 3h1v1h-1ZM9 4h1v1h-1ZM16 4h1v1h-1ZM9 5h1v1h-1ZM16 5h1v1h-1ZM9 6h1v1h-1ZM16 6h1v1h-1ZM9 7h1v1h-1ZM16 7h1v1h-1ZM9 8h1v1h-1ZM16 8h1v1h-1ZM9 9h1v1h-1ZM16 9h1v1h-1ZM9 10h1v1h-1ZM16 10h1v1h-1ZM9 11h1v1h-1ZM16 11h1v1h-1ZM9 12h1v1h-1ZM16 12h1v1h-1ZM9 13h1v1h-1ZM16 13h1v1h-1ZM9 14h1v1h-1ZM16 14h1v1h-1ZM9 15h1v1h-1ZM16 15h1v1h-1ZM9 16h1v1h-1ZM16 16h1v1h-1ZM9 17h1v1h-1ZM16 17h1v1h-1ZM9 18h1v1h-1ZM16 18h1v1h-1ZM9 19h8v1h-8Z" />
-        <path
-          fill={QC_COLORS.captured.utilityMark}
-          stroke="none"
-          d="M8 0h10v1h-10ZM8 1h1v1h-1ZM17 1h1v1h-1ZM5 2h4v1h-4ZM10 2h6v1h-6ZM17 2h4v1h-4ZM5 3h4v1h-4ZM17 3h4v1h-4ZM5 4h2v1h-2ZM8 4h1v1h-1ZM10 4h1v1h-1ZM15 4h1v1h-1ZM17 4h1v1h-1ZM19 4h2v1h-2ZM5 5h2v1h-2ZM8 5h1v1h-1ZM10 5h1v1h-1ZM15 5h1v1h-1ZM17 5h4v1h-4ZM5 6h4v1h-4ZM10 6h1v1h-1ZM15 6h1v1h-1ZM17 6h4v1h-4ZM5 7h4v1h-4ZM10 7h1v1h-1ZM15 7h1v1h-1ZM17 7h4v1h-4ZM6 8h3v1h-3ZM10 8h1v1h-1ZM15 8h1v1h-1ZM17 8h3v1h-3ZM6 9h3v1h-3ZM10 9h1v1h-1ZM15 9h1v1h-1ZM17 9h3v1h-3ZM6 10h3v1h-3ZM10 10h1v1h-1ZM15 10h1v1h-1ZM17 10h3v1h-3ZM6 11h3v1h-3ZM10 11h1v1h-1ZM15 11h1v1h-1ZM17 11h3v1h-3ZM6 12h3v1h-3ZM10 12h1v1h-1ZM15 12h1v1h-1ZM17 12h3v1h-3ZM6 13h2v1h-2ZM10 13h1v1h-1ZM15 13h1v1h-1ZM18 13h2v1h-2ZM6 14h2v1h-2ZM10 14h1v1h-1ZM15 14h1v1h-1ZM18 14h2v1h-2ZM6 15h2v1h-2ZM10 15h1v1h-1ZM15 15h1v1h-1ZM18 15h2v1h-2ZM6 16h2v1h-2ZM10 16h1v1h-1ZM15 16h1v1h-1ZM18 16h2v1h-2ZM6 17h2v1h-2ZM10 17h1v1h-1ZM15 17h1v1h-1ZM18 17h2v1h-2ZM6 18h2v1h-2ZM10 18h6v1h-6ZM18 18h2v1h-2ZM6 19h2v1h-2ZM18 19h2v1h-2ZM6 20h2v1h-2ZM9 20h8v1h-8ZM18 20h2v1h-2ZM6 21h14v1h-14ZM6 22h14v1h-14ZM7 23h12v1h-12Z"
-        />
-      </svg>
-    );
-  if (kind === "mute")
-    return (
-      <svg viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
-        <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M3 1h8v1h-8ZM2 2h10v1h-10ZM2 3h10v1h-10ZM2 4h10v1h-10ZM2 5h10v1h-10ZM2 6h10v1h-10ZM2 7h10v1h-10ZM2 8h10v1h-10ZM2 9h10v1h-10ZM3 10h8v1h-8ZM4 13h2v1h-2ZM4 14h2v1h-2ZM4 15h2v1h-2ZM4 16h2v1h-2ZM8 16h2v1h-2ZM5 17h7v1h-7ZM6 18h6v1h-6ZM8 19h2v1h-2Z" />
-        <path fill={QC_COLORS.captured.utilityMark} stroke="none" d="M2 1h1v1h-1ZM11 1h1v1h-1ZM17 3h1v1h-1ZM15 4h3v1h-3ZM13 5h9v1h-9ZM13 6h10v1h-10ZM15 7h3v1h-3ZM21 7h2v1h-2ZM17 8h1v1h-1ZM21 8h2v1h-2ZM21 9h2v1h-2ZM2 10h1v1h-1ZM11 10h1v1h-1ZM21 10h2v1h-2ZM14 13h10v1h-10ZM14 14h10v1h-10ZM8 15h2v1h-2ZM14 15h10v1h-10ZM6 16h1v1h-1ZM10 16h1v1h-1ZM14 16h10v1h-10ZM4 17h1v1h-1ZM12 17h1v1h-1ZM14 17h10v1h-10ZM5 18h1v1h-1ZM12 18h1v1h-1ZM14 18h10v1h-10ZM10 19h1v1h-1ZM14 19h10v1h-10ZM8 20h2v1h-2ZM14 20h10v1h-10ZM14 21h10v1h-10ZM14 22h10v1h-10Z" />
       </svg>
     );
   if (kind === "assignment-expression")

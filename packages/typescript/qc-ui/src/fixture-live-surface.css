@@ -753,11 +753,11 @@
 .physical-eq-footer-power { position: absolute; left: 7%; top: 40px; width: 50px; height: 45px; border-radius: 7px; background: #171b18; }
 .physical-eq-footer-power::before { content: ""; position: absolute; left: 50%; top: 50%; width: 17px; height: 17px; translate: -50% -50%; border: 2px solid #dfe1df; border-top-color: transparent; border-radius: 50%; }
 .physical-eq-footer-power::after { content: ""; position: absolute; left: calc(50% - 1px); top: 11px; width: 2px; height: 10px; background: #dfe1df; }
-.coros-block-context > .block-context-scrim { position: absolute; inset: 0; z-index: 2; background: rgba(71,74,71,.92); }
+.coros-block-context > .block-context-scrim { position: absolute; inset: 0; z-index: 2; background: rgba(78,81,78,.84); }
 .qc-screen.coros-block-context > aside { position: absolute; z-index: 3; left: 30px; right: auto; top: 30px; bottom: 29px; width: 322px; display: block; overflow-x: hidden; overflow-y: auto; scrollbar-width: none; border-radius: 7px; background: #101010; box-shadow: none; }
 .qc-screen.coros-block-context > aside::-webkit-scrollbar { display: none; }
 .qc-screen.coros-block-context > aside::after { content: ""; position: absolute; right: 8px; top: 10px; bottom: 132px; border-right: 2px solid #343735; }
-.qc-screen.coros-block-context > aside button { box-sizing: border-box; flex: none; width: 100%; height: 60px; display: grid; grid-template-columns: 57px 1fr; align-items: center; padding: 0; border: 0; border-bottom: 0; background: #101010; color: #f2f2f2; font: 16px Roboto,Arial,sans-serif; text-align: left; }
+.qc-screen.coros-block-context > aside button { box-sizing: border-box; flex: none; width: 100%; height: 60px; display: grid; grid-template-columns: 57px 1fr; align-items: center; padding: 0; border: 0; border-bottom: 0; background: #101010; color: #f2f2f2; font: 300 16px Roboto,Arial,sans-serif; text-align: left; }
 .qc-screen.coros-block-context > aside button span { display: grid; place-items: center; color: #f0f0f0; text-align: center; }
 .qc-screen.coros-block-context > aside button span svg { width: 24px; height: 24px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .qc-screen.coros-block-context > aside button.is-disabled { color: #18201a; }
