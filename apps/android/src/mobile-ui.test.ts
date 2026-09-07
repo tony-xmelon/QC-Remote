@@ -39,10 +39,10 @@ test("the mobile control deck follows the physical three-row QC layout", () => {
   assert.doesNotMatch(appSource, />SCENES<\/button>/);
   assert.match(styles, /grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
   assert.match(styles, /grid-template-rows: repeat\(3, minmax\(66px, 1fr\)\)/);
-  assert.match(styles, /\.quick-controls \.switch-ring \{ order: 3; width: 50px;/);
-  assert.match(styles, /\.quick-controls \.switch-label \{ order: 1; align-self: end;/);
-  assert.match(styles, /\.quick-controls \.switch-led \{ position: relative; order: 2; width: 10px;/);
-  assert.match(styles, /\.quick-controls \.switch-ring \{ order: 3; width: 50px;/);
+  assert.match(styles, /\.quick-controls \.switch-ring \{ width: 50px;/);
+  assert.match(styles, /\.quick-controls \.switch-label \{ position: absolute; z-index: 5; left: 50%; top: 39px;/);
+  assert.match(styles, /\.quick-controls \.switch-led \{ position: relative; width: 10px; align-self: end; margin-bottom: 3px;/);
+  assert.match(styles, /\.quick-controls \.switch-ring \{ width: 50px;/);
   assert.match(styles, /\.mobile-up-control \{ grid-column: 5; grid-row: 1; \}/);
   assert.match(styles, /\.mobile-down-control \{ grid-column: 5; grid-row: 2; \}/);
   assert.match(styles, /\.mobile-tempo-control \{ grid-column: 5; grid-row: 3; \}/);
@@ -130,6 +130,12 @@ test("Android exposes shared About, privacy, legal, and third-party notices", ()
   }
   assert.match(themeSource, /not affiliated with, authorized, sponsored, endorsed, or supported/);
   assert.match(themeSource, /identify the product with which this application is compatible/);
+  assert.match(appSource, /localStorage\.getItem\(androidOnlineModelConsentKey\) === "accepted"/);
+  assert.match(appSource, /native && onlineModelsAllowed/);
+  assert.match(appSource, /disabled=\{busy \|\| !onlineModelsAllowed\}/);
+  assert.match(appSource, /Allow messages, attachments, and relevant device context to be sent to Gemini/);
+  assert.match(appSource, /Online model sharing is disabled; no data was sent/);
+  assert.match(appSource, /conversation\.setMessages\(\[\]\)/);
 });
 
 test("assistant and relay access defaults to full control and enforces four tiers", () => {
