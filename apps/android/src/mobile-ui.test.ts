@@ -16,6 +16,8 @@ test("the mobile control deck follows the physical three-row QC layout", () => {
   assert.match(appSource, /openRemoteStatusPanel/, "Remote status opens a live details panel rather than immediately unpairing");
   assert.match(appSource, /DIRECT USB[\s\S]*Quad Cortex connection/);
   assert.match(appSource, /REMOTE RELAY[\s\S]*Remote access/);
+  assert.match(appSource, /Assistant status/, "the CHAT indicator opens an assistant status panel");
+  assert.match(appSource, /Chat settings/, "the CHAT status panel provides a settings action");
   assert.match(appSource, /ScreenWakeNative\.setEnabled\(\{ enabled \}\)/, "the foreground Android activity stays awake only for a live USB session");
   assert.match(appSource, /screenDimAfterMs = 90_000/);
   assert.match(appSource, /onPointerDown=\{resetScreenDimmer\}/);
@@ -126,7 +128,7 @@ test("Android chat is a compact, persistent, collapsible panel", () => {
   assert.match(appSource, /androidChatCollapsedStorageKey/);
   assert.match(appSource, /window\.localStorage\.setItem\(androidChatCollapsedStorageKey/);
   assert.match(appSource, /className=\{`mobile-chat\$\{chatCollapsed \? " is-collapsed" : ""\}`\}/);
-  assert.match(appSource, /aria-label=\{chatCollapsed \? "Expand chat" : "Collapse chat"\}/);
+  assert.match(appSource, /aria-label=\{`\$\{busy \? "Chat is thinking" : "Chat"\}; open chat details`\}/);
   assert.match(appSource, /\{busy \? "THINKING" : "CHAT"\}/);
   assert.doesNotMatch(appSource, /QC ASSISTANT/);
   assert.match(styles, /\.chat-toggle \{ position: absolute;/);
