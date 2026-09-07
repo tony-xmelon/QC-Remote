@@ -8,7 +8,7 @@
     "editor.change", "editor.copy", "editor.paste", "editor.reset", "editor.save", "editor.expression",
     "editor.mute", "editor.model-update", "editor.model-downgrade", "editor.remove", "editor.confirm",
     "editor.bypass", "editor.scene-previous", "editor.scene-next",
-    "io.header", "io.usb", "io.jack", "io.midi", "io.combo", "io.headphone-active", "io.input", "io.linked",
+    "io.header", "io.usb", "io.jack", "io.midi", "io.combo", "io.headphone-active", "io.input", "io.headphones-symbol", "io.linked",
     "interface.add", "interface.file", "interface.check",
     "interface.midi", "interface.modes", "interface.tempo", "interface.settings",
     "settings.connection", "settings.updates", "settings.brightness", "settings.power",

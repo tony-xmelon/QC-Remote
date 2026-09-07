@@ -45,7 +45,6 @@ function editorReferenceIcon(kind: QcEditorIconName): ReferenceRasterName | unde
 }
 
 export function QcIoIcon({ kind, className }: { kind: QcIoIconName; className?: string }) {
-  if (kind === "headphones-symbol") return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13v-2a8 8 0 0 1 16 0v2M4 12H2v7h4v-7H4Zm16 0h2v7h-4v-7h2Z" /></svg>;
   return <QcReferenceRasterLayers icon={`io.${kind}` as ReferenceRasterName} className={className} />;
 }
 

@@ -87,17 +87,7 @@
 .global-eq-controls > section:first-child button > b { font-weight: 400; transform: translateX(-2px); }
 .global-eq-controls > section:first-child button > svg:last-child { opacity: .38; }
 .global-eq-controls .io-dial-wrap { inset: 4.625cqw 1cqw auto; height: 8cqw; }
-.global-eq-controls .io-dial { right: -.1875cqw; width: 8.75cqw; height: 8.75cqw; border: 0; background: conic-gradient(from 220deg, #104468 0 39%, #182018 39% 78%, transparent 78%); }
-.global-eq-controls .io-dial::before { position: absolute; inset: .625cqw; border-radius: 50%; background: #181818; content: ""; }
-.global-eq-controls .io-dial::after { position: absolute; inset: 1.5cqw; border-radius: 50%; background: #202820; content: ""; }
-.global-eq-controls > section:nth-child(3) .io-dial { background: conic-gradient(from 220deg, #0874e0 0 14%, #101010 14% 78%, transparent 78%); }
-.global-eq-controls > section:nth-child(3) .io-dial::after { background: #202420; }
-.global-eq-controls > section:nth-child(4) .io-dial { background: conic-gradient(from 220deg, #182018 0 78%, transparent 78%); }
-.global-eq-controls .io-dial b { position: absolute; z-index: 1; left: calc(50% - .125cqw); top: .875cqw; width: .25cqw; height: 3.5cqw; margin: 0; background: #707870; transform-origin: 50% 100%; }
-.global-eq-controls > section:nth-child(3) .io-dial b { background: #f8fcf8; }
-.global-eq-controls > section:nth-child(2) .io-dial b { transform: rotate(0deg); }
-.global-eq-controls > section:nth-child(3) .io-dial b { transform: rotate(-98deg); }
-.global-eq-controls > section:nth-child(4) .io-dial b { transform: rotate(-135deg); }
+.global-eq-controls .io-dial { right: -.1875cqw; width: 8.75cqw; height: 8.75cqw; }
 .global-eq-controls .io-dial-wrap > strong { left: .5cqw; bottom: 1.325cqw; font-size: 1.75cqw; }
 .global-eq-bypass button { width: 8.25cqw; height: 5.5cqw; margin: 2.375cqw 0 0 0; font-size: 3cqw; transform: translateX(-1px); }
 .global-eq-bypass button svg { width: 3cqw; height: 3cqw; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
@@ -114,8 +104,8 @@
 .capture-official-settings > main > section:nth-child(7) { grid-column: 3; grid-row: 2; }
 .capture-official-settings .capture-info { position: absolute; right: 2cqw; top: 1.5cqw; width: 2.75cqw; height: 2.75cqw; display: grid; place-items: center; border-radius: 50%; background: #101210; color: #282d29; font-size: 1.5cqw; font-style: normal; }
 .capture-official-settings > main > section:nth-child(1) .capture-level-dial,
-.capture-official-settings > main > section:nth-child(2) .capture-level-dial { right: 1.75cqw; bottom: .875cqw; }
-.capture-official-settings > main > section:nth-child(7) .capture-level-dial { right: 1.5cqw; bottom: .875cqw; }
+.capture-official-settings > main > section:nth-child(2) .capture-level-dial { right: .875cqw; bottom: .875cqw; width: 8.75cqw; height: 8.75cqw; }
+.capture-official-settings > main > section:nth-child(7) .capture-level-dial { right: .875cqw; bottom: .875cqw; width: 8.75cqw; height: 8.75cqw; }
 .capture-official-result .capture-result-actions { height: 11.125cqw; align-items: flex-start; padding-top: 1.5cqw; }
 .capture-official-result .capture-result-actions .capture-target-icon { transform: translateY(-1.625cqw); }
 .capture-official-result > header > button:last-child { position: relative; font-size: 0; }

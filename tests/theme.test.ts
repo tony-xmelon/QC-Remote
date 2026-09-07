@@ -74,7 +74,13 @@ test("shared theme retains every measured native QC color", () => {
     presetBrown: "#9b613c",
     ioHeaderShadow: "#424542",
     ioHeaderMid: "#7b7d7b",
-    ioHeaderLow: "#737573"
+    ioHeaderLow: "#737573",
+    rotaryAccent: "#42fb63",
+    rotaryTrack: "#192019",
+    rotaryFace: "#212421",
+    rotaryShadow: "#171a17",
+    rotarySeparator: "#050605",
+    rotaryFaceEdge: "#111411"
   });
   assert.deepEqual(QC_COLORS.browserCategory, {
     plugin: "#42fb63", amp: "#ff2421", capture: "#949694", cab: "#6b55ff", overdrive: "#ff7100",
