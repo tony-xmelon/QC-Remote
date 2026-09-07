@@ -92,6 +92,22 @@ test("Android exposes an allowlisted Gemini selector and a compact persisted quo
   assert.match(styles, /\.chat-model-bar/);
 });
 
+test("Android chat is a compact, persistent, collapsible panel", () => {
+  const appSource = readFileSync(new URL("./App.tsx", import.meta.url), "utf8");
+  const styles = readFileSync(new URL("./styles.css", import.meta.url), "utf8");
+
+  assert.match(appSource, /androidChatCollapsedStorageKey/);
+  assert.match(appSource, /window\.localStorage\.setItem\(androidChatCollapsedStorageKey/);
+  assert.match(appSource, /className=\{`mobile-chat\$\{chatCollapsed \? " is-collapsed" : ""\}`\}/);
+  assert.match(appSource, /aria-label=\{chatCollapsed \? "Expand chat" : "Collapse chat"\}/);
+  assert.match(appSource, /\{busy \? "THINKING" : "CHAT"\}/);
+  assert.doesNotMatch(appSource, /QC ASSISTANT/);
+  assert.match(styles, /\.chat-toggle \{ position: absolute;/);
+  assert.match(styles, /\.message-list \{[^}]*padding: 45px 12px 12px;/);
+  assert.match(appSource, /<form className="message-composer"[\s\S]*<div className="chat-model-bar">/);
+  assert.match(styles, /\.android-app\.chat-collapsed/);
+});
+
 test("assistant and relay access defaults to full control and enforces four tiers", () => {
   const appSource = readFileSync(new URL("./App.tsx", import.meta.url), "utf8");
   const servicesSource = readFileSync(new URL("./native-services.ts", import.meta.url), "utf8");

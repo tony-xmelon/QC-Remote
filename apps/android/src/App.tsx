@@ -4,7 +4,7 @@ import { demoSnapshot, QC_SCENE_COUNT } from "@ndsp-qc/client";
 import { assistantToolActionPrompt, footswitchLeds, parseAssistantIntent, parseAssistantReply, recentModelConversation, runToolConversation, sceneLetter, textModelConversationPrompt, validateAssistantToolCalls, type AssistantAccessMode as ControlAccessMode, type AssistantToolCall, type PublicRelayState as RelayState } from "@ndsp-qc/core";
 import { formFactors, skins } from "@ndsp-qc/form-factors";
 import { QC_BRAND, QC_COLORS, QC_VISUAL_ASSETS } from "@ndsp-qc/theme";
-import { AddBlockPanel, applyPreparedOfflineAssistantAction, AssistantAccessSelect, AssistantAttachmentList, browserWorkflowPrompts, consumeQcNativeStateFrame, corosFixtureConfiguration, corOsUnavailableContextActionMessage, executeAndReconcileQcAction, GridManagementPanel, offlineAssistantEditConfirmation, parameterEditorAccent, parameterEditorControlSlots, parameterEditorPageSize, qcParameterEditorBindings, qcReadyLabel, qcRelayLabel, QcHardwareSwitch, QcMasterVolumeKnob, QcUiIcon, QuadCortexSurface, readAssistantAccessMode, RoutingEditor, runOfflineAssistantIntent, SceneEditor, useAssistantAutoScroll, useAssistantConversation, useBlockEditorSession, useContinuousControlWorkflow, usePublicRelayWorkflow, useQcConnectionWorkflow, useQcController, useQcLiveState, useQcSurfaceActions, useQcWorkflows, writeAssistantAccessMode, type CorOsContextAction, type CorOsScreenView } from "@ndsp-qc/ui";
+import { AddBlockPanel, applyPreparedOfflineAssistantAction, AssistantAccessSelect, AssistantAttachmentList, browserWorkflowPrompts, consumeQcNativeStateFrame, corosFixtureConfiguration, corOsUnavailableContextActionMessage, executeAndReconcileQcAction, GridManagementPanel, offlineAssistantEditConfirmation, parameterEditorAccent, parameterEditorControlSlots, parameterEditorPageSize, qcParameterEditorBindings, qcRelayLabel, QcHardwareSwitch, QcMasterVolumeKnob, QcUiIcon, QuadCortexSurface, readAssistantAccessMode, RoutingEditor, runOfflineAssistantIntent, SceneEditor, useAssistantAutoScroll, useAssistantConversation, useBlockEditorSession, useContinuousControlWorkflow, usePublicRelayWorkflow, useQcConnectionWorkflow, useQcController, useQcLiveState, useQcSurfaceActions, useQcWorkflows, writeAssistantAccessMode, type CorOsContextAction, type CorOsScreenView } from "@ndsp-qc/ui";
 import { androidGatewayTransport, createAndroidQcTransport, GeminiNative, publicRelay, QcUsbNative, subscribeRelayState, VoiceInputNative } from "./native-services";
 import { quotaSummary, recordGeminiUsage, type GeminiModelId, type GeminiQuotaLedger } from "./gemini-quota";
 
@@ -25,6 +25,7 @@ const androidGeminiModels: ReadonlyArray<{ id: AndroidGeminiModel; label: string
 ];
 const androidModelStorageKey = "qc-control.android-gemini-model";
 const androidQuotaStorageKey = "qc-control.android-gemini-quota-v1";
+const androidChatCollapsedStorageKey = "qc-control.android-chat-collapsed-v1";
 const legacyControlAccessModeKey = "qc-control.device-access-mode-v1";
 const qcRemoteScreen = {
   openIo: { x: 400, y: 8, toX: 400, toY: 220 },
@@ -74,6 +75,7 @@ export function App() {
   const [quotaLedger, setQuotaLedger] = useState<GeminiQuotaLedger>(loadQuotaLedger);
   const [quotaState, setQuotaState] = useState<"unreported" | "available" | "exhausted">("unreported");
   const [quotaNow, setQuotaNow] = useState(Date.now());
+  const [chatCollapsed, setChatCollapsed] = useState(() => window.localStorage.getItem(androidChatCollapsedStorageKey) === "true");
   const [voiceState, setVoiceState] = useState("idle");
   const [controlAccessMode, setControlAccessMode] = useState<ControlAccessMode>(storedControlAccessMode);
   const relayWorkflow = usePublicRelayWorkflow({ relay: publicRelay, enabled: native, autoStart: true, subscribe: subscribeRelayState });
@@ -132,7 +134,6 @@ export function App() {
     notice: appendAssistant,
     fail: (error) => appendAssistant(error instanceof Error ? error.message : String(error))
   });
-  const selectedBlock = useMemo(() => snapshot.blocks.find((block) => block.id === selectedBlockId), [selectedBlockId, snapshot.blocks]);
   const parameterEditorBindings = qcParameterEditorBindings({
     snapshot,
     selectedBlockId,
@@ -512,12 +513,18 @@ export function App() {
     }
   };
 
-  return <main className="android-app">
+  const toggleChat = () => setChatCollapsed((collapsed) => {
+    const next = !collapsed;
+    window.localStorage.setItem(androidChatCollapsedStorageKey, String(next));
+    return next;
+  });
+
+  return <main className={`android-app${chatCollapsed ? " chat-collapsed" : ""}`}>
     <header className="mobile-header">
       <div className="mobile-brand"><AppMark /><span><strong>{QC_BRAND.appName}</strong><small>{snapshot.presetLocation} · {snapshot.presetName}</small></span></div>
       <div className="connection-pills">
         <button className={`connection-pill relay-${relayState}`} onClick={() => void configureRelay()} aria-label={relayPaired ? "Remote relay settings" : "Pair remote relay"}><i /> {qcRelayLabel(relayWorkflow.status)}</button>
-        <button className={`connection-pill ${usbState}`} onClick={() => void connectUsb()} aria-label="Connect Quad Cortex over USB"><i /> {qcReadyLabel(connection)}</button>
+        <button className={`connection-pill ${usbState}`} onClick={() => void connectUsb()} aria-label="Connect Quad Cortex over USB"><i /> USB</button>
       </div>
     </header>
 
@@ -546,31 +553,33 @@ export function App() {
       <div className="mobile-tempo-control"><QcHardwareSwitch role="tempo" label="TEMPO" active={parameterLeds ? parameterLeds[9].active : snapshot.tempoLedEnabled} assigned={parameterLeds ? parameterLeds[9].assigned : snapshot.tempoLedEnabled} accent={parameterLeds ? parameterLeds[9].color : QC_COLORS.device.tempoLed} pulseBpm={!parameterLeds && snapshot.tempoLedEnabled ? snapshot.tempo : undefined} pulseEpochMs={!parameterLeds ? snapshot.tempoPulseEpochMs : undefined} onAction={handleSurfaceAction} /></div>
     </nav>
 
-    <section className="mobile-chat" aria-label="QC assistant">
-      <div className="chat-heading"><span><i /> {busy ? "GEMINI THINKING" : "QC ASSISTANT"}</span><small>{selectedBlock ? `${selectedBlock.name} selected` : usbConnected ? "QC connected" : "USB not connected"}</small></div>
-      <div ref={assistantScroll.containerRef} className="message-list" tabIndex={0} aria-live="polite" aria-label="Assistant conversation" onScroll={assistantScroll.onScroll} onWheel={assistantScroll.onUserScroll} onTouchMove={assistantScroll.onUserScroll} onPointerDown={assistantScroll.onUserScroll}>
-        {messages.map((entry) => <div key={entry.id} className={`message ${entry.role}`}><span>{entry.role === "user" ? "YOU" : "QC"}</span><div><p>{entry.text}</p><AssistantAttachmentList attachments={entry.attachments} imageClassName="message-image" /></div></div>)}
-        {busy && <div className="message assistant pending"><span>QC</span><p>•••</p></div>}
-      </div>
-      <div className="chat-model-bar">
-        <select value={selectedModel} aria-label="Gemini model" disabled={busy} onChange={(event) => {
-          const model = event.target.value as AndroidGeminiModel;
-          setSelectedModel(model);
-          setQuotaState("unreported");
-          window.localStorage.setItem(androidModelStorageKey, model);
-        }}>
-          {androidGeminiModels.map((model) => <option key={model.id} value={model.id}>{model.label}</option>)}
-        </select>
-        <AssistantAccessSelect value={controlAccessMode} ariaLabel="Assistant and remote device access" disabled={busy} onChange={(mode) => void changeControlAccessMode(mode)} />
-        <span title={`Device estimate for the current Pacific quota day. ${selectedQuota.dayRemaining} of ${selectedQuota.limits.requestsPerDay} daily requests left; ${selectedQuota.minuteRemaining} of ${selectedQuota.limits.requestsPerMinute} per-minute requests left; ${selectedQuota.minuteInputRemaining.toLocaleString()} of ${selectedQuota.limits.inputTokensPerMinute.toLocaleString()} input tokens/min left. Input ${selectedQuota.usage.input.toLocaleString()}, output ${selectedQuota.usage.output.toLocaleString()}, thinking ${selectedQuota.usage.thinking.toLocaleString()} tokens today.`}>
-          {quotaState === "exhausted" ? "LIMIT · " : ""}{selectedQuota.dayRemaining}/{selectedQuota.limits.requestsPerDay} day · {selectedQuota.minuteRemaining}/{selectedQuota.limits.requestsPerMinute} min · {selectedQuota.usage.total.toLocaleString()} tok
-        </span>
-      </div>
-      <form className="message-composer" onSubmit={submit}>
-        <button className={`voice-button ${voiceState !== "idle" ? "is-listening" : ""}`} type="button" disabled={!native || busy} onClick={() => void toggleVoice()} aria-label="Speak a command"><QcUiIcon kind="microphone" /></button>
-        <input value={message} onChange={(event) => setMessage(event.target.value)} placeholder={voiceState !== "idle" ? "Listening…" : `Ask ${QC_BRAND.appName}…`} aria-label={`Message ${QC_BRAND.appName}`} />
-        <button className="send-button" type="submit" disabled={!message.trim() || busy} aria-label="Send message"><QcUiIcon kind="send" /></button>
-      </form>
+    <section className={`mobile-chat${chatCollapsed ? " is-collapsed" : ""}`} aria-label="Chat">
+      <button className={`chat-toggle${busy ? " is-thinking" : ""}`} type="button" onClick={toggleChat} aria-expanded={!chatCollapsed} aria-label={chatCollapsed ? "Expand chat" : "Collapse chat"}><i /> {busy ? "THINKING" : "CHAT"}</button>
+      {!chatCollapsed && <>
+        <div ref={assistantScroll.containerRef} className="message-list" tabIndex={0} aria-live="polite" aria-label="Assistant conversation" onScroll={assistantScroll.onScroll} onWheel={assistantScroll.onUserScroll} onTouchMove={assistantScroll.onUserScroll} onPointerDown={assistantScroll.onUserScroll}>
+          {messages.map((entry) => <div key={entry.id} className={`message ${entry.role}`}><span>{entry.role === "user" ? "YOU" : "QC"}</span><div><p>{entry.text}</p><AssistantAttachmentList attachments={entry.attachments} imageClassName="message-image" /></div></div>)}
+          {busy && <div className="message assistant pending"><span>QC</span><p>•••</p></div>}
+        </div>
+        <form className="message-composer" onSubmit={submit}>
+          <button className={`voice-button ${voiceState !== "idle" ? "is-listening" : ""}`} type="button" disabled={!native || busy} onClick={() => void toggleVoice()} aria-label="Speak a command"><QcUiIcon kind="microphone" /></button>
+          <input value={message} onChange={(event) => setMessage(event.target.value)} placeholder={voiceState !== "idle" ? "Listening…" : `Ask ${QC_BRAND.appName}…`} aria-label={`Message ${QC_BRAND.appName}`} />
+          <button className="send-button" type="submit" disabled={!message.trim() || busy} aria-label="Send message"><QcUiIcon kind="send" /></button>
+        </form>
+        <div className="chat-model-bar">
+          <select value={selectedModel} aria-label="Gemini model" disabled={busy} onChange={(event) => {
+            const model = event.target.value as AndroidGeminiModel;
+            setSelectedModel(model);
+            setQuotaState("unreported");
+            window.localStorage.setItem(androidModelStorageKey, model);
+          }}>
+            {androidGeminiModels.map((model) => <option key={model.id} value={model.id}>{model.label}</option>)}
+          </select>
+          <AssistantAccessSelect value={controlAccessMode} ariaLabel="Assistant and remote device access" disabled={busy} onChange={(mode) => void changeControlAccessMode(mode)} />
+          <span title={`Device estimate for the current Pacific quota day. ${selectedQuota.dayRemaining} of ${selectedQuota.limits.requestsPerDay} daily requests left; ${selectedQuota.minuteRemaining} of ${selectedQuota.limits.requestsPerMinute} per-minute requests left; ${selectedQuota.minuteInputRemaining.toLocaleString()} of ${selectedQuota.limits.inputTokensPerMinute.toLocaleString()} input tokens/min left. Input ${selectedQuota.usage.input.toLocaleString()}, output ${selectedQuota.usage.output.toLocaleString()}, thinking ${selectedQuota.usage.thinking.toLocaleString()} tokens today.`}>
+            {quotaState === "exhausted" ? "LIMIT · " : ""}{selectedQuota.dayRemaining}/{selectedQuota.limits.requestsPerDay} day · {selectedQuota.minuteRemaining}/{selectedQuota.limits.requestsPerMinute} min · {selectedQuota.usage.total.toLocaleString()} tok
+          </span>
+        </div>
+      </>}
     </section>
 
     {workflowPanel && <div className="mobile-workflow-backdrop" role="presentation" onClick={() => setWorkflowPanel(null)}>

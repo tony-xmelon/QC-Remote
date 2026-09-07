@@ -56,7 +56,8 @@ test("USB attachment auto-connects and reports synchronization separately", () =
   assert.match(appSource, /if \(state === "available"\)[\s\S]*attemptUsbConnection\(\)/);
   assert.match(appSource, /state\.kind === "preset"[\s\S]*usbSessionReady\.current[\s\S]*transitionConnection\("connected"\)/);
   assert.match(appSource, /connected: usbConnected, busy: usbBusy, appearance: usbState/);
-  assert.match(appSource, /\{qcReadyLabel\(connection\)\}/, "the pill reads the shared cross-host readiness wording");
+  assert.match(appSource, /> USB<\//, "the compact pill identifies the physical USB transport while its light carries readiness");
+  assert.doesNotMatch(appSource, /qcReadyLabel\(connection\)/, "Android does not repeat the verbose desktop readiness label");
 });
 
 test("A through H use the reported hardware mode and assignments", () => {
@@ -96,6 +97,8 @@ test("native USB remains open and command traffic is never blocked by startup", 
   assert.match(javaSource, /midiIo\.execute\(\(\) ->/);
   assert.match(javaSource, /midiConnection = openedMidi/);
   assert.match(javaSource, /activeMidiConnection\.bulkTransfer\(midiOutputEndpoint/);
+  assert.match(javaSource, /hostStartedAtUnixMs/);
+  assert.match(javaSource, /dispatchLatencyMs/);
   assert.match(javaSource, /midiConnection\.releaseInterface\(midiInterface\)/);
   assert.match(appSource, /consumeQcNativeStateFrame\(frame/);
   assert.match(liveStateSource, /reconcileFrame\(states, observedAt\)/);
@@ -340,6 +343,18 @@ test("Android's USB maintenance heartbeat produces a small device reply", () => 
   assert.match(javaSource, /MAINTENANCE_POLL_MS = 1000/);
   assert.match(javaSource, /MAINTENANCE_POLL_MS, MAINTENANCE_POLL_MS, TimeUnit\.MILLISECONDS/);
   assert.match(javaSource, /handshakeComplete = true;[\s\S]*keepalive\.schedule\([\s\S]*readCommand\(QcUsbProfile\.MESSAGE_TYPE_VERSION\)[\s\S]*MAINTENANCE_POLL_MS/);
+});
+
+test("Android state-event reads expose the true tail beyond a paged frame window", () => {
+  assert.match(javaSource, /result\.put\("latestSequence", latestSequence\)/);
+  assert.match(javaSource, /latestSequence = nextStateSequence - 1/);
+});
+
+test("Android refreshes authoritative preset state after non-idempotent history writes", () => {
+  assert.match(javaSource, /"device\.undo"\.equals\(method\) \|\| "device\.redo"\.equals\(method\)[\s\S]{0,120}\? relayHistoryWrite\(method, params\)/);
+  assert.match(javaSource, /relayHistoryWrite[\s\S]{0,1200}QcUsbProfile\.HISTORY_STATE_REFRESH_DELAY_MS/);
+  assert.match(javaSource, /relayHistoryWrite[\s\S]{0,900}stateDecoder\.currentPresetCommand\(requestIds\.getAndIncrement\(\)\)/);
+  assert.match(javaSource, /Undo and redo are non-idempotent[\s\S]{0,180}instead of replaying them/);
 });
 
 test("Android retries a backup only before a physical document starts", () => {

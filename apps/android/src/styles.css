@@ -124,12 +124,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .mobile-workflow-panel button:disabled { opacity: .4; }
 .mobile-workflow-panel .dialog-actions, .mobile-workflow-panel .block-management-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 
-.mobile-chat { min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto; overflow: hidden; border: 1px solid var(--qc-palette-23272c); border-radius: 15px; background: var(--qc-palette-0d0f12cc); box-shadow: inset 0 1px var(--qc-palette-ffffff0a); }
-.chat-heading { min-height: 35px; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 12px; border-bottom: 1px solid var(--qc-palette-20242a); color: var(--qc-palette-a3aab2); font-size: 9px; font-weight: 800; letter-spacing: .1em; }
-.chat-heading > span { display: flex; align-items: center; gap: 6px; }
-.chat-heading i { width: 5px; aspect-ratio: 1; border-radius: 50%; background: var(--qc-palette-55e282); box-shadow: 0 0 6px var(--qc-palette-55e282); }
-.chat-heading small { min-width: 0; overflow: hidden; color: var(--qc-palette-56bd78); font-size: 9px; font-weight: 600; letter-spacing: 0; text-overflow: ellipsis; white-space: nowrap; }
-.message-list { min-height: 0; display: flex; flex-direction: column; gap: 11px; padding: 12px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+.mobile-chat { position: relative; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto auto; overflow: hidden; border: 1px solid var(--qc-palette-23272c); border-radius: 15px; background: var(--qc-palette-0d0f12cc); box-shadow: inset 0 1px var(--qc-palette-ffffff0a); }
+.mobile-chat.is-collapsed { min-height: 34px; }
+.chat-toggle { position: absolute; z-index: 2; top: 8px; right: 8px; min-height: 27px; display: flex; align-items: center; gap: 6px; padding: 0 9px; border: 1px solid var(--qc-palette-33413a); border-radius: 14px; background: var(--qc-palette-121814); color: var(--qc-palette-aab5ae); font-size: 9px; font-weight: 800; letter-spacing: .08em; }
+.chat-toggle i { width: 6px; aspect-ratio: 1; border-radius: 50%; background: var(--qc-palette-55e282); box-shadow: 0 0 7px var(--qc-palette-55e282); }
+.chat-toggle.is-thinking i { background: var(--qc-app-warning); box-shadow: 0 0 7px var(--qc-app-warning); animation: pulse 1s infinite alternate; }
+.message-list { min-height: 0; display: flex; flex-direction: column; gap: 11px; padding: 45px 12px 12px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
 .message-list::-webkit-scrollbar { display: none; }
 .message { display: grid; grid-template-columns: 26px minmax(0, 1fr); align-items: start; gap: 7px; }
 .message > span { width: 26px; height: 26px; display: grid; place-items: center; border: 1px solid var(--qc-palette-2c3238); border-radius: 8px; background: var(--qc-app-panel-raised); color: var(--qc-palette-5fe88a); font-size: 8px; font-weight: 900; }
@@ -154,6 +154,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .send-button:disabled { background: var(--qc-palette-20242a); color: var(--qc-palette-555c64); }
 .message.pending p { color: var(--qc-palette-73ee98); letter-spacing: .2em; animation: pulse .65s infinite alternate; }
 
+.android-app.chat-collapsed { grid-template-rows: auto auto auto auto 34px; }
+
 @keyframes pulse { to { opacity: .38; } }
 @keyframes tempo-flash { 0%, 18% { opacity: 1; } 19%, 100% { opacity: .3; } }
 
@@ -168,6 +170,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   .quick-controls { grid-column: 1; grid-row: 3; align-self: start; }
   .workflow-actions { grid-column: 1; grid-row: 4; }
   .mobile-chat { grid-column: 2; grid-row: 2 / 5; }
+  .android-app.chat-collapsed { grid-template-columns: minmax(420px, 1.25fr) 76px; grid-template-rows: auto auto auto minmax(0, 1fr); }
+  .android-app.chat-collapsed .mobile-chat { grid-row: 2 / 5; }
+  .android-app.chat-collapsed .chat-toggle { right: 7px; padding: 0 8px; }
 }
 
 @media (max-height: 650px) and (orientation: portrait) {
