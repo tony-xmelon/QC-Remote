@@ -1543,7 +1543,7 @@ SVG detail references. Of the 103 states, 79 have authoritative full-frame
 evidence and 98 have authoritative full-frame or detail evidence.
 
 Fresh 800x480 captures of all 76 physical states produce the same result on
-both hosts: 89.71% mean edge-structural match and 0.0247 mean normalized pixel
+both hosts: 89.75% mean edge-structural match and 0.0246 mean normalized pixel
 error. This is up from the 86.56% structural baseline at the start of the pass.
 The typography audit covers all 103 states and reports 95.88% mean text-mask
 structure, 98.71% mean text-region color, 100% Windows/Android computed-style
@@ -1554,8 +1554,8 @@ unwired, or comparison-only artwork.
 The largest gains came from replacing semantic approximations with dedicated
 Neural Capture, deep/reverb browser, bottom-context, Favorites/Recents, search,
 I/O, and capture-editor states. The lowest remaining physical structural scores
-are Search Results/Error Overlay (73.45%), bottom block context (76.50%), Neural
-Capture editor (79.13%), Recents (80.19%), and Headphones I/O (80.56%). These
+are Search Results/Error Overlay (73.46%), bottom block context (76.38%), Neural
+Capture editor (79.15%), Headphones I/O (81.93%), and Recents (82.25%). These
 are now localized fidelity work, not missing routes or host divergence.
 
 ## Remaining priorities
@@ -1601,7 +1601,7 @@ literals are isolated under `.qc-screen-fixture-root`, so they cannot override
 the live Grid.
 
 Fresh 800x480 captures verify all 103 canonical routes and all 76
-physical-corpus frames on both hosts. The latest physical score is 89.71% mean
-edge-structural match with 0.0247 mean normalized pixel error on both Windows
+physical-corpus frames on both hosts. The latest physical score is 89.75% mean
+edge-structural match with 0.0246 mean normalized pixel error on both Windows
 and Android. Earlier figures in this document are retained as historical
 milestones and must not be read as the current corpus size or score.

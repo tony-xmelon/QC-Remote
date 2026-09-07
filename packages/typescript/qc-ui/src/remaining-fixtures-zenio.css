@@ -48,6 +48,8 @@
 .capture-editor-panel > header > nav + button,
 .capture-editor-panel > header > nav + button + button { width: 8.25cqw; }
 .capture-editor-panel > header > nav + button { margin-left: 2.25cqw; }
+.capture-editor-panel > header > nav + button svg,
+.capture-editor-panel > header > nav + button + button svg { width: 3cqw; height: 3cqw; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .capture-editor-panel > main i { right: 1cqw; width: 8cqw; height: 8cqw; border-width: .625cqw; }
 .capture-editor-panel > main span,
 .capture-editor-panel > main strong { font-weight: 400; }
@@ -67,6 +69,11 @@
 }
 .coros-io-settings .io-editor.is-headphones .io-dial { width: 8.375cqw; height: 8.375cqw; }
 .coros-io-settings .io-editor.is-headphones .io-dial-wrap > strong { bottom: 1.875cqw; }
+.coros-io-settings.is-headphones > header .io-global-eq { width: 13.625cqw; height: 5.5cqw; border-radius: 1cqw; }
+.coros-io-settings.is-headphones .io-ports button:nth-child(12) > i { color: #171a18; }
+.coros-io-settings.is-headphones .io-ports button:nth-child(7).is-active-primary > i:first-of-type > svg > path:first-child { fill: #26f05a; stroke: #26f05a; }
+.coros-io-settings.is-headphones .io-ports button:nth-child(7).is-active-primary > i:first-of-type > svg > circle:nth-of-type(1) { fill: #101010; stroke: #101010; }
+.coros-io-settings.is-headphones .io-editor.is-headphones > section:first-child .io-dial { right: -.5cqw; }
 
 .physical-delay-underlay,
 .physical-delay-underlay * { box-sizing: border-box; }
