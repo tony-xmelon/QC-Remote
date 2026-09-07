@@ -59,6 +59,16 @@ test("typography references render the captured state instead of a generic subst
   assert.equal(capture.blocks[0]?.glyph, "capture-wave");
 });
 
+test("Neural Capture editor preserves the measured layered rotary controls", () => {
+  const fixtureSource = readFileSync(new URL("../packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", import.meta.url), "utf8");
+  const measuredStyles = readFileSync(new URL("../packages/typescript/qc-ui/src/remaining-fixtures-zenio.css", import.meta.url), "utf8");
+  assert.match(fixtureSource, /"--capture-angle": `\$\{angle\}deg`/);
+  assert.match(measuredStyles, /conic-gradient\(from 225deg, #949694/);
+  assert.match(measuredStyles, /\.capture-editor-panel > main i::before/);
+  assert.match(measuredStyles, /background: #212421/);
+  assert.match(fixtureSource, /<em><ModeGlyph mode="PRESET" \/><span>PRESET<\/span><\/em>/, "the canonical mode icon must not be wrapped in a second SVG viewport");
+});
+
 test("typography audit keeps content, glyphs, placement, and colors independent", () => {
   const comparator = readFileSync(new URL("../tools/compare_qc_typography.py", import.meta.url), "utf8");
   const reportWriter = readFileSync(new URL("../tools/write-qc-typography-report.mjs", import.meta.url), "utf8");
