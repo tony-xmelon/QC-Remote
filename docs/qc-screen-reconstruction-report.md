@@ -1,14 +1,33 @@
 # Quad Cortex screen reconstruction report
 
-Audit date: 2026-09-03
+Audit date: 2026-09-08 (dual-host rows measured 2026-09-03)
 Reference: physical Quad Cortex, CorOS 4.1.0, 800x480 framebuffer corpus
 
 ## Executive summary
 
-| Client | Physical corpus rendered | Mean structural match | Mean color similarity |
+**Every one of the 119 physical corpus frames is drawn and measured.** Each
+fixture is rendered at 800x480 and compared with the frame it reconstructs by
+`tools/visual-regression/qc_compare.py` - mean absolute error and 2px edge
+agreement:
+
+| Physical corpus (119 frames) | median | worst | best |
 | --- | ---: | ---: | ---: |
-| Windows | 70/70 (100%) | **83.78%** | **97.09%** |
-| Android | 70/70 (100%) | **83.78%** | **97.09%** |
+| Structural match (edge F1, 2px) | **87.6%** | 70.4% | 97.5% |
+| Colour similarity (1 - MAE) | **97.5%** | 93.7% | 99.1% |
+
+34 frames sit under 0.02 mean error, 86 under 0.03, 114 under 0.05 and all 119
+under 0.07. On structure, 10 agree on 95% or more of their edges, 49 on 90%,
+93 on 80%, and **every one on 70% or more**. Four of the 119 names are the same
+image stored twice, so the 119 are 115 distinct screens.
+
+The dual-host rows below are a different measurement, taken on 2026-09-03 over
+the 70 frames the Windows and Android capture drivers covered at the time, and
+have not been re-run since the reconstruction passes recorded further down:
+
+| Client | Physical corpus rendered | Mean structural match | Mean color similarity |
+| --- | --- | ---: | ---: |
+| Windows | 70/70 (2026-09-03) | 83.78% | 97.09% |
+| Android | 70/70 (2026-09-03) | 83.78% | 97.09% |
 
 These are native-size measurements, not audit estimates. Both hosts render the
 same versioned `coros410` scratch-preset fixture through `@ndsp-qc/ui`; each
@@ -37,9 +56,9 @@ rows**. Current canonical CorOS implementation counts are:
 | Shell only | 0 | 0 |
 | Missing | 0 | 0 |
 
-“70/70” therefore means every physical regression state has a renderer. All 104
-cataloged states are built, and 70 captured device frames now participate in the
-physical comparison.
+All 104 cataloged states are built, and **all 119 captured device frames now
+participate in the physical comparison** - the 70 in the dual-host rows are the
+subset those two drivers reached.
 
 The separate manual-reference smoke corpus now contains **85 states / 170 exact
 800x480 host captures** (Windows and Android). These validate shared composition
@@ -131,6 +150,12 @@ The complete per-state evidence and score join is in
 
 ## Measured physical corpus
 
+The two columns below are the 2026-09-03 host-parity check: the same fixture
+drawn by the Windows and the Android build, over the frames those two capture
+drivers covered at the time. They are kept because they are what shows the two
+hosts agree to the third decimal, not because they are the current accuracy -
+for that, see the 119 rows in the next section.
+
 | Physical state | Windows structural match | Android structural match |
 | --- | ---: | ---: |
 | `grid-base` | **93.45%** | **93.45%** |
@@ -185,6 +210,137 @@ The complete per-state evidence and score join is in
 | `settings-diagnostics` | **97.47%** | **97.47%** |
 | `settings-wifi` | **93.92%** | **93.92%** |
 | `settings-storage` | **93.31%** | **93.31%** |
+
+## Final per-frame audit, all 119 frames
+
+Measured 2026-09-08 by `tools/visual-regression/qc_compare.py` against the
+committed tree, every fixture drawn at 800x480 from a fresh server. Edge
+agreement is the 2px edge F1 and decides structure; mean absolute error is the
+colour distance over the whole frame. The renderer column names the fixture view
+where it is not the frame's own name; `-` means the two are the same. Alphabetical
+by frame; the weakest are called out in [The closing audit](#the-closing-audit).
+
+| Frame | Renderer view | Edge agreement (2px) | Mean abs. error |
+| --- | --- | ---: | ---: |
+| `block-context` | - | 0.9674 | 0.0184 |
+| `block-context-bottom` | - | 0.8946 | 0.0253 |
+| `capture-calibration` | - | 0.9298 | 0.0458 |
+| `capture-connect-input-2` | - | 0.8249 | 0.0558 |
+| `capture-connect-out` | - | 0.7849 | 0.0251 |
+| `capture-intro` | - | 0.7411 | 0.0248 |
+| `capture-monitoring` | - | 0.7711 | 0.0272 |
+| `capture-progress` | - | 0.7567 | 0.0539 |
+| `capture-result` | - | 0.9420 | 0.0206 |
+| `capture-routing` | - | 0.8095 | 0.0316 |
+| `capture-sanity-error` | - | 0.7758 | 0.0569 |
+| `capture-save` | - | 0.8654 | 0.0216 |
+| `capture-type` | - | 0.7495 | 0.0338 |
+| `cloud-upload-overwrite` | `overlay-overwrite` | 0.7086 | 0.0329 |
+| `copy-scene-destination` | `fixture-copy-scene` | 0.9152 | 0.0094 |
+| `cpu-monitor` | - | 0.8662 | 0.0169 |
+| `delete-confirmation` | `fixture-delete` | 0.9267 | 0.0132 |
+| `device-browser-base` | `corpus-device-browser-root` | 0.7342 | 0.0283 |
+| `device-browser-middle-deep` | - | 0.7402 | 0.0357 |
+| `device-browser-middle-reverb` | - | 0.7418 | 0.0373 |
+| `device-browser-models` | `corpus-device-browser-models` | 0.9215 | 0.0239 |
+| `device-browser-models-clean` | `corpus-device-browser-models-clean` | 0.9281 | 0.0194 |
+| `device-browser-neural-capture` | - | 0.8612 | 0.0305 |
+| `device-browser-plugin-list` | `plugin-list` | 0.8448 | 0.0248 |
+| `device-browser-plugin-locked` | `plugin-locked` | 0.9276 | 0.0375 |
+| `device-browser-plugin-models` | `plugin-models` | 0.9270 | 0.0313 |
+| `device-browser-root` | `corpus-device-browser-root` | 0.9572 | 0.0187 |
+| `device-browser-top` | `corpus-device-browser-root` | 0.8656 | 0.0216 |
+| `device-favorites` | - | 0.7864 | 0.0179 |
+| `device-preset-actions` | - | 0.9691 | 0.0361 |
+| `device-preset-save` | - | 0.9588 | 0.0122 |
+| `device-presets-exotic-z-boost` | `device-presets` | 0.9127 | 0.0235 |
+| `device-presets-user` | - | 0.9093 | 0.0156 |
+| `device-recents` | - | 0.8019 | 0.0169 |
+| `device-search` | `device-search-suggestions` | 0.7937 | 0.0202 |
+| `device-search-entry` | - | 0.8362 | 0.0143 |
+| `device-search-results` | - | 0.7035 | 0.0236 |
+| `directory-arrange` | - | 0.8549 | 0.0308 |
+| `directory-captures` | - | 0.8350 | 0.0273 |
+| `directory-categories` | - | 0.8299 | 0.0277 |
+| `directory-cloud-upload` | - | 0.7759 | 0.0334 |
+| `directory-copy` | - | 0.9177 | 0.0314 |
+| `directory-favorites` | - | 0.9292 | 0.0139 |
+| `directory-filter` | - | 0.8136 | 0.0192 |
+| `directory-irs` | - | 0.7482 | 0.0114 |
+| `directory-item-context` | - | 0.9151 | 0.0130 |
+| `directory-nested` | - | 0.8828 | 0.0282 |
+| `directory-new-folder` | - | 0.8708 | 0.0157 |
+| `directory-plugins` | - | 0.8174 | 0.0146 |
+| `directory-search` | `device-search-entry` | 0.8398 | 0.0143 |
+| `directory-search-results` | - | 0.8828 | 0.0283 |
+| `directory-sort` | - | 0.7839 | 0.0211 |
+| `edit-details-editor` | `edit-details` | 0.9269 | 0.0192 |
+| `editor-ambience` | - | 0.8992 | 0.0289 |
+| `editor-chief-ds1` | - | 0.9108 | 0.0270 |
+| `editor-digital-flanger` | - | 0.8643 | 0.0253 |
+| `editor-parametric-8` | - | 0.9120 | 0.0171 |
+| `editor-simple-gate` | - | 0.9118 | 0.0243 |
+| `editor-ukc30-cab` | - | 0.9343 | 0.0222 |
+| `editor-ukc30-topboost` | - | 0.9005 | 0.0273 |
+| `empty-slot` | - | 0.7274 | 0.0228 |
+| `expression-bypass` | - | 0.8604 | 0.0283 |
+| `expression-parameter` | - | 0.8582 | 0.0238 |
+| `fixture-editor-capture` | - | 0.7314 | 0.0412 |
+| `fixture-editor-pages` | - | 0.8165 | 0.0312 |
+| `generic-confirmation` | `overlay-confirmation` | 0.9267 | 0.0132 |
+| `gig-view` | `gig` | 0.9514 | 0.0371 |
+| `gig-view-hybrid` | - | 0.8338 | 0.0633 |
+| `gig-view-live-tuner` | `gig-live-tuner` | 0.9520 | 0.0360 |
+| `gig-view-preset` | - | 0.9406 | 0.0438 |
+| `gig-view-scene` | - | 0.9136 | 0.0331 |
+| `global-eq` | - | 0.7894 | 0.0514 |
+| `grid-base` | `grid` | 0.9199 | 0.0298 |
+| `grid-context-menu` | - | 0.8550 | 0.0144 |
+| `grid-context-menu-bottom` | - | 0.8469 | 0.0169 |
+| `grid-context-menu-favorite` | - | 0.8521 | 0.0147 |
+| `grid-restored` | `grid` | 0.9199 | 0.0298 |
+| `grid-scene-a-restored` | `grid` | 0.9199 | 0.0298 |
+| `grid-scene-b` | `grid` | 0.9199 | 0.0299 |
+| `grid-scene-selector` | - | 0.8156 | 0.0273 |
+| `input-gate-control` | `fixture-input-gate` | 0.8975 | 0.0265 |
+| `input-route-selector` | - | 0.7612 | 0.0216 |
+| `input-route-selector-top` | - | 0.8147 | 0.0156 |
+| `io-headphones` | - | 0.7833 | 0.0283 |
+| `io-input` | - | 0.8756 | 0.0253 |
+| `io-output` | - | 0.7399 | 0.0373 |
+| `io-overview` | - | 0.7528 | 0.0332 |
+| `io-send-return` | - | 0.8268 | 0.0301 |
+| `io-usb` | - | 0.8843 | 0.0319 |
+| `looper-editor` | - | 0.8946 | 0.0165 |
+| `mixer-editor` | - | 0.9048 | 0.0242 |
+| `modes-configuration` | `modes` | 0.9653 | 0.0143 |
+| `onscreen-keyboard` | `overlay-keyboard` | 0.9588 | 0.0122 |
+| `output-route-selector` | - | 0.7631 | 0.0191 |
+| `output-route-selector-top` | - | 0.7712 | 0.0212 |
+| `overlay-busy` | `plugin-refresh` | 0.8515 | 0.0257 |
+| `overlay-error` | `device-search` | 0.7035 | 0.0236 |
+| `plugin-browser-ready` | `plugin-list` | 0.8528 | 0.0240 |
+| `plugin-folders` | `plugin-list` | 0.8057 | 0.0296 |
+| `plugin-refresh` | - | 0.8068 | 0.0314 |
+| `preset-directory` | - | 0.9312 | 0.0207 |
+| `preset-midi-out` | `midi-out` | 0.9300 | 0.0235 |
+| `save-as-editor` | `save-as` | 0.8921 | 0.0176 |
+| `scene-assignment` | - | 0.8318 | 0.0198 |
+| `settings-account` | - | 0.9475 | 0.0168 |
+| `settings-device` | - | 0.9274 | 0.0364 |
+| `settings-diagnostics` | - | 0.9754 | 0.0127 |
+| `settings-info` | - | 0.9325 | 0.0261 |
+| `settings-midi` | - | 0.9134 | 0.0325 |
+| `settings-storage` | - | 0.9337 | 0.0243 |
+| `settings-support` | - | 0.9709 | 0.0388 |
+| `settings-system` | - | 0.9147 | 0.0335 |
+| `settings-wifi` | - | 0.9397 | 0.0217 |
+| `splitter-editor` | - | 0.8958 | 0.0251 |
+| `stomp-assignment` | - | 0.8226 | 0.0254 |
+| `swap-scene-destination` | `fixture-swap-scene` | 0.9143 | 0.0095 |
+| `tempo-metronome` | `tempo` | 0.8817 | 0.0255 |
+| `tuner` | - | 0.9094 | 0.0217 |
+| `tuner-live-enabled` | - | 0.9109 | 0.0217 |
 
 ## Text validated against the device's own scene graph
 
@@ -958,6 +1114,49 @@ menu leaves visible, on teal knobs. 0.032 / 0.68 to **0.025 / 0.89**.
 **Every one of the 119 frames now agrees on 70% or more of its edges** and sits
 under 0.07 mean error. The median is 0.0251, the worst 0.0633, 86 are under
 0.03, 93 agree on 80% or more and 49 on 90% or more.
+
+### The closing audit
+
+Run from a clean slate on the committed tree: fresh server, renders deleted,
+all 119 drawn again. Three checks, and the release gates.
+
+**Every frame against its own render.** 119 of 119 mapped, none unscored.
+
+| | median | worst | best |
+| --- | ---: | ---: | ---: |
+| edge agreement (2px) | 0.8756 | 0.7035 | 0.9754 |
+| mean absolute error | 0.0251 | 0.0633 | 0.0094 |
+
+34 under 0.02 mae, 86 under 0.03, 114 under 0.05, all 119 under 0.07; 10 frames
+at 95% edge agreement or better, 49 at 90%, 93 at 80%, all 119 at 70%.
+
+**Every frame against every render.** 23 frames have a closer render than their
+own on coarse mean error; on edge agreement only three are beaten, and all three
+by less than a point: `copy-scene-destination` by 0.0009 (two screens that
+differ by a word), `device-search` by 0.006 (both are the keyboard) and
+`io-output` by 0.005 (the I/O pages share one layout). Every other row is a tie
+between frames that share a view. **No mapping errors.**
+
+**Every unscoped declaration against what it computes.** Two, both deliberate
+scoped overrides on the block context screen - its `display` and its darker
+page. No declaration is silently losing to `@scope` proximity.
+
+The corpus itself holds **115 distinct images under 119 names**:
+`delete-confirmation` = `generic-confirmation`, `device-preset-save` =
+`onscreen-keyboard`, `device-search-results` = `overlay-error`, and
+`grid-base` = `grid-restored`.
+
+**Gates.** Typecheck clean; 381 tests; 81/81 geometry measurements; the 22-case
+regression proof catches 22/22; 1637 device strings across 110 of the 119
+screens with none missing (CorOS draws the other nine as images); coverage
+104/104 canonical states and 4/4 evidence gaps planned; corpora 119 + 37 + 27
+checksums; iconography 104/104 variants; Cortex protocol 171 messages and 72
+decodable types; and the test-assertion, architecture and app-parity checks.
+
+The eight weakest by edge agreement, for the record: `device-search-results` and
+`overlay-error` at 0.704 (one image under two names), `cloud-upload-overwrite`
+0.709, `empty-slot` 0.727, `fixture-editor-capture` 0.731, `device-browser-base`
+0.734, `io-output` 0.740, `device-browser-middle-deep` 0.740.
 
 ## Improvements in this pass
 
