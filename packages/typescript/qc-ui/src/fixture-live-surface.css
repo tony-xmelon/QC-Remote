@@ -718,10 +718,7 @@
 .coros-directory-fixture.is-physical-context .directory-fixture-items button.is-current .physical-preset-name { color: #43ef72; }
 .coros-directory-fixture.is-physical-context .directory-fixture-items button small { font-size: 9px; }
 .coros-directory-fixture .directory-item-menu { left: 528px; right: auto; top: 212px; width: 256px; height: 260px; overflow: hidden; border: 0; border-radius: 8px; background: #000; box-shadow: none; }
-.coros-directory-fixture .directory-item-menu button { box-sizing: border-box; width: 100%; height: 54px; padding: 0 16px; border: 0; background: #000; color: #f0f0f0; font: 16px Arial,sans-serif; text-align: left; }
-.coros-directory-fixture .directory-item-menu button:nth-child(2) { transform: translateY(-1px); }
-.coros-directory-fixture .directory-item-menu button:nth-child(3) { transform: translateY(-3px); }
-.coros-directory-fixture .directory-item-menu button:nth-child(5) { transform: translateY(-6px); }
+.coros-directory-fixture .directory-item-menu button { box-sizing: border-box; width: 100%; height: 52px; padding: 0 16px; border: 0; background: #000; color: #f0f0f0; font: 16px Arial,sans-serif; text-align: left; }
 .qc-screen.coros-physical-confirmation { position: absolute; inset: 0; z-index: 11; overflow: hidden; background: #111; color: #f1f1f1; font-family: Arial,Helvetica,sans-serif; }
 .coros-physical-confirmation > .coros-directory-fixture { position: absolute; inset: 0; }
 .coros-physical-confirmation > .confirmation-scrim { position: absolute; inset: 0; z-index: 4; background: rgba(92,96,92,.65); }
@@ -741,7 +738,7 @@
 .iconography-audit-fixture figure[data-icon="stop"] > svg .qc-ui-icon-fill { fill: currentColor; stroke: none; }
 .iconography-audit-fixture figure[data-icon="waveform"] > svg { left: 20px; width: 80px; }
 .iconography-audit-fixture figcaption { position: absolute; left: 4px; right: 4px; top: 55px; overflow: hidden; color: #8c8a8c; font: 12px Roboto,Arial,sans-serif; text-align: center; white-space: nowrap; }
-.physical-eq-underlay { position: absolute; inset: 0; overflow: hidden; background: #111312; }
+.physical-eq-underlay { position: absolute; inset: 0; overflow: hidden; background: #101010; }
 .physical-eq-underlay header { position: absolute; inset: 0 0 auto; height: 60px; color: #919591; }
 .physical-eq-underlay header .physical-eq-more { position: absolute; left: 20px; top: 8px; width: 22px; height: 44px; padding: 0; border: 0; background: transparent; color: #a2a5a2; font-size: 24px; }
 .physical-eq-underlay header .physical-eq-title small { position: absolute; left: 60px; top: 12px; font-size: 14px; }
@@ -753,14 +750,13 @@
 .physical-eq-underlay header nav i { width: 1px; height: 24px; margin: 0 7px; background: #6c706c; }
 .physical-eq-underlay header nav .physical-eq-save { width: 52px; color: #0aa9ff; }
 .physical-eq-underlay header nav .physical-eq-save svg,.physical-eq-underlay header nav .physical-eq-confirm svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.physical-eq-underlay header nav .physical-eq-confirm { width: 98px; margin-left: 8px; border-radius: 8px; background: #202421; color: #f1f1f1; }
+.physical-eq-underlay header nav .physical-eq-confirm { width: 98px; margin-left: 8px; border-radius: 8px; background: #292c29; color: #f1f1f1; }
 .physical-eq-underlay > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .physical-eq-underlay > svg .physical-eq-curve { fill: none; stroke: #8f9490; stroke-width: 2; }
 .physical-eq-underlay > svg .physical-eq-grid path { fill: none; stroke: #343835; stroke-width: 1; }
 .physical-eq-underlay > svg text { fill: #737773; font: 14px Arial,sans-serif; }
 .physical-eq-underlay > svg circle { fill: #1c211d; stroke: #050505; stroke-width: 2; }
-.physical-eq-underlay footer { position: absolute; left: 8px; right: 8px; bottom: 8px; height: 108px; display: grid; grid-template-columns: repeat(5,1fr); border-radius: 8px; background: #282c29; }
-.physical-eq-underlay footer::before { content: ""; position: absolute; left: -8px; right: -8px; top: -45px; border-top: 1px solid #292d29; }
+.physical-eq-underlay footer { position: absolute; left: 8px; right: 8px; bottom: 8px; height: 108px; display: grid; grid-template-columns: repeat(5,1fr); border-radius: 8px; background: #292c29; }
 .physical-eq-underlay footer span { position: relative; padding: 10px; border-right: 1px solid #151715; color: #aeb1ae; font-size: 16px; }
 .physical-eq-underlay footer span strong { position: absolute; left: 7%; bottom: 14%; color: #b0b3b0; font-size: 16px; font-weight: 400; }
 .physical-eq-underlay footer span strong small { font-size: 12px; }

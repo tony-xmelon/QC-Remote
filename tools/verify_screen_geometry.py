@@ -29,6 +29,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import math
 import re
 from collections import Counter
 from pathlib import Path
@@ -190,15 +191,55 @@ def panel_box(pixels, fill, size, column_share: float, row_share: float):
 # the artwork's ink at a size we can predict from the viewBox and the declared
 # box, so the ink the device drew is a real constraint on the artwork we ship.
 
-_COMMANDS = set("MmLlHhVvZz")
+_COMMANDS = set("MmLlHhVvZzAa")
+
+
+def arc_points(x0, y0, rx, ry, rotation, large_arc, sweep, x1, y1, samples=48):
+    """Points along an SVG elliptical arc, enough to bound it.
+
+    Sampling rather than solving for the extrema: the tolerance here is a
+    couple of pixels and an arc a hundredth of its length off is far inside it.
+    """
+    if rx == 0 or ry == 0 or (x0, y0) == (x1, y1):
+        return [(x1, y1)]
+    rx, ry = abs(rx), abs(ry)
+    phi = math.radians(rotation)
+    dx, dy = (x0 - x1) / 2, (y0 - y1) / 2
+    xp = math.cos(phi) * dx + math.sin(phi) * dy
+    yp = -math.sin(phi) * dx + math.cos(phi) * dy
+    oversize = xp * xp / (rx * rx) + yp * yp / (ry * ry)
+    if oversize > 1:
+        rx *= math.sqrt(oversize)
+        ry *= math.sqrt(oversize)
+    denominator = rx * rx * yp * yp + ry * ry * xp * xp
+    numerator = rx * rx * ry * ry - denominator
+    factor = math.sqrt(max(0.0, numerator / denominator)) * (-1 if large_arc == sweep else 1)
+    cxp, cyp = factor * rx * yp / ry, -factor * ry * xp / rx
+    cx = math.cos(phi) * cxp - math.sin(phi) * cyp + (x0 + x1) / 2
+    cy = math.sin(phi) * cxp + math.cos(phi) * cyp + (y0 + y1) / 2
+    start = math.atan2((yp - cyp) / ry, (xp - cxp) / rx)
+    end = math.atan2((-yp - cyp) / ry, (-xp - cxp) / rx)
+    sweep_angle = end - start
+    if not sweep and sweep_angle > 0:
+        sweep_angle -= 2 * math.pi
+    elif sweep and sweep_angle < 0:
+        sweep_angle += 2 * math.pi
+    points = []
+    for step in range(samples + 1):
+        theta = start + sweep_angle * step / samples
+        points.append((
+            cx + rx * math.cos(theta) * math.cos(phi) - ry * math.sin(theta) * math.sin(phi),
+            cy + rx * math.cos(theta) * math.sin(phi) + ry * math.sin(theta) * math.cos(phi),
+        ))
+    return points
 
 
 def path_extent(commands: str) -> tuple[float, float, float, float]:
-    """Bounding box of a straight-line path, in viewBox units.
+    """Bounding box of a path, in viewBox units.
 
-    Only the straight-line commands are understood. Anything else raises rather
-    than returning a plausible-looking wrong answer - a glyph this cannot
-    measure must fail loudly, not silently pass.
+    Lines and elliptical arcs are understood. Anything else raises rather than
+    returning a plausible-looking wrong answer - a glyph this cannot measure
+    must fail loudly, not silently pass.
     """
     tokens = re.findall(r"[A-Za-z]|-?\d*\.?\d+", commands)
     xs: list[float] = []
@@ -213,7 +254,7 @@ def path_extent(commands: str) -> tuple[float, float, float, float]:
         token = tokens[index]
         if token.isalpha():
             if token not in _COMMANDS:
-                raise SystemExit(f"path command {token!r} is not a straight line; "
+                raise SystemExit(f"path command {token!r} is neither a line nor an arc; "
                                  f"verify_screen_geometry.py cannot measure this glyph")
             command = token
             index += 1
@@ -227,7 +268,18 @@ def path_extent(commands: str) -> tuple[float, float, float, float]:
             command = "L" if command == "M" else "l"
         if command in "Zz":
             raise SystemExit("unexpected number after a closepath")
-        if command in "Hh":
+        if command in "Aa":
+            rx, ry, rotation = (float(tokens[index + offset]) for offset in (0, 1, 2))
+            large_arc, sweep = (int(float(tokens[index + offset])) for offset in (3, 4))
+            end_x, end_y = float(tokens[index + 5]), float(tokens[index + 6])
+            if command == "a":
+                end_x, end_y = x + end_x, y + end_y
+            for point in arc_points(x, y, rx, ry, rotation, large_arc, sweep, end_x, end_y):
+                xs.append(point[0])
+                ys.append(point[1])
+            x, y = end_x, end_y
+            index += 7
+        elif command in "Hh":
             value = float(tokens[index])
             x = value if command == "H" else x + value
             index += 1
@@ -247,6 +299,65 @@ def path_extent(commands: str) -> tuple[float, float, float, float]:
     return min(xs), min(ys), max(xs), max(ys)
 
 
+def stroke_width(markup: str) -> float:
+    """A stroke-width, in either the CSS or the JSX spelling."""
+    found = re.search(r"""(?:stroke-width|strokeWidth)=["']([\d.]+)["']""", markup)
+    return float(found.group(1)) if found else 0.0
+
+
+def number(markup: str, name: str, fallback: float = 0.0) -> float:
+    found = re.search(rf"""\b{name}=["']([-\d.]+)["']""", markup)
+    return float(found.group(1)) if found else fallback
+
+
+def svg_extents(svg: str, described: str):
+    """Every drawable's bounding box in one SVG, in viewBox units.
+
+    A stroke straddles the geometry it follows, so half of it belongs to the
+    ink; a shape that only declares a fill has none to add. Getting that wrong
+    reads the padlock two pixels wider than the artwork can draw it, which is
+    exactly the size of error these checks exist to catch.
+    """
+    inherited = stroke_width(svg)
+    extents = []
+    for element in re.finditer(r"<(path|rect)\b([^>]*?)/?>", svg):
+        kind, attributes = element.group(1), element.group(2)
+        own = stroke_width(attributes)
+        if own:
+            half = own / 2
+        elif "stroke=" in attributes:
+            half = inherited / 2
+        elif "fill=" in attributes:
+            half = 0.0
+        else:
+            half = inherited / 2
+        if kind == "path":
+            found = re.search(r"""\bd=["']([^"']+)["']""", attributes)
+            if not found:
+                continue
+            left, top, right, bottom = path_extent(found.group(1))
+        else:
+            left, top = number(attributes, "x"), number(attributes, "y")
+            right = left + number(attributes, "width")
+            bottom = top + number(attributes, "height")
+        extents.append((left - half, top - half, right + half, bottom + half))
+    if not extents:
+        raise SystemExit(f"{described} declares an SVG with nothing drawable in it")
+    return extents
+
+
+def component_svg(name: str) -> str:
+    """The SVG a named fixture component returns."""
+    source = (STYLES / "coros-screen-fixtures.tsx").read_text(encoding="utf-8")
+    body = re.search(rf"function {name}\(\)[^{{]*\{{(.*?)\n\}}", source, re.S)
+    if not body:
+        raise SystemExit(f"no component named {name} in coros-screen-fixtures.tsx")
+    svg = re.search(r"<svg\b.*?</svg>", body.group(1), re.S)
+    if not svg:
+        raise SystemExit(f"{name} does not return an SVG")
+    return svg.group(0)
+
+
 def glyph_ink(sheet: str, selector: str) -> dict[str, float]:
     """The ink box the declared background artwork paints, in device pixels."""
     box_width = declared(sheet, selector, "width")
@@ -255,17 +366,13 @@ def glyph_ink(sheet: str, selector: str) -> dict[str, float]:
     if not url:
         raise SystemExit(f"{selector} declares no inline SVG background")
     svg = unquote(url.group(1))
-    view = re.search(r"viewBox='([\d.\s-]+)'", svg) or re.search(r'viewBox="([\d.\s-]+)"', svg)
+    view = re.search(r"""viewBox=["']([\d.\s-]+)["']""", svg)
     _, _, view_width, view_height = [float(part) for part in view.group(1).split()]
-    stroke = re.search(r"stroke-width='([\d.]+)'", svg)
-    half = float(stroke.group(1)) / 2 if stroke else 0.0
-    extents = [path_extent(match) for match in re.findall(r"\bd='([^']+)'", svg)]
-    if not extents:
-        raise SystemExit(f"{selector} declares an SVG with no paths")
-    left = min(extent[0] for extent in extents) - half
-    top = min(extent[1] for extent in extents) - half
-    right = max(extent[2] for extent in extents) + half
-    bottom = max(extent[3] for extent in extents) + half
+    extents = svg_extents(svg, selector)
+    left = min(extent[0] for extent in extents)
+    top = min(extent[1] for extent in extents)
+    right = max(extent[2] for extent in extents)
+    bottom = max(extent[3] for extent in extents)
     # `contain` fits the viewBox inside the box, preserving the aspect ratio.
     scale = min(box_width / view_width, box_height / view_height)
     return {"width": (right - left) * scale, "height": (bottom - top) * scale}
@@ -492,8 +599,399 @@ def check_keyboard_keys() -> None:
                         f"onscreen-keyboard.png is mostly {as_hex(common)}")
 
 
+# --------------------------------------------------------------------------
+# reading tiles, text and fills out of a frame
+
+
+def colour_runs(pixels, y, x0, x1, minimum=4):
+    """Contiguous same-colour runs along one row, as (start, end, colour)."""
+    out, current, start = [], None, x0
+    for x in range(x0, x1):
+        colour = pixels[x, y]
+        if colour != current:
+            if current is not None and x - start >= minimum:
+                out.append((start, x - 1, current))
+            current, start = colour, x
+    if x1 - start >= minimum:
+        out.append((start, x1 - 1, current))
+    return out
+
+
+def tile_extent(pixels, y, x0, x1):
+    """The extent of the lightest tile crossing a row.
+
+    A button carries a glyph, which splits its fill into several runs; the tile
+    is the whole span between the first and last run of that fill, not the
+    widest single run.
+    """
+    runs = colour_runs(pixels, y, x0, x1)
+    if not runs:
+        return None
+    fill = max(runs, key=lambda run: sum(run[2]))[2]
+    matching = [run for run in runs if run[2] == fill]
+    return matching[0][0], matching[-1][1], fill
+
+
+def text_rows(pixels, region, threshold=140):
+    """The vertical bands a line of light text occupies."""
+    x0, y0, x1, y1 = region
+    lit = {y for y in range(y0, y1) for x in range(x0, x1) if min(pixels[x, y]) > threshold}
+    return spans(lit)
+
+
 def as_hex(colour) -> str:
     return "#{:02x}{:02x}{:02x}".format(*colour)
+
+
+def parse_hex(value: str):
+    """A #rgb or #rrggbb literal as a colour triple."""
+    text = value.strip().lstrip("#")
+    if len(text) == 3:
+        text = "".join(digit * 2 for digit in text)
+    if len(text) != 6:
+        raise SystemExit(f"{value!r} is not a hex colour this can compare")
+    return tuple(int(text[index:index + 2], 16) for index in (0, 2, 4))
+
+
+def dominant(pixels, region, step=2):
+    x0, y0, x1, y1 = region
+    tally = Counter(pixels[x, y] for y in range(y0, y1, step) for x in range(x0, x1, step))
+    return tally.most_common(1)[0][0]
+
+
+def compare_colour(label: str, measured, expected) -> None:
+    global measurements
+    measurements += 1
+    if report:
+        print(f"  {label}: frame {as_hex(measured)}, stylesheet {as_hex(expected)}")
+    if measured != expected:
+        problems.append(f"{label}: the stylesheet says {as_hex(expected)}, "
+                        f"the frame is {as_hex(measured)}")
+
+
+# --------------------------------------------------------------------------
+# the checks, second pass
+
+
+def check_directory_context_header() -> None:
+    """The Done button on the dimmed directory header."""
+    sheet = "fixture-live-surface.css"
+    selector = ".coros-directory-fixture.is-physical-context > header > button:last-child"
+    pixels, _ = frame(CORPUS, "directory-item-context.png")
+    # The button is the lightest tile in the header's right half.
+    button = tile_extent(pixels, 30, 560, 800)
+    if button is None:
+        problems.append("directory-item-context.png: no header button resolved")
+        return
+    compare(f"{selector} left (directory-item-context.png)", button[0],
+            declared(sheet, selector, "left"))
+    compare(f"{selector} width (directory-item-context.png)", button[1] - button[0] + 1,
+            declared(sheet, selector, "width"))
+
+
+def check_item_menu_rows() -> None:
+    """The item menu's five entries sit on one pitch: the declared button height."""
+    global measurements
+    sheet = "fixture-live-surface.css"
+    menu = ".coros-directory-fixture .directory-item-menu"
+    button = ".coros-directory-fixture .directory-item-menu button"
+    pixels, _ = frame(CORPUS, "directory-item-context.png")
+    left = declared(sheet, menu, "left")
+    top = declared(sheet, menu, "top")
+    width = declared(sheet, menu, "width")
+    height = declared(sheet, menu, "height")
+    bands = text_rows(pixels, (int(left) + 12, int(top), int(left + width) - 12, int(top + height)))
+    measurements += 1
+    if report:
+        print(f"  {menu} entry tops: {[band[0] for band in bands]}")
+    if len(bands) != 5:
+        problems.append(f"directory-item-context.png: the menu shows {len(bands)} entries, "
+                        f"and the stylesheet lays out {height / declared(sheet, button, 'height'):g}")
+        return
+    pitch = declared(sheet, button, "height")
+    tops = [band[0] for band in bands]
+    for index, (first, second) in enumerate(zip(tops, tops[1:]), start=1):
+        compare(f"{button} pitch, entries {index}-{index + 1} (directory-item-context.png)",
+                second - first, pitch)
+    # Five entries at that pitch have to be the menu's whole height, or the
+    # last one is clipped: that is what the 54px buttons were doing.
+    compare(f"{menu} height against five entries", height, pitch * 5)
+
+
+def check_block_context_menu() -> None:
+    """The menu's icon column, and the scrim it is drawn over."""
+    sheet = "fixture-live-surface.css"
+    aside = ".qc-screen.coros-block-context > aside"
+    button = ".qc-screen.coros-block-context > aside button"
+    scrim = ".coros-block-context > .block-context-scrim"
+    pixels, _ = frame(CORPUS, "block-context.png")
+    left = declared(sheet, aside, "left")
+
+    tracks = declaration(sheet, button, "grid-template-columns")
+    if tracks is None:
+        problems.append(f"{button}: no grid-template-columns declared")
+        return
+    icon_column = length(tracks.split()[0])
+    # The label column starts one icon column in from the menu's left edge.
+    bands = text_rows(pixels, (int(left) + 4, 40, int(left + declared(sheet, aside, "width")), 80))
+    label_ink = min((x for y in range(bands[0][0], bands[0][1] + 1)
+                     for x in range(int(left) + 40, int(left) + 200)
+                     if min(pixels[x, y]) > 140), default=None)
+    if label_ink is None:
+        problems.append("block-context.png: no label ink in the first entry")
+        return
+    compare(f"{button} icon column (block-context.png)", label_ink - left,
+            icon_column, TEXT_TOLERANCE)
+
+    fill = declaration(sheet, scrim, "background")
+    match = re.search(r"rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\d.]+)\s*\)", fill or "")
+    if not match:
+        problems.append(f"{scrim}: no rgba background declared")
+        return
+    tint = tuple(int(match.group(index)) for index in (1, 2, 3))
+    alpha = float(match.group(4))
+    # What the scrim is drawn over, taken from the sheet rather than assumed.
+    under = parse_hex(declaration(sheet, ".physical-eq-underlay", "background"))
+    expected = tuple(int(alpha * tint[index] + (1 - alpha) * under[index]) for index in range(3))
+    compare_colour(f"{scrim} over the dimmed screen (block-context.png)",
+                   dominant(pixels, (400, 60, 780, 440)), expected)
+
+
+def check_editor_underlay() -> None:
+    """The EQ editor our block-context underlay reconstructs.
+
+    editor-parametric-8.png is that screen: the underlay's header sits at the
+    top of the frame and its confirm button is 98px, neither of which is true
+    of the editor visible behind the menu in block-context.png.
+    """
+    sheet = "fixture-live-surface.css"
+    root = ".physical-eq-underlay"
+    confirm = ".physical-eq-underlay header nav .physical-eq-confirm"
+    footer = ".physical-eq-underlay footer"
+    pixels, _ = frame(CORPUS, "editor-parametric-8.png")
+
+    button = tile_extent(pixels, 30, 600, 800)
+    if button is None:
+        problems.append("editor-parametric-8.png: no confirm button resolved")
+        return
+    compare(f"{confirm} width (editor-parametric-8.png)", button[1] - button[0] + 1,
+            declared(sheet, confirm, "width"))
+    compare_colour(f"{confirm} fill (editor-parametric-8.png)", button[2],
+                   parse_hex(declaration(sheet, confirm, "background")))
+    compare_colour(f"{root} background (editor-parametric-8.png)",
+                   dominant(pixels, (300, 100, 700, 140)),
+                   parse_hex(declaration(sheet, root, "background")))
+
+    band = parse_hex(declaration(sheet, footer, "background"))
+    compare_colour(f"{footer} fill (editor-parametric-8.png)",
+                   dominant(pixels, (20, 380, 150, 420)), band)
+    # The selected tab shares the footer's fill and joins onto it, so read the
+    # band by width: the footer spans the frame, one tab does not.
+    left = int(declared(sheet, footer, "left"))
+    right = 800 - int(declared(sheet, footer, "right"))
+    rows = spans([y for y in range(280, 480)
+                  if sum(1 for x in range(left, right) if pixels[x, y] == band)
+                  > (right - left) * 0.5])
+    rows = [run for run in rows if run[1] - run[0] > 40]
+    if not rows:
+        problems.append("editor-parametric-8.png: the footer band did not resolve")
+        return
+    top = rows[-1][0]
+    # Knobs and dropdowns break up the lower rows, so walk down from the top for
+    # as long as the band's fill is present at all.
+    bottom = top
+    while bottom < 479 and any(pixels[x, bottom + 1] == band for x in range(left, right)):
+        bottom += 1
+    compare(f"{footer} top (editor-parametric-8.png)", top,
+            480 - declared(sheet, footer, "bottom") - declared(sheet, footer, "height"))
+    compare(f"{footer} bottom (editor-parametric-8.png)", bottom + 1,
+            480 - declared(sheet, footer, "bottom"))
+
+
+def check_plugin_underlay() -> None:
+    """The dimmed Grid behind the plugin browser.
+
+    This underlay paints the dimmed appearance rather than drawing a scrim, so
+    every colour it declares is one the frame shows directly.
+    """
+    sheet = "remaining-fixtures-fixes.css"
+    # The plugin-list fixture overrides most of the underlay, so each check has
+    # to read the rule that actually wins in this frame, not the base one.
+    physical = ".coros-browser-fixture.is-physical-plugin-list .plugin-grid-underlay"
+    root = f"{physical}"
+    main = ".plugin-grid-underlay main"
+    rule = ".plugin-grid-underlay main::before"
+    rule_left = f"{physical} main::before"
+    slot = f"{physical} main i"
+    plus = f"{physical} .underlay-plus"
+    add = f"{physical} .underlay-add"
+    add_fill_rule = f"{physical} main .underlay-add"
+    stroke = f"{physical} main i:not(.underlay-input)::before"
+    tile = ".coros-browser-fixture.is-physical-plugin-list .browser-fixture-panel>nav button.is-active i"
+    pixels, _ = frame(CORPUS, "device-browser-plugin-list.png")
+
+    compare_colour(f"{root} background", dominant(pixels, (100, 300, 300, 400)),
+                   parse_hex(declaration(sheet, root, "background")))
+    # `main` is inset from the top by a percentage of the frame's height.
+    main_top = round(480 * float(declaration(sheet, main, "inset").split()[0].rstrip("%")) / 100)
+
+    # The row rule: a 2px line from its declared left to the underlay's edge.
+    thickness = length(declaration(sheet, rule, "border-top").split()[0])
+    colour = parse_hex(declaration(sheet, rule, "border-top").split()[-1])
+    lit = [y for y in range(main_top, main_top + 80)
+           if len([x for x in range(200, 380) if pixels[x, y] == colour]) > 100]
+    if not lit:
+        problems.append(f"{rule}: no {as_hex(colour)} rule found below the underlay's main")
+        return
+    compare(f"{rule} top (device-browser-plugin-list.png)", min(lit),
+            main_top + declared(sheet, rule, "top"))
+    compare(f"{rule} thickness (device-browser-plugin-list.png)", len(lit), thickness)
+    row = spans([x for x in range(0, 400) if pixels[x, min(lit)] == colour])
+    compare(f"{rule_left} left (device-browser-plugin-list.png)", row[0][0],
+            declared(sheet, rule_left, "left"))
+
+    slot_fill = parse_hex(declaration(sheet, slot, "background"))
+    compare_colour(f"{slot} background", dominant(pixels, (80, 120, 130, 170)), slot_fill)
+    # The empty-slot tile covers the row rule, so where the rule resumes is the
+    # tile's right edge - a harder edge to read than its antialiased corner.
+    resume = [run for run in spans([x for x in range(0, 400) if pixels[x, min(lit)] == colour])
+              if run[1] - run[0] > 6]
+    plus_left = declared(sheet, ".plugin-grid-underlay .underlay-plus", "left")
+    covering = [run for run in resume if run[0] > plus_left]
+    if covering:
+        compare(f"{plus} width (device-browser-plugin-list.png)", covering[0][0] - plus_left,
+                declared(sheet, plus, "width"))
+
+    add_fill = parse_hex(declaration(sheet, add_fill_rule, "background"))
+    box = ink_box(pixels, lambda c: c == add_fill, (250, main_top, 400, 400))
+    if box is None:
+        problems.append(f"{add}: no {as_hex(add_fill)} tile in the underlay")
+        return
+    compare(f"{add} left (device-browser-plugin-list.png)", box["left"],
+            declared(sheet, add, "left"))
+    compare(f"{add} top (device-browser-plugin-list.png)", box["top"],
+            main_top + declared(sheet, add, "top"))
+    compare(f"{add} width (device-browser-plugin-list.png)", box["width"],
+            declared(sheet, add, "width"))
+    compare(f"{add} height (device-browser-plugin-list.png)", box["height"],
+            declared(sheet, add, "height"))
+
+    tile_left = int(declared(sheet, ".plugin-grid-underlay .underlay-plus", "left"))
+    tile_right = tile_left + int(declared(sheet, plus, "width"))
+    glyph = ink_box(pixels, lambda c: max(c) > 100 and c != slot_fill,
+                    (tile_left + 2, main_top, tile_right - 2, main_top + 80))
+    if glyph:
+        compare(f"{stroke} width (device-browser-plugin-list.png)", glyph["width"],
+                declared(sheet, stroke, "width"))
+        compare(f"{stroke} height (device-browser-plugin-list.png)", glyph["height"],
+                declared(sheet, stroke, "width"))
+
+    compare_colour(f"{tile} background", dominant(pixels, (432, 30, 470, 64)),
+                   parse_hex(declaration(sheet, tile, "background")))
+
+
+def check_plugin_lock() -> None:
+    """The padlock beside a locked plugin, against the box the stylesheet gives it."""
+    sheet = "remaining-fixtures-fixes.css"
+    selector = ".coros-browser-fixture.is-physical-plugin-list .plugin-license-lock"
+    svg = component_svg("PluginLockIcon")
+    view = re.search(r"""viewBox=["']([\d.\s-]+)["']""", svg)
+    _, _, view_width, view_height = [float(part) for part in view.group(1).split()]
+    extents = svg_extents(svg, selector)
+    left = min(extent[0] for extent in extents)
+    top = min(extent[1] for extent in extents)
+    right = max(extent[2] for extent in extents)
+    bottom = max(extent[3] for extent in extents)
+    box_width = declared(sheet, selector, "width")
+    box_height = declared(sheet, selector, "height")
+    # An inline SVG meets its box the same way `contain` does.
+    scale = min(box_width / view_width, box_height / view_height)
+
+    pixels, _ = frame(CORPUS, "device-browser-plugin-list.png")
+    measured = ink_box(pixels, lambda c: max(c) > 110, (515, 130, 550, 172))
+    if measured is None:
+        problems.append("device-browser-plugin-list.png: the licence padlock did not resolve")
+        return
+    compare(f"{selector} ink width (device-browser-plugin-list.png)",
+            measured["width"], (right - left) * scale)
+    compare(f"{selector} ink height (device-browser-plugin-list.png)",
+            measured["height"], (bottom - top) * scale)
+
+
+def check_tuner_footer() -> None:
+    """The tuner's footer card, whose fill the encoder rules are drawn on."""
+    sheet, selector = "official-tuner.css", ".tuner-official > footer"
+    pixels, _ = frame(CORPUS, "tuner.png")
+    compare_colour(f"{selector} background (tuner.png)",
+                   dominant(pixels, (200, 380, 460, 460)),
+                   parse_hex(declaration(sheet, selector, "background")))
+
+
+def check_expression_treadle() -> None:
+    """The MIDI Out expression pedal's taper.
+
+    The clip-path is written in percentages of a box no rule places in screen
+    coordinates, and the box is not the treadle's widest row either - the rule
+    carries a margin and a border the clip is applied inside. Comparing widths
+    would mean inventing that box. The ratio between the treadle's width at
+    three-quarters of its height and at one-quarter needs no box at all, so that
+    is what is compared: a 3% difference in it is about 3px on this treadle.
+    """
+    global measurements
+    sheet = "remaining-fixtures-fixes.css"
+    selector = ".coros-midi-out .midi-expression label div"
+    clip = declaration(sheet, selector, "clip-path")
+    inside = re.search(r"polygon\(([^)]*)\)", clip or "")
+    if not inside:
+        problems.append(f"{selector}: no polygon to compare")
+        return
+    polygon = []
+    for pair in inside.group(1).split(","):
+        parts = pair.split()
+        if len(parts) != 2 or not all(part.endswith("%") or part == "0" for part in parts):
+            problems.append(f"{selector}: {pair.strip()!r} is not a percentage point")
+            return
+        polygon.append(tuple(0.0 if part == "0" else float(part.rstrip("%")) for part in parts))
+    if len(polygon) < 4:
+        problems.append(f"{selector}: the polygon has too few points to compare")
+        return
+
+    def polygon_width(fraction: float) -> float:
+        """The polygon's horizontal extent at a given fraction of its height."""
+        crossings = []
+        for (x0, y0), (x1, y1) in zip(polygon, polygon[1:] + polygon[:1]):
+            if (y0 <= fraction <= y1) or (y1 <= fraction <= y0):
+                if y0 == y1:
+                    crossings += [x0, x1]
+                else:
+                    crossings.append(x0 + (x1 - x0) * (fraction - y0) / (y1 - y0))
+        return max(crossings) - min(crossings) if crossings else 0.0
+
+    pixels, _ = frame(CORPUS, "preset-midi-out.png")
+    fill = dominant(pixels, (540, 200, 610, 360))
+    rows = [y for y in range(120, 430)
+            if len([x for x in range(505, 650) if pixels[x, y] == fill]) > 20]
+    if not rows:
+        problems.append("preset-midi-out.png: the expression treadle did not resolve")
+        return
+    top, height = min(rows), max(rows) - min(rows) + 1
+
+    def frame_width(fraction: float) -> int:
+        y = min(max(rows), top + round(height * fraction))
+        run = [span for span in spans([x for x in range(505, 650) if pixels[x, y] == fill])
+               if span[1] - span[0] > 20]
+        return run[0][1] - run[0][0] + 1 if run else 0
+
+    measured = frame_width(0.75) / frame_width(0.25)
+    declared_ratio = polygon_width(75) / polygon_width(25)
+    measurements += 1
+    if report:
+        print(f"  {selector} taper: frame {measured:.3f}, stylesheet {declared_ratio:.3f}")
+    # A percent of the treadle's widest row is about 0.9px, so 3% is ~3px.
+    if abs(measured - declared_ratio) > 0.03:
+        problems.append(f"{selector}: the polygon narrows to {declared_ratio:.1%} of its "
+                        f"quarter-height width by three-quarter height, the treadle in "
+                        f"preset-midi-out.png to {measured:.1%}")
 
 
 def check_preset_action_glyph() -> None:
@@ -524,6 +1022,14 @@ def main() -> int:
     check_brightness_column()
     check_keyboard_keys()
     check_preset_action_glyph()
+    check_directory_context_header()
+    check_item_menu_rows()
+    check_block_context_menu()
+    check_editor_underlay()
+    check_plugin_underlay()
+    check_plugin_lock()
+    check_tuner_footer()
+    check_expression_treadle()
 
     for problem in problems:
         print(f"FAIL {problem}")

@@ -352,31 +352,81 @@ reconstructs `official-plugin-folders.png` from the published screenshots. The
 first measurement of that panel used the wrong one and read a full-bleed layout
 into a rule describing a card with an 8px gutter.
 
+### The second pass, and what it found
+
+The first pass measured the numbers with an obvious frame. A second pass went
+through everything left in `block-visuals.test.ts` and found five more values
+the device contradicts:
+
+| claim | pinned | measured on the device |
+| --- | --- | --- |
+| item menu entry pitch | **54px buttons in a 260px menu**, three per-entry nudges | **52px**, five entries exactly filling it |
+| EQ underlay rule above the footer | **1px line 45px above it** | **nothing is drawn there** |
+| EQ underlay confirm fill | **#202421** | **#292c29** |
+| tuner footer fill | **#282c28** | **#292c29** |
+| active plugin rail tile | **#000** | **#102818** |
+
+The item menu is the same defect as its height, one layer down. Five 54px
+buttons need 270px and the menu is 260, so the last entry was clipped; the
+`translateY(-1px)`, `-3px` and `-6px` on entries two, three and five were
+pulling the overflow back into view. The device simply uses a 52px pitch, which
+is 260 divided by five, and the nudges disappear with it.
+
+Fourteen further numbers were measured and **agree**: the block context menu's
+57px icon column and its `rgba(71,74,71,.92)` scrim, the directory Done button
+at left 694 width 98, the EQ underlay's 98px confirm button and its footer band,
+the plugin underlay's row rule, empty-slot tile, add tile and plus strokes, the
+licence padlock, the on-screen keyboard's key fill, and the expression pedal's
+clip path - whose taper the treadle in `preset-midi-out.png` follows to within
+2px over its height.
+
+`tools/verify_screen_geometry.py` now takes **74 measurements**, and each of the
+nine corrections was put back to confirm the tool reports it, along with
+thirteen other single-value regressions - 22 in all. The glyph checks predict
+the ink a piece of artwork paints from its own path data, so they catch a
+wrong-shaped glyph and not merely a wrong-sized one; the parser understands
+lines and elliptical arcs and refuses anything else rather than guessing.
+
 ### What is still only pinned
 
-Forty-one measurements now come off the frames, and `block-visuals.test.ts`
-carries a test tying every device-geometry selector it pins to one of them, so a
-new pinned number without a measurement fails. Three groups of numbers in that
-file are still pins rather than evidence, and are worth naming rather than
+Three numbers stay pins rather than evidence, and are worth naming rather than
 leaving to be rediscovered:
 
-- **The tuner's FREQ encoder.** We draw it as a gradient annulus; the device
-  draws a ring with a pointer. Measured across its widest scan-line the device
-  knob is 63px, matching the declared 62px; measured down its tallest column it
-  is 59px, because its lower edge fades into the footer fill. The two renderings
-  have no shared boundary at the precision the claim asserts, so no measurement
-  was added rather than one picked for agreeing.
-- **The EQ underlay and the plugin-list panel insets** inside the interaction
-  fixtures block. These describe elements drawn behind an overlay; identifying
-  their edges in the dimmed frame needs a predicate per element, which has not
-  been written.
-- **The MIDI Out expression-pedal clip paths** and the directory context
-  header's last button. Measurable in principle, not yet measured.
+- **The tuner's FREQ encoder** and **the splitter's parameter knobs.** We draw
+  each as a bordered disc or a gradient annulus; the device draws a ring with a
+  pointer and an arc. Measured across its widest scan-line the tuner knob is
+  63px against the declared 62; measured down its tallest column it is 59,
+  because its lower edge fades into the footer fill. The two renderings have no
+  shared boundary at the precision the claims assert, so no measurement was
+  added rather than one picked for agreeing. The splitter knob's *centre* does
+  check out by hand - x=436 against the 436.7 its `left: 73.375%` predicts - but
+  pinning that needs the cell grid modelled, which the tool does not do.
+- **`.directory-fixture-folders .folder-number`.** The only frame showing this
+  fixture has it behind a 92% scrim, and recovering a fill through that
+  multiplies the error by 12.5; the frame cannot settle the value either way.
+- **The input-gate title's margins.** A 12.6px margin between two 48px glyphs
+  is smaller than the side bearings around it; the measured ink gap is 23px,
+  which is consistent with the declared margin but does not pin it.
 
 `framebuffer capture drivers disable host LCD text artifacts` and the vendored
 sprite checksum are self-anchored by nature - one asserts a flag in our capture
 tools, the other pins a vendored asset's bytes - and are correctly classified as
 such rather than being device claims at all.
+
+### One thing the second pass did not change
+
+Behind the block context menu the device shows the Grid above and an editor
+panel below; our `.physical-eq-underlay` draws a full-screen editor. Both are
+real CorOS layouts - `editor-parametric-8.png` is the one our markup names, and
+every number in that rule matches it - but the underlay we composite into
+`block-context.png`'s reconstruction is the wrong one of the two. Fixing that is
+a fixture change rather than a value correction, and it is not made here.
+
+Three colour values were also *reverted* during this pass. `.plugin-grid-underlay`
+declares base fills that the plugin-list fixture overrides in the only frame
+that shows them; correcting the base rules to what that frame measures would
+have been changing values on the strength of a frame that does not exercise
+them.
 
 ## Improvements in this pass
 

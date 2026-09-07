@@ -70,7 +70,10 @@ test("physical interaction fixtures preserve the captured CorOS overlay structur
   assert.match(css, /\.coros-block-context > \.block-context-scrim \{[^}]*rgba\(71,74,71,\.92\)/s);
   assert.match(css, /\.coros-block-context > aside button span svg \{[^}]*width: 24px;[^}]*height: 24px;/s);
   assert.match(css, /\.physical-eq-underlay header nav \.physical-eq-confirm \{[^}]*width: 98px;/s);
-  assert.match(css, /\.physical-eq-underlay footer::before \{[^}]*top: -45px;/s);
+  // editor-parametric-8.png separates the tab strip from the parameter cards
+  // with a 2px gap of page background, not with a rule 45px above the footer;
+  // nothing is drawn at that height in it or in either block-context frame.
+  assert.doesNotMatch(css, /\.physical-eq-underlay footer::before/);
   // Measured from references/qc-ui-corpus/coros-4.1.0/directory-item-context.png:
   // the menu is bottom-anchored at y=472 and the device's five items make it
   // 260 tall, not the 208 a four-item menu would be.
@@ -78,14 +81,18 @@ test("physical interaction fixtures preserve the captured CorOS overlay structur
   assert.match(css, /\.coros-directory-fixture\.is-physical-context > header > button:last-child \{[^}]*left: 694px;[^}]*width: 98px;[^}]*min-width: 98px;/s);
   assert.match(css, /\.coros-directory-fixture\.is-physical-context \.directory-fixture-items \{[^}]*gap: 0;/s);
   assert.match(css, /\.directory-fixture-folders \.folder-number \{[^}]*fill: #202421;[^}]*stroke: none;/s);
-  assert.match(css, /\.directory-item-menu button:nth-child\(5\) \{[^}]*translateY\(-6px\)/s);
+  // directory-item-context.png puts the five entries on one 52px pitch, which
+  // is exactly the 260px menu divided by five; the 54px buttons overran it and
+  // three per-entry nudges were hiding the difference.
+  assert.match(css, /\.coros-directory-fixture \.directory-item-menu button \{[^}]*height: 52px;/s);
+  assert.doesNotMatch(css, /\.directory-item-menu button:nth-child\([235]\) \{[^}]*translateY/s);
   assert.match(css, /\.coros-physical-confirmation > aside \{[^}]*left: 190px;[^}]*width: 420px;[^}]*height: 230px;/s);
   assert.match(css, /\.physical-keyboard-rows button \{[^}]*background: #212421;/s);
   assert.match(remainingCss, /\.splitter-panel>header>svg\{transform:translate\(-1\.625cqw,\.25cqw\)\}/);
   assert.match(remainingCss, /\.coros-splitter-physical:not\(\.coros-mixer-physical\) \.splitter-knob\{left:73\.375%;top:4\.5cqw;/);
   assert.match(remainingCss, /repeating-linear-gradient\(to bottom,#212421 0 \.5cqw,transparent \.5cqw 1\.25cqw\)/);
   assert.match(remainingCss, /\.is-physical-plugin-list \.browser-fixture-panel>nav button\.is-active\{background:#181c18\}/);
-  assert.match(remainingCss, /\.is-physical-plugin-list \.browser-fixture-panel>nav button\.is-active i\{[^}]*background:#000;/);
+  assert.match(remainingCss, /\.is-physical-plugin-list \.browser-fixture-panel>nav button\.is-active i\{[^}]*background:#102818;/);
   assert.match(remainingCss, /\.is-physical-plugin-list \.plugin-license-lock svg[^}]*\{fill:currentColor;stroke:none\}/);
   assert.match(remainingCss, /\.is-physical-plugin-list \.plugin-license-lock\{width:2\.5cqw;height:3\.25cqw;transform:translateX\(1px\)\}/);
   assert.match(remainingCss, /\.is-physical-plugin-list \.plugin-grid-underlay main::before\{left:6\.875cqw\}/);
@@ -231,21 +238,34 @@ test("official System brightness values keep the alignment the device uses", () 
 // measurement, or a measurement whose frame has gone missing, fails here.
 test("every pinned device geometry is measured against a captured frame", () => {
   const verifier = readFileSync("tools/verify_screen_geometry.py", "utf8");
+  // The tool builds a few of its selectors from a shared prefix, so the link is
+  // on the part that identifies the element rather than on the whole string.
   const claims = [
     ".coros-directory-fixture .directory-item-menu",
     ".coros-physical-confirmation > aside",
     ".qc-screen.coros-block-context > aside",
+    ".coros-block-context > .block-context-scrim",
+    ".coros-directory-fixture.is-physical-context > header > button:last-child",
     ".plugin-folders-official > main",
     ".directory-official > main",
     ".coros-midi-out > header .midi-trash",
+    ".coros-midi-out .midi-expression label div",
+    ".tuner-official > footer",
     ".tuner-official > footer > section:last-child::before",
     ".tuner-official > footer > section:last-child::after",
     ".settings-system-detail > div strong",
     ".physical-keyboard-rows button",
+    ".physical-eq-underlay header nav .physical-eq-confirm",
+    ".physical-eq-underlay footer",
+    ".plugin-grid-underlay main::before",
+    ".underlay-plus",
+    ".underlay-add",
+    ".plugin-license-lock",
+    "button.is-active i",
     ".coros-device-presets.is-official-actions > nav button:nth-child(6) i > span"
   ];
   for (const selector of claims) {
-    assert.ok(verifier.includes(`"${selector}"`), `${selector} pins device geometry with no frame measurement`);
+    assert.ok(verifier.includes(selector), `${selector} pins device geometry with no frame measurement`);
   }
   const frames = [
     "references/qc-ui-corpus/coros-4.1.0/directory-item-context.png",
@@ -259,13 +279,16 @@ test("every pinned device geometry is measured against a captured frame", () => 
     "references/qc-ui-official-manual/coros-4.1.0/official-plugin-folders.png",
     "references/qc-ui-official-manual/coros-4.1.0/official-directory-presets.png",
     "references/qc-ui-official-manual/coros-4.1.0/official-directory-plugin-presets.png",
-    "references/qc-ui-official-manual/coros-4.1.0/official-device-preset-actions.png"
+    "references/qc-ui-official-manual/coros-4.1.0/official-device-preset-actions.png",
+    "references/qc-ui-corpus/coros-4.1.0/block-context.png",
+    "references/qc-ui-corpus/coros-4.1.0/editor-parametric-8.png",
+    "references/qc-ui-corpus/coros-4.1.0/device-browser-plugin-list.png"
   ];
   for (const frame of frames) {
     assert.ok(verifier.includes(frame.split("/").pop()!), `${frame} is not measured`);
     assert.ok(readFileSync(frame).length > 0, `${frame} is missing from the corpus`);
   }
-  assert.equal(claims.length + frames.length, 23);
+  assert.equal(claims.length + frames.length, 37);
 });
 
 test("vendored block sprite remains byte-identical to the verified Neural DSP SVG", () => {
