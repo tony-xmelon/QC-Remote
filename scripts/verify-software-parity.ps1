@@ -47,6 +47,7 @@ try {
     Invoke-Checked "Windows, Android, and MCP action parity" { npm run mcp-parity:check }
     Invoke-Checked "Quad Cortex reference corpus integrity" { npm run verify:qc-corpora }
     Invoke-Checked "Windows and Android screen coverage" { npm run verify:qc-coverage }
+    Invoke-Checked "Overlay geometry against captured frames" { npm run verify:qc-overlays }
     Invoke-Checked "Dependency security policy" { npm run security:audit }
     Invoke-Checked "TypeScript typecheck" { npm run typecheck }
     Invoke-Checked "TypeScript and UI tests" { npm test }

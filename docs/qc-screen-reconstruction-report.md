@@ -286,6 +286,48 @@ them means restoring that device state first, and the corpus directory is
 immutable for its firmware family, so they are left as they are rather than
 silently overwritten.
 
+## What the tests are anchored to
+
+`tools/audit_test_evidence.mjs` classifies every test block by what its
+assertions rest on:
+
+| anchor | blocks | meaning |
+| --- | ---: | --- |
+| behaviour | 272 | calls the code and asserts on the result |
+| self | 58 | reads our own source and asserts its text |
+| contract | 13 | reads `contracts/` or a generated file |
+| device | 2 | reads a corpus capture or an extracted descriptor |
+
+Most `self` blocks are legitimate: `deduplication` and `theme` assert
+*structural invariants of the repository* - that an icon is wired, that a colour
+literal has not been hardcoded - and there is nothing but our own source those
+could be anchored to.
+
+The dangerous ones are the `self` blocks in `block-visuals.test.ts`, because
+they make claims about **the device** while reading only our stylesheet. A rule
+saying the directory item menu is 208px tall passes whether or not the unit
+agrees; it detects edits, not errors. That is exactly how the menu stayed 208
+tall after the device turned out to have five items rather than four, and how
+its `["Edit","Copy","Cut","Delete"]` pin outlived the discovery of *Paste to
+replace*.
+
+Re-measuring the three overlays we have fresh captures for found one real error
+and one small one:
+
+| overlay | pinned | measured on the device |
+| --- | --- | --- |
+| directory item menu | left 528, width 256, **height 208** | left 528, width 256, **height 260** |
+| confirmation dialog | left 190, width 420, height 230 | exact match |
+| block context menu | **left 30, width 322** | **left 32, width 320** |
+
+The menu is bottom-anchored at y=472, so its fifth item grew it upward: top 264
+became 212 and height 208 became 260. Both are corrected.
+
+`tools/verify_overlay_geometry.py` now measures those overlays in the captured
+frames and compares them with the stylesheet, so the numbers are checked against
+the hardware instead of against themselves. It runs in the release preflight as
+*Overlay geometry against captured frames*.
+
 ## Improvements in this pass
 
 - Ran Neural Captures on the unit with the owner's approval and recorded

@@ -717,11 +717,11 @@
 .coros-directory-fixture.is-physical-context .directory-fixture-items button > span { font-size: 16px; }
 .coros-directory-fixture.is-physical-context .directory-fixture-items button.is-current .physical-preset-name { color: #43ef72; }
 .coros-directory-fixture.is-physical-context .directory-fixture-items button small { font-size: 9px; }
-.coros-directory-fixture .directory-item-menu { left: 528px; right: auto; top: 264px; width: 256px; height: 208px; overflow: hidden; border: 0; border-radius: 8px; background: #000; box-shadow: none; }
+.coros-directory-fixture .directory-item-menu { left: 528px; right: auto; top: 212px; width: 256px; height: 260px; overflow: hidden; border: 0; border-radius: 8px; background: #000; box-shadow: none; }
 .coros-directory-fixture .directory-item-menu button { box-sizing: border-box; width: 100%; height: 54px; padding: 0 16px; border: 0; background: #000; color: #f0f0f0; font: 16px Arial,sans-serif; text-align: left; }
 .coros-directory-fixture .directory-item-menu button:nth-child(2) { transform: translateY(-1px); }
 .coros-directory-fixture .directory-item-menu button:nth-child(3) { transform: translateY(-3px); }
-.coros-directory-fixture .directory-item-menu button:nth-child(4) { transform: translateY(-6px); }
+.coros-directory-fixture .directory-item-menu button:nth-child(5) { transform: translateY(-6px); }
 .qc-screen.coros-physical-confirmation { position: absolute; inset: 0; z-index: 11; overflow: hidden; background: #111; color: #f1f1f1; font-family: Arial,Helvetica,sans-serif; }
 .coros-physical-confirmation > .coros-directory-fixture { position: absolute; inset: 0; }
 .coros-physical-confirmation > .confirmation-scrim { position: absolute; inset: 0; z-index: 4; background: rgba(92,96,92,.65); }
@@ -774,7 +774,7 @@
 .physical-eq-footer-power::before { content: ""; position: absolute; left: 50%; top: 50%; width: 17px; height: 17px; translate: -50% -50%; border: 2px solid #dfe1df; border-top-color: transparent; border-radius: 50%; }
 .physical-eq-footer-power::after { content: ""; position: absolute; left: calc(50% - 1px); top: 11px; width: 2px; height: 10px; background: #dfe1df; }
 .coros-block-context > .block-context-scrim { position: absolute; inset: 0; z-index: 2; background: rgba(71,74,71,.92); }
-.qc-screen.coros-block-context > aside { position: absolute; z-index: 3; left: 30px; right: auto; top: 30px; bottom: 29px; width: 322px; display: block; overflow-x: hidden; overflow-y: auto; scrollbar-width: none; border-radius: 7px; background: #101010; box-shadow: none; }
+.qc-screen.coros-block-context > aside { position: absolute; z-index: 3; left: 32px; right: auto; top: 30px; bottom: 29px; width: 320px; display: block; overflow-x: hidden; overflow-y: auto; scrollbar-width: none; border-radius: 7px; background: #101010; box-shadow: none; }
 .qc-screen.coros-block-context > aside::-webkit-scrollbar { display: none; }
 .qc-screen.coros-block-context > aside::after { content: ""; position: absolute; right: 8px; top: 10px; bottom: 132px; border-right: 2px solid #343735; }
 .qc-screen.coros-block-context > aside button { box-sizing: border-box; flex: none; width: 100%; height: 60px; display: grid; grid-template-columns: 57px 1fr; align-items: center; padding: 0; border: 0; border-bottom: 0; background: #101010; color: #f2f2f2; font: 16px Roboto,Arial,sans-serif; text-align: left; }

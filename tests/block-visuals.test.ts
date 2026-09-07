@@ -65,17 +65,20 @@ test("physical interaction fixtures preserve the captured CorOS overlay structur
     assert.match(fixture, new RegExp(`\\["${kind}"`));
   }
   assert.match(fixture, /dy=\{browserChrome \? -11 : 0\}/);
-  assert.match(css, /\.qc-screen\.coros-block-context > aside \{[^}]*left: 30px;[^}]*width: 322px;/s);
+  assert.match(css, /\.qc-screen\.coros-block-context > aside \{[^}]*left: 32px;[^}]*width: 320px;/s);
   assert.match(css, /\.qc-screen\.coros-block-context > aside button \{[^}]*grid-template-columns: 57px 1fr;[^}]*font: 16px Roboto,Arial,sans-serif;/s);
   assert.match(css, /\.coros-block-context > \.block-context-scrim \{[^}]*rgba\(71,74,71,\.92\)/s);
   assert.match(css, /\.coros-block-context > aside button span svg \{[^}]*width: 24px;[^}]*height: 24px;/s);
   assert.match(css, /\.physical-eq-underlay header nav \.physical-eq-confirm \{[^}]*width: 98px;/s);
   assert.match(css, /\.physical-eq-underlay footer::before \{[^}]*top: -45px;/s);
-  assert.match(css, /\.coros-directory-fixture \.directory-item-menu \{[^}]*left: 528px;[^}]*width: 256px;[^}]*height: 208px;/s);
+  // Measured from references/qc-ui-corpus/coros-4.1.0/directory-item-context.png:
+  // the menu is bottom-anchored at y=472 and the device's five items make it
+  // 260 tall, not the 208 a four-item menu would be.
+  assert.match(css, /\.coros-directory-fixture \.directory-item-menu \{[^}]*left: 528px;[^}]*width: 256px;[^}]*height: 260px;/s);
   assert.match(css, /\.coros-directory-fixture\.is-physical-context > header > button:last-child \{[^}]*left: 694px;[^}]*width: 98px;[^}]*min-width: 98px;/s);
   assert.match(css, /\.coros-directory-fixture\.is-physical-context \.directory-fixture-items \{[^}]*gap: 0;/s);
   assert.match(css, /\.directory-fixture-folders \.folder-number \{[^}]*fill: #202421;[^}]*stroke: none;/s);
-  assert.match(css, /\.directory-item-menu button:nth-child\(4\) \{[^}]*translateY\(-6px\)/s);
+  assert.match(css, /\.directory-item-menu button:nth-child\(5\) \{[^}]*translateY\(-6px\)/s);
   assert.match(css, /\.coros-physical-confirmation > aside \{[^}]*left: 190px;[^}]*width: 420px;[^}]*height: 230px;/s);
   assert.match(css, /\.physical-keyboard-rows button \{[^}]*background: #212421;/s);
   assert.match(remainingCss, /\.splitter-panel>header>svg\{transform:translate\(-1\.625cqw,\.25cqw\)\}/);

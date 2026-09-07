@@ -65,7 +65,8 @@
     "report:qc-coverage": "node tools/report_qc_screen_coverage.mjs",
     "security:audit": "npm audit --omit=dev --audit-level=moderate && npm audit --audit-level=high",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "verify:cortex-protocol": "python tools/generate_cortex_protos.py --check && python tools/generate_cortex_message_registry.py --check && python tools/verify_cortex_protocol_fidelity.py && python tools/verify_cortex_protocol_message_types.py"
+    "verify:cortex-protocol": "python tools/generate_cortex_protos.py --check && python tools/generate_cortex_message_registry.py --check && python tools/verify_cortex_protocol_fidelity.py && python tools/verify_cortex_protocol_message_types.py",
+    "verify:qc-overlays": "python tools/verify_overlay_geometry.py"
   },
   "engines": {
     "node": ">=22"
