@@ -35,11 +35,11 @@
   line-height: 1;
 }
 
-.capture-connections-close { left: 1.25cqw; width: 11.75cqw; }
-.capture-connections-skip { left: 15cqw; width: 9.25cqw; }
+.capture-connections-close { left: 1cqw; width: 12.25cqw; }
+.capture-connections-skip { left: 15.5cqw; width: 8.25cqw; }
 .capture-connections-back { left: 77.5cqw; width: 8.25cqw; }
 .capture-connections-next { left: 87.5cqw; width: 11cqw; }
-.capture-connections-next.is-wide { left: 86.75cqw; width: 11.75cqw; }
+.capture-connections-next.is-wide { left: 86.75cqw; width: 12.25cqw; }
 
 .capture-connections-caption {
   position: absolute;
@@ -225,10 +225,10 @@
   position: absolute;
   left: 0;
   right: 0;
-  top: 46.5cqw;
+  top: 46cqw;
   margin: 0;
   text-align: center;
-  line-height: 1.45;
+  line-height: 1.2;
   color: #9aa09a;
 }
 

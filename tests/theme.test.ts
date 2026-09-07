@@ -136,8 +136,8 @@ test("shared glyph registry covers hardware, routing, directory, editing, and co
   const modeGlyph = icons.slice(icons.indexOf("export function QcModeGlyph"), icons.indexOf("export function QcDirectoryIcon"));
   assert.doesNotMatch(modeGlyph, /\[0, 8, 16\]\.map\(\(y\)/, "mode glyphs must not duplicate measured device artwork");
   const deviceGlyph = read("packages/typescript/qc-ui/src/device-glyph.tsx");
-  assert.match(deviceGlyph, /QC_REFERENCE_ICON_RASTERS\["block\.capture-wave"\]/);
-  assert.doesNotMatch(deviceGlyph, /block\.glyph === "capture-wave"[^]*?c\$\{size/, "Capture artwork must not be hand-authored in the renderer");
+  assert.match(deviceGlyph, /const mark = \(\{ plugin: "PLG"/);
+  assert.doesNotMatch(deviceGlyph, /REFERENCE_BLOCK_ICONS|blockSprite/, "runtime block glyphs must remain original code-drawn marks");
   const officialSystem = fixtures.slice(fixtures.indexOf("function CorOsOfficialSettings"), fixtures.indexOf("type CapturedSettingsView"));
   assert.doesNotMatch(officialSystem, /[⌁◔☀ϟ◕▥]/, "System Settings must not substitute font glyphs for device icons");
   assert.match(fixtures, /<QcSettingsIcon kind=\{icon as QcSettingsIconName\} \/>/, "System Settings must use the canonical measured icon registry");

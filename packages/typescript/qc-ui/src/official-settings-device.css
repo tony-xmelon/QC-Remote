@@ -56,6 +56,8 @@
    device left-aligns them at a fixed offset - a right-aligned rule agrees
    only while every value has the same digit count. */
 .settings-system-detail > div strong { position: absolute; left: 56.75cqw; right: auto; top: 1.375cqw; }
+.coros-settings-official.settings-system .settings-system-detail > * { transform: translateY(-.375cqw); }
+.coros-settings-official.settings-system .settings-system-detail > footer { transform: translateY(.5cqw); }
 .settings-system-detail > div i { top: 5.35cqw; }
 
 }

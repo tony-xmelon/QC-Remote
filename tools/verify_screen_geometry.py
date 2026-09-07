@@ -757,7 +757,9 @@ def check_block_context_menu() -> None:
     # The label column starts one icon column in from the menu's left edge.
     bands = text_rows(pixels, (int(left) + 4, 40, int(left + declared(sheet, aside, "width")), 80))
     label_ink = min((x for y in range(bands[0][0], bands[0][1] + 1)
-                     for x in range(int(left) + 40, int(left) + 200)
+                     # Skip the 24px icon itself; otherwise its right edge is
+                     # mistaken for the first label pixel on the measured menu.
+                     for x in range(int(left) + 50, int(left) + 200)
                      if min(pixels[x, y]) > 140), default=None)
     if label_ink is None:
         problems.append("block-context.png: no label ink in the first entry")

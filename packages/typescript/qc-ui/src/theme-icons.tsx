@@ -451,7 +451,7 @@ export function QcEditorIcon({ kind }: { kind: QcEditorIconName }) {
       </svg>
     );
   if (kind === "momentary")
-    return <svg viewBox="0 0 24 24" data-qc-icon={kind} aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor" stroke="none" /><path d="m13.2 3.8-7 10.1h4.6l-1 6.3 7.5-10.7h-4.7z" fill="#101010" stroke="none" /></svg>;
+    return <svg viewBox="0 0 24 24" data-qc-icon={kind} aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor" stroke="none" /><path d="m13.2 3.8-7 10.1h4.6l-1 6.3 7.5-10.7h-4.7z" fill={QC_COLORS.captured.screen} stroke="none" /></svg>;
   if (kind === "waveform") return (
     <svg viewBox="0 0 80 32" aria-hidden="true">
       <path d="M2 16h11l7-12 14 24L48 4l7 12h23" />

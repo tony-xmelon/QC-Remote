@@ -68,7 +68,7 @@ test("physical interaction fixtures preserve the captured CorOS overlay structur
   assert.match(fixture, /physical-grid-underlay/);
   // scene-assignment.png and stomp-assignment.png draw the same Grid and
   // action bar, so all three share one component.
-  assert.match(fixture, /<PhysicalEditorUnderlay slot="4" letter="E" title="QC MCP TEST_2" \/>/);
+  assert.match(fixture, /<PhysicalEditorUnderlay slot="4" letter="E" title="QC MCP TEST_2" mode="PRESET" \/>/);
   assert.doesNotMatch(fixture, /physical-eq-/);
   for (const kind of ["change", "copy", "paste", "reset", "save", "expression", "bypass"]) {
     assert.match(fixture, new RegExp(`\\["${kind}"`));

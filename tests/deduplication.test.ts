@@ -20,16 +20,28 @@ test("nonempty repository files have unique bytes unless their generated or arch
   const corpusRoot = "references/qc-ui-corpus/coros-4.1.0";
   const corpus = JSON.parse(source(`${corpusRoot}/manifest.json`));
   const captures = new Map(corpus.captures.map((capture: { id: string }) => [capture.id, capture]));
+  const identityGroups = new Map<string, string[]>();
   for (const capture of corpus.captures) {
     if (capture.identicalImageOf) {
       const owner = captures.get(capture.identicalImageOf) as { image: string } | undefined;
       assert.ok(owner, `${capture.id}: identicalImageOf target must exist`);
       allowPair(`${corpusRoot}/${capture.image}`, `${corpusRoot}/${owner.image}`);
     }
+    const imageOwner = capture.identicalImageOf ?? capture.id;
+    identityGroups.set(`image:${imageOwner}`, [...(identityGroups.get(`image:${imageOwner}`) ?? []), `${corpusRoot}/${capture.image}`]);
     if (capture.identicalGraphicsTreeOf) {
       const owner = captures.get(capture.identicalGraphicsTreeOf) as { graphicsTree: string } | undefined;
       assert.ok(owner, `${capture.id}: identicalGraphicsTreeOf target must exist`);
       allowPair(`${corpusRoot}/${capture.graphicsTree}`, `${corpusRoot}/${owner.graphicsTree}`);
+    }
+    if (capture.graphicsTree) {
+      const treeOwner = capture.identicalGraphicsTreeOf ?? capture.id;
+      identityGroups.set(`tree:${treeOwner}`, [...(identityGroups.get(`tree:${treeOwner}`) ?? []), `${corpusRoot}/${capture.graphicsTree}`]);
+    }
+  }
+  for (const group of identityGroups.values()) {
+    for (let left = 0; left < group.length; left += 1) {
+      for (let right = left + 1; right < group.length; right += 1) allowPair(group[left], group[right]);
     }
   }
 
