@@ -521,8 +521,8 @@ draws it salmon was inside the check the whole time.
 `generic-confirmation.png` and `delete-confirmation.png` are byte-identical: the
 corpus holds one frame under two names.
 
-After those fixes the 88 sit at **median 0.0301 mean absolute error**, 42 under
-0.03 and 33 between 0.03 and 0.06. Thirteen remain at 0.06 or worse:
+After that pass the 88 sat at median 0.0301 mean absolute error, 42 under 0.03.
+Thirteen remained at 0.06 or worse, and the next pass took them:
 
 | frame | mae | edge f1 | what is different |
 | --- | --- | --- | --- |
@@ -540,10 +540,48 @@ After those fixes the 88 sit at **median 0.0301 mean absolute error**, 42 under
 | `expression-parameter` | 0.065 | 0.12 | not investigated |
 | `capture-sanity-error` | 0.062 | 0.61 | not investigated |
 
-The menus' *position* is still off as well as their colour - the sort menu sits
-at x 488..720 in our rule and at 388..559 on the device - and that is part of the
-dialog-size family below. The four menu fills were corrected from renders; the
-release gate does not measure them, so they are held only by this comparison.
+The four menu fills were corrected from renders; the release gate does not
+measure them, so they are held only by this comparison.
+
+### The fifth pass: the thirteen
+
+Each of the thirteen was then taken in turn. Nine more defects came out of it:
+
+| screen | was | frame shows |
+| --- | --- | --- |
+| delete confirmation | Directory behind it, one scrim for both variants | **the Grid**, dimmed far harder (`rgba(45,44,45,.74)`) |
+| overwrite confirmation | salmon panel | **`#101010` with white copy** - the two variants are not the same colour |
+| `cpu-monitor` | a CPU Monitor page | **the Grid with a 180x78 readout at x 606, y 12** |
+| directory sort / filter / category / paste menus | at `right: 10%`, `left: 23%` | **x 371, 300, 8 and 164** - all four boxes were wrong |
+| paste dialog type | 1.5cqw body | **2.5cqw** - the dialog is half again the size |
+| `stomp-assignment` | a message panel replacing the editor | **the editor, dimmed, with a 418x286 dialog at x 191, y 97** |
+| `scene-assignment` | a seven-knob amp editor with a hand cursor | **UTILITY / Adaptive Gate, one NOISE REDUCTION parameter** |
+| assignment knobs | red arcs | **grey** |
+| `expression-parameter` | a pedal-assignment screen | **the parameter chooser with MIN and MAX RANGE** |
+| capture progress panels | `height: 51.5cqw` | **running to y=471**, the same fixed height the directory panels had |
+| `capture-sanity-error` | Training ticked | **Training not run** |
+
+`cpu-monitor` is worth singling out: `cpu-monitor.tree.txt` has `zenUI::Grid` at
+its root, so the device has no CPU Monitor page at all - the whole screen was
+invented, like the Capture screens found in the first pass. Removing the
+expression pedal-assignment screen dropped another: with both expression frames
+served by the chooser, that screen was unreachable and no capture shows it.
+
+**And one systematic error.** The looper's card band read `#282c28` against the
+device's `#292c29`, the same one-off already corrected in the tuner footer.
+Replacing all 33 occurrences across ten stylesheets moved the median across the
+88 from 0.0301 to 0.0275 and took two more screens under 0.03, with nothing
+regressing - which is the check that the hypothesis was right rather than
+merely plausible.
+
+Four remain at 0.06 or worse, all with their structure agreeing:
+
+| frame | mae | edge f1 | what is left |
+| --- | --- | --- | --- |
+| `capture-connect-input-2` | 0.081 | 0.71 | rear-panel jack rows offset; the warning box is narrower |
+| `directory-copy` | 0.080 | 0.45 | dialog rows still shorter than the frame's |
+| `looper-editor` | 0.067 | 0.81 | bands and tiles match; the residual is spread across glyphs |
+| `capture-sanity-error` | 0.063 | 0.61 | body text about 7px high |
 
 These are catalogued rather than fixed. The dialog-size family (`directory-copy`,
 `directory-filter`, `directory-sort`, `cloud-upload-overwrite`,

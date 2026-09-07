@@ -3,7 +3,7 @@
 .coros-io-settings > header .io-global-eq { background: #181c18; }
 .coros-io-settings > header { padding-left: 1.25cqw; background: #101010; font-size: 2.25cqw; }
 .coros-io-settings > header .io-heading { display: flex; align-items: center; gap: 1cqw; }
-.coros-io-settings > header .io-heading > i { width: 5.5cqw; height: 5.5cqw; display: grid; place-items: center; border-radius: 1cqw; background: #282c28; color: #9a9e9a; font-size: 1.4cqw; font-style: normal; }
+.coros-io-settings > header .io-heading > i { width: 5.5cqw; height: 5.5cqw; display: grid; place-items: center; border-radius: 1cqw; background: #292c29; color: #9a9e9a; font-size: 1.4cqw; font-style: normal; }
 .coros-io-settings > header .io-heading > span { display: grid; line-height: 1.05; }
 .coros-io-settings > header .io-heading small { color: #a8aaa8; font-size: 1.75cqw; font-weight: 400; }
 .coros-io-settings > header .io-heading strong { color: #25ef59; font-size: 2.5cqw; font-weight: 400; }
@@ -11,9 +11,9 @@
 .coros-io-settings > header .io-global-eq { font-size: 1.75cqw; }
 .coros-io-settings.is-input > header .io-global-eq { width: 13.625cqw; height: 5.5cqw; border-radius: 1cqw; }
 .coros-io-settings.is-usb > header .io-global-eq { width: 13.625cqw; height: 5.5cqw; border-radius: 1cqw; }
-.coros-io-settings > header button:last-child { background: #282c28; }
+.coros-io-settings > header button:last-child { background: #292c29; }
 .coros-io-settings .io-ports { background: #101010; }
-.coros-io-settings .io-editor { background: #282c28; }
+.coros-io-settings .io-editor { background: #292c29; }
 .io-ports { position: relative; grid-template-columns: repeat(12, 1fr); align-items: stretch; padding: 0 1cqw; }
 .io-ports button { position: relative; height: 100%; display: block; font-size: 1.5cqw; }
 .io-ports button > span { position: absolute; left: -1cqw; right: -1cqw; top: .25cqw; text-align: center; white-space: nowrap; }
@@ -41,7 +41,7 @@
 .io-ports button.is-input > span { top: 2.5cqw; color: #eee; font-size: 1.5cqw; }
 .io-ports button.is-combo > i:first-of-type { top: 3.25cqw; width: 7.25cqw; height: 7.25cqw; margin-left: -3.625cqw; }
 .io-ports .io-input-selectors { position: absolute; right: 1.5cqw; bottom: .5cqw; width: 17cqw; height: 6cqw; display: grid; grid-template-columns: 1fr 1fr; gap: .75cqw; }
-.io-ports .io-input-selectors button { height: 6cqw; border-radius: 1cqw; background: #282c28; color: #eee; font-size: 2cqw; text-align: center; }
+.io-ports .io-input-selectors button { height: 6cqw; border-radius: 1cqw; background: #292c29; color: #eee; font-size: 2cqw; text-align: center; }
 .io-ports .io-input-selectors button + button { background: #181c18; color: #929692; }
 .io-ports button.is-midi > i { top: 4.5cqw; }
 .io-ports button > i > svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -80,10 +80,10 @@
 .io-editor.is-analog > section:nth-child(1) .io-dial { right: .0625cqw; }
 .io-editor.is-usb .io-dial-wrap { inset: 4.75cqw 1cqw auto; }
 .io-editor.is-usb .io-dial { width: 7.5cqw; height: 7.5cqw; }
-.io-editor.is-usb > section:first-child .io-dial { background: radial-gradient(circle at center, #282c28 0 68%, transparent 70%), conic-gradient(from 220deg, #40f860 0 83%, #101010 83%); }
-.io-editor.is-usb > section:nth-child(2) .io-dial { background: #282c28; }
+.io-editor.is-usb > section:first-child .io-dial { background: radial-gradient(circle at center, #292c29 0 68%, transparent 70%), conic-gradient(from 220deg, #40f860 0 83%, #101010 83%); }
+.io-editor.is-usb > section:nth-child(2) .io-dial { background: #292c29; }
 .io-editor.is-usb > section:nth-child(2) .io-dial::after { content: ""; position: absolute; right: -.125cqw; bottom: .25cqw; width: .75cqw; height: .75cqw; border-radius: 50%; background: #40f860; }
-.io-editor .io-dial { background: radial-gradient(circle at center, #282c28 0 68%, transparent 70%), conic-gradient(from 220deg, #40f860 0 46%, #101010 46%); }
+.io-editor .io-dial { background: radial-gradient(circle at center, #292c29 0 68%, transparent 70%), conic-gradient(from 220deg, #40f860 0 46%, #101010 46%); }
 .io-editor .io-dial b { height: 3cqw; }
 .io-editor.is-analog > section:nth-child(1) .io-dial b { transform: rotate(-90deg); }
 .io-editor.is-analog > section:nth-child(2) .io-dial b { transform: rotate(105deg); }

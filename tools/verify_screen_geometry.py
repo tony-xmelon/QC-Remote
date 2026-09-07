@@ -403,12 +403,15 @@ def check_overlays() -> None:
          lambda p: max(p) < 40, 0.25, 0.12),
         ("generic-confirmation.png", "fixture-live-surface.css",
          ".coros-physical-confirmation > aside",
-         lambda p: p[0] > 180 and p[1] < 140 and p[2] < 130, 0.25, 0.12),
+         lambda p: p[0] > 180 and p[1] < 140 and p[2] < 130, 0.25, 0.12,
+         # The dialog's box is declared once and its colour per variant; this
+         # frame is the delete variant.
+         ".coros-physical-confirmation.is-over-grid > aside"),
         ("block-context.png", "fixture-live-surface.css",
          ".qc-screen.coros-block-context > aside",
          lambda p: max(p) < 40, 0.5, 0.25),
     ]
-    for capture, sheet, selector, fill, column_share, row_share in overlays:
+    for capture, sheet, selector, fill, column_share, row_share, *variant in overlays:
         pixels, size = frame(CORPUS, capture)
         measured = panel_box(pixels, fill, size, column_share, row_share)
         if measured is None:
@@ -422,7 +425,7 @@ def check_overlays() -> None:
         # check measured only the first for three passes while the confirmation
         # dialog was declared near-black and drawn salmon - and its own fill
         # predicate had been looking for red pixels the whole time.
-        fill = declaration(sheet, selector, "background")
+        fill = declaration(sheet, variant[0] if variant else selector, "background")
         if fill is not None and re.fullmatch(r"#[0-9a-f]{3,6}", fill.strip()):
             interior = (measured["left"] + measured["width"] // 4,
                         measured["top"] + measured["height"] // 3,

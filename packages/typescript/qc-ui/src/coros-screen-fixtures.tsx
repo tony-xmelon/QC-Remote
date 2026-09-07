@@ -201,12 +201,35 @@ function CorOsKeyboardScreen() {
 // OVERWRITE action, captured as `cloud-upload-overwrite`. Only the copy and
 // the confirm label differ. Note the device's own graphics tree exposes just
 // the two buttons for this dialog - its title and body are not in the tree.
+function PhysicalGridUnderlay({ rows = 1, lit = false }: { rows?: 1 | 2; lit?: boolean }) {
+  return <div className={`physical-grid-underlay${rows === 2 ? " is-full-grid" : ""}${lit ? " is-lit" : ""}`}>
+    <div className="underlay-grid">
+      <header><strong><span>4</span>E</strong><h1>QC MCP TEST_2</h1>
+        <nav><i><GridToolbarIcon kind="undo" /></i><b>A</b><i><GridToolbarIcon kind="save" /></i><i><QcUiIcon kind="more" /></i></nav>
+        <em><svg viewBox="0 0 24 24" aria-hidden="true"><ModeGlyph mode="STOMP" /></svg>STOMP</em></header>
+      <main>
+        <span className="underlay-route">In<br />1</span><i className="underlay-cable" /><span className="underlay-output">Multi<br />Out</span>
+        {rows === 2 && <>
+          <span className="underlay-route is-row-2">In<br />1</span><i className="underlay-cable is-row-2" /><span className="underlay-output is-row-2">Multi<br />Out</span>
+          <i className="underlay-slot is-left" /><i className="underlay-slot is-right" />
+          <i className="underlay-slot is-left is-row-2" /><i className="underlay-slot is-right is-row-2" />
+        </>}
+      </main>
+    </div>
+  </div>;
+}
+
 function CorOsDeleteConfirmation({ variant = "delete" }: { variant?: "delete" | "overwrite" }) {
   const copy = variant === "overwrite"
     ? { title: "Preset already exists", body: "Preset Top 3 Acoustic Sims already exists. Overwrite?", confirm: "OVERWRITE", label: "Overwrite cloud preset confirmation" }
     : { title: "ALI The List", body: "Are you sure you want to delete this preset?", confirm: "DELETE PRESET", label: "Delete preset confirmation" };
-  return <section className="qc-screen coros-physical-confirmation" aria-label={copy.label}>
-    <CorOsDirectoryFixture view="directory-presets" physicalContext />
+  // The delete variant is raised from the Grid and the overwrite variant from
+  // the Directory; the frames show each behind its own dialog.
+  const overGrid = variant !== "overwrite";
+  return <section className={`qc-screen coros-physical-confirmation${overGrid ? " is-over-grid" : ""}`} aria-label={copy.label}>
+    {overGrid
+      ? <PhysicalGridUnderlay rows={2} />
+      : <CorOsDirectoryFixture view="directory-presets" physicalContext />}
     <i className="confirmation-scrim" />
     <aside><h1>{copy.title}</h1><p>{copy.body}</p><footer><button>CANCEL</button><button>{copy.confirm}</button></footer></aside>
   </section>;
@@ -242,7 +265,7 @@ function CaptureKindGlyph({ index }: { index: number }) {
 const SETTINGS_CLOUD_PATH = "M8 25h16a6 6 0 0 0 1-11.9A9 9 0 0 0 8 11a7 7 0 0 0 0 14Z";
 
 function CorOsOfficialCapture({ view }: { view: "capture-calibration" | "capture-progress" | "capture-sanity-error" | "capture-result" | "capture-save" }) {
-  if (view === "capture-sanity-error") return <section className="qc-screen capture-official capture-official-progress capture-official-error"><header><span>Neural Capture</span><button>×</button></header><main><nav>{([["✓", "Calibration", ""], ["✓", "Recording Signals", ""], ["!", "Sanity Check", "is-error"], ["✓", "Training", "is-pending"]] as const).map(([icon, label, state]) => <div key={label} className={state}><b>{icon}</b>{label}</div>)}</nav><section><h1>There was an error during the Sanity Check stage</h1><p>No signal detected, or signal too low. Please go back to the<br />calibration screen and make sure the level meters are at a<br />sensible level.</p><strong>30 %</strong><i className="capture-official-progress-bar"><b /></i><button>CALIBRATION SCREEN</button></section></main></section>;
+  if (view === "capture-sanity-error") return <section className="qc-screen capture-official capture-official-progress capture-official-error"><header><span>Neural Capture</span><button>×</button></header><main><nav>{([["✓", "Calibration", ""], ["✓", "Recording Signals", ""], ["!", "Sanity Check", "is-error"], ["", "Training", "is-pending"]] as const).map(([icon, label, state]) => <div key={label} className={state}><b>{icon}</b>{label}</div>)}</nav><section><h1>There was an error during the Sanity Check stage</h1><p>No signal detected, or signal too low. Please go back to the<br />calibration screen and make sure the level meters are at a<br />sensible level.</p><strong>30 %</strong><i className="capture-official-progress-bar"><b /></i><button>CALIBRATION SCREEN</button></section></main></section>;
   if (view === "capture-progress") return <section className="qc-screen capture-official capture-official-progress"><header><span>Neural Capture</span><button>×</button></header><main><nav>{[["✓", "Calibration"], ["✓", "Recording Signals"], ["✓", "Sanity Check"], ["➜", "Training"]].map(([icon, label]) => <div key={label}><b>{icon}</b>{label}</div>)}</nav><section><h1>Neural Capture in progress</h1><p>The core of Neural Capture. Training a neural network to<br />emulate the sound of your favorite device.</p><strong>30%</strong><i className="capture-official-progress-bar"><b /></i><em>◔</em></section></main></section>;
   if (view === "capture-save") return <section className="qc-screen capture-official capture-official-save"><header><button><QcUiIcon kind="close" /></button><button className="capture-folder"><DirectoryIcon kind="folder" /><span>My Captures</span></button><button>Name</button><button className="capture-note"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7Z" /><path d="M14 3v5h5M10 12h5m-5 3h5m-5 3h5" /></svg></button><button className="capture-save-now"><QcEditorIcon kind="save" /></button></header><main><small>TYPE OF CAPTURE</small><h1>Amp</h1><div className="capture-kinds">{Array.from({ length: 6 }, (_, index) => <button key={index} className={index === 1 ? "is-active" : ""}><CaptureKindGlyph index={index} />{index > 0 && <i />}</button>)}</div><small>PREFERRED INSTRUMENT</small><div className="capture-instruments">{["Guitar", "Bass", "Synth", "Vocal", "Other"].map((label, index) => <button key={label} className={index === 0 ? "is-active" : ""}>{label}</button>)}</div></main></section>;
   if (view === "capture-result") return <section className="qc-screen capture-official capture-official-result"><header><span>Neural Capture</span><button>×</button></header><p>Your Neural Capture is ready. Switch between the reference and Quad Cortex using<br />the buttons below.</p><div className="capture-result-actions"><button>BACK TO CALIBRATION</button><button>SAVE</button><CaptureTargetIcon /></div><main><section><button>CORTEX</button><label><span className="capture-level-label"><IoHeadphonesGlyph />LEVEL</span><b className="capture-level-dial" /><small>0.0 dB</small></label></section><section><button>REFERENCE</button></section></main></section>;
@@ -443,18 +466,19 @@ function CorOsMidiOut({ onClose }: { onClose: () => void }) {
   </section>;
 }
 
-function CorOsCpuMonitor({ snapshot, onClose }: { snapshot: PresetSnapshot; onClose: () => void }) {
-  const loads = [3, 7, 5, 11, 4, 8, 6, 2];
+function CorOsCpuMonitor({ onClose }: { onClose: () => void }) {
+  // cpu-monitor.png: the Grid, undimmed, with a 180x78 readout panel at
+  // x 606, y 12 carrying a close cross, the mixer glyph, an input badge, the
+  // CPU label and the load in green.
   return <section className="coros-cpu-monitor" aria-label="CPU Monitor">
-    <header><span>CPU Monitor</span><strong>CPU 26%</strong><button aria-label="Close CPU Monitor" onClick={onClose}>✓</button></header>
-    <div className="cpu-summary"><span>PROCESSING LOAD</span><div><i style={{ width: "26%" }} /></div><strong>26%</strong></div>
-    <div className="cpu-grid">{Array.from({ length: 32 }, (_, index) => {
-      const row = Math.floor(index / 8), column = index % 8;
-      const block = snapshot.blocks.find((candidate) => candidate.row === row && candidate.column === column);
-      const load = block ? loads[index % loads.length] : 0;
-      return <div key={index} className={block ? "has-block" : ""}>{block && <><span className="cpu-block-icon"><QcDeviceGlyph block={block} x={30} y={30} size={56} /></span><strong>{load}%</strong><small>{block.name}</small></>}</div>;
-    })}</div>
-    <footer><span><i className="cpu-legend-active" /> ACTIVE</span><span><i className="cpu-legend-bypassed" /> BYPASSED</span><span>GLOBAL EQ <b>ON</b></span><span>INPUT GATES <b>ON</b></span></footer>
+    <PhysicalGridUnderlay rows={2} lit />
+    <aside className="cpu-readout">
+      <button aria-label="Close CPU Monitor" onClick={onClose}><QcUiIcon kind="close" /></button>
+      <i className="cpu-mixer"><GridToolbarIcon kind="more" /></i>
+      <b>In</b>
+      <span>CPU</span>
+      <strong>7%</strong>
+    </aside>
   </section>;
 }
 
@@ -789,18 +813,39 @@ function ExpressionLinkIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3H4v18h3M17 3h3v18h-3M9 12h6" /><rect x="7" y="9" width="2" height="6" /><rect x="15" y="9" width="2" height="6" /></svg>;
 }
 
-function CorOsAssignmentScreen({ view }: { view: "stomp-assignment" | "scene-assignment" | "expression-parameter" | "expression-bypass" }) {
-  if (view === "expression-bypass") return <section className="qc-screen expression-bypass-official" aria-label="Expression bypass assignment"><header><button><QcUiIcon kind="close" /></button><button>Expression 1</button><button>Expression 2</button><button><QcEditorIcon kind="save" /></button></header><p>Please choose which parameters you wish to control.<br />You can assign multiple at once.</p><main className="expression-switch-panel"><section><button><ExpressionPowerIcon /></button></section><section><span>SWITCH ON</span><label><i /><b>Heel-Toe</b><small>Switch<br />Stop</small></label></section><section><span>INVERT RANGE</span><label><i /><b>On</b><small>Off</small></label></section><section className="switch-delay"><span>SWITCH DELAY</span><b>600 ms</b><i className="capture-level-dial" /></section><section className="switch-latch"><span>LATCH EMULATION</span><label><i /><b>On</b><small>Off</small></label></section></main><div className="expression-parameter-grid">{["GAIN", "BASS", "MID", "TREBLE", "LEVEL", "BYPASS"].map(label => <section key={label}><span>{label}<b><ExpressionLinkIcon /></b></span><button>ASSIGN</button></section>)}</div></section>;
+function ExpressionChooser({ trim }: { trim: boolean }) {
+  const tiles: Array<[string, boolean]> = [["NOISE REDUCTION", false], ["BYPASS", !trim]];
+  return <section className={`qc-screen expression-bypass-official${trim ? " is-trim" : ""}`} aria-label={trim ? "Expression parameter assignment" : "Expression bypass assignment"}>
+    <header><button><QcUiIcon kind="close" /></button><button>Expression 1</button><button>Expression 2</button><button><QcEditorIcon kind="save" /></button></header>
+    <p>Please choose which parameters you wish to control.<br />You can assign multiple at once.</p>
+    {trim
+      ? <main className="expression-switch-panel is-trim">
+          <section className="trim-hint"><span>Tap <b><ExpressionLinkIcon /></b> to trim</span><small>Max and Min values of the preferred parameter</small></section>
+          <section className="switch-delay"><span>MIN RANGE</span><b>0.00 %</b><i className="capture-level-dial" /></section>
+          <section className="switch-delay"><span>MAX RANGE</span><b>100 %</b><i className="capture-level-dial" /></section>
+        </main>
+      : <main className="expression-switch-panel">
+          <section><button><ExpressionPowerIcon /></button></section>
+          <section><span>SWITCH ON</span><label><i /><b>Heel-Toe</b><small>Switch<br />Stop</small></label></section>
+          <section><span>INVERT RANGE</span><label><i /><b>On</b><small>Off</small></label></section>
+          <section className="switch-delay"><span>SWITCH DELAY</span><b>600 ms</b><i className="capture-level-dial" /></section>
+          <section className="switch-latch"><span>LATCH EMULATION</span><label><i /><b>On</b><small>Off</small></label></section>
+        </main>}
+    <div className="expression-parameter-grid">{tiles.map(([label, assigned]) => <section key={label}><span>{label}<b><ExpressionLinkIcon /></b></span><button className={assigned ? "is-assigned" : ""}>{assigned ? "ASSIGNED" : "ASSIGN"}</button></section>)}</div>
+  </section>;
+}
+
+function CorOsAssignmentScreen({ view }: { view: "stomp-assignment" | "scene-assignment" }) {
   const stomp = view === "stomp-assignment";
   const scene = view === "scene-assignment";
   if (stomp || scene) return <section className={`qc-screen coros-assignment is-${stomp ? "stomp" : "scene"}`} aria-label={view.replaceAll("-", " ")}>
     <div className="assignment-grid-context"><span>In<br />1</span><i /><i /><i /><i /><strong>Multi<br />Out</strong></div>
     <div className="assignment-device-editor">
-      <header><button className="assignment-more">⋮</button><span><small>GUITAR AMP</small><strong>Brit 2203</strong></span><div className="assignment-toolbar">{stomp && <button className="assignment-stomp"><svg viewBox="0 0 34 22" aria-hidden="true"><path d="M3 7l12 4-4 3 9 4-2 2-11-5-4 2z"/><circle cx="26" cy="9" r="2"/><circle cx="29" cy="16" r="2"/></svg></button>}<button className="assignment-scene-nav">◀ <b>{scene ? "A" : "B"}</b> ▶</button><i /><button className="assignment-power">◴</button><button className="assignment-confirm">✓</button></div></header>
-      {scene ? <div className="assignment-parameters">{[["GAIN","5.0"],["BASS","5.0"],["MID","5.0"],["TREBLE","5.0"],["PRESENCE","1.5"],["MASTER","8.0"],["OUTPUT","0.0 dB"]].map(([label, value], index) => <section key={label} className={index === 2 ? "is-assigned" : ""}><span>{label}</span>{index === 2 && <em>A B<br />C D</em>}<i className="assignment-knob"><b /></i><strong>{value}</strong>{index === 2 && <i className="assignment-touch" />}</section>)}</div> : <div className="assignment-stomp-message"><aside className="assignment-stomp-dialog"><h1>Assign footswitch</h1><p>Press the target footswitch to assign</p><div className="assignment-stomp-latch"><button className="is-active"><QcEditorIcon kind="footswitch" />Latching</button><button><QcEditorIcon kind="band-power" />Momentary</button></div><footer><button>CANCEL</button><button className="is-primary">UNASSIGN</button></footer></aside></div>}
+      <header><button className="assignment-more">⋮</button><span><small>{scene ? "UTILITY" : "NEURAL CAPTURE"}</small><strong>{scene ? "Adaptive Gate" : "Akustyczna"}</strong></span><div className="assignment-toolbar">{stomp && <button className="assignment-stomp"><svg viewBox="0 0 34 22" aria-hidden="true"><path d="M3 7l12 4-4 3 9 4-2 2-11-5-4 2z"/><circle cx="26" cy="9" r="2"/><circle cx="29" cy="16" r="2"/></svg></button>}<button className="assignment-scene-nav">◀ <b>{scene ? "A" : "B"}</b> ▶</button><i /><button className="assignment-power">◴</button><button className="assignment-confirm">✓</button></div></header>
+      {<div className="assignment-parameters">{(scene ? [["NOISE REDUCTION","17.3 %"]] : [["GAIN","0.0 dB"],["BASS","6.5"],["MID","5.0"],["TREBLE","5.0"],["VOLUME","14.9 dB"]]).map(([label, value], index) => <section key={label} className={scene && index === 0 ? "is-assigned" : ""}><span>{label}</span>{scene && index === 0 && <em>A B<br />C D</em>}<i className="assignment-knob"><b /></i><strong>{value}</strong></section>)}</div>}
     </div>
+    {stomp && <div className="assignment-stomp-message"><aside className="assignment-stomp-dialog"><h1>Assign footswitch</h1><p>Press the target footswitch to assign</p><div className="assignment-stomp-latch"><button className="is-active"><QcEditorIcon kind="footswitch" />Latching</button><button><QcEditorIcon kind="band-power" />Momentary</button></div><footer><button>CANCEL</button><button className="is-primary">UNASSIGN</button></footer></aside></div>}
   </section>;
-  return <section className="qc-screen coros-assignment is-expression" aria-label={view.replaceAll("-", " ")}><header><button>×</button><span><small>EXPRESSION PEDAL ASSIGNMENT</small><strong>DISTORTION</strong></span><button>✓</button></header><p>Move an expression pedal to assign its range</p><div className="expression-pedals"><button className="is-active"><b>EXP 1</b><i /><span>HEEL　0.0</span><span>TOE　10.0</span></button><button><b>EXP 2</b><i /><span>NOT ASSIGNED</span></button></div><footer><button>BYPASS ASSIGN</button><button>SWAP MIN / MAX</button><button>REMOVE</button></footer></section>;
 }
 
 function BlockContextIcon({ kind }: { kind: "change" | "copy" | "paste" | "reset" | "save" | "expression" | "bypass" | "model-update" | "model-downgrade" | "remove" }) {
@@ -980,7 +1025,7 @@ export function CorOsScreenFixture({ view, snapshot, gigPresetList, onClose = ()
   if (view === "tuner") return <CorOsTuner onClose={onClose} />;
   if (view === "tempo") return <CorOsTempo bpm={snapshot.tempo} onClose={onClose} />;
   if (view === "midi-out") return <CorOsMidiOut onClose={onClose} />;
-  if (view === "cpu-monitor") return <CorOsCpuMonitor snapshot={snapshot} onClose={onClose} />;
+  if (view === "cpu-monitor") return <CorOsCpuMonitor onClose={onClose} />;
   if (view === "global-eq") return <CorOsGlobalEq onClose={onClose} />;
   if (view.startsWith("io-")) return <CorOsIoSettings initialView={view.slice(3) as IoView} onClose={onClose} />;
   if (view === "power-overlay") return <CorOsPowerOverlay onClose={onClose} />;
@@ -992,7 +1037,8 @@ export function CorOsScreenFixture({ view, snapshot, gigPresetList, onClose = ()
   if (view === "plugin-folders" || view === "plugin-list" || view === "plugin-models" || view === "plugin-locked" || view === "plugin-refresh") return <CorOsDeviceBrowserFixture view={view} />;
   if (view === "looper-editor") return <CorOsLooperEditor />;
   if (view === "device-presets" || view === "device-presets-user" || view === "device-preset-actions" || view === "device-preset-save") return <CorOsDevicePresetScreen save={view === "device-preset-save"} view={view === "device-presets-user" ? "user" : view === "device-preset-actions" ? "actions" : "factory"} />;
-  if (view === "stomp-assignment" || view === "scene-assignment" || view === "expression-parameter" || view === "expression-bypass") return <CorOsAssignmentScreen view={view} />;
+  if (view === "expression-parameter" || view === "expression-bypass") return <ExpressionChooser trim={view === "expression-parameter"} />;
+  if (view === "stomp-assignment" || view === "scene-assignment") return <CorOsAssignmentScreen view={view} />;
   if (view === "block-context") return <CorOsBlockContext />;
   if (view.startsWith("directory-")) return (["directory-presets", "directory-captures", "directory-irs", "directory-plugins", "directory-favorites", "directory-search-results", "directory-nested", "directory-cloud-upload"] as string[]).includes(view) ? <CorOsOfficialDirectory view={view as OfficialDirectoryView} /> : <CorOsDirectoryFixture view={view as DirectoryFixtureView} />;
   if (view.startsWith("capture-")) return <CorOsCaptureFixture view={view as CaptureFixtureView} />;

@@ -20,9 +20,9 @@
 .coros-looper > header button:last-child > svg { width: 3.5cqw; height: 3.5cqw; transform: translate(1px, 3px); }
 .coros-looper > header span small { font-size: 1.75cqw; }
 .coros-looper > header span strong { font-size: 2cqw; }
-.looper-timeline { gap: 2.5cqw; padding: 1cqw; border: 0; background: linear-gradient(to bottom, #282c28 0 52%, #181c18 52% 100%); font-size: 2cqw; }
+.looper-timeline { gap: 2.5cqw; padding: 1cqw; border: 0; background: linear-gradient(to bottom, #292c29 0 52%, #181c18 52% 100%); font-size: 2cqw; }
 .looper-actions { background: #101010; }
-.looper-actions button { background: #282c28; }
+.looper-actions button { background: #292c29; }
 .looper-timeline span:first-child b { display: inline-block; width: 2.25cqw; height: 2.25cqw; border-radius: 50%; background: #f82420; color: transparent; vertical-align: -.35cqw; }
 .looper-timeline .looper-close-caret { display: inline-block; margin: 0 .75cqw; color: #eee; font-size: 3cqw; font-weight: 400; line-height: .5; }
 .looper-timeline em { top: 1cqw; right: 1cqw; font-size: 2cqw; }
@@ -78,8 +78,8 @@
 .global-eq-controls > section:first-child button { inset: 6.875cqw 1.25cqw auto; height: 4.75cqw; font-size: 1.75cqw; }
 .global-eq-controls .io-dial-wrap { inset: 4.625cqw 1cqw auto; height: 8cqw; }
 .global-eq-controls .io-dial { right: -.1875cqw; width: 8.375cqw; height: 8.375cqw; }
-.global-eq-controls .io-dial { background: radial-gradient(circle at center, #282c28 0 68%, transparent 70%), conic-gradient(from 220deg, #0874e0 0 22%, #101010 22%); }
-.global-eq-controls > section:nth-child(4) .io-dial { background: radial-gradient(circle at center, #282c28 0 68%, transparent 70%), conic-gradient(from 220deg, #203820 0 18%, #101010 18%); }
+.global-eq-controls .io-dial { background: radial-gradient(circle at center, #292c29 0 68%, transparent 70%), conic-gradient(from 220deg, #0874e0 0 22%, #101010 22%); }
+.global-eq-controls > section:nth-child(4) .io-dial { background: radial-gradient(circle at center, #292c29 0 68%, transparent 70%), conic-gradient(from 220deg, #203820 0 18%, #101010 18%); }
 .global-eq-controls .io-dial b { height: 3.5cqw; }
 .global-eq-controls > section:nth-child(2) .io-dial b { transform: rotate(0deg); }
 .global-eq-controls > section:nth-child(3) .io-dial b { transform: rotate(-90deg); }
@@ -132,7 +132,7 @@
 .capture-official-save > header .capture-folder { width: 20.375cqw; }
 .capture-official-save > header > button:nth-child(3) { width: 9.5cqw; }
 .qc-screen.capture-official-save { background: #101010; }
-.capture-official-save > header > button { background: #282c28; }
+.capture-official-save > header > button { background: #292c29; }
 .capture-official-save > header .capture-note { background: #102818; }
 .capture-official-save > header .capture-save-now { background: #1838f8; }
 .capture-official-save > header button > svg { width: 3cqw; height: 3cqw; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -153,8 +153,8 @@
 .capture-official-save > main > h1 { position: relative; top: .375cqw; }
 .capture-official-save > main > small:nth-of-type(2) { position: relative; top: .125cqw; }
 .coros-global-eq .global-eq-graph { background: #070808; }
-.coros-global-eq .global-eq-controls { background: #282c28; }
-.coros-global-eq > header button:last-child { background: #282c28; }
+.coros-global-eq .global-eq-controls { background: #292c29; }
+.coros-global-eq > header button:last-child { background: #292c29; }
 
 }
 

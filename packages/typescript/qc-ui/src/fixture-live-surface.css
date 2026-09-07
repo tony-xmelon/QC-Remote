@@ -380,12 +380,15 @@
 .assignment-parameters section > strong { position: absolute; left: 1.25cqw; bottom: 1.05cqw; font-size: 1.85cqw; font-weight: 400; }
 .assignment-parameters section > em { position: absolute; left: 1.3cqw; top: 4.9cqw; z-index: 2; color: #152519; font: bold 1.3cqw/1.05 Arial; letter-spacing: .35cqw; }
 .assignment-knob { position: absolute; right: 2.1cqw; top: 4.5cqw; width: 6.25cqw; height: 6.25cqw; border: .6cqw solid #080909; border-radius: 50%; background: #242625; box-shadow: 0 0 0 .35cqw #111; }
-.assignment-knob::before { content: ""; position: absolute; inset: -.75cqw; border: .55cqw solid transparent; border-left-color: #ff242f; border-top-color: #ff242f; border-radius: 50%; transform: rotate(-45deg); }
+.assignment-knob::before { content: ""; position: absolute; inset: -.75cqw; border: .55cqw solid transparent; border-left-color: #525552; border-top-color: #525552; border-radius: 50%; transform: rotate(-45deg); }
 .assignment-knob b { display: block; width: .25cqw; height: 2.25cqw; margin: .25cqw auto; background: #fff; }
 .assignment-parameters section.is-assigned { box-shadow: inset 0 0 0 .65cqw #40ef70; border-radius: 1.7cqw; }
 .assignment-touch { position: absolute; z-index: 3; left: 5.4cqw; top: 5.2cqw; width: 8.2cqw; height: 11.5cqw; border: .7cqw solid #050606; border-radius: 4cqw 4cqw 2cqw 2cqw; background: #3df263; transform: rotate(-14deg); }
 .assignment-touch::before { content: ""; position: absolute; left: 3.1cqw; top: -5.7cqw; width: 2.8cqw; height: 7.5cqw; border: .65cqw solid #050606; border-radius: 1.5cqw 1.5cqw 0 0; background: #3df263; transform: rotate(14deg); }
-.assignment-stomp-message { height: 78.8%; display: grid; place-content: center; gap: 1.5cqw; background: #292b2a; text-align: center; }
+/* stomp-assignment.png: the dialog is 418x286 at x 191, y 97, over a dimmed
+   copy of the editor - not a panel standing in for it. */
+.assignment-stomp-message { position: absolute; inset: 0; z-index: 6; background: rgba(92,96,92,.65); }
+.assignment-stomp-message > .assignment-stomp-dialog { position: absolute; left: 191px; top: 97px; box-sizing: border-box; width: 418px; height: 286px; display: grid; place-content: center; gap: 1.5cqw; border-radius: 10px; background: #181c18; text-align: center; }
 .assignment-stomp-message strong { font-size: 2.5cqw; }.assignment-stomp-message span { color: #aeb1af; font-size: 1.5cqw; }
 .assignment-stomp-dialog { width: 52cqw; padding: 2.5cqw 3cqw; border-radius: 1cqw; background: #1b1e1c; box-shadow: 0 1cqw 3cqw #000c; text-align: center; }
 .assignment-stomp-dialog h1 { margin: 0 0 1.2cqw; font-size: 2.4cqw; font-weight: 400; }
@@ -422,8 +425,11 @@
 .directory-fixture-items button { width: 100%; height: 14.28%; display: grid; grid-template-columns: 14% 1fr 10%; align-items: center; padding: 0 3%; border-bottom: 1px solid #363a36; background: transparent; text-align: left; }.directory-fixture-items button.is-current { background: #1b211c; }.directory-fixture-items button > strong { color: #43ef72; font-size: 1.4cqw; }.directory-fixture-items button > span { display: flex; flex-direction: column; font-size: 1.3cqw; }.directory-fixture-items button small { margin-top: .25cqw; color: #7e837f; font-size: .8cqw; }.directory-fixture-items button > b, .directory-fixture-items button > i { color: #858a86; font-size: 1.7cqw; font-style: normal; font-weight: 400; text-align: center; }
 .directory-search-field { height: 14%; display: grid; grid-template-columns: 12% 1fr 12%; align-items: center; margin: 1.5%; border: 1px solid #3ce971; border-radius: .5cqw; background: #111411; }.directory-search-field span, .directory-search-field button { text-align: center; }.directory-search-field strong { font-size: 1.25cqw; font-weight: 400; }.directory-search-field button { background: transparent; color: #999; font-size: 1.8cqw; }
 .directory-category-menu, .directory-tool-menu, .directory-item-menu, .directory-copy-dialog, .directory-name-dialog, .directory-favorites-panel { position: absolute; z-index: 5; border: 1px solid #3a3e3a; border-radius: .65cqw; background: #252a26; box-shadow: 0 .8cqw 2cqw #000b; }
-.directory-category-menu { left: 1%; top: 12%; width: 32%; padding: .6%; }.directory-category-menu button { width: 100%; height: 5.7cqw; display: grid; grid-template-columns: 18% 1fr 12%; align-items: center; border-bottom: 1px solid #383c38; background: transparent; font-size: 1.4cqw; text-align: left; }.directory-category-menu button span { color: #43ef72; font-size: 2cqw; text-align: center; }.directory-category-menu button b { color: #888; font-weight: 400; }
-.directory-tool-menu { right: 10%; top: 11%; width: 29%; padding: 1%; }.directory-tool-menu.is-filter { right: 18%; }.directory-tool-menu > strong { display: block; padding: 6% 5%; color: #8d928e; font-size: 1.1cqw; }.directory-tool-menu button { width: 100%; height: 5cqw; display: flex; align-items: center; justify-content: space-between; padding: 0 6%; border-top: 1px solid #363a36; background: transparent; font-size: 1.25cqw; }.directory-tool-menu button.is-active { color: #42ef74; }
+/* directory-categories.png: x 8..263, y 9..358. */
+.directory-category-menu { left: 1%; top: 1.875%; width: 32%; padding: .6%; }.directory-category-menu button { width: 100%; height: 5.7cqw; display: grid; grid-template-columns: 18% 1fr 12%; align-items: center; border-bottom: 1px solid #383c38; background: transparent; font-size: 1.4cqw; text-align: left; }.directory-category-menu button span { color: #43ef72; font-size: 2cqw; text-align: center; }.directory-category-menu button b { color: #888; font-weight: 400; }
+/* directory-sort.png: x 371..601, y 58. The filter menu is the same width
+   further left, at x 300..530 in directory-filter.png. */
+.directory-tool-menu { right: 24.75%; top: 12.1%; width: 29%; padding: 1%; }.directory-tool-menu.is-filter { right: 33.6%; }.directory-tool-menu > strong { display: block; padding: 6% 5%; color: #8d928e; font-size: 1.1cqw; }.directory-tool-menu button { width: 100%; height: 5cqw; display: flex; align-items: center; justify-content: space-between; padding: 0 6%; border-top: 1px solid #363a36; background: transparent; font-size: 1.25cqw; }.directory-tool-menu button.is-active { color: #42ef74; }
 .directory-favorites-panel { inset: 12.5% 1% 1% 48%; }.directory-favorites-panel > header { height: 12%; display: flex; }.directory-favorites-panel > header button { flex: 1; background: #171b18; color: #888; }.directory-favorites-panel > header button.is-active { border-bottom: 2px solid #43ef72; color: #eee; }.directory-favorites-panel > button { width: 100%; height: 15%; display: grid; grid-template-columns: 12% 1fr 10%; align-items: center; border-bottom: 1px solid #373b37; background: transparent; text-align: left; }.directory-favorites-panel > button span { color: #f0cf32; text-align: center; }.directory-favorites-panel > button b { color: #888; }
 .directory-mode-bar { position: absolute; z-index: 6; inset: auto 0 0; height: 13%; display: flex; align-items: center; gap: 2%; padding: 1% 2%; background: #151915; box-shadow: 0 -1cqw 2cqw #0008; }.directory-mode-bar strong { color: #43ef72; font-size: 1.4cqw; }.directory-mode-bar span { flex: 1; color: #9ba09c; font-size: 1.15cqw; }.directory-mode-bar button { height: 80%; padding: 0 3%; border-radius: .45cqw; background: #292e2a; font-size: 1.2cqw; }.directory-mode-bar button:last-child { background: #1f49ff; }.directory-mode-bar.is-cloud strong { color: #59a9ff; }
 .directory-mode-bar.is-multiselect { inset: 0 0 auto; justify-content: flex-start; }
@@ -431,10 +437,13 @@
 .directory-mode-bar.is-multiselect button { padding: 0 2%; }
 .directory-mode-bar.is-multiselect button:last-child { background: #292e2a; }
 .directory-copy-dialog, .directory-name-dialog { left: 25%; top: 16%; width: 50%; }.directory-copy-dialog > header, .directory-name-dialog > header { padding: 5%; border-bottom: 1px solid #393d39; font-size: 1.6cqw; }.directory-copy-dialog > button { width: 100%; height: 5.1cqw; display: flex; align-items: center; padding: 0 6%; border-bottom: 1px solid #383c38; background: transparent; font-size: 1.25cqw; }.directory-copy-dialog > button.is-active { color: #43ef72; }.directory-copy-dialog > button b { margin-left: auto; color: #888; }.directory-copy-dialog footer, .directory-name-dialog footer { display: flex; justify-content: flex-end; gap: 2%; padding: 4%; }.directory-copy-dialog footer button, .directory-name-dialog footer button { padding: 1cqw 2cqw; border-radius: .4cqw; background: #303530; }.directory-copy-dialog footer button:last-child, .directory-name-dialog footer button:last-child { background: #1f49ff; }
-.directory-copy-dialog { left: 23%; top: 18%; width: 54%; text-align: center; }
-.directory-copy-dialog > header { border-bottom: 0; padding: 4% 5% 2%; font-size: 2cqw; }
-.directory-copy-dialog > p { margin: 0 0 3%; padding: 0 6%; color: #d6d9d7; font-size: 1.5cqw; line-height: 1.35; }
-.directory-copy-dialog > button { width: 88%; margin: 0 auto 2%; height: auto; min-height: 4.6cqw; display: flex; align-items: center; gap: .8cqw; padding: 1cqw 1.6cqw; border-bottom: 0; border-radius: .6cqw; background: #333834; text-align: left; font-size: 1.5cqw; }
+/* directory-copy.png: x 164..635, y 23..454. */
+.directory-copy-dialog { left: 20.5%; top: 4.8%; width: 59%; text-align: center; }
+/* directory-copy.png: title cap rows 60..78, body 101..140, option rows
+   181..225 - the type is about half again the size this had. */
+.directory-copy-dialog > header { border-bottom: 0; padding: 4% 5% 2%; font-size: 3.25cqw; }
+.directory-copy-dialog > p { margin: 0 0 3.5%; padding: 0 6%; color: #d6d9d7; font-size: 2.5cqw; line-height: 1.35; }
+.directory-copy-dialog > button { width: 88%; margin: 0 auto 2%; height: auto; min-height: 6.5cqw; display: flex; align-items: center; gap: .8cqw; padding: 1.2cqw 2cqw; border-bottom: 0; border-radius: .8cqw; background: #333834; text-align: left; font-size: 2.25cqw; }
 .directory-copy-dialog > button.is-active { background: #f2f4f2; color: #101310; }
 .directory-copy-dialog > button > i { margin-left: auto; font-style: normal; }
 .directory-name-dialog label { display: flex; flex-direction: column; gap: 1cqw; padding: 6%; color: #999; font-size: 1.05cqw; }.directory-name-dialog input { padding: 1.2cqw; border: 1px solid #43ef72; border-radius: .4cqw; background: #111411; color: #eee; font-size: 1.5cqw; }
@@ -644,7 +653,7 @@
 .midi-expression label div { background: #101210; }
 .midi-expression label div::before,
 .midi-expression label div::after { display: none; }
-.midi-expression label div > i { position: absolute; left: 1cqw; right: 1.125cqw; top: 2.625cqw; bottom: .75cqw; border-radius: .5cqw; background: #282c28; }
+.midi-expression label div > i { position: absolute; left: 1cqw; right: 1.125cqw; top: 2.625cqw; bottom: .75cqw; border-radius: .5cqw; background: #292c29; }
 .midi-expression label div > i::before,
 .midi-expression label div > i::after { content: ""; position: absolute; left: 18%; right: 18%; height: 6cqw; background: repeating-linear-gradient(to bottom, #303531 0 .3cqw, transparent .3cqw .65cqw); }
 .midi-expression label div > i::before { top: 1.5cqw; }
@@ -728,7 +737,45 @@
 .qc-screen.coros-physical-confirmation { position: absolute; inset: 0; z-index: 11; overflow: hidden; background: #111; color: #f1f1f1; font-family: Arial,Helvetica,sans-serif; }
 .coros-physical-confirmation > .coros-directory-fixture { position: absolute; inset: 0; }
 .coros-physical-confirmation > .confirmation-scrim { position: absolute; inset: 0; z-index: 4; background: rgba(92,96,92,.65); }
-.coros-physical-confirmation > aside { position: absolute; z-index: 5; left: 190px; top: 125px; box-sizing: border-box; width: 420px; height: 230px; border-radius: 10px; background: #ff594a; color: #000; text-align: center; }
+/* Over the Grid the device dims far harder than over the Directory: black
+   reads #212021 there and the preset title's white reads #636563, which fits
+   this pair and not the one above. */
+.coros-physical-confirmation.is-over-grid > .confirmation-scrim { background: rgba(45,44,45,.74); }
+.coros-physical-confirmation > .physical-grid-underlay { position: absolute; inset: 0; z-index: 1; }
+.physical-grid-underlay.is-full-grid .underlay-grid { height: 480px; }
+.qc-screen.coros-cpu-monitor { position: absolute; inset: 0; overflow: hidden; background: #000; color: #848684; font-family: Arial,sans-serif; }
+.coros-cpu-monitor > .physical-grid-underlay { position: absolute; inset: 0; }
+.coros-cpu-monitor .cpu-readout { position: absolute; z-index: 3; left: 606px; top: 12px; width: 180px; height: 78px; border-radius: 10px; background: #181c18; }
+.coros-cpu-monitor .cpu-readout button { position: absolute; left: 14px; top: 14px; width: 24px; height: 24px; padding: 0; border: 0; background: transparent; color: #848684; }
+.coros-cpu-monitor .cpu-readout button svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 2; }
+.coros-cpu-readout-placeholder { display: none; }
+.coros-cpu-monitor .cpu-readout .cpu-mixer { position: absolute; left: 84px; top: 14px; width: 24px; height: 24px; color: #848684; }
+.coros-cpu-monitor .cpu-readout .cpu-mixer svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 2; }
+.coros-cpu-monitor .cpu-readout > b { position: absolute; right: 12px; top: 12px; width: 32px; height: 28px; display: grid; place-items: center; border: 1px solid #6c706c; border-radius: 5px; color: #848684; font: 14px Arial,sans-serif; font-weight: 400; }
+.coros-cpu-monitor .cpu-readout > span { position: absolute; left: 14px; bottom: 10px; font: 17px Arial,sans-serif; }
+.coros-cpu-monitor .cpu-readout > strong { position: absolute; right: 12px; bottom: 4px; color: #42fb63; font: 30px Arial,sans-serif; font-weight: 400; }
+.physical-grid-underlay .underlay-route.is-row-2,
+.physical-grid-underlay .underlay-output.is-row-2 { top: 201px; }
+.physical-grid-underlay .underlay-cable.is-row-2 { top: 238px; }
+.physical-grid-underlay .underlay-slot { position: absolute; width: 44px; height: 76px; top: 107px; border-radius: 14px; background: #080808; }
+.physical-grid-underlay.is-lit .underlay-slot { background: #101010; }
+.physical-grid-underlay .underlay-slot.is-left { left: 8px; }
+.physical-grid-underlay .underlay-slot.is-right { right: 6px; }
+.physical-grid-underlay .underlay-slot.is-row-2 { top: 295px; }
+/* cpu-monitor.png shows the Grid undimmed. */
+.physical-grid-underlay.is-lit > .underlay-grid > header > strong { color: #84dbff; }
+.physical-grid-underlay.is-lit > .underlay-grid > header > strong span,
+.physical-grid-underlay.is-lit > .underlay-grid > header h1 { color: #fff; }
+.physical-grid-underlay.is-lit > .underlay-grid > header nav,
+.physical-grid-underlay.is-lit > .underlay-grid > header em { color: #e7e3e7; }
+.physical-grid-underlay.is-lit .underlay-route,
+.physical-grid-underlay.is-lit .underlay-output { background: #101010; color: #e7e3e7; }
+.physical-grid-underlay.is-lit .underlay-cable { background: #c6c3c6; }
+/* The two variants are not the same colour: cloud-upload-overwrite.png draws
+   this panel #101010 with white copy, generic-confirmation.png draws it
+   salmon with black copy. */
+.coros-physical-confirmation > aside { position: absolute; z-index: 5; left: 190px; top: 125px; box-sizing: border-box; width: 420px; height: 230px; border-radius: 10px; background: #101010; color: #fff; text-align: center; }
+.coros-physical-confirmation.is-over-grid > aside { background: #ff594a; color: #000; }
 .coros-physical-confirmation > aside h1 { margin: 43px 0 24px; font: 20px Arial,sans-serif; }
 .coros-physical-confirmation > aside p { margin: 0; font: 18px Arial,sans-serif; }
 .coros-physical-confirmation > aside footer { position: absolute; left: 32px; right: 32px; bottom: 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
@@ -798,3 +845,12 @@
 .qc-screen.coros-block-context > aside button span svg { width: 24px; height: 24px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .qc-screen.coros-block-context > aside button.is-disabled { color: #18201a; }
 .qc-screen.coros-block-context > aside button.is-disabled span { color: var(--qc-editor-disabled); }
+
+/* expression-parameter.png: the trim hint spans the left of the panel with the
+   two range knobs beside it, and neither tile is assigned. */
+.expression-bypass-official .expression-switch-panel.is-trim { grid-template-columns: 46% 27% 27%; }
+.expression-bypass-official .expression-switch-panel .trim-hint { display: grid; align-content: center; gap: .6cqw; padding: 0 1.5cqw; text-align: left; }
+.expression-bypass-official .expression-switch-panel .trim-hint span { color: #e7e3e7; font-size: 2cqw; }
+.expression-bypass-official .expression-switch-panel .trim-hint span b { display: inline-block; width: 2.4cqw; vertical-align: -.3cqw; color: #42fb63; }
+.expression-bypass-official .expression-switch-panel .trim-hint small { color: #9aa09a; font-size: 1.7cqw; line-height: 1.3; }
+.expression-bypass-official .expression-parameter-grid section button.is-assigned { color: #42fb63; }

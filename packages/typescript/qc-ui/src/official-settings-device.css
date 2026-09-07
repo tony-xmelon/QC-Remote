@@ -7,7 +7,7 @@
 .coros-settings-official.settings-system .settings-done,
 .coros-settings-official.settings-system > main > nav,
 .coros-settings-official.settings-system > main > section,
-.coros-settings-official.settings-system > main > nav button { background: #282c28; }
+.coros-settings-official.settings-system > main > nav button { background: #292c29; }
 .coros-settings-official.settings-system > main > nav button.is-active { background: #181c18; color: #40f860; }
 .coros-settings-official.settings-system .settings-system-detail > div i,
 .coros-settings-official.settings-system .settings-system-detail > div i b { background: #101010; }
@@ -17,7 +17,7 @@
 .coros-settings-official.settings-device .settings-done,
 .coros-settings-official.settings-device > main > nav,
 .coros-settings-official.settings-device > main > section,
-.coros-settings-official.settings-device > main > nav button { background: #282c28; }
+.coros-settings-official.settings-device > main > nav button { background: #292c29; }
 .coros-settings-official.settings-device > main > nav button.is-active,
 .coros-settings-official.settings-device .settings-device-detail > div label i { background: #181c18; }
 .coros-settings-official.settings-device .settings-device-detail > div { border-bottom-color: #101010; }
@@ -60,7 +60,7 @@
 .coros-settings-captured .settings-edit,
 .coros-settings-captured > main > nav,
 .coros-settings-captured > main > section,
-.coros-settings-captured > main > nav button { background: #282c28; }
+.coros-settings-captured > main > nav button { background: #292c29; }
 .coros-settings-captured .settings-section { grid-template-columns: 4.5cqw 1fr 2cqw; }
 .coros-settings-captured .settings-section b,
 .coros-settings-captured > main > nav button b { width: 3cqw; height: 3cqw; }
