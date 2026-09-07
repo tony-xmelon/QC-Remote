@@ -4,7 +4,7 @@ import { QC_COLORS, QC_REFERENCE_ICON_RASTERS } from "@ndsp-qc/theme";
 import { officialBlockVisual } from "./block-visuals";
 import { openSplitPath } from "./coros-ui";
 import { QcDeviceGlyph } from "./device-glyph";
-import { QcDirectoryIcon, QcEditorIcon, QcHardwareIcon, QcLibraryIcon, QcModeGlyph, QcScreenHeaderGlyph, QcUiIcon } from "./theme-icons";
+import { QcDirectoryIcon, QcEditorIcon, QcHardwareIcon, QcIoIcon, QcLibraryIcon, QcModeGlyph, QcScreenHeaderGlyph, QcUiIcon, type QcIoIconName } from "./theme-icons";
 import "./fixture-live-surface.css";
 import "./remaining-fixtures.css";
 import "./remaining-fixtures-fixes.css";
@@ -451,15 +451,13 @@ function IoDial({ value }: { value: string }) {
   return <span className="io-dial-wrap"><i className="io-dial"><b /></i><strong>{value}</strong></span>;
 }
 
-function IoPortGlyph({ kind = "jack", primary = false }: { kind?: "square" | "midi" | "input" | "combo" | "jack"; primary?: boolean }) {
-  if (kind === "square") return <svg viewBox="0 0 48 48" aria-hidden="true"><rect className="usb-port-core" x="12" y="16" width="24" height="14" rx="1" /></svg>;
-  if (kind === "midi") return <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="18" /><path d="M10 13a20 20 0 0 0 28 0" />{[[16,20],[24,17],[32,20],[18,29],[30,29]].map(([x,y]) => <circle key={`${x}-${y}`} className="port-hole" cx={x} cy={y} r="2.3" />)}</svg>;
-  if (kind === "input" || kind === "combo") return <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="17" />{primary && <circle className="port-core" cx="24" cy="24" r="13" />}{[[17,18],[31,18],[24,29]].map(([x,y]) => <circle key={`${x}-${y}`} className="port-hole" cx={x} cy={y} r="3" />)}<path d="M13 35l4-4m18 4-4-4" /></svg>;
-  return <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M13 7h22l7 10v15L34 42H14L6 32V17Z" /><circle cx="24" cy="24" r="12" /><circle className="port-hole" cx="24" cy="24" r="4" /></svg>;
+function IoPortGlyph({ kind = "jack", active = false }: { kind?: "square" | "midi" | "input" | "combo" | "jack"; active?: boolean }) {
+  const icon: QcIoIconName = active && kind === "jack" ? "headphone-active" : kind === "square" ? "usb" : kind;
+  return <QcIoIcon kind={icon} />;
 }
 
 function IoHeadphonesGlyph() {
-  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13v-2a8 8 0 0 1 16 0v2M4 12H2v7h4v-7H4Zm16 0h2v7h-4v-7h2Z" /></svg>;
+  return <QcIoIcon kind="headphones-symbol" />;
 }
 
 function CorOsIoSettings({ initialView, onClose }: { initialView: IoView; onClose: () => void }) {
@@ -471,8 +469,8 @@ function CorOsIoSettings({ initialView, onClose }: { initialView: IoView; onClos
   const activePort = (index: number) => view === "overview" ? index === 7 : view === "output" ? index === 4 || index === 5 : view === "send-return" ? index === 9 : view === "headphones" ? index === 6 : IO_PORTS[index]?.id === view && (view !== "input" || index === IO_PORTS.length - 1);
   const activeHalf = (index: number) => view === "send-return" && index === 9 ? " is-active-secondary" : view === "headphones" && index === 6 ? " is-active-primary" : "";
   return <section className={`coros-io-settings is-${view}`} aria-label={`I/O Settings ${title}`}>
-    <header><span className="io-heading"><i aria-hidden="true">◆</i><span><small>I/O SETTINGS</small><strong>{title}</strong></span></span><button className="io-global-eq" onClick={() => setGlobalEqOpen(true)}>GLOBAL EQ</button><button aria-label="Close I/O Settings" onClick={onClose}>✓</button></header>
-    <div className="io-ports">{IO_PORTS.map((port, index) => <button key={`${port.label}-${index}`} className={`${activePort(index) ? `is-active${activeHalf(index)}` : ""} is-${port.kind ?? "jack"}${port.paired ? " is-paired" : ""}`} onClick={() => setView(port.id)}><span className={port.id === "headphones" ? "io-headphone-label" : undefined}>{port.id === "headphones" ? <IoHeadphonesGlyph /> : port.label}</span><i><IoPortGlyph kind={port.kind ?? "jack"} primary={view === "input" && index === IO_PORTS.length - 1} /></i>{port.paired && <i><IoPortGlyph /></i>}<small>{port.sub}</small></button>)}{view === "usb" && <div className="io-input-selectors"><button>1</button><button>2</button></div>}</div>
+    <header><span className="io-heading"><i aria-hidden="true"><QcIoIcon kind="header" /></i><span><small>I/O SETTINGS</small><strong>{title}</strong></span></span><button className="io-global-eq" onClick={() => setGlobalEqOpen(true)}>GLOBAL EQ</button><button aria-label="Close I/O Settings" onClick={onClose}><QcEditorIcon kind="confirm" /></button></header>
+    <div className="io-ports">{IO_PORTS.map((port, index) => <button key={`${port.label}-${index}`} className={`${activePort(index) ? `is-active${activeHalf(index)}` : ""} is-${port.kind ?? "jack"}${port.paired ? " is-paired" : ""}`} onClick={() => setView(port.id)}><span className={port.id === "headphones" ? "io-headphone-label" : undefined}>{port.id === "headphones" ? <IoHeadphonesGlyph /> : port.label}</span><i><IoPortGlyph kind={port.kind ?? "jack"} active={activePort(index) && activeHalf(index) !== " is-active-secondary"} /></i>{port.paired && <i><IoPortGlyph active={activePort(index) && activeHalf(index) === " is-active-secondary"} /></i>}<small>{port.sub}</small></button>)}{view === "headphones" && <><i className="io-port-link io-port-link-main"><QcIoIcon kind="linked" /></i><i className="io-port-link io-port-link-capture"><QcIoIcon kind="linked" /></i></>}{view === "usb" && <div className="io-input-selectors"><button>1</button><button>2</button></div>}</div>
     {view === "usb" ? <div className="io-editor is-usb"><section><span>USB LEVEL</span><IoDial value="0.0 dB" /></section><section><span>HP SOURCE</span><IoDial value="BOTH" /></section><div className="io-meter-grid">{meters.map((meter) => <span key={meter}><b>{meter}</b><i>i</i><small>-40.0 dB　　　-40.0</small><em /><em /></span>)}</div></div>
       : view === "headphones" ? <div className="io-editor is-headphones">
         <section><span>HP LEVEL</span><IoDial value="0.0 dB" /></section>

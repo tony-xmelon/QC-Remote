@@ -51,6 +51,9 @@
   --qc-mode-join: #707c70;
   --qc-scene-badge: #ffd331;
   --qc-preset-brown: #9b613c;
+  --qc-io-header-shadow: #424542;
+  --qc-io-header-mid: #7b7d7b;
+  --qc-io-header-low: #737573;
   --qc-white-led: #f4f4f4;
   --qc-idle-led: #626367;
   --qc-device-panel: #121212;

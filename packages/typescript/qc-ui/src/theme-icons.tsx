@@ -4,6 +4,7 @@ import { QC_COLORS, QC_REFERENCE_ICON_RASTERS, QC_TYPOGRAPHY } from "@ndsp-qc/th
 export type QcDirectoryIconName = "grid" | "download" | "cloud" | "cloud-upload" | "folder" | "new-folder" | "sort" | "filter" | "arrange" | "upload" | "search" | "trash" | "done";
 export type QcEditorIconName = "save" | "change" | "copy" | "paste" | "reset" | "expression" | "looper" | "mute" | "model-update" | "model-downgrade" | "remove" | "assignment-expression" | "band-power" | "footswitch" | "scene-previous" | "scene-next" | "bypass" | "confirm" | "waveform";
 export type QcHardwareIconName = "power" | "brand-pulse";
+export type QcIoIconName = "header" | "usb" | "jack" | "midi" | "combo" | "headphone-active" | "input" | "headphones-symbol" | "linked";
 export type QcLibraryIconName = "capture-library" | "capture-header" | "heart" | "clock" | "binoculars" | "broken-heart" | "neural-mark";
 export type QcScreenHeaderGlyphName = "undo" | "save" | "export" | "menu";
 export type QcUiIconName = "add" | "subtract" | "previous" | "next" | "cab-previous" | "cab-next" | "up" | "down" | "more" | "check" | "close" | "refresh" | "backspace" | "microphone" | "attachment" | "file" | "send" | "stop" | "save-as" | "edit" | "midi" | "favorite" | "delete" | "capture" | "modes" | "tempo" | "cpu" | "settings";
@@ -39,6 +40,11 @@ function editorReferenceIcon(kind: QcEditorIconName): ReferenceRasterName | unde
     "scene-previous": "editor.scene-previous", "scene-next": "editor.scene-next"
   } as const;
   return kind in icons ? icons[kind as keyof typeof icons] : undefined;
+}
+
+export function QcIoIcon({ kind, className }: { kind: QcIoIconName; className?: string }) {
+  if (kind === "headphones-symbol") return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13v-2a8 8 0 0 1 16 0v2M4 12H2v7h4v-7H4Zm16 0h2v7h-4v-7h2Z" /></svg>;
+  return <QcReferenceRasterLayers icon={`io.${kind}` as ReferenceRasterName} className={className} />;
 }
 
 export function QcPresetStackIcon() {

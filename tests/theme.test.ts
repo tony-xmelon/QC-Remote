@@ -69,7 +69,10 @@ test("shared theme retains every measured native QC color", () => {
     headerMenu: "#ffffff",
     modeJoin: "#707c70",
     sceneBadge: "#ffd331",
-    presetBrown: "#9b613c"
+    presetBrown: "#9b613c",
+    ioHeaderShadow: "#424542",
+    ioHeaderMid: "#7b7d7b",
+    ioHeaderLow: "#737573"
   });
   assert.deepEqual(QC_COLORS.browserCategory, {
     plugin: "#42fb63", amp: "#ff2421", capture: "#949694", cab: "#6b55ff", overdrive: "#ff7100",

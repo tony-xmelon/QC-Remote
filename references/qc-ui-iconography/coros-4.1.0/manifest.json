@@ -7,6 +7,7 @@
     "editor.change", "editor.copy", "editor.paste", "editor.reset", "editor.save", "editor.expression",
     "editor.mute", "editor.model-update", "editor.model-downgrade", "editor.remove", "editor.confirm",
     "editor.bypass", "editor.scene-previous", "editor.scene-next",
+    "io.header", "io.usb", "io.jack", "io.midi", "io.combo", "io.headphone-active", "io.input", "io.linked",
     "interface.add", "interface.file",
     "interface.midi", "interface.modes", "interface.tempo", "interface.settings",
     "interface.previous-cab", "interface.next-cab", "device-category.cab", "device-category.overdrive",
@@ -42,6 +43,13 @@
       "evidence": "official-vector",
       "sources": ["official-detail-power-on.svg", "official-detail-power-off.svg", "official-detail-power-overlay.svg"],
       "paletteTokens": ["hardware.whiteLed"]
+    },
+    {
+      "type": "QcIoIconName",
+      "variants": ["header", "usb", "jack", "midi", "combo", "headphone-active", "input", "headphones-symbol", "linked"],
+      "evidence": "screen-frame",
+      "sources": ["io-headphones"],
+      "paletteTokens": ["captured.screen", "captured.primaryText", "captured.routeGlyphSurface", "captured.utilityMark", "captured.ioHeaderShadow", "captured.ioHeaderMid", "captured.ioHeaderLow", "browserCategory.compressor"]
     },
     {
       "type": "QcLibraryIconName",
@@ -131,6 +139,15 @@
     { "icon": "editor.scene-previous", "variant": "scene-previous", "screen": "official-looper", "crop": [552, 18, 30, 24], "referenceBackground": "#181c18", "rendererBackground": "#181c18", "expectedColors": ["#f8fcf8", "#505050"], "paletteTokens": ["captured.iconPrimary", "captured.sceneControlMuted"] },
     { "icon": "editor.scene-next", "variant": "scene-next", "screen": "official-looper", "crop": [638, 18, 30, 24], "referenceBackground": "#181c18", "rendererBackground": "#181c18", "expectedColors": ["#f8fcf8", "#505050"], "paletteTokens": ["captured.iconPrimary", "captured.sceneControlMuted"] },
     { "icon": "editor.confirm", "variant": "confirm", "screen": "official-looper", "crop": [728, 18, 30, 24], "referenceBackground": "#282c28", "rendererBackground": "#282c28", "expectedColors": ["#f8fcf8"], "paletteTokens": ["captured.iconPrimary"] },
+    { "icon": "io.header", "variant": "header", "screen": "io-headphones", "sourceSet": "corpus", "crop": [18, 18, 24, 24], "referenceBackground": "#313431", "rendererBackground": "#313431", "expectedColors": ["#949694", "#424542", "#7b7d7b", "#737573"], "paletteTokens": ["captured.utilityMark", "captured.ioHeaderShadow", "captured.ioHeaderMid", "captured.ioHeaderLow"], "tolerance": 0 },
+    { "icon": "io.usb", "variant": "usb", "screen": "io-headphones", "sourceSet": "corpus", "crop": [18, 90, 48, 48], "referenceBackground": "#101010", "rendererBackground": "#101010", "expectedColors": ["#000000", "#ffffff"], "paletteTokens": ["captured.screen", "captured.primaryText"] },
+    { "icon": "io.jack", "variant": "jack", "screen": "io-headphones", "sourceSet": "corpus", "crop": [76, 90, 48, 48], "referenceBackground": "#101010", "rendererBackground": "#101010", "expectedColors": ["#000000", "#292c29"], "paletteTokens": ["captured.screen", "captured.routeGlyphSurface"] },
+    { "icon": "io.midi", "variant": "midi", "screen": "io-headphones", "sourceSet": "corpus", "crop": [138, 90, 48, 48], "referenceBackground": "#101010", "rendererBackground": "#101010", "expectedColors": ["#000000", "#292c29"], "paletteTokens": ["captured.screen", "captured.routeGlyphSurface"] },
+    { "icon": "io.combo", "variant": "combo", "screen": "io-headphones", "sourceSet": "corpus", "crop": [264, 86, 56, 56], "referenceBackground": "#101010", "rendererBackground": "#101010", "expectedColors": ["#000000", "#292c29"], "paletteTokens": ["captured.screen", "captured.routeGlyphSurface"] },
+    { "icon": "io.headphone-active", "variant": "headphone-active", "screen": "io-headphones", "sourceSet": "corpus", "crop": [406, 90, 48, 48], "referenceBackground": "#101010", "rendererBackground": "#101010", "expectedColors": ["#000000", "#42fb63"], "paletteTokens": ["captured.screen", "browserCategory.compressor"] },
+    { "icon": "io.input", "variant": "input", "screen": "io-headphones", "sourceSet": "corpus", "crop": [640, 108, 68, 68], "referenceBackground": "#101010", "rendererBackground": "#101010", "expectedColors": ["#000000", "#292c29"], "paletteTokens": ["captured.screen", "captured.routeGlyphSurface"] },
+    { "icon": "io.headphones-symbol", "variant": "headphones-symbol", "screen": "io-headphones", "sourceSet": "corpus", "crop": [418, 56, 24, 24], "referenceBackground": "#101010", "rendererBackground": "#101010", "expectedColors": ["#ffffff"], "paletteTokens": ["captured.primaryText"] },
+    { "icon": "io.linked", "variant": "linked", "screen": "io-headphones", "sourceSet": "corpus", "crop": [316, 140, 28, 16], "referenceBackground": "#101010", "rendererBackground": "#101010", "expectedColors": ["#949694"], "paletteTokens": ["captured.utilityMark"] },
     { "icon": "interface.refresh", "variant": "refresh", "screen": "official-plugin-devices", "crop": [347, 18, 24, 24], "referenceBackground": "#101010", "rendererBackground": "#101010", "expectedColors": ["#f8fcf8"], "paletteTokens": ["captured.iconPrimary"] },
     { "icon": "interface.add", "variant": "add", "screen": "grid-context-menu", "sourceSet": "corpus", "crop": [488, 94, 24, 24], "referenceBackground": "#101010", "rendererBackground": "#101010", "expectedColors": ["#ffffff"], "paletteTokens": ["captured.primaryText"] },
     { "icon": "interface.save-as", "variant": "save-as", "screen": "grid-context-menu", "sourceSet": "corpus", "crop": [488, 154, 24, 24], "referenceBackground": "#101010", "rendererBackground": "#101010", "expectedColors": ["#ffffff"], "paletteTokens": ["captured.primaryText"] },

@@ -50,7 +50,7 @@ def render(manifest: dict) -> str:
         crop = Image.open(root / f'{measurement["screen"]}.png').convert("RGB").crop((x, y, x + width, y + height))
         expected_colors = [color(value) for value in measurement["expectedColors"]]
         background = color(measurement["referenceBackground"])
-        tolerance = max(2.0, min(20.0, min(math.dist(value, background) for value in expected_colors) / 2.0))
+        tolerance = measurement.get("tolerance", max(2.0, min(20.0, min(math.dist(value, background) for value in expected_colors) / 2.0)))
         paths = {value: raster_path(crop, color(value), tolerance) for value in measurement["expectedColors"]}
         entries.append((measurement["icon"], width, height, paths))
     lines = [
