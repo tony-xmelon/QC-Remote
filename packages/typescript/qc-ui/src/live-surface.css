@@ -283,6 +283,7 @@
 .cab-channel-footer { position: absolute; z-index: 3; right: 2%; bottom: 2%; left: 2%; display: grid; grid-template-columns: 18% minmax(0, 1fr) 18%; gap: 2%; height: 15%; }
 .cab-channel-footer > button { padding: 0; border: 0; border-radius: .8cqw; background: var(--qc-device-panel-raised); color: var(--qc-palette-eee); font: 600 2.4cqw var(--qc-font-device-plain); }
 .cab-phase.is-active { color: var(--cab-accent); }
+.cab-phase .qc-ui-icon { width: 2.7cqw; height: 2.7cqw; vertical-align: middle; }
 .cab-channel-power { color: var(--qc-palette-777) !important; }
 .cab-channel-power .qc-ui-icon { width: 2.5cqw; height: 2.5cqw; }
 .cab-channel-power.is-active { color: var(--qc-palette-f2f2f2) !important; }
@@ -319,6 +320,7 @@
 .ir-loader-state button, .ir-loader-arrows button { padding: 0; border: 0; border-bottom: 1px solid var(--qc-palette-050505); background: var(--qc-palette-151517); color: var(--qc-palette-efefef); font: 600 2.1cqw var(--qc-font-device-plain); }
 .ir-loader-state button:last-child, .ir-loader-arrows button:last-child { border-bottom: 0; }
 .ir-loader-state button.is-active { color: var(--ir-accent); }
+.ir-loader-state .qc-ui-icon { width: 2.4cqw; height: 2.4cqw; vertical-align: middle; }
 .ir-loader-name { display: flex; min-width: 0; flex-direction: column; align-items: center; justify-content: center; gap: .35cqw; padding: 0 1cqw; }
 .ir-loader-name small { color: var(--qc-palette-8c8d90); font: 700 1.05cqw var(--qc-font-device-plain); letter-spacing: .08em; }
 .ir-loader-name strong { max-width: 100%; overflow: hidden; color: var(--qc-palette-f2f2f2); font: 500 1.45cqw var(--qc-font-control); text-overflow: ellipsis; white-space: nowrap; }

@@ -1,18 +1,23 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
 
 const root = process.cwd();
-const manifest = JSON.parse(readFileSync(join(root, "references/qc-ui-iconography/coros-4.1.0/manifest.json"), "utf8"));
+const manifest = JSON.parse(readFileSync(join(root, "contracts/qc-iconography.v1.json"), "utf8"));
+const privateManifestPath = join(root, "references/qc-ui-iconography/coros-4.1.0/manifest.json");
+const requireCompleteCoverage = process.argv.includes("--require-complete-coverage");
+const usePrivateCorpus = requireCompleteCoverage || process.argv.includes("--with-reference-corpus");
+const privateManifest = usePrivateCorpus && existsSync(privateManifestPath) ? JSON.parse(readFileSync(privateManifestPath, "utf8")) : null;
+const screenMeasurements = privateManifest?.screenMeasurements ?? [];
 const iconsSource = readFileSync(join(root, "packages/typescript/qc-ui/src/theme-icons.tsx"), "utf8");
 const deviceGlyphSource = readFileSync(join(root, "packages/typescript/qc-ui/src/device-glyph.tsx"), "utf8");
 const fixtureSource = readFileSync(join(root, "packages/typescript/qc-ui/src/coros-screen-fixtures.tsx"), "utf8");
 const colors = JSON.parse(readFileSync(join(root, "packages/typescript/qc-theme/src/colors.json"), "utf8"));
 const appGoldenRoot = join(root, "references/qc-ui-app-golden/v1");
-const appGolden = JSON.parse(readFileSync(join(appGoldenRoot, "manifest.json"), "utf8"));
+const appGoldenManifestPath = join(appGoldenRoot, "manifest.json");
+const appGolden = existsSync(appGoldenManifestPath) ? JSON.parse(readFileSync(appGoldenManifestPath, "utf8")) : null;
 
 const failures = [];
-const requireCompleteCoverage = process.argv.includes("--require-complete-coverage");
 const union = (name) => {
   const match = iconsSource.match(new RegExp(`export type ${name} =\\s*([^;]+);`));
   if (!match) return failures.push(`missing exported union ${name}`), [];
@@ -27,6 +32,7 @@ for (const family of manifest.families) {
     if (JSON.stringify(declared) !== JSON.stringify(expected)) failures.push(`${family.type} manifest drift: source=${declared.join(",")} manifest=${expected.join(",")}`);
   }
   if (!family.sources.length) failures.push(`${family.type} has no authoritative source`);
+  for (const source of family.sources) if (!existsSync(join(root, source))) failures.push(`${family.type} references missing shared source ${source}`);
   for (const paletteToken of family.paletteTokens) if (!token(paletteToken)) failures.push(`${family.type} has unknown palette token ${paletteToken}`);
 }
 
@@ -34,20 +40,20 @@ if (!deviceGlyphSource.includes("export function QcDeviceGlyph")) failures.push(
 const categoryGlyphSource = readFileSync(join(root, "packages/typescript/qc-ui/src/device-category-glyph.tsx"), "utf8");
 if (!deviceGlyphSource.includes("QcDeviceCategoryGlyph") || /<image\b|data:image|base64/.test(deviceGlyphSource + categoryGlyphSource)) failures.push("device glyphs must use the shared neutral vector registry without sprite or raster exceptions");
 
-for (const measurement of manifest.screenMeasurements) {
+for (const measurement of screenMeasurements) {
   const measuredTokens = measurement.paletteTokens.map((paletteToken) => token(paletteToken)?.toLowerCase());
   const expectedColors = measurement.expectedColors.map((color) => color.toLowerCase());
   if (JSON.stringify(measuredTokens) !== JSON.stringify(expectedColors)) failures.push(`${measurement.icon} palette tokens do not equal measured screen colors`);
 }
-const measuredPaletteTokens = new Set(manifest.screenMeasurements.flatMap((measurement) => measurement.paletteTokens));
-for (const family of manifest.families) {
+const measuredPaletteTokens = new Set(screenMeasurements.flatMap((measurement) => measurement.paletteTokens));
+if (privateManifest) for (const family of manifest.families) {
   for (const paletteToken of family.paletteTokens) {
     if (!measuredPaletteTokens.has(paletteToken)) failures.push(`${family.type} palette token ${paletteToken} has no screengrab anchor`);
   }
 }
 
-const appGoldenById = new Map(appGolden.captures.map((capture) => [capture.id, capture]));
-for (const measurement of manifest.screenMeasurements.filter((entry) => entry.sourceSet === "app-golden")) {
+const appGoldenById = new Map((appGolden?.captures ?? []).map((capture) => [capture.id, capture]));
+for (const measurement of screenMeasurements.filter((entry) => entry.sourceSet === "app-golden")) {
   const capture = appGoldenById.get(measurement.screen);
   if (!capture) {
     failures.push(`${measurement.icon} references unknown app golden ${measurement.screen}`);
@@ -77,14 +83,15 @@ const familyPrefixes = {
 };
 const canonicalVariant = (value) => value.toLowerCase().replaceAll(" ", "-");
 const uncovered = {};
-for (const family of manifest.families) {
+if (privateManifest) for (const family of manifest.families) {
   const prefix = familyPrefixes[family.type];
-  const measured = new Set(manifest.screenMeasurements
+  const measured = new Set(screenMeasurements
     .filter((measurement) => measurement.icon.startsWith(`${prefix}.`))
     .map((measurement) => canonicalVariant(measurement.variant)));
   const missing = family.variants.filter((variant) => !measured.has(canonicalVariant(variant)));
   if (missing.length) uncovered[family.type] = missing;
 }
+if (requireCompleteCoverage && !privateManifest) failures.push("complete iconography coverage requires the ignored local comparison manifest");
 if (requireCompleteCoverage && Object.keys(uncovered).length) {
   for (const [family, variants] of Object.entries(uncovered)) failures.push(`${family} lacks screengrab measurements for: ${variants.join(", ")}`);
 }
@@ -97,4 +104,4 @@ if (failures.length) {
 
 const variants = manifest.families.reduce((sum, family) => sum + family.variants.length, 0);
 const coveredVariants = variants - Object.values(uncovered).reduce((sum, missing) => sum + missing.length, 0);
-console.log(JSON.stringify({ verified: true, coverageComplete: Object.keys(uncovered).length === 0, families: manifest.families.length, variants, screenMeasuredVariants: coveredVariants, neutralVectorRegistry: true, paletteAnchors: [...new Set(manifest.families.flatMap((family) => family.paletteTokens))].length, uncovered }));
+console.log(JSON.stringify({ verified: true, referenceCoverage: privateManifest ? (Object.keys(uncovered).length === 0 ? "complete" : "partial") : "not-requested", families: manifest.families.length, variants, screenMeasuredVariants: privateManifest ? coveredVariants : null, neutralVectorRegistry: true, paletteAnchors: [...new Set(manifest.families.flatMap((family) => family.paletteTokens))].length, uncovered }));

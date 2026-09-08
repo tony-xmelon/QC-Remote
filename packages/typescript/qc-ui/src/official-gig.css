@@ -13,7 +13,6 @@
 .gig-official > header .gig-mode-hybrid { display: flex; align-items: center; justify-content: center; gap: .625cqw; width: 100%; }
 .gig-official > header .gig-mode-hybrid svg { width: 3cqw; height: 3cqw; color: var(--qc-icon-primary); }
 .gig-official > header .gig-mode-hybrid > b { color: var(--qc-mode-join); font-size: 3cqw; font-weight: 400; }
-.gig-official > header .gig-mode-hybrid-raster { display: block; width: 8.25cqw; height: 3.25cqw; transform: translate(7px, 1px); }
 .gig-official > i { margin: 0 1cqw; border-radius: 1cqw; background: #171b18; }
 .gig-official-tiles { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr); gap: 1cqw; padding: 1cqw; }
 .gig-official-tiles article { position: relative; overflow: hidden; border-radius: 1cqw; background: #171b18; padding: 1.5cqw 2cqw; }

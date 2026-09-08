@@ -10,7 +10,7 @@ export type QcIoIconName = "usb" | "jack" | "midi" | "combo" | "input" | "headph
 export type QcLibraryIconName = "capture-library" | "capture-header" | "impulse-response" | "heart" | "clock" | "binoculars" | "broken-heart";
 export type QcScreenHeaderGlyphName = "undo" | "save" | "export" | "menu";
 export type QcSettingsIconName = "connection" | "updates" | "brightness" | "power" | "volume" | "storage" | "factory-reset";
-export type QcUiIconName = "add" | "subtract" | "previous" | "next" | "arrow-right" | "cab-previous" | "cab-next" | "up" | "down" | "more" | "check" | "close" | "refresh" | "backspace" | "microphone" | "attachment" | "file" | "send" | "stop" | "save-as" | "edit" | "midi" | "favorite" | "delete" | "capture" | "modes" | "tempo" | "cpu" | "settings" | "power" | "pin";
+export type QcUiIconName = "add" | "subtract" | "previous" | "next" | "arrow-right" | "cab-previous" | "cab-next" | "up" | "down" | "more" | "check" | "close" | "refresh" | "backspace" | "microphone" | "attachment" | "file" | "send" | "stop" | "save-as" | "edit" | "midi" | "favorite" | "delete" | "capture" | "modes" | "tempo" | "cpu" | "settings" | "power" | "phase-invert" | "pin";
 
 type ScreenVectorName = keyof typeof QC_SCREEN_ICON_VECTORS;
 
@@ -85,6 +85,7 @@ export function QcPresetStackIcon() {
 export function QcUiIcon({ kind, className }: { kind: QcUiIconName; className?: string }) {
   const classes = `qc-ui-icon qc-ui-icon-${kind}${className ? ` ${className}` : ""}`;
   if (kind === "power") return <svg className={classes} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M12 2v9" /><path d="M6.3 5.7a9 9 0 1 0 11.4 0" /></svg>;
+  if (kind === "phase-invert") return <svg className={classes} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="7" /><path d="M7 19 17 5" /></svg>;
   if (kind === "pin") return <svg className={classes} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m14.8 2 7.2 7.2-2.1 2.1-1.1-1.1-4.6 4.6.7 2.1-1.4 1.4-3.9-3.9-6.2 6.2-1.4-1.4L8.2 13 4.3 9.1l1.4-1.4 2.1.7 4.6-4.6-1.1-1.1L13.4.6 14.8 2Z" /></svg>;
   if (kind === "arrow-right") return <svg className={classes} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 12h15M14 7l5 5-5 5" /></svg>;
   if (kind === "settings" || kind === "check") return <QcScreenVectorLayers icon={`interface.${kind}` as ScreenVectorName} className={classes} />;
@@ -245,7 +246,7 @@ export function QcScreenHeaderGlyph({ kind }: { kind: QcScreenHeaderGlyphName })
   return <path shapeRendering="crispEdges" fill={QC_COLORS.captured.headerMenu} d="M765 13h1v1h-1ZM764 14h3v1h-3ZM763 15h5v1h-5ZM764 16h3v1h-3ZM765 17h1v1h-1ZM765 21h1v1h-1ZM764 22h3v1h-3ZM763 23h5v1h-5ZM764 24h3v1h-3ZM765 25h1v1h-1ZM765 29h1v1h-1ZM764 30h3v1h-3ZM763 31h5v1h-5ZM764 32h3v1h-3ZM765 33h1v1h-1Z" />;
 }
 
-const ROUTE_STEREO_OUTPUT_RASTER = "M23 3h2v1h-2ZM22 4h4v1h-4ZM23 5h3v1h-3ZM24 6h3v1h-3ZM24 7h4v1h-4ZM4 8h25v1h-25ZM4 9h25v1h-25ZM24 10h4v1h-4ZM24 11h3v1h-3ZM23 12h3v1h-3ZM22 13h4v1h-4ZM23 14h2v1h-2ZM23 17h2v1h-2ZM22 18h4v1h-4ZM23 19h3v1h-3ZM24 20h3v1h-3ZM24 21h4v1h-4ZM4 22h25v1h-25ZM4 23h25v1h-25ZM24 24h4v1h-4ZM24 25h3v1h-3ZM23 26h3v1h-3ZM22 27h4v1h-4ZM23 28h2v1h-2Z";
+const ROUTE_STEREO_OUTPUT_VECTOR = "M23 3h2v1h-2ZM22 4h4v1h-4ZM23 5h3v1h-3ZM24 6h3v1h-3ZM24 7h4v1h-4ZM4 8h25v1h-25ZM4 9h25v1h-25ZM24 10h4v1h-4ZM24 11h3v1h-3ZM23 12h3v1h-3ZM22 13h4v1h-4ZM23 14h2v1h-2ZM23 17h2v1h-2ZM22 18h4v1h-4ZM23 19h3v1h-3ZM24 20h3v1h-3ZM24 21h4v1h-4ZM4 22h25v1h-25ZM4 23h25v1h-25ZM24 24h4v1h-4ZM24 25h3v1h-3ZM23 26h3v1h-3ZM22 27h4v1h-4ZM23 28h2v1h-2Z";
 
 /** Shared CorOS routing glyph vocabulary used by both app hosts. */
 export function QcRouteGlyph({ side, label }: { side: "input" | "output"; label: string }) {
@@ -279,7 +280,7 @@ export function QcRouteGlyph({ side, label }: { side: "input" | "output"; label:
   if (label === "Multi Out" || label === "Multiple Outputs")
     return (
       <svg viewBox="0 0 32 32" shapeRendering="crispEdges" aria-hidden="true">
-        <path d={ROUTE_STEREO_OUTPUT_RASTER} fill={QC_COLORS.captured.primaryText} stroke="none" />
+        <path d={ROUTE_STEREO_OUTPUT_VECTOR} fill={QC_COLORS.captured.primaryText} stroke="none" />
       </svg>
     );
   if (label.startsWith("Send "))
@@ -291,7 +292,7 @@ export function QcRouteGlyph({ side, label }: { side: "input" | "output"; label:
   if (label === "Out 1/2")
     return (
       <svg viewBox="0 0 32 32" shapeRendering="crispEdges" aria-hidden="true">
-        <path d={ROUTE_STEREO_OUTPUT_RASTER} fill={QC_COLORS.captured.primaryText} stroke="none" />
+        <path d={ROUTE_STEREO_OUTPUT_VECTOR} fill={QC_COLORS.captured.primaryText} stroke="none" />
       </svg>
     );
   if (label === "Out 1" || label === "Out 2")
@@ -306,7 +307,7 @@ export function QcRouteGlyph({ side, label }: { side: "input" | "output"; label:
   if (label.includes("/"))
     return (
       <svg viewBox="0 0 32 32" shapeRendering="crispEdges" aria-hidden="true">
-        <path d={ROUTE_STEREO_OUTPUT_RASTER} fill={QC_COLORS.captured.primaryText} stroke="none" />
+        <path d={ROUTE_STEREO_OUTPUT_VECTOR} fill={QC_COLORS.captured.primaryText} stroke="none" />
       </svg>
     );
   if (label.startsWith("Out "))
