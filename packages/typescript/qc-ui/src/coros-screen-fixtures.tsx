@@ -2665,14 +2665,13 @@ function ExpressionLinkIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3H4v18h3M17 3h3v18h-3M9 12h6" /><rect x="7" y="9" width="2" height="6" /><rect x="15" y="9" width="2" height="6" /></svg>;
 }
 
-function ExpressionChooser({ trim }: { trim: boolean }) {
-  const tiles: Array<[string, boolean]> = [
-    ["NOISE REDUCTION", false],
-    ["BYPASS", !trim],
-  ];
+function ExpressionChooser({ trim, manualAmp = false }: { trim: boolean; manualAmp?: boolean }) {
+  const tiles: Array<[string, boolean]> = manualAmp
+    ? [["GAIN", false], ["BASS", false], ["MID", false], ["TREBLE", false], ["LEVEL", false], ["BYPASS", false]]
+    : [["NOISE REDUCTION", false], ["BYPASS", !trim]];
   return (
     <section
-      className={`qc-screen expression-bypass-official${trim ? " is-trim" : ""}`}
+      className={`qc-screen expression-bypass-official${trim ? " is-trim" : ""}${manualAmp ? " is-manual-amp" : ""}`}
       aria-label={
         trim
           ? "Expression parameter assignment"
@@ -2973,6 +2972,7 @@ export function CorOsScreenFixture({ view, snapshot, gigPresetList, onClose = ()
   if ((view as string) === "gig-official-hybrid-manual") return <CorOsOfficialGig mode="hybrid" manualHybrid />;
   if ((view as string) === "settings-account-official") return <CorOsOfficialSettings view="settings-account" manualAccount />;
   if ((view as string) === "capture-progress-official") return <CorOsOfficialCapture view="capture-progress" manualProgress />;
+  if ((view as string) === "expression-bypass-official") return <ExpressionChooser trim={false} manualAmp />;
   if (view.startsWith("gig-official-")) return <CorOsOfficialGig mode={view.replace("gig-official-", "") as OfficialGigMode} />;
   if (view === "device-presets-official") return <CorOsDevicePresetScreen view="official-factory" />;
   if (view === "gig" || view === "gig-live-tuner") return <CorOsGigView snapshot={snapshot} presetList={gigPresetList} liveTuner={view === "gig-live-tuner"} onClose={onClose} />;

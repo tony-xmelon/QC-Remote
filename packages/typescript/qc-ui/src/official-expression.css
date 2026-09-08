@@ -34,5 +34,6 @@
 .expression-parameter-grid section button { width: 100%; height: 4.75cqw; margin-top: 2.375cqw; border-radius: .75cqw; background: #101210; font-size: 1.75cqw; }
 .expression-parameter-grid section:last-child button { margin-top: 2.75cqw; }
 .expression-bypass-official:not(.is-trim) .expression-switch-panel > section:first-child > button { background: #42fb63; color: #101010; }
+.expression-bypass-official.is-manual-amp .expression-switch-panel > section:first-child > button { background: #181c18; color: #eee; }
 
 }

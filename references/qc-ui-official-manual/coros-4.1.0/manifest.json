@@ -232,7 +232,7 @@
       "height": 480,
       "deviceVariant": "quad-cortex",
       "renderer": {
-        "screen": "expression-bypass"
+        "screen": "expression-bypass-official"
       }
     },
     {

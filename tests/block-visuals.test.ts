@@ -312,6 +312,16 @@ test("official Capture process preserves the manual progress state separately", 
   assert.match(manifest, /"id": "official-capture-process"[\s\S]*?"screen": "capture-progress-official"/);
 });
 
+test("official Expression bypass keeps the manual amp parameter set separate", () => {
+  const fixture = readFileSync("packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", "utf8");
+  const css = readFileSync("packages/typescript/qc-ui/src/official-expression.css", "utf8");
+  const manifest = readFileSync("references/qc-ui-official-manual/coros-4.1.0/manifest.json", "utf8");
+  assert.match(fixture, /manualAmp[\s\S]*?\[\["GAIN", false\], \["BASS", false\], \["MID", false\], \["TREBLE", false\], \["LEVEL", false\], \["BYPASS", false\]\]/);
+  assert.match(fixture, /expression-bypass-official[\s\S]*?<ExpressionChooser trim=\{false\} manualAmp/);
+  assert.match(css, /\.expression-bypass-official\.is-manual-amp \.expression-switch-panel > section:first-child > button/);
+  assert.match(manifest, /"id": "official-expression-bypass"[\s\S]*?"screen": "expression-bypass-official"/);
+});
+
 // Every rule above pins a number that is supposed to have come off a device
 // frame, but a test that reads our own stylesheet cannot tell a measurement from
 // an invention - that is how the item menu kept a four-entry height and the
