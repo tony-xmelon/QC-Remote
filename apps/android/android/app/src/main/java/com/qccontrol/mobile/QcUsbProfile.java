@@ -8,7 +8,6 @@ final class QcUsbProfile {
     static final int MAX_FRAME_BYTES = 1048576;
     static final int MAX_INFLATED_BYTES = 16777216;
     static final long KEEPALIVE_INTERVAL_MS = 5000L;
-    static final long LIVENESS_REPLY_TIMEOUT_MS = 3000L;
     static final long RECONNECT_INTERVAL_MS = 750L;
     static final long PERFORMANCE_MIDI_GAP_MS = 8L;
     static final long REMOTE_GESTURE_INTERVAL_MS = 20L;

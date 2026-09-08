@@ -102,16 +102,15 @@ impl FlightRecorder {
     fn push(&mut self, entry: FlightEntry) {
         self.document.entries.push_back(entry);
         while self.document.entries.len() > MAX_ENTRIES {
-            // A healthy idle link emits nothing but Version probe/reply pairs,
-            // roughly 90% of all traffic on this session. Evicting oldest-first
-            // let eight idle minutes overwrite the whole record, so a hang
+            // A healthy idle link emits routine KeepAlive traffic. Evicting
+            // oldest-first let eight idle minutes overwrite the whole record, so a hang
             // investigated afterwards had no trace of the operation that hung.
-            // Drop the oldest routine probe before any real operation.
+            // Drop the oldest routine keepalive before any real operation.
             let evict = self
                 .document
                 .entries
                 .iter()
-                .position(is_routine_liveness)
+                .position(is_routine_keepalive)
                 .unwrap_or(0);
             self.document.entries.remove(evict);
         }
@@ -150,18 +149,14 @@ impl Drop for FlightRecorder {
     }
 }
 
-/// True for the idle keepalive Version probe and its reply.
+/// True for dedicated idle KeepAlive traffic.
 ///
 /// These are the highest-volume, lowest-value entries in the record: they are
 /// by definition the "nothing happened" case. They stay recorded so an idle
 /// stretch is still visible, but they are the first thing evicted.
-fn is_routine_liveness(entry: &FlightEntry) -> bool {
-    // Both directions, at any size: the probe is a single report but the QC
-    // answers it with several, so matching only one-report entries evicted the
-    // probe while keeping its reply — leaving a record of inbound Version
-    // traffic with no outbound cause.
+fn is_routine_keepalive(entry: &FlightEntry) -> bool {
     matches!(entry.event.as_str(), "outbound" | "inbound")
-        && entry.message_type == Some(qc_protocol::profile::MESSAGE_TYPE_VERSION)
+        && entry.message_type == Some(qc_protocol::profile::MESSAGE_TYPE_KEEP_ALIVE)
 }
 
 fn now_unix_ms() -> u128 {
@@ -179,7 +174,7 @@ mod tests {
     fn recorder_is_bounded_and_contains_no_payload_field() {
         let mut recorder = FlightRecorder::for_test();
         for message_type in 0..(MAX_ENTRIES + 20) {
-            recorder.outbound(message_type as u16, 1);
+            recorder.outbound(message_type as u16 + 1_000, 1);
         }
         assert_eq!(recorder.document.entries.len(), MAX_ENTRIES);
         assert!(recorder
@@ -189,7 +184,7 @@ mod tests {
             .all(|entry| entry.process_id > 0));
         let json = serde_json::to_value(&recorder.document).unwrap();
         assert!(json.to_string().find("payload").is_none());
-        assert_eq!(json["entries"][0]["messageType"], 20);
+        assert_eq!(json["entries"][0]["messageType"], 1_020);
     }
 
     #[test]
@@ -204,18 +199,17 @@ mod tests {
     }
 
     #[test]
-    fn idle_liveness_traffic_never_evicts_a_real_operation() {
+    fn idle_keepalive_traffic_never_evicts_a_real_operation() {
         let mut recorder = FlightRecorder::for_test();
         recorder.event("handshake-reply");
         recorder.outbound(15, 1);
         recorder.inbound(40, 1191);
 
-        // A healthy idle link produces nothing but Version probe/reply pairs.
-        // Eight minutes of them used to overwrite the entire record, so a hang
-        // investigated afterwards had no evidence of the operation that hung.
+        // A healthy idle link produces routine KeepAlive traffic. Eight minutes
+        // of it must not overwrite the operation that explains a later hang.
         for _ in 0..(MAX_ENTRIES * 2) {
-            recorder.outbound(qc_protocol::profile::MESSAGE_TYPE_VERSION, 1);
-            recorder.inbound(qc_protocol::profile::MESSAGE_TYPE_VERSION, 1);
+            recorder.outbound(qc_protocol::profile::MESSAGE_TYPE_KEEP_ALIVE, 1);
+            recorder.inbound(qc_protocol::profile::MESSAGE_TYPE_KEEP_ALIVE, 1);
         }
 
         assert_eq!(recorder.document.entries.len(), MAX_ENTRIES);
@@ -239,30 +233,28 @@ mod tests {
     }
 
     #[test]
-    fn the_liveness_reply_is_evicted_with_its_probe() {
-        // The probe is one report but the QC answers it with three, so keying
-        // "routine" on a single report evicted the probe and kept the reply —
-        // the record then showed inbound Version traffic with no outbound
-        // cause, which is exactly backwards for diagnosing a silent link.
+    fn routine_keepalive_entries_are_evicted_before_operations() {
         let mut recorder = FlightRecorder::for_test();
         for message_type in 0..MAX_ENTRIES {
             recorder.outbound(message_type as u16 % 9 + 20, 1);
         }
         for _ in 0..MAX_ENTRIES {
-            recorder.outbound(qc_protocol::profile::MESSAGE_TYPE_VERSION, 1);
-            recorder.inbound(qc_protocol::profile::MESSAGE_TYPE_VERSION, 3);
+            recorder.outbound(qc_protocol::profile::MESSAGE_TYPE_KEEP_ALIVE, 1);
+            recorder.inbound(qc_protocol::profile::MESSAGE_TYPE_KEEP_ALIVE, 3);
         }
 
         assert_eq!(recorder.document.entries.len(), MAX_ENTRIES);
-        let version_entries = recorder
+        let keepalive_entries = recorder
             .document
             .entries
             .iter()
-            .filter(|entry| entry.message_type == Some(qc_protocol::profile::MESSAGE_TYPE_VERSION))
+            .filter(|entry| {
+                entry.message_type == Some(qc_protocol::profile::MESSAGE_TYPE_KEEP_ALIVE)
+            })
             .count();
         assert_eq!(
-            version_entries, 0,
-            "idle Version traffic must never displace real operations"
+            keepalive_entries, 0,
+            "idle KeepAlive traffic must never displace real operations"
         );
     }
 

@@ -240,6 +240,7 @@ test("one generated profile owns USB and performance MIDI policy across native h
   assert.match(protocol, /Version = 10;/, "Version is the side-effect-free liveness response");
   assert.match(protocol, /ResetCommsBuffers = 52;/, "ResetCommsBuffers owns the handshake echo");
   assert.equal(contract.messageTypes, undefined, "the USB profile must not duplicate protobuf message IDs");
+  assert.equal(contract.livenessReplyTimeoutMs, undefined, "removed Version probes must not leave dead liveness policy in the generated profile");
   assert.equal(contract.liveSubscriptions.includes("File"), false, "directory traffic must not starve realtime startup");
   assert.equal(new Set(contract.liveSubscriptions).size, contract.liveSubscriptions.length);
   const nativeMessageConsumers = [
@@ -265,6 +266,7 @@ test("one generated profile owns USB and performance MIDI policy across native h
   // session serving: the device stops pushing state and stops answering File
   // READs after about a minute, which left the preset library permanently empty.
   const transportRuntime = source("packages/rust/qc-device-runtime/src/transport.rs");
+  assert.doesNotMatch(transportRuntime, /liveness_probe|LIVENESS_REPLY_TIMEOUT/);
   assert.match(transportRuntime, /take_keepalive[\s\S]{0,400}commands::keepalive\(\)/);
   assert.match(source("services/device-broker/src/worker.rs"), /session\.take_keepalive\(now_ms\)/);
   assert.doesNotMatch(source("services/device-broker/src/worker.rs"), /take_keepalive\(now_ms\)[\s\S]{0,600}MESSAGE_TYPE_VERSION/);

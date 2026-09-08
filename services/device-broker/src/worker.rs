@@ -1116,10 +1116,9 @@ fn run(
                         // path keeps serving them while the document streams.
                         connected.usb.send_command(commands::create_local_backup());
                         update_usb_telemetry(&state, connected);
-                        // Clear any armed Version probe: the device is about to
-                        // go quiet, and a probe left armed both tears the session
-                        // down and blocks the KeepAlive the transfer needs.
-                        session.suspend_liveness_probe(session_clock.elapsed().as_millis() as u64);
+                        // Backup traffic owns an unconditional keepalive clock,
+                        // so restart the ordinary idle deadline here.
+                        session.defer_keepalive(session_clock.elapsed().as_millis() as u64);
                         backup = Some(BackupInProgress::start(
                             session_clock.elapsed().as_millis() as u64,
                             timeout,
@@ -1298,12 +1297,12 @@ fn run(
                 Some(BackupAction::Keepalive) => {
                     connected.usb.send_command(commands::keepalive());
                     update_usb_telemetry(&state, connected);
-                    session.suspend_liveness_probe(session_clock.elapsed().as_millis() as u64);
+                    session.defer_keepalive(session_clock.elapsed().as_millis() as u64);
                 }
                 Some(BackupAction::Rerequest) => {
                     connected.usb.send_command(commands::create_local_backup());
                     update_usb_telemetry(&state, connected);
-                    session.suspend_liveness_probe(session_clock.elapsed().as_millis() as u64);
+                    session.defer_keepalive(session_clock.elapsed().as_millis() as u64);
                 }
                 Some(BackupAction::Failed(error)) => {
                     finish_backup(&mut backup, &state, connected, Err(error));
@@ -1633,20 +1632,15 @@ mod tests {
     }
 
     #[test]
-    fn a_backup_stands_the_idle_probe_down_instead_of_tearing_the_session_down() {
+    fn backup_traffic_defers_the_idle_keepalive_deadline() {
         let mut session = TransportRuntime::new(0);
         session.transport_opened(0);
         session.handshake_completed(1, true);
-        session.liveness_probe_sent(1);
-        assert!(
-            session.liveness_probe_timed_out(1 + qc_protocol::profile::LIVENESS_REPLY_TIMEOUT_MS)
-        );
-
-        // Starting a backup disarms the probe, so the device's silence while it
-        // prepares the document cannot end the session.
-        session.suspend_liveness_probe(2);
-        assert!(!session.liveness_probe_timed_out(u64::MAX));
-        // ...and the KeepAlive the transfer needs is able to come due again.
+        // Backup commands own their own unconditional keepalive cadence. Each
+        // one restarts the ordinary idle deadline without inventing a second
+        // liveness-probe state machine.
+        session.defer_keepalive(2);
+        assert!(!session.keepalive_due(2));
         assert!(session.keepalive_due(2 + qc_protocol::profile::KEEPALIVE_INTERVAL_MS));
     }
 

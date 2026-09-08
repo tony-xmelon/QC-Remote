@@ -6,7 +6,6 @@
   "maxFrameBytes": 1048576,
   "maxInflatedBytes": 16777216,
   "keepaliveIntervalMs": 5000,
-  "livenessReplyTimeoutMs": 3000,
   "reconnectIntervalMs": 750,
   "performanceMidiGapMs": 8,
   "remoteGestureIntervalMs": 20,

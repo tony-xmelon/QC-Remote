@@ -29,7 +29,6 @@ struct SessionMachine {
     handshake_attempts: u32,
     next_handshake_at_ms: u64,
     next_keepalive_at_ms: u64,
-    liveness_probe_sent_at_ms: Option<u64>,
     consecutive_read_errors: u8,
     synchronized: bool,
 }
@@ -44,7 +43,6 @@ impl SessionMachine {
             handshake_attempts: 0,
             next_handshake_at_ms: now_ms,
             next_keepalive_at_ms: now_ms.saturating_add(profile::KEEPALIVE_INTERVAL_MS),
-            liveness_probe_sent_at_ms: None,
             consecutive_read_errors: 0,
             synchronized: false,
         }
@@ -55,7 +53,6 @@ impl SessionMachine {
         self.handshake_attempts = 0;
         self.next_handshake_at_ms = now_ms;
         self.next_keepalive_at_ms = now_ms.saturating_add(profile::KEEPALIVE_INTERVAL_MS);
-        self.liveness_probe_sent_at_ms = None;
         self.consecutive_read_errors = 0;
         self.synchronized = false;
     }
@@ -107,7 +104,6 @@ impl SessionMachine {
         self.next_handshake_at_ms = now_ms;
         self.synchronized = false;
         self.consecutive_read_errors = 0;
-        self.liveness_probe_sent_at_ms = None;
         self.outbound(now_ms);
     }
 
@@ -150,7 +146,6 @@ impl SessionMachine {
 
     fn state_observed(&mut self, _now_ms: u64, preset_synchronized: bool) {
         self.consecutive_read_errors = 0;
-        self.liveness_probe_sent_at_ms = None;
         if matches!(self.phase, SessionPhase::Syncing | SessionPhase::Ready) {
             self.synchronized = preset_synchronized;
             self.phase = if preset_synchronized {
@@ -174,21 +169,8 @@ impl SessionMachine {
         // Ordinary traffic is not a substitute for the device's KeepAlive.
     }
 
-    fn liveness_probe_sent(&mut self, now_ms: u64) {
-        self.liveness_probe_sent_at_ms = Some(now_ms);
+    fn defer_keepalive(&mut self, now_ms: u64) {
         self.next_keepalive_at_ms = now_ms.saturating_add(profile::KEEPALIVE_INTERVAL_MS);
-    }
-
-    fn suspend_liveness_probe(&mut self, now_ms: u64) {
-        self.liveness_probe_sent_at_ms = None;
-        self.next_keepalive_at_ms = now_ms.saturating_add(profile::KEEPALIVE_INTERVAL_MS);
-    }
-
-    fn liveness_probe_timed_out(&self, now_ms: u64) -> bool {
-        matches!(self.phase, SessionPhase::Syncing | SessionPhase::Ready)
-            && self.liveness_probe_sent_at_ms.is_some_and(|sent| {
-                now_ms.saturating_sub(sent) >= profile::LIVENESS_REPLY_TIMEOUT_MS
-            })
     }
 
     fn read_succeeded(&mut self) {
@@ -387,16 +369,8 @@ impl TransportRuntime {
         self.session.outbound(now_ms);
     }
 
-    pub fn suspend_liveness_probe(&mut self, now_ms: u64) {
-        self.session.suspend_liveness_probe(now_ms);
-    }
-
-    pub fn liveness_probe_sent(&mut self, now_ms: u64) {
-        self.session.liveness_probe_sent(now_ms);
-    }
-
-    pub fn liveness_probe_timed_out(&self, now_ms: u64) -> bool {
-        self.session.liveness_probe_timed_out(now_ms)
+    pub fn defer_keepalive(&mut self, now_ms: u64) {
+        self.session.defer_keepalive(now_ms);
     }
 
     pub fn read_succeeded(&mut self) {
