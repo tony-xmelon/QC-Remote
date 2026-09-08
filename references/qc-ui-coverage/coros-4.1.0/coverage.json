@@ -1117,7 +1117,10 @@
       "id": "ST-10",
       "renderer": "settings-diagnostics",
       "physical": [
-        "settings-diagnostics"
+        "settings-diagnostics",
+        "settings-diagnostics-dsp",
+        "settings-diagnostics-footswitch",
+        "settings-diagnostics-usb"
       ],
       "smoke": [
         "settings-diagnostics"

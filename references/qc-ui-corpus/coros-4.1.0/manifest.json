@@ -3917,6 +3917,45 @@
         "cloud backup names",
         "cloud backup timestamps"
       ]
+    },
+    {
+      "id": "settings-diagnostics-dsp",
+      "label": "Settings > Support > Diagnostics > DSP Diagnostics",
+      "screen": "settings-diagnostics",
+      "image": "settings-diagnostics-dsp.png",
+      "graphicsTree": "settings-diagnostics-dsp.tree.txt",
+      "sha256": "add802d4523b376a94fa71a1ea55a4ac80c2dde4f00fe04d5f7b14753459b269",
+      "bytes": 21470,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-08T03:35:37.129043Z",
+      "actions": []
+    },
+    {
+      "id": "settings-diagnostics-footswitch",
+      "label": "Settings > Support > Diagnostics > Footswitch Statistics",
+      "screen": "unknown",
+      "image": "settings-diagnostics-footswitch.png",
+      "graphicsTree": "settings-diagnostics-footswitch.tree.txt",
+      "sha256": "1c92b844b5cd60427e2539f74fbdddd8911499b11261f3f5759d5546cc8e8700",
+      "bytes": 16171,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-08T03:35:54.136997Z",
+      "actions": []
+    },
+    {
+      "id": "settings-diagnostics-usb",
+      "label": "Settings > Support > Diagnostics > USB Statistics",
+      "screen": "unknown",
+      "image": "settings-diagnostics-usb.png",
+      "graphicsTree": "settings-diagnostics-usb.tree.txt",
+      "sha256": "1751215ede2d38c7d594c2f48fd1c5a8e62de0f4cbce2165d29fc1baff38fdaf",
+      "bytes": 42336,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-08T03:39:53.331233Z",
+      "actions": []
     }
   ]
 }

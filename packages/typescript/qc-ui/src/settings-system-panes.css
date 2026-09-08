@@ -137,4 +137,40 @@
   .restart-dialog footer { position: absolute; left: 4cqw; right: 4cqw; top: 19.125cqw; display: flex; justify-content: space-between; }
   .restart-dialog button { width: 21.75cqw; height: 5.625cqw; border: 0; border-radius: .75cqw; background: #000; color: #f4f4f4; font: inherit; font-size: 2.25cqw; letter-spacing: .05cqw; }
   .restart-dialog button.is-primary { background: #1838ff; }
+
+  /* The Diagnostics dialogs fill the screen: a title at (24, 22), the done
+     button where every settings screen keeps it, and a table of counters whose
+     labels are orange and whose values are plain. */
+  .qc-screen.coros-diagnostics-dialog { background: #101010; color: #f4f4f4; font-family: Roboto, Arial, sans-serif; }
+  .coros-diagnostics-dialog, .coros-diagnostics-dialog * { box-sizing: border-box; }
+  .coros-diagnostics-dialog > header { position: absolute; left: 3cqw; right: 1cqw; top: 1cqw; height: 5.5cqw; display: flex; align-items: center; justify-content: space-between; }
+  .coros-diagnostics-dialog h1 { margin: 0; font-size: 2.125cqw; font-weight: 400; }
+  .coros-diagnostics-dialog .settings-done { width: 12.25cqw; height: 5.5cqw; display: grid; place-items: center; border: 0; border-radius: 1cqw; background: #292c29; color: #f4f4f4; }
+  .coros-diagnostics-dialog .settings-done svg { width: 3cqw; height: 3cqw; }
+
+  .usb-statistics { position: absolute; left: 4cqw; right: 2cqw; top: 8.375cqw; display: grid; grid-template-rows: repeat(21, 2.25cqw); font-size: 1.75cqw; }
+  .usb-statistics > span { display: grid; grid-template-columns: 39.375cqw 1fr; align-items: center; }
+  .usb-statistics b { font-weight: 400; color: #ff7100; }
+  .usb-statistics i { font-style: normal; }
+  .usb-statistics i.is-red { color: #ff2727; }
+  .usb-statistics i.is-green { color: #45f862; }
+  .usb-statistics i.is-blue { color: #0a74e0; }
+
+  .footswitch-statistics { position: absolute; left: 3cqw; right: 2cqw; top: 8.75cqw; display: grid; grid-template-rows: repeat(11, 4.25cqw); font-size: 1.75cqw; }
+  .footswitch-statistics > span { display: grid; grid-template-columns: 17.375cqw 31.75cqw 1fr; align-items: center; }
+  .footswitch-statistics b { font-weight: 400; color: #ff7100; }
+  .footswitch-statistics i,.footswitch-statistics em { font-style: normal; }
+
+  .dsp-diagnostics { position: absolute; inset: 9.375cqw 1cqw 1cqw 1cqw; overflow: hidden; font-size: 1.75cqw; }
+  .dsp-diagnostics > header { display: grid; grid-template-columns: repeat(3, 21.25cqw); justify-content: start; padding-left: 10.875cqw; }
+  .dsp-diagnostics > header span { display: grid; grid-template-columns: auto 1fr; column-gap: 7cqw; }
+  .dsp-diagnostics > header b { font-weight: 400; color: #ff2727; }
+  .dsp-diagnostics > header i { font-style: normal; color: #ff2727; }
+  .dsp-cores { display: grid; grid-template-columns: repeat(5, 21.25cqw); justify-content: start; padding-left: 10.875cqw; margin-top: 1.25cqw; text-align: center; }
+  .dsp-cores button { width: 15cqw; height: 5cqw; border: 0; border-radius: .75cqw; background: #000; color: #f4f4f4; font: inherit; font-size: 2.25cqw; }
+  .dsp-cores small { display: block; margin-top: 1cqw; font-size: 1.75cqw; color: #ffd236; }
+  .dsp-table { margin-top: 2.75cqw; }
+  .dsp-table > section { display: grid; grid-template-columns: 10.875cqw repeat(5, 21.25cqw); align-items: center; height: 5cqw; border-bottom: 2px solid #3c3b3c; }
+  .dsp-table b { padding-left: 3cqw; font-weight: 400; white-space: nowrap; color: #ff7100; }
+  .dsp-table i { font-style: normal; text-align: center; }
 }

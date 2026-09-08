@@ -183,6 +183,62 @@
         ]
       ],
       "marker": "zenUI::Backups"
+    },
+    {
+      "slug": "settings-diagnostics-dsp",
+      "label": "Settings > Support > Diagnostics > DSP Diagnostics",
+      "route": [
+        "support"
+      ],
+      "rows": [
+        [
+          140,
+          270
+        ],
+        [
+          450,
+          90
+        ]
+      ],
+      "marker": "zenUI::DSPDiagnosticsDialog"
+    },
+    {
+      "slug": "settings-diagnostics-footswitch",
+      "label": "Settings > Support > Diagnostics > Footswitch Statistics",
+      "route": [
+        "support"
+      ],
+      "rows": [
+        [
+          140,
+          270
+        ],
+        [
+          450,
+          150
+        ]
+      ],
+      "marker": "zenUI::ZencoderDiagnosticsDialog"
+    },
+    {
+      "slug": "settings-diagnostics-usb",
+      "label": "Settings > Support > Diagnostics > USB Statistics",
+      "route": [
+        "support"
+      ],
+      "rows": [
+        [
+          140,
+          270
+        ],
+        [
+          450,
+          210
+        ]
+      ],
+      "marker": "zenUI::SOC2ARMDiagnosticsDialog",
+      "settles": false,
+      "note": "the counters tick, so the frame is taken as it comes rather than waiting for two identical reads"
     }
   ],
   "deliberately-not-captured": {

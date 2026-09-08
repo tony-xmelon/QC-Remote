@@ -1,0 +1,74 @@
+zenUI::RootGraphicsItem
+  zenUI::ZencoderDiagnosticsDialog
+    zenUI::GraphicsItem
+      text : 'Footswitch Statistics'
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/24/done.png'
+          zenUI::PressAnimationView
+    zenUI::GraphicsItem
+      text : 'A'
+    zenUI::GraphicsItem
+      text : '(p: 2, r: 2)'
+    zenUI::GraphicsItem
+      text : '(l: 0, r: 0)'
+    zenUI::GraphicsItem
+      text : 'B'
+    zenUI::GraphicsItem
+      text : '(p: 0, r: 0)'
+    zenUI::GraphicsItem
+      text : '(l: 0, r: 0)'
+    zenUI::GraphicsItem
+      text : 'C'
+    zenUI::GraphicsItem
+      text : '(p: 0, r: 0)'
+    zenUI::GraphicsItem
+      text : '(l: 0, r: 0)'
+    zenUI::GraphicsItem
+      text : 'D'
+    zenUI::GraphicsItem
+      text : '(p: 0, r: 0)'
+    zenUI::GraphicsItem
+      text : '(l: 0, r: 0)'
+    zenUI::GraphicsItem
+      text : 'DOWN'
+    zenUI::GraphicsItem
+      text : '(p: 0, r: 0)'
+    zenUI::GraphicsItem
+      text : '(l: 0, r: 0)'
+    zenUI::GraphicsItem
+      text : 'E'
+    zenUI::GraphicsItem
+      text : '(p: 0, r: 0)'
+    zenUI::GraphicsItem
+      text : '(l: 0, r: 0)'
+    zenUI::GraphicsItem
+      text : 'F'
+    zenUI::GraphicsItem
+      text : '(p: 0, r: 0)'
+    zenUI::GraphicsItem
+      text : '(l: 0, r: 0)'
+    zenUI::GraphicsItem
+      text : 'G'
+    zenUI::GraphicsItem
+      text : '(p: 0, r: 0)'
+    zenUI::GraphicsItem
+      text : '(l: 0, r: 0)'
+    zenUI::GraphicsItem
+      text : 'H'
+    zenUI::GraphicsItem
+      text : '(p: 0, r: 0)'
+    zenUI::GraphicsItem
+      text : '(l: 0, r: 0)'
+    zenUI::GraphicsItem
+      text : 'TEMPO'
+    zenUI::GraphicsItem
+      text : '(p: 0, r: 0)'
+    zenUI::GraphicsItem
+      text : '(l: 0, r: 0)'
+    zenUI::GraphicsItem
+      text : 'UP'
+    zenUI::GraphicsItem
+      text : '(p: 0, r: 0)'
+    zenUI::GraphicsItem
+      text : '(l: 0, r: 0)'

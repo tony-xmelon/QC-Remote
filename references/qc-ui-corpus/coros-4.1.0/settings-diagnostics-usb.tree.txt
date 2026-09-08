@@ -1,0 +1,113 @@
+zenUI::RootGraphicsItem
+  zenUI::SOC2ARMDiagnosticsDialog
+    zenUI::GraphicsItem
+      text : 'USB Statistics'
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/24/done.png'
+          zenUI::PressAnimationView
+    zenUI::GraphicsItem
+      text : 'USBConnected'
+    zenUI::GraphicsItem
+      text : 'Yes
+'
+    zenUI::GraphicsItem
+      text : 'IN rd/wr idx'
+    zenUI::GraphicsItem
+      text : '0/0
+'
+    zenUI::GraphicsItem
+      text : 'OUT rd/wr idx'
+    zenUI::GraphicsItem
+      text : '0/0
+'
+    zenUI::GraphicsItem
+      text : 'UI to DSP HID count (tx/rx)'
+    zenUI::GraphicsItem
+      text : '468829/468809
+'
+    zenUI::GraphicsItem
+      text : 'USBAudioInRdWrDistanceAverage'
+    zenUI::GraphicsItem
+      text : '0
+'
+    zenUI::GraphicsItem
+      text : 'USBAudioOutRdWrDistanceAverage'
+    zenUI::GraphicsItem
+      text : '0
+'
+    zenUI::GraphicsItem
+      text : 'USBAudioRxFrame'
+    zenUI::GraphicsItem
+      text : '0
+'
+    zenUI::GraphicsItem
+      text : 'USBAudioTxFrame'
+    zenUI::GraphicsItem
+      text : '0
+'
+    zenUI::GraphicsItem
+      text : 'USBAudioTxFrameSkipped'
+    zenUI::GraphicsItem
+      text : '0
+'
+    zenUI::GraphicsItem
+      text : 'USBAudioTxFrameAborted'
+    zenUI::GraphicsItem
+      text : '0
+'
+    zenUI::GraphicsItem
+      text : 'USBAudioOUTGapsDetected'
+    zenUI::GraphicsItem
+      text : '0
+'
+    zenUI::GraphicsItem
+      text : 'USBAudioOUTGapResets'
+    zenUI::GraphicsItem
+      text : '0
+'
+    zenUI::GraphicsItem
+      text : 'USBAudioOUTBufferResets'
+    zenUI::GraphicsItem
+      text : '0
+'
+    zenUI::GraphicsItem
+      text : 'USBAudioPlusOneSampleCount'
+    zenUI::GraphicsItem
+      text : '0
+'
+    zenUI::GraphicsItem
+      text : 'USBAudioMinusOneSampleCount'
+    zenUI::GraphicsItem
+      text : '0
+'
+    zenUI::GraphicsItem
+      text : 'USBAudioStreamingEPEnabled'
+    zenUI::GraphicsItem
+      text : '0
+'
+    zenUI::GraphicsItem
+      text : 'USBAudioStreamingEPDisabled'
+    zenUI::GraphicsItem
+      text : '0
+'
+    zenUI::GraphicsItem
+      text : 'USBMidiInCount'
+    zenUI::GraphicsItem
+      text : '18
+'
+    zenUI::GraphicsItem
+      text : 'USBMidiOutCount'
+    zenUI::GraphicsItem
+      text : '0
+'
+    zenUI::GraphicsItem
+      text : 'HID driver sent report count'
+    zenUI::GraphicsItem
+      text : '468809
+'
+    zenUI::GraphicsItem
+      text : 'HID driver received report count'
+    zenUI::GraphicsItem
+      text : '3779
+'
