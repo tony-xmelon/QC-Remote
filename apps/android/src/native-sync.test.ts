@@ -508,9 +508,10 @@ test("Android requires explicit attachment connect but recovers an unexpected re
   assert.match(javaSource, /sessionReconnectAttempted\(now\)/);
   assert.match(javaSource, /stateDecoder\.nextRequestId\(\)/);
   assert.doesNotMatch(javaSource, /AtomicLong requestIds/);
-  assert.match(javaSource, /if \(!stateDecoder\.sessionSynchronized\(\)\) \{\s*stateDecoder\.initializationObserved\(decoded\.messageType, decoded\.payload\)/);
+  assert.doesNotMatch(javaSource, /initializationObserved\(/);
   assert.match(javaSource, /synchronizationChanged[\s\S]*sessionSynchronizationCompleted\([\s\S]*decision\.synchronizedState/);
-  assert.match(javaSource, /decision\.beginBuilding[\s\S]*sessionStateObserved\(monotonicMillis\(\), false\)/);
+  assert.match(javaSource, /decision\.beginBuilding[\s\S]*sessionSynchronizationCompleted\(monotonicMillis\(\), false\)/);
+  assert.doesNotMatch(javaSource, /backupActive \|\| !pendingOperations\.isEmpty\(\)/);
   assert.doesNotMatch(javaSource, /scheduleAutomaticReconnect[\s\S]{0,800},\s*250,\s*TimeUnit\.MILLISECONDS/);
 });
 
@@ -572,7 +573,7 @@ test("Android's USB maintenance uses the same dedicated shared KeepAlive as Wind
   const end = javaSource.indexOf("static boolean relaySessionAvailable", start);
   const maintenance = javaSource.slice(start, end);
   assert.match(maintenance, /sessionShouldKeepalive/);
-  assert.match(maintenance, /pendingOperations\.isEmpty\(\)/);
+  assert.doesNotMatch(maintenance, /pendingOperations\.isEmpty\(\)/);
   assert.match(maintenance, /stateDecoder\.keepaliveCommand\(\)/);
   assert.match(maintenance, /stateDecoder\.sessionKeepaliveSent\(monotonicMillis\(\)\)/);
   assert.doesNotMatch(javaSource, /stateDecoder\.session\w+\(System\.currentTimeMillis\(\)/);

@@ -5,8 +5,7 @@ use qc_device_runtime::backup::{BackupAction, BackupRuntime};
 use qc_device_runtime::catalog::{CatalogVerificationAction, CatalogVerificationRuntime};
 use qc_device_runtime::correlation::ResponseExpectation;
 use qc_device_runtime::initialization::{
-    DeviceStartupAction, DeviceStartupPhase, DeviceStartupRuntime, InitializationAction,
-    InitializationRuntime,
+    DeviceLifecycleRuntime, DeviceStartupAction, DeviceStartupPhase, InitializationAction,
 };
 use qc_device_runtime::request::{
     assert_expected_parameter, compose_global_tempo_settings, finalize_device_backup,
@@ -64,8 +63,7 @@ struct DecoderHandle {
     state: Mutex<DeviceStateRuntime>,
     transport: Mutex<TransportRuntime>,
     backup: Mutex<Option<BackupRuntime>>,
-    startup: Mutex<Option<DeviceStartupRuntime>>,
-    initialization: Mutex<Option<InitializationRuntime>>,
+    lifecycle: Mutex<Option<DeviceLifecycleRuntime>>,
     catalog_verifications: Mutex<HashMap<u64, CatalogVerificationRuntime>>,
     gateway_verifications: Mutex<HashMap<u64, GatewayVerificationRuntime>>,
 }
@@ -93,8 +91,7 @@ fn register_handle() -> jlong {
         state: Mutex::new(DeviceStateRuntime::new()),
         transport: Mutex::new(TransportRuntime::new(0)),
         backup: Mutex::new(None),
-        startup: Mutex::new(None),
-        initialization: Mutex::new(None),
+        lifecycle: Mutex::new(None),
         catalog_verifications: Mutex::new(HashMap::new()),
         gateway_verifications: Mutex::new(HashMap::new()),
     });
@@ -1209,16 +1206,12 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeHand
                 .map_err(|error| error.to_string());
         };
         let request_id = write.request_id();
-        let (runtime, _) = DeviceStartupRuntime::start_at(request_id, write.session_id(), now_ms);
+        let (runtime, _) = DeviceLifecycleRuntime::start_at(request_id, write.session_id(), now_ms);
         let phase = runtime.phase();
         *native
-            .startup
+            .lifecycle
             .lock()
-            .map_err(|_| "native QC startup lock was poisoned".to_string())? = Some(runtime);
-        *native
-            .initialization
-            .lock()
-            .map_err(|_| "native QC initialization lock was poisoned".to_string())? = None;
+            .map_err(|_| "native QC lifecycle lock was poisoned".to_string())? = Some(runtime);
         let startup: Value = serde_json::from_str(&startup_envelope(
             phase,
             DeviceStartupAction::Send(vec![write.message]),
@@ -1251,13 +1244,13 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeStar
         let payload = env
             .convert_byte_array(payload)
             .map_err(|error| error.to_string())?;
-        let mut startup = native
-            .startup
+        let mut lifecycle = native
+            .lifecycle
             .lock()
-            .map_err(|_| "native QC startup lock was poisoned".to_string())?;
-        let runtime = startup
+            .map_err(|_| "native QC lifecycle lock was poisoned".to_string())?;
+        let runtime = lifecycle
             .as_mut()
-            .ok_or_else(|| "no native QC startup is active".to_string())?;
+            .ok_or_else(|| "no native QC lifecycle is active".to_string())?;
         let action = runtime.observe(message_type, &payload);
         startup_envelope(runtime.phase(), action)
     })();
@@ -1272,13 +1265,13 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeStar
 ) -> jstring {
     let result = (|| {
         let native = handle(value)?;
-        let mut startup = native
-            .startup
+        let mut lifecycle = native
+            .lifecycle
             .lock()
-            .map_err(|_| "native QC startup lock was poisoned".to_string())?;
-        let runtime = startup
+            .map_err(|_| "native QC lifecycle lock was poisoned".to_string())?;
+        let runtime = lifecycle
             .as_mut()
-            .ok_or_else(|| "no native QC startup is active".to_string())?;
+            .ok_or_else(|| "no native QC lifecycle is active".to_string())?;
         let action = runtime.begin_building();
         startup_envelope(runtime.phase(), action)
     })();
@@ -1295,10 +1288,10 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeStar
         .ok()
         .and_then(|native| {
             native
-                .startup
+                .lifecycle
                 .lock()
                 .ok()
-                .and_then(|startup| startup.as_ref().map(DeviceStartupRuntime::is_connected))
+                .and_then(|lifecycle| lifecycle.as_ref().map(DeviceLifecycleRuntime::is_connected))
         })
         .unwrap_or(false) as jint
 }
@@ -1313,10 +1306,10 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeStar
         .ok()
         .and_then(|native| {
             native
-                .startup
+                .lifecycle
                 .lock()
                 .ok()
-                .and_then(|startup| startup.as_ref().map(DeviceStartupRuntime::is_active))
+                .and_then(|lifecycle| lifecycle.as_ref().map(DeviceLifecycleRuntime::is_active))
         })
         .unwrap_or(false) as jint
 }
@@ -1331,8 +1324,8 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeStar
     handle(value)
         .ok()
         .and_then(|native| {
-            native.startup.lock().ok().and_then(|startup| {
-                startup
+            native.lifecycle.lock().ok().and_then(|lifecycle| {
+                lifecycle
                     .as_ref()
                     .map(|runtime| runtime.timed_out(now_ms.max(0) as u64))
             })
@@ -1349,9 +1342,9 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeNext
     let result = (|| {
         let native = handle(value)?;
         let request_id = native
-            .startup
+            .lifecycle
             .lock()
-            .map_err(|_| "native QC startup lock was poisoned".to_string())?
+            .map_err(|_| "native QC lifecycle lock was poisoned".to_string())?
             .as_mut()
             .ok_or_else(|| "no native QC session is active".to_string())?
             .reserve_request_id();
@@ -1375,49 +1368,14 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativePost
 ) {
     let result = (|| {
         let native = handle(value)?;
-        let initialization = native
-            .startup
+        native
+            .lifecycle
             .lock()
-            .map_err(|_| "native QC startup lock was poisoned".to_string())?
+            .map_err(|_| "native QC lifecycle lock was poisoned".to_string())?
             .as_mut()
-            .ok_or_else(|| "no native QC startup is active".to_string())?
-            .post_boot_initialization(now_ms.max(0) as u64)
+            .ok_or_else(|| "no native QC lifecycle is active".to_string())?
+            .start_post_boot_initialization(now_ms.max(0) as u64)
             .map_err(|error| format!("post-boot initialization rejected: {}", error.as_str()))?;
-        *native
-            .initialization
-            .lock()
-            .map_err(|_| "native QC initialization lock was poisoned".to_string())? =
-            Some(initialization);
-        Ok::<_, String>(())
-    })();
-    if let Err(error) = result {
-        let _ = env.throw_new("java/lang/IllegalStateException", error);
-    }
-}
-
-#[no_mangle]
-pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeInitializationObserved(
-    mut env: JNIEnv,
-    _class: JClass,
-    value: jlong,
-    message_type: jint,
-    payload: JByteArray,
-) {
-    let result = (|| {
-        let native = handle(value)?;
-        let message_type = u16::try_from(message_type)
-            .map_err(|_| "invalid QC initialization message type".to_string())?;
-        let mut initialization = native
-            .initialization
-            .lock()
-            .map_err(|_| "native QC initialization lock was poisoned".to_string())?;
-        let Some(runtime) = initialization.as_mut() else {
-            return Ok::<_, String>(());
-        };
-        let payload = env
-            .convert_byte_array(payload)
-            .map_err(|error| error.to_string())?;
-        runtime.observe_message(message_type, &payload);
         Ok::<_, String>(())
     })();
     if let Err(error) = result {
@@ -1434,20 +1392,14 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeInit
 ) -> jstring {
     let result = (|| {
         let native = handle(value)?;
-        let mut initialization = native
-            .initialization
+        let mut lifecycle = native
+            .lifecycle
             .lock()
-            .map_err(|_| "native QC initialization lock was poisoned".to_string())?;
-        let action = initialization
+            .map_err(|_| "native QC lifecycle lock was poisoned".to_string())?;
+        let action = lifecycle
             .as_mut()
-            .map(|runtime| runtime.advance(now_ms.max(0) as u64))
+            .map(|runtime| runtime.advance_initialization(now_ms.max(0) as u64))
             .unwrap_or(InitializationAction::Wait);
-        if matches!(
-            action,
-            InitializationAction::Complete { synchronized: true }
-        ) {
-            *initialization = None;
-        }
         initialization_envelope(action)
     })();
     json_result(&mut env, result)
@@ -1571,6 +1523,22 @@ fn with_transport(value: jlong, action: impl FnOnce(&mut TransportRuntime) -> ji
         .unwrap_or(-3)
 }
 
+fn schedule_reconnect(handle: &DecoderHandle, now_ms: u64) -> Result<u64, String> {
+    let delay = handle
+        .transport
+        .lock()
+        .map_err(|_| "native QC transport lock was poisoned".to_string())?
+        .schedule_reconnect(now_ms);
+    // A new transport epoch must never observe the prior epoch's staged
+    // startup or semantic seed. Windows achieves this by dropping ConnectedQc;
+    // Android retains its JNI handle, so clear the combined lifecycle here.
+    *handle
+        .lifecycle
+        .lock()
+        .map_err(|_| "native QC lifecycle lock was poisoned".to_string())? = None;
+    Ok(delay)
+}
+
 #[no_mangle]
 pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeSessionOpened(
     _env: JNIEnv,
@@ -1594,20 +1562,6 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeSess
 ) {
     let _ = with_transport(value, |transport| {
         transport.synchronization_completed(now_ms.max(0) as u64, synchronized_state != 0);
-        0
-    });
-}
-
-#[no_mangle]
-pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeSessionStateObserved(
-    _env: JNIEnv,
-    _class: JClass,
-    value: jlong,
-    now_ms: jlong,
-    preset_synchronized: jint,
-) {
-    let _ = with_transport(value, |transport| {
-        transport.state_observed(now_ms.max(0) as u64, preset_synchronized != 0);
         0
     });
 }
@@ -1688,9 +1642,12 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeSess
     value: jlong,
     now_ms: jlong,
 ) -> jlong {
-    with_transport(value, |transport| {
-        transport.schedule_reconnect(now_ms.max(0) as u64) as jint
-    }) as jlong
+    handle(value)
+        .and_then(|handle| schedule_reconnect(&handle, now_ms.max(0) as u64))
+        .and_then(|delay| {
+            i64::try_from(delay).map_err(|_| "QC reconnect delay exceeds the JNI range".to_string())
+        })
+        .unwrap_or(-3)
 }
 
 #[no_mangle]
@@ -1754,11 +1711,8 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeRese
     if let Ok(mut backup) = handle.backup.lock() {
         *backup = None;
     };
-    if let Ok(mut startup) = handle.startup.lock() {
-        *startup = None;
-    };
-    if let Ok(mut initialization) = handle.initialization.lock() {
-        *initialization = None;
+    if let Ok(mut lifecycle) = handle.lifecycle.lock() {
+        *lifecycle = None;
     };
     if let Ok(mut verifications) = handle.catalog_verifications.lock() {
         verifications.clear();
@@ -2072,8 +2026,23 @@ mod tests {
 
     #[test]
     fn android_public_readiness_requires_the_updater_connected_gate() {
-        let (runtime, _) = DeviceStartupRuntime::start(1, "session");
+        let (runtime, _) = DeviceLifecycleRuntime::start_at(1, "session", 0);
         assert!(!runtime.is_connected());
+    }
+
+    #[test]
+    fn scheduling_reconnect_discards_the_android_lifecycle_epoch() {
+        let value = register_handle();
+        let native = handle(value).expect("registered handle");
+        let (lifecycle, _) = DeviceLifecycleRuntime::start_at(1, "session", 0);
+        *native.lifecycle.lock().expect("lifecycle lock") = Some(lifecycle);
+
+        assert_eq!(
+            schedule_reconnect(&native, 100).expect("reconnect schedule"),
+            qc_protocol::profile::RECONNECT_INTERVAL_MS
+        );
+        assert!(native.lifecycle.lock().expect("lifecycle lock").is_none());
+        unregister_handle(value);
     }
 
     #[test]

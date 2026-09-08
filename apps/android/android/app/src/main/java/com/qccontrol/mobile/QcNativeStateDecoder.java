@@ -169,9 +169,6 @@ final class QcNativeStateDecoder implements AutoCloseable {
         nativeSessionSynchronizationCompleted(
             requireHandle(), nowMs, synchronizedState ? 1 : 0);
     }
-    void sessionStateObserved(long nowMs, boolean presetSynchronized) {
-        nativeSessionStateObserved(requireHandle(), nowMs, presetSynchronized ? 1 : 0);
-    }
     boolean sessionConnected() { return nativeSessionConnected(requireHandle()) == 1; }
     boolean sessionSynchronized() { return nativeSessionSynchronized(requireHandle()) == 1; }
     boolean sessionShouldKeepalive(long nowMs) {
@@ -299,10 +296,6 @@ final class QcNativeStateDecoder implements AutoCloseable {
 
     void postBootInitializationStarted(long nowMs) {
         nativePostBootInitializationStarted(requireHandle(), nowMs);
-    }
-
-    void initializationObserved(int messageType, byte[] payload) {
-        nativeInitializationObserved(requireHandle(), messageType, payload);
     }
 
     InitializationDecision initializationAdvance(long nowMs) {
@@ -616,8 +609,6 @@ final class QcNativeStateDecoder implements AutoCloseable {
     private static native long nativeNextRequestId(long handle);
     private static native void nativePostBootInitializationStarted(
         long handle, long nowMs);
-    private static native void nativeInitializationObserved(
-        long handle, int messageType, byte[] payload);
     private static native String nativeInitializationAdvance(long handle, long nowMs);
     private static native void nativeCatalogVerificationStarted(
         long handle, long verificationId, long nowMs);
@@ -660,7 +651,6 @@ final class QcNativeStateDecoder implements AutoCloseable {
     private static native void nativeSessionOpened(long handle, long nowMs);
     private static native void nativeSessionSynchronizationCompleted(
         long handle, long nowMs, int synchronizedState);
-    private static native void nativeSessionStateObserved(long handle, long nowMs, int presetSynchronized);
     private static native int nativeSessionConnected(long handle);
     private static native int nativeSessionSynchronized(long handle);
     private static native int nativeSessionShouldKeepalive(long handle, long nowMs);

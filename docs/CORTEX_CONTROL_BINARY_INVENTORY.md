@@ -335,8 +335,9 @@ The platform implementations now converge on one Rust protocol/runtime
 implementation and thin Windows/Android transports. Status after the binary
 review and implementation pass:
 
-1. **Implemented:** session-ID-correlated staged startup and exact subscription
-   order are shared by Windows and Android through `DeviceStartupRuntime`.
+1. **Implemented:** session-ID-correlated staged startup, exact subscription
+   order, rebuild invalidation, and semantic seed lifetime are shared by
+   Windows and Android through `DeviceLifecycleRuntime`.
 2. **Implemented:** protobuf builders/decoders, optional-field discipline,
    correlation, typed errors, framing, decompression limits, backup lifecycle,
    and reconnect policy live in the shared Rust crates.

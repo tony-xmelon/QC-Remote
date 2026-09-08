@@ -196,14 +196,13 @@ public class QcUsbPlugin extends Plugin {
             }
             advanceInitialization();
             boolean backupActive = pendingBackup != null;
-            if (!isReady() || backupActive || !pendingOperations.isEmpty()
+            if (!isReady() || backupActive
                 || !stateDecoder.sessionShouldKeepalive(monotonicMillis())) return;
-            // Keepalives share the serialized writer, but only enter the queue
-            // after five completely idle seconds. Normal interaction therefore
-            // never waits for recurring maintenance traffic.
+            // Keepalives share the serialized writer and retain their dedicated
+            // cadence even while an ordinary correlated request is pending.
             commandIo.execute(() -> {
                 boolean currentBackupActive = pendingBackup != null;
-                if (!isReady() || currentBackupActive || !pendingOperations.isEmpty()
+                if (!isReady() || currentBackupActive
                     || !stateDecoder.sessionShouldKeepalive(monotonicMillis())) return;
                 try {
                     // The shared runtime uses the QC's dedicated KeepAlive on
@@ -1590,7 +1589,7 @@ public class QcUsbPlugin extends Plugin {
                 // SendThenBuild is also the in-session Connection(false)
                 // transition. Downgrade readiness until a fresh seed proves
                 // the rebuilt state is coherent.
-                stateDecoder.sessionStateObserved(monotonicMillis(), false);
+                stateDecoder.sessionSynchronizationCompleted(monotonicMillis(), false);
                 QcNativeStateDecoder.StartupDecision building =
                     stateDecoder.startupBeginBuilding();
                 if (building.kind == QcNativeStateDecoder.StartupDecision.SEND) {
@@ -1862,9 +1861,6 @@ public class QcUsbPlugin extends Plugin {
                 decodeErrors++;
                 lastError = "Could not advance QC startup: " + error.getMessage();
             }
-        }
-        if (!stateDecoder.sessionSynchronized()) {
-            stateDecoder.initializationObserved(decoded.messageType, decoded.payload);
         }
         advanceInitialization();
         if (decoded.messageType == QcUsbProfile.MESSAGE_TYPE_FILE) {

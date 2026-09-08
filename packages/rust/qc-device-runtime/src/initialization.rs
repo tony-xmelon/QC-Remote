@@ -666,6 +666,98 @@ impl InitializationRuntime {
     }
 }
 
+/// One protocol lifecycle epoch, from the reset handshake through staged boot
+/// and the authoritative live-state seed. Keeping startup and initialization
+/// together prevents native hosts from retaining seed evidence across an
+/// in-session `Connection(false)` rebuild or releasing it at different times.
+#[derive(Debug)]
+pub struct DeviceLifecycleRuntime {
+    startup: DeviceStartupRuntime,
+    initialization: Option<InitializationRuntime>,
+}
+
+impl DeviceLifecycleRuntime {
+    pub fn start_at(
+        request_id: u64,
+        session_id: impl Into<String>,
+        now_ms: u64,
+    ) -> (Self, Vec<OutboundMessage>) {
+        let (startup, messages) = DeviceStartupRuntime::start_at(request_id, session_id, now_ms);
+        (
+            Self {
+                startup,
+                initialization: None,
+            },
+            messages,
+        )
+    }
+
+    pub fn phase(&self) -> DeviceStartupPhase {
+        self.startup.phase()
+    }
+
+    pub fn is_active(&self) -> bool {
+        self.startup.is_active()
+    }
+
+    pub fn is_connected(&self) -> bool {
+        self.startup.is_connected()
+    }
+
+    pub fn timed_out(&self, now_ms: u64) -> bool {
+        self.startup.timed_out(now_ms)
+    }
+
+    pub fn reserve_request_id(&mut self) -> u64 {
+        self.startup.reserve_request_id()
+    }
+
+    /// Feed one decoded device message through both layers in the canonical
+    /// order. A rebuild invalidates the previous seed atomically.
+    pub fn observe(&mut self, message_type: u16, payload: &[u8]) -> DeviceStartupAction {
+        if let Some(initialization) = self.initialization.as_mut() {
+            initialization.observe_message(message_type, payload);
+        }
+        let action = self.startup.observe(message_type, payload);
+        if matches!(action, DeviceStartupAction::SendThenBuild(_)) {
+            self.initialization = None;
+        }
+        action
+    }
+
+    pub fn begin_building(&mut self) -> DeviceStartupAction {
+        self.startup.begin_building()
+    }
+
+    pub fn start_post_boot_initialization(
+        &mut self,
+        now_ms: u64,
+    ) -> Result<(), DeviceStartupError> {
+        self.initialization = Some(self.startup.post_boot_initialization(now_ms)?);
+        Ok(())
+    }
+
+    pub fn advance_initialization(&mut self, now_ms: u64) -> InitializationAction {
+        let action = self
+            .initialization
+            .as_mut()
+            .map(|initialization| initialization.advance(now_ms))
+            .unwrap_or(InitializationAction::Wait);
+        if matches!(
+            action,
+            InitializationAction::Complete { synchronized: true }
+        ) {
+            self.initialization = None;
+        }
+        action
+    }
+
+    #[cfg(test)]
+    fn has_initialization(&self) -> bool {
+        self.initialization.is_some()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -968,6 +1060,64 @@ mod tests {
             !seed.synchronized(),
             "the prior connected epoch's preset must not satisfy a rebuild"
         );
+    }
+
+    #[test]
+    fn lifecycle_discards_an_incomplete_seed_when_a_rebuild_starts() {
+        let (mut lifecycle, _) = DeviceLifecycleRuntime::start_at(7, "session", 0);
+        assert!(matches!(
+            lifecycle.observe(
+                profile::MESSAGE_TYPE_RESET_COMMS_BUFFERS,
+                &reset_reply(7, "session")
+            ),
+            DeviceStartupAction::Send(_)
+        ));
+        assert!(matches!(
+            lifecycle.observe(profile::MESSAGE_TYPE_VERSION, &valid_version()),
+            DeviceStartupAction::SendThenBuild(_)
+        ));
+        assert!(matches!(
+            lifecycle.begin_building(),
+            DeviceStartupAction::Send(_)
+        ));
+        assert!(matches!(
+            lifecycle.observe(profile::MESSAGE_TYPE_MODEL_REPO, &valid_model_repo()),
+            DeviceStartupAction::Send(_)
+        ));
+        let module_stats = pa::ModuleStatsMessage {
+            action: pa::message_action::Enum::Update as i32,
+            stats: vec![pa::ModuleStatsItem::default()],
+            ..Default::default()
+        }
+        .encode_to_vec();
+        assert!(matches!(
+            lifecycle.observe(profile::MESSAGE_TYPE_MODULE_STATS, &module_stats),
+            DeviceStartupAction::Send(_)
+        ));
+        let updater = pa::UpdaterMessage {
+            action: pa::message_action::Enum::Update as i32,
+            ..Default::default()
+        }
+        .encode_to_vec();
+        assert_eq!(
+            lifecycle.observe(profile::MESSAGE_TYPE_UPDATER, &updater),
+            DeviceStartupAction::Connected
+        );
+        lifecycle
+            .start_post_boot_initialization(100)
+            .expect("connected lifecycle starts a seed");
+        assert!(lifecycle.has_initialization());
+
+        let disconnected = pa::ConnectionMessage {
+            connected: Some(pa::connection_message::Connected::Connected(false)),
+            ..Default::default()
+        }
+        .encode_to_vec();
+        assert!(matches!(
+            lifecycle.observe(profile::MESSAGE_TYPE_CONNECTION, &disconnected),
+            DeviceStartupAction::SendThenBuild(_)
+        ));
+        assert!(!lifecycle.has_initialization());
     }
 
     #[test]

@@ -353,7 +353,7 @@ impl TransportRuntime {
         }
     }
 
-    pub fn state_observed(&mut self, now_ms: u64, preset_synchronized: bool) {
+    fn state_observed(&mut self, now_ms: u64, preset_synchronized: bool) {
         self.session.state_observed(now_ms, preset_synchronized);
     }
 
@@ -598,7 +598,7 @@ mod tests {
         runtime.handshake_completed(10, false);
         runtime.keepalive_sent(10);
         for tick in (0..profile::KEEPALIVE_INTERVAL_MS).step_by(250) {
-            runtime.state_observed(10 + tick, tick > 1_000);
+            runtime.synchronization_completed(10 + tick, tick > 1_000);
             runtime.outbound(10 + tick);
         }
         assert_eq!(runtime.phase(), SessionPhase::Ready);
@@ -667,11 +667,11 @@ mod tests {
         assert_eq!(runtime.phase(), SessionPhase::Ready);
         assert!(runtime.synchronized());
 
-        runtime.state_observed(2, false);
+        runtime.synchronization_completed(2, false);
         assert_eq!(runtime.phase(), SessionPhase::Syncing);
         assert!(!runtime.synchronized());
 
-        runtime.state_observed(3, true);
+        runtime.synchronization_completed(3, true);
         assert_eq!(runtime.phase(), SessionPhase::Ready);
         assert!(runtime.synchronized());
     }

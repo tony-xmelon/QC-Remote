@@ -178,9 +178,10 @@ Observed control-flow rules:
 
 ## Shared runtime implementation status
 
-The shared Rust `DeviceStartupRuntime`, used by both Windows and Android, now
-implements the recovered staged startup rather than collapsing post-reset work
-into a single burst. The following binary-evidenced corrections are implemented:
+The shared Rust `DeviceLifecycleRuntime`, used by both Windows and Android,
+combines the recovered staged `DeviceStartupRuntime` with the bounded semantic
+state seed rather than collapsing post-reset work into a single burst. The
+following binary-evidenced corrections are implemented:
 
 - Decode `ResetCommsBuffers` and verify its session id before accepting the
   handshake. Windows and Android now reject type-52 messages for a different
@@ -210,10 +211,11 @@ into a single burst. The following binary-evidenced corrections are implemented:
 - Advance `TransportRuntime` from Handshaking only after staged startup and the
   bounded authoritative seed complete, passing the same synchronized result on
   both hosts.
-- Retain `DeviceStartupRuntime` for the entire open USB session on both hosts.
+- Retain `DeviceLifecycleRuntime` for the entire open USB session on both hosts.
   A later Version `READ` and an in-session `Connection(false)` therefore enter
   the same shared transitions; a rebuild clears observations from the prior
-  connected epoch and must prove a fresh preset/state seed.
+  connected epoch and atomically discards its incomplete seed before proving a
+  fresh preset/state seed.
 - Treat synchronization as authoritative in both directions. An in-session
   rebuild returns transport readiness from `Ready` to `Syncing`; only its fresh
   bounded seed may restore `Ready`.
@@ -226,7 +228,7 @@ into a single burst. The following binary-evidenced corrections are implemented:
 - Keep native HID adapters byte-transparent after report assembly. Bounded gzip
   decoding belongs to the shared `qc-protocol` state/response decoders, so
   Windows and Android consume identical logical payloads.
-- Allocate post-boot seed request IDs inside `DeviceStartupRuntime`; native
+- Allocate post-boot seed request IDs inside `DeviceLifecycleRuntime`; native
   hosts no longer maintain a parallel startup request-id sequence.
 - Reserve gateway and verification IDs on both native hosts from that same
   retained runtime, preventing lifecycle and application requests from reusing

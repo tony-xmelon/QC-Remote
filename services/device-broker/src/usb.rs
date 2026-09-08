@@ -1,7 +1,7 @@
 use crate::flight::FlightRecorder;
 use hidapi::{HidApi, HidDevice};
 use qc_device_runtime::initialization::{
-    DeviceStartupAction, DeviceStartupRuntime, InitializationAction,
+    DeviceLifecycleRuntime, DeviceStartupAction, InitializationAction,
 };
 use qc_device_runtime::transport::{ReportLayout, TransportRuntime};
 use qc_protocol::commands::{self, OutboundMessage};
@@ -57,13 +57,12 @@ pub struct ConnectedQc {
     /// silently discards incremental pushes — a preset-folder listing arrives
     /// as one message per folder, and only the final folder would survive.
     pub initial_messages: Vec<IncomingMessage>,
-    startup: DeviceStartupRuntime,
-    initialization: Option<qc_device_runtime::initialization::InitializationRuntime>,
+    lifecycle: DeviceLifecycleRuntime,
 }
 
 impl ConnectedQc {
     pub fn reserve_request_id(&mut self) -> u64 {
-        self.startup.reserve_request_id()
+        self.lifecycle.reserve_request_id()
     }
 
     /// Keep the staged device controller alive for the full USB session.
@@ -74,18 +73,14 @@ impl ConnectedQc {
         message: &IncomingMessage,
         now_ms: u64,
     ) -> Result<Option<bool>, UsbError> {
-        if let Some(initialization) = self.initialization.as_mut() {
-            initialization.observe_message(message.message_type, &message.payload);
-        }
-        let action = self.startup.observe(message.message_type, &message.payload);
+        let action = self
+            .lifecycle
+            .observe(message.message_type, &message.payload);
         self.apply_startup_action(action, now_ms)
     }
 
     pub fn advance_lifecycle(&mut self, now_ms: u64) -> Result<Option<bool>, UsbError> {
-        let Some(initialization) = self.initialization.as_mut() else {
-            return Ok(None);
-        };
-        let synchronization = match initialization.advance(now_ms) {
+        let synchronization = match self.lifecycle.advance_initialization(now_ms) {
             InitializationAction::Wait => None,
             InitializationAction::Send(messages) => {
                 for message in messages {
@@ -93,12 +88,7 @@ impl ConnectedQc {
                 }
                 None
             }
-            InitializationAction::Complete { synchronized } => {
-                if synchronized {
-                    self.initialization = None;
-                }
-                Some(synchronized)
-            }
+            InitializationAction::Complete { synchronized } => Some(synchronized),
         };
         Ok(synchronization)
     }
@@ -120,26 +110,23 @@ impl ConnectedQc {
                 }
                 DeviceStartupAction::SendThenBuild(messages) => {
                     synchronization = Some(false);
-                    self.initialization = None;
                     for message in messages {
                         self.usb.send_command(message);
                     }
-                    self.startup.begin_building()
+                    self.lifecycle.begin_building()
                 }
                 DeviceStartupAction::Connected => {
                     synchronization = Some(false);
                     self.usb
                         .send_command(commands::sync_system_time(unix_time_ms()));
-                    self.initialization = Some(
-                        self.startup
-                            .post_boot_initialization(now_ms)
-                            .map_err(|error| {
-                                UsbError::Initialization(format!(
-                                    "could not restart state seed: {}",
-                                    error.as_str()
-                                ))
-                            })?,
-                    );
+                    self.lifecycle
+                        .start_post_boot_initialization(now_ms)
+                        .map_err(|error| {
+                            UsbError::Initialization(format!(
+                                "could not restart state seed: {}",
+                                error.as_str()
+                            ))
+                        })?;
                     return Ok(self.advance_lifecycle(now_ms)?.or(synchronization));
                 }
                 DeviceStartupAction::Invalid(error) => {
@@ -450,14 +437,15 @@ impl QcUsb {
                         }
                         usb.flight.event("handshake-reply");
                         usb.report_layout = attempt.layout;
-                        let (mut startup, _) = DeviceStartupRuntime::start_at(
+                        let (mut lifecycle, _) = DeviceLifecycleRuntime::start_at(
                             attempt.request_id(),
                             attempt.session_id(),
                             session_clock.elapsed().as_millis() as u64,
                         );
-                        let first_action = startup.observe(message.message_type, &message.payload);
+                        let first_action =
+                            lifecycle.observe(message.message_type, &message.payload);
                         let (connected, synchronized) =
-                            usb.finish_hello(startup, first_action, session, session_clock)?;
+                            usb.finish_hello(lifecycle, first_action, session, session_clock)?;
                         session.synchronization_completed(
                             session_clock.elapsed().as_millis() as u64,
                             synchronized,
@@ -474,7 +462,7 @@ impl QcUsb {
 
     fn finish_hello(
         mut self,
-        mut startup: DeviceStartupRuntime,
+        mut lifecycle: DeviceLifecycleRuntime,
         mut startup_action: DeviceStartupAction,
         session: &mut TransportRuntime,
         session_clock: &Instant,
@@ -500,7 +488,7 @@ impl QcUsb {
                     for message in messages {
                         self.send_command(message);
                     }
-                    startup.begin_building()
+                    lifecycle.begin_building()
                 }
                 DeviceStartupAction::Connected => break,
                 DeviceStartupAction::Invalid(error) => {
@@ -519,10 +507,10 @@ impl QcUsb {
             if !matches!(startup_action, DeviceStartupAction::Wait) {
                 continue;
             }
-            if startup.timed_out(session_clock.elapsed().as_millis() as u64) {
+            if lifecycle.timed_out(session_clock.elapsed().as_millis() as u64) {
                 return Err(UsbError::Initialization(format!(
                     "timed out in {:?}",
-                    startup.phase()
+                    lifecycle.phase()
                 )));
             }
             if let Some(message) = self.read_message(session, 100)? {
@@ -532,7 +520,7 @@ impl QcUsb {
                     &mut latest_messages,
                     message.clone(),
                 );
-                startup_action = startup.observe(message.message_type, &message.payload);
+                startup_action = lifecycle.observe(message.message_type, &message.payload);
             }
         }
 
@@ -543,12 +531,14 @@ impl QcUsb {
         // only after the Updater gate and seed it from everything captured
         // during staged boot. This cannot replay Version/ModelRepo/subscriptions.
         let now_ms = initialization_clock.elapsed().as_millis() as u64;
-        let mut initialization = startup.post_boot_initialization(now_ms).map_err(|error| {
-            UsbError::Initialization(format!("could not start state seed: {}", error.as_str()))
-        })?;
+        lifecycle
+            .start_post_boot_initialization(now_ms)
+            .map_err(|error| {
+                UsbError::Initialization(format!("could not start state seed: {}", error.as_str()))
+            })?;
         let synchronized = loop {
             let now_ms = initialization_clock.elapsed().as_millis() as u64;
-            match initialization.advance(now_ms) {
+            match lifecycle.advance_initialization(now_ms) {
                 InitializationAction::Wait => {}
                 InitializationAction::Send(messages) => {
                     for message in messages {
@@ -558,7 +548,7 @@ impl QcUsb {
                 InitializationAction::Complete { synchronized } => break synchronized,
             }
             if let Some(message) = self.read_message(session, 100)? {
-                initialization.observe_message(message.message_type, &message.payload);
+                lifecycle.observe(message.message_type, &message.payload);
                 record_initial(
                     &mut initial_messages,
                     &mut message_counts,
@@ -575,18 +565,13 @@ impl QcUsb {
         } else {
             "initialization-incomplete"
         });
-        // Keep an incomplete semantic seed alive after connect. Late QC state
-        // frames can then promote the shared transport from Syncing to Ready,
-        // exactly as they do on Android and during an in-session rebuild.
-        let initialization = (!synchronized).then_some(initialization);
         Ok((
             ConnectedQc {
                 usb: self,
                 message_counts,
                 latest_messages,
                 initial_messages,
-                startup,
-                initialization,
+                lifecycle,
             },
             synchronized,
         ))

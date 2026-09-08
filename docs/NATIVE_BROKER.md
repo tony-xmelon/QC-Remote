@@ -35,9 +35,11 @@ attempt schedule instead of receiving platform-owned timing arrays.
 New device-protocol fixes must land with a shared runtime regression test; the
 platform adapters are not alternate protocol implementations.
 
-The shared initializer reports ready only after the current preset and the
-required scene, mode, Master Volume, dirty-state, and setlist-position seed are
-all present. Both hosts also consume the same generated first-command
+The shared `DeviceLifecycleRuntime` owns staged startup and the semantic seed as
+one epoch. It reports ready only after the current preset and the required
+scene, mode, Master Volume, dirty-state, and setlist-position seed are all
+present, and atomically discards an incomplete seed when `Connection(false)`
+starts a rebuild. Both hosts also consume the same generated first-command
 stabilization window. Android's semantic plans and initialization decisions
 cross JNI as named JSON fields; only actual HID reports and QC payload bytes use
 binary arrays. Rust also applies the selected report-ID layout before those
