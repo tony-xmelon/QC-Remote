@@ -94,7 +94,7 @@ For release evidence, identify the exact staged artifact under test. The full
 suite refuses to run without this argument and verifies the adjacent immutable
 source/SHA-256 metadata before touching the device:
 
-CI publishes one `qc-control-release-bundle-<commit>` artifact only after that
+CI publishes one `qc-remote-release-bundle-<commit>` artifact only after that
 commit passes software parity and responsive/accessibility conformance and both
 native packages finish. Extract the bundle into the repository's `artifacts`
 directory; it contains exactly one Windows installer, one Android APK, their
@@ -172,6 +172,76 @@ the exact Windows and Android artifacts in the clean-commit release manifest.
 
 A distributable release requires both reports to show every contract action as
 `passed`, no `failed`, `skipped`, or `not-run` action, and `complete: true`.
+
+## Physical-device incident log
+
+Open physical-device failures are release blockers even when the action that
+immediately preceded them returned a successful readback. Keep the operator's
+observation distinct from transport evidence and from any suspected trigger;
+only a controlled reproduction may establish causality.
+
+- `QC-WIN-2026-09-07-YSOD-01` — During a Windows full-control physical run, the
+  operator observed a yellow screen of death on the Quad Cortex. The last
+  completed public action was `duplicate_setlist`; the following harness-owned
+  scratch-preset restoration recall lost synchronization and reset handshakes
+  received no reply. A later native probe found the QC non-enumerable. That run
+  remains invalid evidence. After reboot and guarded state recovery, catalog
+  request amplification was reduced and catalog retries were paced from the
+  completion of a stale listing. Subsequent duplicate-setlist runs caused no
+  crash; the current-runtime Windows r24 run passed all 105 non-backup actions
+  with zero failures plus 280 stress operations, restored its starting preset,
+  and ended connected and synchronized after both hosts were moved to the same
+  shared Rust catalog verification runtime. The
+  incident is mitigated and retained for monitoring because firmware causality
+  remains unproven. See
+  [`incidents/QC-WIN-2026-09-07-YSOD-01.json`](incidents/QC-WIN-2026-09-07-YSOD-01.json).
+
+- `QC-ANDROID-2026-09-07-YSOD-01` — The operator observed a yellow screen of
+  death shortly after the current-source Android 0.3.23 APK started with the QC
+  directly attached. No conformance harness, backup, phone relay service, or
+  remote MCP command path was active. Android still enumerated the QC after the
+  report, and the app itself had not crashed. Startup code can automatically
+  open and handshake an attached QC, making that lifecycle the nearest plausible
+  software interaction, but the available log has no command-level proof that
+  the handshake completed or caused the failure. The PC relay and Android app
+  were stopped. This incident is open and release-blocking pending controlled
+  investigation. Source now requires an explicit user Connect after attachment
+  and includes a bounded payload-free USB flight recorder; both compile and pass
+  source tests, but neither mitigation has been validated in a post-incident
+  physical run and the incident therefore remains open. See
+  [`incidents/QC-ANDROID-2026-09-07-YSOD-01.json`](incidents/QC-ANDROID-2026-09-07-YSOD-01.json).
+
+### Post-incident Android recovery sequence
+
+An open release-blocking device incident also blocks `--execute` before the
+transport starts. After reviewing the incident and physically recovering the
+QC, an investigation run must name every open incident exactly in
+`QC_HARDWARE_INCIDENT_ACK`; the ordinary mutation acknowledgement remains a
+separate requirement. This prevents a second task or stale terminal from
+silently resuming a full run.
+
+Use the staged Android probe before restoring the relay. Starting the mitigated
+app is traffic-free: it scans and shows the attached QC as available but does
+not open it. The default probe is read-only with respect to QC USB:
+
+```powershell
+node tools/probe-android-usb-adb.mjs 192.168.100.15:5555 --output tmp/android-usb-status.json
+```
+
+Only after the operator confirms that the QC has recovered, run one explicit
+open/handshake/initialization cycle. The probe always disconnects in `finally`
+and cannot invoke a gateway action, relay, or backup:
+
+```powershell
+$env:QC_ANDROID_USB_HANDSHAKE_ACK = "I_ACCEPT_QC_USB_HANDSHAKE"
+node tools/probe-android-usb-adb.mjs 192.168.100.15:5555 --connect --output tmp/android-usb-handshake.json
+```
+
+Review the embedded flight record and confirm `handshake-reply`,
+`initialization-sent`, `transport-ready`, and `transport-closed`, with no reader
+failure or repeated handshake storm. Proceed in increasing risk order: read-only
+surface, performance controls, reversible Grid modifications, persistent/system
+operations, stress, then the separately authorized backup case.
 
 ### Firebase App Distribution and App Check
 
@@ -278,6 +348,13 @@ single fresh session with no orphaned command.
 The power switch is observational only: QC Remote does not synthesize a power
 press. The test covers detection and recovery from a real device power cycle.
 
+The read stage also probes retail Diagnostics, RemoteControl screenshot, and
+graphics-tree support. Reports contain a `retailProtocolCapabilities` ledger
+which distinguishes `schema-only`, `retail-response`, and physically verified
+evidence. An unsupported read is recorded explicitly and blocks a required-all
+release run without aborting the remaining non-destructive probes. Schema
+presence alone is never reported as physical success.
+
 ### Stage 2 — physical performance controls
 
 Test A-H in STOMP, SCENE, and PRESET modes, including assigned, unassigned,
@@ -287,6 +364,12 @@ and an immediate reversal. Test Mode, Tap Tempo, tuner, Gig View, scene select,
 and Master Volume in both directions: app to QC and QC to app. Capture the QC
 screen after each navigation boundary and record LED color/state before and
 after each footswitch operation.
+
+Screen-gesture evidence is similarly granular. The public tap gesture exercises
+the hardware-confirmed RELEASE/PRESS pair, and swipe exercises DRAG. MOVE and
+the protobuf's standalone TAP value remain `schema-only` until a dedicated
+retail-device test can produce an unambiguous, reversible physical observation;
+the suite does not send them merely to make a coverage number pass.
 
 ### Stage 3 — parameters, Grid, and routing
 

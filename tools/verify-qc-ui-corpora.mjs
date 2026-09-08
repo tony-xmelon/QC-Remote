@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
@@ -103,6 +103,10 @@ function verifyPngCorpus(relativePath) {
 
 function verifySvgCorpus(relativePath) {
   const corpus = join(root, relativePath);
+  if (!existsSync(corpus) || !readdirSync(corpus).some((name) => name.endsWith(".svg"))) {
+    console.log(`SKIP ${basename(corpus)}; private reference SVGs are not present`);
+    return;
+  }
   const manifest = readJson(join(corpus, "manifest.json"));
   const ids = new Set();
   const files = new Set(readdirSync(corpus).filter((name) => name.endsWith(".svg")));
@@ -122,7 +126,7 @@ function verifySvgCorpus(relativePath) {
     assert.ok(asset.states?.length > 0, `${asset.id}: no canonical state mapping`);
   }
   assert.deepEqual([...files].sort(), [...manifestFiles].sort(), "manifest and SVG file set differ");
-  console.log(`PASS ${ids.size} official SVG details; checksums, geometry, and state mappings match`);
+  console.log(`PASS ${ids.size} private reference SVG details; checksums, geometry, and state mappings match`);
 }
 
 verifyPngCorpus("references/qc-ui-corpus/coros-4.1.0");

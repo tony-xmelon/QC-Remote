@@ -139,8 +139,8 @@ export const CASES = Object.freeze({
   list_preset_folders: { phase: "read", hazard: "read" },
   list_preset_slots: { phase: "read", hazard: "read" },
   get_master_volume: { phase: "read", hazard: "read" },
-  get_device_identity: { phase: "read", hazard: "read" },
   get_inhibited_modules: { phase: "read", hazard: "read" },
+  get_device_diagnostics: { phase: "read", hazard: "read", capability: "diagnostics" },
   get_tuner_settings: { phase: "read", hazard: "read" },
   set_tuner_input: { phase: "tuner", hazard: "tuner" },
   set_tuner_mute: { phase: "tuner", hazard: "tuner" },
@@ -159,16 +159,16 @@ export const CASES = Object.freeze({
   list_captures: { phase: "read", hazard: "read" },
   list_irs: { phase: "read", hazard: "read" },
   get_preset_screenshot: { phase: "read", hazard: "read" },
-  capture_screen: { phase: "read", hazard: "read" },
-  get_graphics_tree: { phase: "read", hazard: "read" },
+  capture_screen: { phase: "read", hazard: "read", capability: "remoteScreenshot" },
+  get_graphics_tree: { phase: "read", hazard: "read", capability: "remoteGraphicsTree" },
   preview_parameter: { phase: "modify", hazard: "live" },
   preview_lane_control_parameter: { phase: "modify", hazard: "live" },
   create_device_backup: { phase: "persistent", hazard: "persistent" },
   set_device_name: { phase: "system", hazard: "system" },
   undo_device: { phase: "modify", hazard: "live" },
   redo_device: { phase: "modify", hazard: "live" },
-  tap_screen: { phase: "system", hazard: "screen" },
-  swipe_screen: { phase: "system", hazard: "screen" },
+  tap_screen: { phase: "system", hazard: "screen", capability: "remoteMousePressRelease" },
+  swipe_screen: { phase: "system", hazard: "screen", capability: "remoteMouseDrag" },
   select_scene: { phase: "performance", hazard: "live" },
   copy_scene: { phase: "modify", hazard: "live" },
   set_scene_label: { phase: "modify", hazard: "live" },
@@ -233,6 +233,50 @@ export const CASES = Object.freeze({
   delete_preset: { phase: "persistent", hazard: "persistent" },
   move_preset: { phase: "persistent", hazard: "persistent" }
 });
+
+export const RETAIL_PROTOCOL_CAPABILITIES = Object.freeze([
+  "diagnostics",
+  "remoteScreenshot",
+  "remoteGraphicsTree",
+  "remoteMousePress",
+  "remoteMouseRelease",
+  "remoteMouseMove",
+  "remoteMouseTap",
+  "remoteMouseDrag"
+]);
+
+// Build an explicit evidence ledger. In particular, protobuf schema presence
+// never becomes physical support, and the raw MOVE/TAP enum values remain
+// schema-only until a dedicated, observable retail-device test exists.
+export function retailCapabilityEvidence(results) {
+  const state = Object.fromEntries(RETAIL_PROTOCOL_CAPABILITIES.map((name) => [name, {
+    status: "schema-only",
+    physicallyVerified: false
+  }]));
+  const result = (name) => [...results].reverse().find((entry) => entry.name === name);
+  const observed = (name) => result(name)?.evidence?.verification === "authoritative_physical_observation";
+  const responded = (name) => result(name)?.status === "passed";
+  const unsupported = (name) => result(name)?.status === "unsupported";
+  for (const [name, capability] of [
+    ["get_device_diagnostics", "diagnostics"],
+    ["capture_screen", "remoteScreenshot"],
+    ["get_graphics_tree", "remoteGraphicsTree"],
+    ["swipe_screen", "remoteMouseDrag"]
+  ]) {
+    if (responded(name)) state[capability] = { status: "retail-response", physicallyVerified: observed(name) };
+    else if (unsupported(name)) state[capability] = { status: "unsupported", physicallyVerified: false };
+  }
+  if (responded("tap_screen")) {
+    for (const capability of ["remoteMousePress", "remoteMouseRelease"]) {
+      state[capability] = { status: "retail-response", physicallyVerified: observed("tap_screen") };
+    }
+  } else if (unsupported("tap_screen")) {
+    for (const capability of ["remoteMousePress", "remoteMouseRelease"]) {
+      state[capability] = { status: "unsupported", physicallyVerified: false };
+    }
+  }
+  return state;
+}
 
 const requiredFixturePaths = [
   "target",
@@ -598,6 +642,15 @@ export function summarizePhysicalResults(results, contractActionNames, failure, 
 export function assertMutationAcknowledged(environment = process.env) {
   if (environment.QC_HARDWARE_TEST_ACK !== MUTATION_ACK) {
     throw new Error(`Mutation execution requires QC_HARDWARE_TEST_ACK=${MUTATION_ACK}.`);
+  }
+}
+
+export function assertOpenIncidentAcknowledged(incidentIds, environment = process.env) {
+  const open = [...incidentIds].sort();
+  if (open.length === 0) return;
+  const expected = open.join(",");
+  if (environment.QC_HARDWARE_INCIDENT_ACK !== expected) {
+    throw new Error(`Physical execution is blocked by open device incident(s): ${expected}. Review the records, recover the device, then set QC_HARDWARE_INCIDENT_ACK=${expected} for this controlled investigation run.`);
   }
 }
 

@@ -1,4 +1,4 @@
-import { SHARED_QC_ASSISTANT_TOOLS, assistantAccessPermitsTool, assistantSystemInstructions, booleanAssistantArgument, isReadOnlyQcAssistantTool, numericAssistantArgument, type AssistantAccessMode, type AssistantToolCall, type AssistantToolDefinition } from "@qc-remote/core";
+import { SHARED_QC_ASSISTANT_TOOLS, assistantProviderPermitsTool, assistantSystemInstructions, booleanAssistantArgument, isReadOnlyQcAssistantTool, numericAssistantArgument, type AssistantAccessMode, type AssistantToolCall, type AssistantToolDefinition } from "@qc-remote/core";
 
 export type ChatRole = "user" | "assistant";
 export type ChatAttachment = { name: string; mediaType: string; data: string };
@@ -64,7 +64,10 @@ export type ChatProviderDefinition = {
   guidance: string;
 };
 
-export const chatProviderDefaults: Record<ChatProviderId, ChatProviderDefinition> = {
+declare const __QC_DIRECT_GEMINI_ENABLED__: boolean | undefined;
+export const directGeminiEnabled = typeof __QC_DIRECT_GEMINI_ENABLED__ === "undefined" || __QC_DIRECT_GEMINI_ENABLED__;
+
+export const chatProviderDefaults = {
   "openai-responses": {
     label: "OpenAI API", shortLabel: "OpenAI", model: "gpt-5-mini", baseUrl: "https://api.openai.com/v1", endpointEditable: true,
     credentialLabel: "OpenAI project API key", setupUrl: "https://platform.openai.com/api-keys", pricingUrl: "https://openai.com/api/pricing/",
@@ -75,11 +78,11 @@ export const chatProviderDefaults: Record<ChatProviderId, ChatProviderDefinition
     credentialLabel: "Google account", setupUrl: "https://antigravity.google/docs/cli/install/", pricingUrl: "https://antigravity.google/pricing",
     guidance: "Uses a separately installed Antigravity CLI and the account signed in there. Availability, eligibility, quota, and terms are controlled by that provider; QC Remote does not supply an account or API key."
   },
-  "gemini-openai": {
+  ...(directGeminiEnabled ? { "gemini-openai": {
     label: "Google Gemini API", shortLabel: "Gemini", model: "gemini-3.1-flash-lite", baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai", endpointEditable: false,
     credentialLabel: "Gemini auth key", setupUrl: "https://aistudio.google.com/app/apikey", pricingUrl: "https://ai.google.dev/gemini-api/docs/pricing",
     guidance: "Continue with Google to use an eligible Google Cloud project's Gemini quota, or paste a Gemini auth key as a fallback. Consumer Gemini subscriptions do not include API quota."
-  },
+  } } : {}),
   "anthropic-messages": {
     label: "Anthropic Claude API", shortLabel: "Anthropic", model: "claude-haiku-4-5-20251001", baseUrl: "https://api.anthropic.com/v1", endpointEditable: false,
     credentialLabel: "Anthropic personal API key", setupUrl: "https://platform.claude.com/settings/keys", pricingUrl: "https://platform.claude.com/docs/en/about-claude/pricing",
@@ -89,7 +92,12 @@ export const chatProviderDefaults: Record<ChatProviderId, ChatProviderDefinition
     label: "Local model server", shortLabel: "Local", model: "gpt-oss:20b", baseUrl: "http://127.0.0.1:11434/v1", endpointEditable: true,
     credentialLabel: "No credential required", guidance: "Run Ollama or LM Studio locally. The server must support the OpenAI Responses API and function tools."
   }
-} as const;
+} as Record<ChatProviderId, ChatProviderDefinition>;
+
+export function chatProviderEntries(publicRelease = false): Array<[ChatProviderId, ChatProviderDefinition]> {
+  return (Object.entries(chatProviderDefaults) as Array<[ChatProviderId, ChatProviderDefinition]>)
+    .filter(([id]) => !publicRelease || id !== "gemini-openai");
+}
 
 export function chatProviderDefinition(id: ChatProviderId): ChatProviderDefinition {
   return chatProviderDefaults[id];
@@ -135,7 +143,7 @@ export function isReadOnlyChatTool(name: string): boolean {
 
 export function assistantAccessPermitsChatTool(mode: AssistantAccessMode, name: string): boolean {
   if (name === "save_current_unsaved_preset") return mode === "modify" || mode === "full";
-  return assistantAccessPermitsTool(mode, name);
+  return assistantProviderPermitsTool(mode, name);
 }
 
 export function chatInstructions(): string {

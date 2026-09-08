@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "incidentId": "QC-ANDROID-2026-09-08-NATIVE-CRASH-01",
+  "status": "open-investigation",
+  "releaseBlocking": true,
+  "platform": "android",
+  "device": {
+    "product": "Neural DSP Quad Cortex",
+    "serial": "sha256:219618c3781c"
+  },
+  "androidHost": {
+    "manufacturer": "OnePlus",
+    "model": "CPH2449",
+    "os": "Android 16",
+    "transportToTestHost": "wireless-adb",
+    "qcUsbAttachment": "direct USB host connection"
+  },
+  "app": {
+    "package": "com.qccontrol.mobile",
+    "versionName": "0.3.23",
+    "versionCode": 28,
+    "failedApkSha256": "f5149e0b5cf9c7afd9c98a862871574880f139358921148e1f0445cddf00766c"
+  },
+  "observedAtLocal": "2026-09-08T00:03:59+03:00",
+  "trigger": {
+    "suite": "tools/hardware-conformance.mjs",
+    "report": "tmp/android-readonly-current-f5149e0b.json",
+    "action": "list_captures",
+    "hazard": "read",
+    "precedingPassedActions": 15,
+    "backupAttempted": false,
+    "mutationAttempted": false
+  },
+  "failure": {
+    "kind": "native Android process crash",
+    "signal": "SIGABRT",
+    "thread": "pool-6-thread-1",
+    "nativeEntryPoint": "Java_com_qccontrol_mobile_QcNativeStateDecoder_nativePushReport",
+    "processExitReason": "APP CRASH(NATIVE)",
+    "remoteSymptom": "paired device is offline",
+    "physicalQcDisplayStateAfterCrash": "not yet rechecked"
+  },
+  "evidence": [
+    "Android crash buffer backtrace terminating in nativePushReport",
+    "Android ApplicationExitInfo timestamp 2026-09-08T00:03:59.921+03:00, status 6",
+    "tmp/android-status-after-relay-drop.json",
+    "persisted flight record showing a high-volume FILE stream followed by transport close, reopen, and handshake attempt"
+  ],
+  "rootCause": {
+    "established": true,
+    "statement": "The high-volume capture read intentionally refreshed the USB session. Cancellation of the queued Android UsbRequest ring produced a residual one-byte completion. The shared body-only report normalizer accepted any nonempty read, after which TransportRuntime::push_report indexed report[2]. The resulting Rust bounds panic crossed an extern system JNI boundary and aborted the Android process."
+  },
+  "mitigationUnderTest": {
+    "changes": [
+      "Reject body-only reports shorter than the two-byte HID length and flags header in shared Rust.",
+      "Reject teardown-shortened reports in the Android adapter before JNI.",
+      "Catch unexpected nativePushReport panics and convert them to the Java error path instead of unwinding across JNI.",
+      "Exercise every native read length from zero through twice the logical report size in a regression test."
+    ],
+    "softwareValidation": [
+      "63/63 qc-protocol tests plus 2/2 replay tests passed",
+      "63/63 qc-device-runtime tests passed",
+      "4/4 qc-android JNI tests passed",
+      "46/46 Android native synchronization tests passed",
+      "cargo clippy for qc-android and dependencies passed with warnings denied",
+      "Android assembleDebug and lintDebug completed successfully"
+    ],
+    "candidateApk": {
+      "sha256": "9b12dedaefe16f3256ce9f9f7ad7a2556c9b5580e303d855255e5e79ad065578",
+      "bytes": 24346753,
+      "installedOnPhone": true,
+      "appForceStoppedAfterInstall": true
+    },
+    "physicalValidation": "pending a controlled handshake and repeated high-volume read regression"
+  },
+  "requiredFollowUp": [
+    "Confirm the Quad Cortex display is normal before reopening USB.",
+    "Run one controlled handshake on the mitigation APK.",
+    "Repeat the read-only suite through captures, IRs, screenshots, and graphics-tree reads while retaining crash and flight-recorder evidence.",
+    "Keep release blocked until the physical regression completes without an Android process exit or QC fault."
+  ]
+}

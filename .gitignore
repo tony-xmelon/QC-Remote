@@ -32,6 +32,7 @@ apps/windows/src-tauri/binaries/*.exe
 # Mobile
 .gradle/
 **/local.properties
+apps/android/android/app/google-services.json
 apps/android/android/app/src/main/jniLibs/
 DerivedData/
 Pods/
@@ -66,6 +67,12 @@ artifacts/
 .artifacts/
 tmp/
 tools/hardware-conformance.session.json
+
+# Private visual-validation inputs. Keep local copies outside Git history and
+# outside application bundles; production uses only neutral project vectors.
+references/*/
+packages/typescript/qc-theme/assets/qc-overview-001.svg
+packages/typescript/qc-theme/assets/qc-block-samples.svg
 
 # Generated contract clients
 generated/

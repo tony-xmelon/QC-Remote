@@ -4,6 +4,7 @@ pub const GRID_COLUMNS: u32 = 8;
 pub const SCENE_COUNT: u32 = 8;
 pub const MINIMUM_TEMPO_BPM: u32 = 40;
 pub const MAXIMUM_TEMPO_BPM: u32 = 240;
+pub const STORED_PRESET_NAME_CHARACTERS: usize = 20;
 pub const IPC_MAX_FRAME_BYTES: usize = 16777216;
 pub const STATE_EVENT_DEFAULT_LIMIT: usize = 256;
 pub const STATE_EVENT_MAXIMUM_LIMIT: usize = 4096;

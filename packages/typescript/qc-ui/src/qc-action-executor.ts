@@ -191,6 +191,10 @@ export async function executeQcAction(call: AssistantToolCall, context: QcAction
     const current = await gateway.currentSnapshot();
     return { detail: summarizeSnapshot(current, selectedBlockId), snapshot: current, data: current };
   }
+  if (call.name === "get_device_diagnostics") {
+    const diagnostics = await gateway.deviceDiagnostics();
+    return { detail: "Read the current device diagnostics.", data: diagnostics };
+  }
   if (call.name === "get_state_events") {
     const frames = await gateway.currentStateEvents(integerArgument(call, "after_sequence"), integerArgument(call, "limit"));
     const stateCount = frames.frames.reduce((total, frame) => total + frame.states.length, 0);
@@ -247,10 +251,6 @@ export async function executeQcAction(call: AssistantToolCall, context: QcAction
   if (call.name === "get_master_volume") {
     const volume = await gateway.currentMasterVolume();
     return { detail: `Quad Cortex master volume is ${volume.value}.`, snapshot: { ...snapshot, masterVolume: volume.value }, data: volume };
-  }
-  if (call.name === "get_device_identity") {
-    const identity = await gateway.identity();
-    return { detail: `Quad Cortex ${identity.customName || "device"}; serial ${identity.serial}${identity.appFwVersion ? `; firmware ${identity.appFwVersion}` : ""}.`, data: identity };
   }
   if (call.name === "get_inhibited_modules") {
     const modules = await gateway.inhibitedModules();

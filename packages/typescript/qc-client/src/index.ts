@@ -283,6 +283,7 @@ export interface GatewayTransport {
   resetSession(): Promise<ConnectionState>;
   disconnect(): Promise<ConnectionState>;
   currentSnapshot(): Promise<PresetSnapshot>;
+  deviceDiagnostics(): Promise<Record<string, unknown>>;
   currentStateEvents(afterSequence: number, limit?: number): Promise<NativeStateFrames>;
   currentTempoClock(): Promise<TempoClockState>;
   currentMasterVolume(): Promise<MasterVolumeState>;

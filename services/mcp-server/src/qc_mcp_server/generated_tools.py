@@ -102,13 +102,6 @@ class GeneratedQcTools:
         """Read the authoritative master output volume."""
         return self._invoke_generated_action("get_master_volume", locals())
 
-    def get_device_identity(
-        self,
-
-    ) -> Any:
-        """Read the connected Quad Cortex serial number, firmware version, type and custom name."""
-        return self._invoke_generated_action("get_device_identity", locals())
-
     def get_inhibited_modules(
         self,
 
@@ -182,6 +175,13 @@ class GeneratedQcTools:
     ) -> Any:
         """Capture the current Quad Cortex touchscreen as a PNG image."""
         return self._invoke_generated_action("capture_screen", locals())
+
+    def get_device_diagnostics(
+        self,
+
+    ) -> Any:
+        """Read DSP load, memory, error flags, and USB audio, MIDI, and HID transport counters from the connected Quad Cortex."""
+        return self._invoke_generated_action("get_device_diagnostics", locals())
 
     def get_graphics_tree(
         self,

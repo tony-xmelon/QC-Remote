@@ -7,11 +7,11 @@
 pub mod commands;
 mod compression;
 pub mod domain;
+pub mod forward;
 pub mod framing;
 pub mod generated_payloads;
 pub mod profile;
 pub mod responses;
-pub mod session;
 pub mod state;
 pub mod wire;
 

@@ -1,6 +1,6 @@
 param(
     [string]$ReleaseNotes = "QC Remote Android development build.",
-    [string]$Testers = "prezimir@gmail.com",
+    [string]$Testers = "",
     [string]$WindowsHardwareReport,
     [string]$AndroidHardwareReport,
     [switch]$PrepareOnly

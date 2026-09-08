@@ -1,5 +1,5 @@
 @scope (.qc-screen-fixture-root) {
-.expression-bypass-official, .expression-bypass-official * { box-sizing: border-box; font-family: Arial, sans-serif; }
+.expression-bypass-official, .expression-bypass-official * { box-sizing: border-box; font-family: var(--qc-font-device-plain); }
 .qc-screen.expression-bypass-official { position: absolute; inset: 0; display: block; overflow: hidden; background: #101010; color: #eee; font-weight: 400; container-type: inline-size; }
 .expression-bypass-official button { border: 0; color: inherit; font: inherit; }
 .expression-bypass-official > header { height: 7.5cqw; display: flex; gap: 2.25cqw; align-items: center; padding: 0 1cqw; }

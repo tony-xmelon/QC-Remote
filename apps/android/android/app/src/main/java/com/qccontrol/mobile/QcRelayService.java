@@ -55,6 +55,17 @@ public final class QcRelayService extends Service {
             return START_NOT_STICKY;
         }
         if (!new RelayCredentialStore(this).paired()) { updateState("pairing_required"); stopSelf(); return START_NOT_STICKY; }
+        // Android 14+ validates the connectedDevice foreground-service
+        // prerequisite at startForeground(). Starting before the USB grant is
+        // not a recoverable state: it throws SecurityException and kills the
+        // whole app process. Stop cleanly and let the app restart us after its
+        // USB session owns the attached QC.
+        if (!QcUsbPlugin.relayForegroundServiceEligible()) {
+            state = "stopped";
+            sendBroadcast(new Intent(ACTION_STATUS).setPackage(getPackageName()).putExtra(EXTRA_STATE, state));
+            stopSelf();
+            return START_NOT_STICKY;
+        }
         startForeground(NOTIFICATION_ID, notification("Connecting securely…"));
         if ("connecting".equals(state) || "connected".equals(state) || "reconnecting".equals(state)) return START_STICKY;
         connect(generation.incrementAndGet());
@@ -196,6 +207,7 @@ public final class QcRelayService extends Service {
         }
 
         @Override public void onClosed(WebSocket webSocket, int code, String reason) {
+            android.util.Log.w("QcRelayService", "Relay WebSocket closed (code " + code + ").");
             stopReadinessUpdates(webSocket);
             if (code == 4001 || code == 4003) {
                 new RelayCredentialStore(QcRelayService.this).clear();
@@ -204,6 +216,8 @@ public final class QcRelayService extends Service {
             reconnect(expectedGeneration);
         }
         @Override public void onFailure(WebSocket webSocket, Throwable error, Response response) {
+            android.util.Log.w("QcRelayService", "Relay WebSocket failed"
+                + (response == null ? "." : " with HTTP " + response.code() + "."), error);
             stopReadinessUpdates(webSocket);
             if (response != null && (response.code() == 401 || response.code() == 403)) {
                 new RelayCredentialStore(QcRelayService.this).clear();

@@ -60,6 +60,19 @@ def _validated_backend_result(method: str, result: Any) -> Any:
     return result
 
 
+def _sanitize_model_result(value: Any) -> Any:
+    private_names = {"devicename", "serial", "serialnumber", "deviceserial"}
+    if isinstance(value, Mapping):
+        return {
+            name: _sanitize_model_result(child)
+            for name, child in value.items()
+            if str(name).casefold() not in private_names
+        }
+    if isinstance(value, list):
+        return [_sanitize_model_result(child) for child in value]
+    return value
+
+
 def _matches_schema(value: Any, schema: dict[str, Any]) -> bool:
     expected = schema.get("type")
     types = expected if isinstance(expected, list) else [expected]
@@ -124,7 +137,9 @@ class QcTools(GeneratedQcTools):
                 raise ValueError(f"{name} does not match the canonical schema for {action}")
         try:
             method = SHARED_QC_ACTIONS[action]["rpc"]
-            return _validated_backend_result(method, self.backend.request(method, payload))
+            return _sanitize_model_result(
+                _validated_backend_result(method, self.backend.request(method, payload))
+            )
         except Exception as error:
             code = getattr(error, "code", None)
             if code is None:

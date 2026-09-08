@@ -46,7 +46,10 @@ for (const feature of manifest.features ?? []) {
     if (state?.status === "implemented" && (!Array.isArray(state.evidence) || state.evidence.length === 0)) failures.push(`${feature.id}: implemented ${platform} capability needs evidence`);
     await verifyEvidence(feature, platform, state?.evidence);
   }
-  if (feature.owner === "shared" && (!Array.isArray(feature.sharedEvidence) || feature.sharedEvidence.length === 0)) failures.push(`${feature.id}: shared capability needs shared-package evidence`);
+  if (["shared", "native-equivalent"].includes(feature.owner)
+      && (!Array.isArray(feature.sharedEvidence) || feature.sharedEvidence.length === 0)) {
+    failures.push(`${feature.id}: ${feature.owner} capability needs canonical shared evidence`);
+  }
   await verifyEvidence(feature, "shared", feature.sharedEvidence);
 }
 

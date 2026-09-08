@@ -59,6 +59,7 @@ GATEWAY_RESULT_KINDS = {
   "device.setGlobalBypass": "DeviceActionResult",
   "device.presetScreenshot": "Object",
   "device.captureScreen": "Object",
+  "device.diagnostics": "Object",
   "device.graphicsTree": "Object",
   "device.tapScreen": "DeviceActionResult",
   "device.swipeScreen": "DeviceActionResult",

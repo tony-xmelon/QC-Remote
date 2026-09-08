@@ -1,9 +1,19 @@
 # QC Remote
 
-An unofficial, modular control platform for Neural DSP Quad Cortex devices. The project provides hardware-faithful Windows and Android controllers plus a standalone MCP server, while keeping future iOS, web, and other clients from duplicating device-control logic.
+An independent, unofficial control platform for compatible guitar hardware. The project provides functionally aligned Windows and Android controllers plus a standalone MCP server, while keeping future iOS, web, and other clients from duplicating device-control logic. Quad Cortex compatibility is explained in the notice below.
 
 > [!IMPORTANT]
 > QC Remote is an independent, unofficial project. It is not affiliated with, authorized, sponsored, endorsed, or supported by Neural DSP Technologies Oy. Neural DSP and Quad Cortex are trademarks of Neural DSP Technologies Oy and are referenced only to identify compatibility. Device support uses an independent native Rust implementation informed by the community-maintained `pyquadcortex` project. The private protocol remains firmware-sensitive.
+
+> [!CAUTION]
+> This public repository does not yet have a repository-wide license. Do not
+> assume that public visibility grants permission to copy, modify, or distribute
+> material that is not covered by an explicit file- or package-level license.
+> Freevia intends an open-source release, but the exact project license and
+> ownership record must be finalized first.
+
+See [Compatibility and trademark notice](TRADEMARKS.md) and
+[third-party notices](THIRD_PARTY-NOTICES.md).
 
 ## Repository shape
 
@@ -85,10 +95,10 @@ retain expected-state guards; bypass and parameter edits still require review
 before temporary application. The deterministic offline command parser remains
 available when no model is configured. Windows installer builds embed only the
 native Rust device broker; Python and pyquadcortex remain source-level parity
-tools and are not installed. The installer also embeds the
-optional YouTube reference-audio resolver: after explicit rights confirmation,
-chat can fetch a bounded excerpt as Opus/WebM or AAC/M4A, losslessly remux it,
-attach it to the next model round, and remove the temporary file. An installed app does not require
+tools and are not installed. Public installers do not include streaming-media
+download or extraction tools. Users may attach files they own or are authorized
+to process; those attachments remain subject to the selected model provider's
+terms. An installed app does not require
 Python, Node, Rust, the source tree, or a repository `.venv` at runtime.
 Push-to-talk voice transcription is runtime-detected and opt-in: the app
 discloses that stable Microsoft Edge speech recognition may send microphone
@@ -101,12 +111,15 @@ path exposes raw HID, protobuf, or arbitrary JSON-RPC; global-setting mutations
 remain typed, allowlisted, and confirmation-gated.
 See [Chat and MCP setup](docs/CHAT_AND_MCP.md).
 
-The Android client is available as a branded Firebase App Distribution build.
+The Android development client has been distributed privately through Firebase
+App Distribution.
 It presents the QC display, compact performance controls, and chat in a
 phone-first layout. Android owns a direct USB-host HID session with the Quad
-Cortex (USB permission is requested on first attachment), uses Firebase AI
-Logic with Gemini 3.7 Flash without embedding a personal Gemini key, and sends
-Android speech-recognition transcripts through the same chat/action path. The
+Cortex (USB permission is requested on first attachment). Development builds
+can use Firebase AI Logic with Gemini without embedding a personal Gemini key;
+that adapter and its Firebase AI dependencies are compiled out of the planned
+general-audience public build. Development builds can also send Android
+speech-recognition transcripts through the same chat/action path. The
 mobile shell composes the same preset, Grid, routing, scene, parameter,
 footswitch, history, save, and performance workflows as Windows, including the
 same guarded assistant action executor, generated hardware-safe action
@@ -130,4 +143,8 @@ against a connected Quad Cortex. See [Native QC device broker](docs/NATIVE_BROKE
 
 ## Licensing
 
-No project license has been selected yet. Until one is added, the source is not offered under an open-source license. Third-party dependencies retain their own licenses; release builds will include generated third-party notices.
+No repository-wide project license has been selected yet. Some components carry
+explicit package-level licenses and third-party dependencies retain their own
+licenses, but those notices do not license the repository as a whole. Release
+builds include generated third-party notices. See the
+[distribution-license decision](docs/DISTRIBUTION_LICENSE_DECISION.md).

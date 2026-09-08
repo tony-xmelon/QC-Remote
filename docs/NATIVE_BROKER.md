@@ -8,13 +8,35 @@ Windows React -> Tauri -> qc-device-broker -> qc-device-runtime -> qc-protocol -
 Android React -> Capacitor/Java/JNI ---------> qc-device-runtime -> qc-protocol -> Android USB
 ```
 
-`qc-protocol` owns protobuf schemas, framing, session policy, typed outbound
+`qc-protocol` owns protobuf schemas, the stateless HID codec, typed outbound
 commands, ModelRepo parsing, parameter scales/dependencies, and state decoding.
-`qc-device-runtime` owns the platform-neutral complete snapshot reducer and
-preset-library projection. The Windows broker owns only exclusive Windows HID,
-background workers, framed `gateway.v1` IPC, device-event correlation, and
-host-specific scheduling. Android's JNI layer owns its USB permission and
-endpoint lifecycle.
+`qc-device-runtime` owns the long-lived `TransportRuntime`: session phases,
+handshake/report-layout selection, raw-report normalization, frame assembly,
+keepalive/reconnect policy, read-error tolerance, LocalBackup assembly/retry/
+stall policy, post-handshake preset/seed synchronization, preset-catalog
+verification timing, reply type/request-id correlation and deadlines, the
+complete snapshot reducer, and preset-library projection. The Windows broker supplies Windows HID I/O,
+background workers and framed `gateway.v1` IPC. Android supplies USB permission,
+endpoint and application lifecycle around the same Rust runtime through JNI.
+
+Gateway state-verification semantics live in the shared runtime. Reply
+correlation, encoded-write pacing, mutation confirmation deadlines/readback
+cadence, preflight/readback/refresh method selection, post-write refreshes,
+composite-read dependencies, and catalog verification policy are shared; each
+host retains only its native event wait, timer primitive, and USB dispatch. The
+shared `GatewayVerificationRuntime` chooses every wait, refresh, verified, and
+timeout transition. Correlated settings retries likewise query one shared Rust
+attempt schedule instead of receiving platform-owned timing arrays.
+New device-protocol fixes must land with a shared runtime regression test; the
+platform adapters are not alternate protocol implementations.
+
+The shared initializer reports ready only after the current preset and the
+required scene, mode, Master Volume, dirty-state, and setlist-position seed are
+all present. Both hosts also consume the same generated first-command
+stabilization window. Android's semantic plans and initialization decisions
+cross JNI as named JSON fields; only actual HID reports and QC payload bytes use
+binary arrays. Verification cadence stays inside Rust rather than crossing JNI,
+so Java does not duplicate either a private plan codec or protocol timer loop.
 
 Windows starts preset-folder enumeration when the directory is first opened.
 Folder pushes are decoded and cached on the background receive lane. Starting

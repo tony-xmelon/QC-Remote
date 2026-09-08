@@ -36,8 +36,8 @@
     "externalBin": [
       "binaries/qc-device-broker"
     ],
-    "shortDescription": "Independent companion app for Quad Cortex devices",
-    "longDescription": "Unofficial, independently developed Windows controller for a connected Neural DSP Quad Cortex with guarded live controls, workspaces, typed commands, and explicit device-save confirmation. Not affiliated with or endorsed by Neural DSP Technologies Oy.",
+    "shortDescription": "Independent controller for compatible guitar hardware",
+    "longDescription": "Independent, unofficial Windows controller with guarded live controls, workspaces, typed commands, and explicit device-save confirmation. Works with compatible Quad Cortex devices. Not affiliated with or endorsed by Neural DSP Technologies Oy.",
     "windows": {
       "nsis": {
         "installMode": "currentUser",
@@ -45,7 +45,7 @@
         "installerHooks": "./windows/hooks.nsh"
       }
     },
-    "copyright": "Publisher and copyright ownership details will be identified before public release.",
+    "copyright": "Published independently by Freevia, a legal entity based in Bulgaria. Open-source license details will be finalized before public release.",
     "category": "Music",
     "resources": {
       "../../../THIRD_PARTY-NOTICES.md": "legal/THIRD_PARTY-NOTICES.md",

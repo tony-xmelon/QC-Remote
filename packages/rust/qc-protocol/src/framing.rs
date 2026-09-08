@@ -46,6 +46,49 @@ pub struct Frame {
     pub device_bytes: [u8; 2],
 }
 
+/// Incrementally assembles logical QC frames from the live HID report stream.
+/// This is wire-format state only; connection/session policy lives in
+/// `qc-device-runtime`.
+#[derive(Debug, Default)]
+pub struct FrameAssembler {
+    reports: Vec<Vec<u8>>,
+}
+
+impl FrameAssembler {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn reset(&mut self) {
+        self.reports.clear();
+    }
+
+    pub fn push(&mut self, report: Vec<u8>) -> Result<Option<(u16, Vec<u8>)>, FrameError> {
+        if report.len() < 3 {
+            self.reset();
+            return Ok(None);
+        }
+        let is_first = report[2] & FLAG_FIRST != 0;
+        if is_first {
+            self.reset();
+        } else if self.reports.is_empty() {
+            // A host can attach between chunks, or the device can leave one
+            // continuation queued after a reset. Ignore it until FIRST.
+            return Ok(None);
+        }
+        self.reports.push(report);
+        if self.reports.len() > profile::MAX_FRAME_BYTES / CHUNK_SIZE + 1 {
+            self.reset();
+            return Err(FrameError::TooLarge);
+        }
+        if !is_complete(&self.reports)? {
+            return Ok(None);
+        }
+        let reports = std::mem::take(&mut self.reports);
+        decode(&reports).map(Some)
+    }
+}
+
 pub fn encode(message_type: u16, payload: &[u8]) -> Vec<[u8; REPORT_SIZE]> {
     encode_message(u32::from(message_type), payload)
 }
@@ -261,7 +304,7 @@ mod tests {
             message_type in any::<u16>(),
             payload in prop::collection::vec(any::<u8>(), 0..2048)
         ) {
-            let mut assembler = crate::session::FrameAssembler::new();
+            let mut assembler = FrameAssembler::new();
             for report in prefix {
                 let _ = assembler.push(report);
             }

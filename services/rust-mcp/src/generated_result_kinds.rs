@@ -66,6 +66,7 @@ pub fn result_kind(method: &str) -> Option<ResultKind> {
         "device.setGlobalBypass" => Some(ResultKind::DeviceActionResult),
         "device.presetScreenshot" => Some(ResultKind::Object),
         "device.captureScreen" => Some(ResultKind::Object),
+        "device.diagnostics" => Some(ResultKind::Object),
         "device.graphicsTree" => Some(ResultKind::Object),
         "device.tapScreen" => Some(ResultKind::DeviceActionResult),
         "device.swipeScreen" => Some(ResultKind::DeviceActionResult),

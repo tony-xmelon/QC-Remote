@@ -1,8 +1,13 @@
+param(
+    [Parameter(Mandatory = $true)]
+    [string]$SourceIcon
+)
+
 $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $androidRoot = Join-Path $repoRoot "apps\android\android\app\src\main\res"
-$sourceIcon = Join-Path $repoRoot "packages\typescript\qc-theme\app-icon-source.png"
+$sourceIcon = (Resolve-Path -LiteralPath $SourceIcon -ErrorAction Stop).Path
 $nativeTheme = Get-Content -LiteralPath (Join-Path $repoRoot "packages\typescript\qc-theme\src\native-theme.json") -Raw | ConvertFrom-Json
 $brand = Get-Content -LiteralPath (Join-Path $repoRoot "packages\typescript\qc-theme\src\brand.json") -Raw | ConvertFrom-Json
 

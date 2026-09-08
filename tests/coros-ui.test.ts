@@ -552,7 +552,7 @@ test("QC results collapse after two rendered lines with a side chevron and no he
   assert.match(primitiveSource, /element\.scrollHeight > element\.clientHeight \+ 1/, "the chevron must only appear when rendered content exceeds the clamp");
   assert.match(primitiveSource, /aria-expanded=\{expanded\}/);
   assert.match(appSource, /item\.role === "tool" \? <CollapsibleAssistantResult text=\{item\.text\} \/>/, "only QC results should use the compact result treatment");
-  assert.match(appSource, /item\.role !== "tool" && <span>\{item\.role\.toUpperCase\(\)\}<\/span>/, "QC results must not render a redundant role header");
+  assert.match(appSource, /item\.role !== "tool" && <span>/, "QC results must not render a redundant role header");
   assert.doesNotMatch(appSource, />QC RESULT</);
   assert.match(styles, /\.qc-result-text\.is-collapsed[^}]*-webkit-line-clamp: 2;/s);
   assert.match(styles, /\.qc-result-toggle \{[^}]*position: absolute;[^}]*right: -9px;/s, "the chevron must overlay the right edge instead of adding a footer row");
@@ -743,9 +743,12 @@ test("preset navigation waits on QC state events and reads only as recovery", ()
   const brokerSource = readFileSync(new URL("../services/device-broker/src/rpc.rs", import.meta.url), "utf8");
   const recallFlow = brokerSource.slice(brokerSource.indexOf("fn execute_preset_recall"), brokerSource.indexOf("fn gateway_recall_preset"));
   assert.match(recallFlow, /subscribe_state_events\(\)/);
-  assert.match(brokerSource, /fn wait_for_transaction_event[\s\S]*events\.recv_timeout\(Duration::from_millis\(remaining\)\)/);
-  assert.match(recallFlow, /wait_for_transaction_event/);
-  assert.match(recallFlow, /read_setlist_position\(request_id\)/);
+  assert.match(brokerSource, /GatewayVerificationRuntime::new[\s\S]*events\.recv_timeout\(Duration::from_millis\(delay_ms\)\)/);
+  assert.match(recallFlow, /gateway_write_verification_policy/);
+  assert.match(recallFlow, /verify_gateway_write_on_schedule/);
+  assert.match(brokerSource, /verify_gateway_write_on_schedule[\s\S]*GatewayVerificationAction::Refresh \{ method \}[\s\S]*dispatch_gateway_refresh\(controller, method\)/);
+  assert.doesNotMatch(recallFlow, /controller\.send_command\(recall_message[\s\S]*controller\.send_command\(recall_message/,
+    "recovery must inspect synchronized state instead of replaying the recall");
   assert.doesNotMatch(recallFlow, /wait_for_gateway_snapshot/);
   assert.doesNotMatch(recallFlow, /thread::sleep/);
 });
@@ -981,7 +984,8 @@ test("measured Flanger pagination and Looper action geometry stay shared", () =>
   const editorStyles = readFileSync(new URL("../packages/typescript/qc-ui/src/reference-parameter-editor.css", import.meta.url), "utf8");
   const looperStyles = readFileSync(new URL("../packages/typescript/qc-ui/src/official-looper-eq.css", import.meta.url), "utf8");
   assert.match(editorStyles, /\.editor-digital-flanger > header \.editor-pages \{ left: 61%; width: 19\.5%;[^}]*padding-left: \.125%;/);
-  assert.match(fixtureSource, /\["HALF SPEED", "1\/2", "C"\]/);
+  assert.match(fixtureSource, /\["HALF SPEED", "half-speed", "C"\]/);
+  assert.match(fixtureSource, /<QcLooperActionGlyph kind=\{glyph\} \/>/);
   assert.match(looperStyles, /\.looper-timeline \{ gap: 2\.5cqw;/);
-  assert.match(looperStyles, /button:nth-child\(8\) strong \{[^}]*width: 5\.75cqw;[^}]*transform: translateY\(2px\);/);
+  assert.match(looperStyles, /\.looper-actions button strong > \.qc-looper-action-glyph \{[^}]*width: 100%;[^}]*stroke: currentColor;/);
 });

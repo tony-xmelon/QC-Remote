@@ -6,7 +6,9 @@ The native protocol schema incorporates interoperability information derived fro
 
 Neural DSP and Quad Cortex are trademarks of Neural DSP Technologies Oy. Their use identifies compatibility only and does not indicate affiliation, authorization, sponsorship, endorsement, or support.
 
-Inventory: 521 locked runtime components; 0 unresolved license/version records.
+For interface compatibility and recognition, QC Remote reproduces the visible geometry of functional device-category symbols documented in the publicly available Quad Cortex/CorOS user interface. Copyright and other rights in the referenced interface materials remain with Neural DSP Technologies Oy. The shared vector module contains no Neural DSP logo, embedded authoring-tool metadata, creator metadata, or claim of ownership by QC Remote. The symbols are used solely to identify the corresponding compatible device functions.
+
+Inventory: 520 locked runtime components; 0 unresolved license/version records.
 
 Restricted SDK terms requiring publisher review: 6. These are listed in the machine-readable inventory and are not characterized as open-source licenses.
 
@@ -207,7 +209,6 @@ Bundled component-specific license/NOTICE texts: 243; components without a local
 | cargo | protoc-bin-vendored-macos-x86_64 | 3.2.0 | MIT | Stepan Koltsov <stepan.koltsov@gmail.com> |
 | cargo | protoc-bin-vendored-win32 | 3.2.0 | MIT | Stepan Koltsov <stepan.koltsov@gmail.com> |
 | cargo | protoc-bin-vendored | 3.2.0 | MIT | Stepan Koltsov <stepan.koltsov@gmail.com> |
-| cargo | quick-xml | 0.38.4 | MIT | https://github.com/tafia/quick-xml |
 | cargo | quick-xml | 0.41.0 | MIT | https://github.com/tafia/quick-xml |
 | cargo | quinn-proto | 0.11.17 | MIT OR Apache-2.0 | https://github.com/quinn-rs/quinn |
 | cargo | quinn-udp | 0.5.15 | MIT OR Apache-2.0 | https://github.com/quinn-rs/quinn |

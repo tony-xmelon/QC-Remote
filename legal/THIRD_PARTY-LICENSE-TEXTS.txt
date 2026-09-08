@@ -12611,7 +12611,7 @@ published under these same licenses.
 ================================================================================
 SHA-256: 24cf1c3162221eb23444b85c6f333821bb4960bef827e7d5dff28594a754be48
 Source file names: LICENSE-MIT.md
-Applies to: cargo:protoc-bin-vendored-linux-aarch_64@3.2.0, cargo:protoc-bin-vendored-linux-ppcle_64@3.2.0, cargo:protoc-bin-vendored-linux-s390_64@3.2.0, cargo:protoc-bin-vendored-linux-x86_32@3.2.0, cargo:protoc-bin-vendored-linux-x86_64@3.2.0, cargo:protoc-bin-vendored-macos-aarch_64@3.2.0, cargo:protoc-bin-vendored-macos-x86_64@3.2.0, cargo:protoc-bin-vendored-win32@3.2.0, cargo:protoc-bin-vendored@3.2.0, cargo:quick-xml@0.38.4, cargo:quick-xml@0.41.0, cargo:webview2-com-macros@0.8.1, cargo:webview2-com-sys@0.38.2, cargo:webview2-com@0.38.2
+Applies to: cargo:protoc-bin-vendored-linux-aarch_64@3.2.0, cargo:protoc-bin-vendored-linux-ppcle_64@3.2.0, cargo:protoc-bin-vendored-linux-s390_64@3.2.0, cargo:protoc-bin-vendored-linux-x86_32@3.2.0, cargo:protoc-bin-vendored-linux-x86_64@3.2.0, cargo:protoc-bin-vendored-macos-aarch_64@3.2.0, cargo:protoc-bin-vendored-macos-x86_64@3.2.0, cargo:protoc-bin-vendored-win32@3.2.0, cargo:protoc-bin-vendored@3.2.0, cargo:quick-xml@0.41.0, cargo:webview2-com-macros@0.8.1, cargo:webview2-com-sys@0.38.2, cargo:webview2-com@0.38.2
 --------------------------------------------------------------------------------
 The MIT License (MIT)
 

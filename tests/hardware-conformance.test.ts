@@ -16,16 +16,19 @@ import {
   MINIMUM_RAPID_PAIRS,
   MUTATION_ACK,
   REPEATABLE_PHYSICAL_CONTROLS,
+  RETAIL_PROTOCOL_CAPABILITIES,
   summarizePerformanceSamples,
   actionPlan,
   assertDisposableSlots,
   assertMutationAcknowledged,
+  assertOpenIncidentAcknowledged,
   contractDigest,
   gatewayArguments,
   markPhysicalResultVerified,
   pngSignatureIsValid,
   redactEvidence,
   retryTransientRead,
+  retailCapabilityEvidence,
   summarizePhysicalResults,
   validateConfig,
   validateCoverage,
@@ -97,6 +100,36 @@ test("physical suite has exactly one case for every MCP device action", () => {
   assert.equal(actionPlan(contract, new Set(["read"])).filter((item) => item.enabled).length, contract.actions.filter((action: { classification: string }) => action.classification === "read").length);
 });
 
+test("retail protocol capability evidence never upgrades schema-only mouse events", () => {
+  assert.deepEqual(RETAIL_PROTOCOL_CAPABILITIES, [
+    "diagnostics", "remoteScreenshot", "remoteGraphicsTree", "remoteMousePress",
+    "remoteMouseRelease", "remoteMouseMove", "remoteMouseTap", "remoteMouseDrag"
+  ]);
+  const evidence = retailCapabilityEvidence([
+    { name: "get_device_diagnostics", status: "passed", evidence: {} },
+    { name: "capture_screen", status: "unsupported" },
+    { name: "tap_screen", status: "passed", evidence: {
+      verification: "authoritative_physical_observation"
+    } }
+  ]);
+  assert.deepEqual(evidence.diagnostics, { status: "retail-response", physicallyVerified: false });
+  assert.deepEqual(evidence.remoteScreenshot, { status: "unsupported", physicallyVerified: false });
+  assert.deepEqual(evidence.remoteMousePress, { status: "retail-response", physicallyVerified: true });
+  assert.deepEqual(evidence.remoteMouseRelease, { status: "retail-response", physicallyVerified: true });
+  assert.deepEqual(evidence.remoteMouseMove, { status: "schema-only", physicallyVerified: false });
+  assert.deepEqual(evidence.remoteMouseTap, { status: "schema-only", physicallyVerified: false });
+});
+
+test("private device identity remains a safety check rather than a public action case", () => {
+  const runner = readFileSync(new URL("../tools/hardware-conformance.mjs", import.meta.url), "utf8");
+  const library = readFileSync(new URL("../tools/hardware-conformance-lib.mjs", import.meta.url), "utf8");
+  assert.match(runner, /safetyIdentity\(\) \{ return this\.request\("device\.identity"\); \}/);
+  assert.match(runner, /async safetyIdentity\(\) \{ return undefined; \}/);
+  assert.match(runner, /identity = await transport\.safetyIdentity\(\)/);
+  assert.match(runner, /report\.deviceSafetyIdentity/);
+  assert.doesNotMatch(library, /get_device_identity:\s*\{/);
+});
+
 test("physical runner executes every contract action instead of only registering metadata", () => {
   const runner = readFileSync(new URL("../tools/hardware-conformance.mjs", import.meta.url), "utf8");
   const invoked = new Set([...runner.matchAll(/call\("([^"]+)"/g)].map((match) => match[1]));
@@ -146,6 +179,25 @@ test("stress-only bypasses functional parameter and lane-control setup", () => {
   assert.match(guardedSetup, /set_lane_control_scene_mode/);
 });
 
+test("physical stress synchronizes reload state before choosing scene toggles", () => {
+  const runner = readFileSync(new URL("../tools/hardware-conformance.mjs", import.meta.url), "utf8");
+  assert.match(
+    runner,
+    /reload_preset[\s\S]{0,1200}get_block_details[\s\S]{0,500}currentSnapshot = await snapshot\(\)/,
+  );
+  const refreshIndex = runner.indexOf("// Android and Windows both expose a cheap cached snapshot");
+  const baseSceneIndex = runner.indexOf("const baseScene = currentSnapshot.activeScene", refreshIndex);
+  assert(refreshIndex >= 0 && baseSceneIndex > refreshIndex);
+});
+
+test("scratch restoration refreshes state after persistent catalog mutations", () => {
+  const runner = readFileSync(new URL("../tools/hardware-conformance.mjs", import.meta.url), "utf8");
+  assert.match(
+    runner,
+    /const restoreScratch = async \(\) => \{[\s\S]{0,300}currentSnapshot = await snapshot\(\);[\s\S]{0,120}if \(currentSnapshot\.dirty\)/,
+  );
+});
+
 test("physical discovery completes the loadable IR fixture with its model and slot", () => {
   const runner = readFileSync(new URL("../tools/hardware-conformance.mjs", import.meta.url), "utf8");
   assert.match(runner, /const irLoaderModel =/);
@@ -183,6 +235,29 @@ test("full execution requires explicit fixtures and distinct disposable slots", 
     () => validateConfig({ ...example, routing: { ...example.routing, row: 3 } }),
     /parallel split routing is available only on rows 0 and 2/
   );
+});
+
+test("open physical-device incidents require an exact per-incident acknowledgement", () => {
+  assert.doesNotThrow(() => assertOpenIncidentAcknowledged([], {}));
+  assert.throws(
+    () => assertOpenIncidentAcknowledged(["QC-ANDROID-2", "QC-WIN-1"], {}),
+    /QC_ANDROID.*QC-WIN-1,QC-ANDROID-2|QC_HARDWARE_INCIDENT_ACK=QC-ANDROID-2,QC-WIN-1/,
+  );
+  assert.doesNotThrow(() => assertOpenIncidentAcknowledged(
+    ["QC-WIN-1", "QC-ANDROID-2"],
+    { QC_HARDWARE_INCIDENT_ACK: "QC-ANDROID-2,QC-WIN-1" },
+  ));
+  assert.throws(() => assertOpenIncidentAcknowledged(
+    ["QC-ANDROID-2"],
+    { QC_HARDWARE_INCIDENT_ACK: "I_ACCEPT_ALL" },
+  ), /QC_HARDWARE_INCIDENT_ACK=QC-ANDROID-2/);
+
+  const runner = readFileSync(new URL("../tools/hardware-conformance.mjs", import.meta.url), "utf8");
+  const guard = runner.indexOf("assertOpenIncidentAcknowledged(await openReleaseBlockingIncidentIds())");
+  const transport = runner.indexOf("const transport = config.transport.kind");
+  assert(guard >= 0 && guard < transport, "the incident guard must run before any physical transport is constructed");
+  assert.match(runner, /catch \{[\s\S]{0,100}ids\.push\(`malformed:\$\{name\}`\)/,
+    "a malformed incident record must fail closed");
 });
 
 test("partial configs expose missing physical fixtures without weakening the full gate", () => {
@@ -415,6 +490,15 @@ test("later physical observations upgrade immediate acknowledgements without add
   assert.equal(row.evidence.physicalObservation.tempo, 123);
   assert.match(row.evidence.physicalObservation.serial, /^sha256:/);
   assert.throws(() => markPhysicalResultVerified(results, "missing", {}), /has no passed result/);
+});
+
+test("setlist duplication records the internal restoration boundary and transport evidence", () => {
+  const runner = readFileSync(new URL("../tools/hardware-conformance.mjs", import.meta.url), "utf8");
+  assert.match(runner, /recordLifecycleCheckpoint\("duplicate-setlist-start"/);
+  assert.match(runner, /recordLifecycleCheckpoint\("duplicate-setlist-catalog-confirmed"/);
+  assert.match(runner, /recordLifecycleCheckpoint\("duplicate-setlist-restoration-recall-start"/);
+  assert.match(runner, /recordLifecycleCheckpoint\("duplicate-setlist-restoration-recall-failed"/);
+  assert.match(runner, /recordLifecycleCheckpoint\("duplicate-setlist-cleanup-complete"/);
 });
 
 test("physical transport health rejects disconnected, unsynchronized, stale, and slow evidence", () => {

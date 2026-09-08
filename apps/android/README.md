@@ -46,16 +46,19 @@ and subsequent input traffic. During connection it adapts between the numbered
 129-byte and body-only 128-byte representations used by different HID stacks,
 then retains the representation that receives the QC reply.
 
-Chat uses the native Firebase AI Logic SDK through the project's Gemini
-Developer API provider; no personal Gemini key is stored in the APK. The
-in-chat selector offers an allowlisted set of current Flash and Flash-Lite
-models and remembers the choice on the device. Exact per-model session token
-usage comes from Firebase response metadata. Firebase does not return remaining
-project/model quota to mobile clients, so the app reports availability or a
-confirmed quota-exhausted error without inventing a remaining percentage. The
+Development builds can use the native Firebase AI Logic SDK through the
+project's Gemini Developer API provider; no personal Gemini key is stored in a
+development APK. The adapter, its model selector, and Firebase AI/App Check
+dependencies are compiled out when `QC_PUBLIC_RELEASE=1`, because QC Remote's
+planned public build has no app-wide minimum age. In eligible development
+builds, the selector offers an allowlisted model set and remembers the choice on
+the device. Exact per-model session token usage comes from Firebase response
+metadata. Firebase does not return remaining project/model quota to mobile
+clients, so the development UI reports availability or a confirmed
+quota-exhausted error without inventing a remaining percentage. The
 microphone button uses Android's system speech recognizer and
-automatically sends the visible transcript through the same Gemini/action
-router as typed text. The guarded Android hardware allowlist covers scene and
+routes the visible transcript through the same chat/action router as typed
+text. The guarded Android hardware allowlist covers scene and
 preset navigation, mode/slot selection, tempo, selected-block bypass, parameter
 changes with expected-value guards, master-volume reads/writes with expected-value
 guards, tuner, and Gig View. Each remote write is followed by an authoritative USB
@@ -81,8 +84,8 @@ permission model, state-event cursors are backed by the native frame journal,
 and tempo projection, parameter preview, backup assembly, and backup validation
 reuse the shared Rust implementation.
 
-The Firebase app registers the stable distribution certificate used by tester
-APKs. App Check is not yet activated in the project. If Play Integrity is
+The development Firebase app registers the stable distribution certificate used
+by tester APKs. App Check is not yet activated in the project. If Play Integrity is
 enabled for Firebase AI Logic, configure it for Firebase App Distribution's
 off-Play installs before enforcing it: do not require `PLAY_RECOGNIZED` or
 `LICENSED`, and retain the Device integrity minimum. This lets eligible tester

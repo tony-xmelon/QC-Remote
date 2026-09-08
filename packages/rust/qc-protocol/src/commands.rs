@@ -28,6 +28,38 @@ pub struct OutboundMessage {
     pub payload: Vec<u8>,
 }
 
+/// A single raw event in message 72's remote-control mouse channel.
+///
+/// This represents the recovered protobuf enum literally. Higher-level touch
+/// gestures should normally use [`screen_tap`] or [`screen_drag`], because the
+/// production CorOS touch-down/up interpretation of PRESS and RELEASE is
+/// inverted relative to those enum labels.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum RemoteMouseEvent {
+    Press {
+        x: f32,
+        y: f32,
+    },
+    Release {
+        x: f32,
+        y: f32,
+    },
+    Move {
+        x: f32,
+        y: f32,
+    },
+    Tap {
+        x: f32,
+        y: f32,
+    },
+    Drag {
+        x: f32,
+        y: f32,
+        to_x: f32,
+        to_y: f32,
+    },
+}
+
 impl OutboundMessage {
     fn encoded<M: Message>(message_type: u16, message: M) -> Self {
         Self {
@@ -271,6 +303,9 @@ pub enum DeviceOperation {
         request_id: u64,
     },
     CaptureScreen,
+    ReadDiagnostics {
+        request_id: u64,
+    },
     ReadGraphicsTree,
     ScreenTap {
         x: f32,
@@ -642,6 +677,7 @@ impl DeviceOperation {
                 request_id,
             )],
             Self::CaptureScreen => vec![capture_screen()],
+            Self::ReadDiagnostics { request_id } => vec![read_diagnostics(Some(request_id))],
             Self::ReadGraphicsTree => vec![read_graphics_tree()],
             Self::ScreenTap { x, y } => screen_tap(x, y).to_vec(),
             Self::ScreenDrag { x, y, to_x, to_y } => screen_drag(x, y, to_x, to_y).to_vec(),
@@ -780,6 +816,73 @@ pub fn version_hello() -> OutboundMessage {
 
 pub fn read(message_type: u16) -> OutboundMessage {
     OutboundMessage::action(message_type, pa::message_action::Enum::Read)
+}
+
+pub fn delete(message_type: u16) -> OutboundMessage {
+    OutboundMessage::action(message_type, pa::message_action::Enum::Delete)
+}
+
+/// Read either the recent-products or favorites view. Cortex Control requests
+/// both during boot; the identical message type does not make them duplicate
+/// subscriptions.
+pub fn subscribe_recents_favorites(is_favorites: bool) -> OutboundMessage {
+    OutboundMessage::encoded(
+        profile::MESSAGE_TYPE_RECENTS_FAVORITES,
+        pa::RecentsFavoritesMessage {
+            action: pa::message_action::Enum::Read as i32,
+            is_favorites,
+            ..Default::default()
+        },
+    )
+}
+
+/// Start Cortex Control's CPU-load stream. This entry is a CREATE carrying a
+/// correlation id, not an ordinary READ; protobuf omits the zero action.
+pub fn subscribe_cpu_load(request_id: u64) -> OutboundMessage {
+    OutboundMessage::encoded(
+        profile::MESSAGE_TYPE_CPU_LOAD,
+        pa::CpuLoadMessage {
+            request_id: Some(pa::cpu_load_message::RequestId::RequestId(request_id)),
+            ..Default::default()
+        },
+    )
+}
+
+pub fn unsubscribe_cpu_load(request_id: u64) -> OutboundMessage {
+    OutboundMessage::encoded(
+        profile::MESSAGE_TYPE_CPU_LOAD,
+        pa::CpuLoadMessage {
+            action: pa::message_action::Enum::Delete as i32,
+            request_id: Some(pa::cpu_load_message::RequestId::RequestId(request_id)),
+            ..Default::default()
+        },
+    )
+}
+
+pub fn read_startup_files(short_listing: bool) -> OutboundMessage {
+    OutboundMessage::encoded(
+        profile::MESSAGE_TYPE_FILE,
+        pa::FileMessage {
+            action: pa::message_action::Enum::Read as i32,
+            short_listing: Some(pa::file_message::ShortListing::ShortListing(short_listing)),
+            ..Default::default()
+        },
+    )
+}
+
+pub fn read_cloud_transfer_state() -> OutboundMessage {
+    OutboundMessage::encoded(
+        profile::MESSAGE_TYPE_CLOUD_PRODUCT,
+        pa::CloudProductMessage {
+            action: pa::message_action::Enum::Read as i32,
+            cloud_transfer_state: Some(
+                pa::cloud_product_message::CloudTransferState::CloudTransferState(
+                    pa::CloudTransferState::default(),
+                ),
+            ),
+            ..Default::default()
+        },
+    )
 }
 
 pub fn read_global_eq() -> OutboundMessage {
@@ -1007,6 +1110,67 @@ pub fn connection(connected: bool) -> OutboundMessage {
             ..Default::default()
         },
     )
+}
+
+/// Cortex Control's Building-state entry writes. These must not be merged
+/// into the later subscription burst: ModelRepo is the gate to Initializing.
+pub fn building_initialization() -> Vec<OutboundMessage> {
+    vec![connection(true), read(profile::MESSAGE_TYPE_MODEL_REPO)]
+}
+
+/// Cortex Control's Initializing-state entry write. A decoded ModuleStats
+/// UPDATE is the gate to Booting.
+pub fn module_stats_initialization() -> Vec<OutboundMessage> {
+    vec![read(profile::MESSAGE_TYPE_MODULE_STATS)]
+}
+
+/// Cortex Control 4.1.0's Booting-state entry sequence. Keep this explicit:
+/// ordering is behavioral protocol, and the two type-20 reads have different
+/// protobuf intent.
+pub fn boot_initialization() -> Vec<OutboundMessage> {
+    boot_initialization_exact(0, false)
+}
+
+pub fn boot_initialization_exact(
+    cpu_load_request_id: u64,
+    short_file_listing: bool,
+) -> Vec<OutboundMessage> {
+    vec![
+        subscribe_cpu_load(cpu_load_request_id),
+        read(profile::MESSAGE_TYPE_LICENSE),
+        read(profile::MESSAGE_TYPE_UNDO_REDO),
+        read(profile::MESSAGE_TYPE_IO_SETTINGS),
+        read(profile::MESSAGE_TYPE_GENERAL_SETTINGS),
+        read(profile::MESSAGE_TYPE_SHOW_GIG_VIEW),
+        read(profile::MESSAGE_TYPE_MODE),
+        read(profile::MESSAGE_TYPE_GLOBAL_EQ),
+        read(profile::MESSAGE_TYPE_MASTER_VOLUME),
+        read_startup_files(short_file_listing),
+        read(profile::MESSAGE_TYPE_MODEL_PRESET),
+        read_cloud_transfer_state(),
+        subscribe_recents_favorites(false),
+        subscribe_recents_favorites(true),
+        read(profile::MESSAGE_TYPE_COMPILER_INHIBITED_MODULES),
+        read(profile::MESSAGE_TYPE_RECALL_PRESET),
+        read(profile::MESSAGE_TYPE_NEW_MODELS),
+        read(profile::MESSAGE_TYPE_PINNED_MODELS),
+        read(profile::MESSAGE_TYPE_DEFAULT_PARAMETERS),
+        read(profile::MESSAGE_TYPE_GLOBAL_TEMPO),
+        read(profile::MESSAGE_TYPE_SETLIST_POSITION),
+        read(profile::MESSAGE_TYPE_PRESET_DIRTY),
+        read(profile::MESSAGE_TYPE_SCENE),
+        read(profile::MESSAGE_TYPE_BULK_OPERATION),
+        read(profile::MESSAGE_TYPE_UPDATER),
+    ]
+}
+
+/// Cortex Control's Disconnected-state entry writes.
+pub fn disconnect_initialization() -> Vec<OutboundMessage> {
+    disconnect_initialization_exact(0)
+}
+
+pub fn disconnect_initialization_exact(cpu_load_request_id: u64) -> Vec<OutboundMessage> {
+    vec![unsubscribe_cpu_load(cpu_load_request_id), connection(false)]
 }
 
 /// Tell the QC what time it is, as Cortex Control does once per connection.
@@ -2120,6 +2284,51 @@ pub fn capture_screen() -> OutboundMessage {
     )
 }
 
+/// Request a typed diagnostics snapshot (message 7). This is read-only and
+/// does not enable any factory, calibration, serialization, or production
+/// automation mode.
+pub fn read_diagnostics(request_id: Option<u64>) -> OutboundMessage {
+    OutboundMessage::encoded(
+        profile::MESSAGE_TYPE_DIAGNOSTICS,
+        pa::DiagnosticsMessage {
+            action: pa::message_action::Enum::Read as i32,
+            request_id: request_id.map(pa::diagnostics_message::RequestId::RequestId),
+            ..Default::default()
+        },
+    )
+}
+
+/// Encode one literal RemoteControlMouse event. No host input is executed by
+/// this function; it only builds the protobuf envelope.
+pub fn remote_mouse_event(event: RemoteMouseEvent) -> OutboundMessage {
+    let (x, y, r#type, target) = match event {
+        RemoteMouseEvent::Press { x, y } => (x, y, pa::remote_control_mouse::Type::Press, None),
+        RemoteMouseEvent::Release { x, y } => (x, y, pa::remote_control_mouse::Type::Release, None),
+        RemoteMouseEvent::Move { x, y } => (x, y, pa::remote_control_mouse::Type::Move, None),
+        RemoteMouseEvent::Tap { x, y } => (x, y, pa::remote_control_mouse::Type::Tap, None),
+        RemoteMouseEvent::Drag { x, y, to_x, to_y } => (
+            x,
+            y,
+            pa::remote_control_mouse::Type::Drag,
+            Some((to_x, to_y)),
+        ),
+    };
+    OutboundMessage::encoded(
+        profile::MESSAGE_TYPE_REMOTE_CONTROL,
+        pa::RemoteControlMessage {
+            action: pa::message_action::Enum::Update as i32,
+            mouse: Some(pa::RemoteControlMouse {
+                x,
+                y,
+                r#type: r#type as i32,
+                to_x: target.map_or(0.0, |value| value.0),
+                to_y: target.map_or(0.0, |value| value.1),
+            }),
+            ..Default::default()
+        },
+    )
+}
+
 /// Ask the QC for the structure of what is currently on its screen.
 ///
 /// `RemoteControlMessage` carries a third payload alongside `mouse` and
@@ -2412,6 +2621,52 @@ mod tests {
         assert_eq!(tail, [sync_system_time(now_ms)]);
     }
 
+    #[test]
+    fn staged_startup_commands_match_cortex_control_4_1_order() {
+        assert_eq!(
+            building_initialization(),
+            vec![connection(true), read(profile::MESSAGE_TYPE_MODEL_REPO)]
+        );
+        assert_eq!(
+            module_stats_initialization(),
+            vec![read(profile::MESSAGE_TYPE_MODULE_STATS)]
+        );
+        assert_eq!(
+            boot_initialization()
+                .iter()
+                .map(|message| message.message_type)
+                .collect::<Vec<_>>(),
+            [
+                26, 58, 21, 3, 9, 24, 14, 38, 17, 4, 71, 46, 20, 20, 42, 15, 50, 54, 19, 33, 2, 34,
+                13, 57, 60,
+            ]
+        );
+        let recents =
+            pa::RecentsFavoritesMessage::decode(boot_initialization()[12].payload.as_slice())
+                .unwrap();
+        let favorites =
+            pa::RecentsFavoritesMessage::decode(boot_initialization()[13].payload.as_slice())
+                .unwrap();
+        assert!(!recents.is_favorites);
+        assert!(favorites.is_favorites);
+        let exact = boot_initialization_exact(41, false);
+        assert_eq!(exact[0].payload, [0x10, 0x29]);
+        assert_eq!(exact[9].payload, [0x08, 0x03, 0x30, 0x00]);
+        assert_eq!(exact[11].payload, [0x08, 0x03, 0x42, 0x00]);
+        assert_eq!(exact[12].payload, [0x08, 0x03]);
+        assert_eq!(exact[13].payload, [0x08, 0x03, 0x18, 0x01]);
+        assert_eq!(
+            disconnect_initialization_exact(40),
+            vec![
+                OutboundMessage {
+                    message_type: profile::MESSAGE_TYPE_CPU_LOAD,
+                    payload: vec![0x08, 0x02, 0x10, 0x28],
+                },
+                connection(false),
+            ]
+        );
+    }
+
     /// The QC dates everything it saves from whatever the host last told it.
     #[test]
     fn system_time_sync_carries_unix_milliseconds() {
@@ -2469,6 +2724,8 @@ mod tests {
             ]
         );
         assert_eq!(capture_screen().payload, [0x08, 0x03, 0x22, 0x00]);
+        assert_eq!(read_diagnostics(Some(42)).message_type, 7);
+        assert_eq!(read_diagnostics(Some(42)).payload, [0x08, 0x03, 0x10, 0x2a]);
         let tap = screen_tap(184.0, 147.0);
         assert_eq!(
             tap[0].payload,
@@ -2507,6 +2764,26 @@ mod tests {
             pa::remote_control_mouse::Type::Press as i32
         );
         assert_eq!((touch_up.x, touch_up.y), (400.0, 220.0));
+
+        let events = [
+            RemoteMouseEvent::Press { x: 1.0, y: 2.0 },
+            RemoteMouseEvent::Release { x: 1.0, y: 2.0 },
+            RemoteMouseEvent::Move { x: 1.0, y: 2.0 },
+            RemoteMouseEvent::Tap { x: 1.0, y: 2.0 },
+            RemoteMouseEvent::Drag {
+                x: 1.0,
+                y: 2.0,
+                to_x: 3.0,
+                to_y: 4.0,
+            },
+        ];
+        for (event, expected_type) in events.into_iter().zip(0..=4) {
+            let encoded = remote_mouse_event(event);
+            assert_eq!(encoded.message_type, profile::MESSAGE_TYPE_REMOTE_CONTROL);
+            let decoded = pa::RemoteControlMessage::decode(encoded.payload.as_slice()).unwrap();
+            assert_eq!(decoded.action, pa::message_action::Enum::Update as i32);
+            assert_eq!(decoded.mouse.unwrap().r#type, expected_type);
+        }
     }
 
     #[test]

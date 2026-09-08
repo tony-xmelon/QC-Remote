@@ -9,11 +9,18 @@
     border-radius: 0;
     background: #060806;
     color: #edf0ed;
-    font-family: Arial, sans-serif;
+    font-family: var(--qc-font-device-plain);
   }
   .coros-boot > b {
+    display: block;
+    width: 8cqw;
+    height: 8cqw;
     color: #43f173;
-    font-size: 8cqw;
+  }
+  .coros-boot > b svg {
+    display: block;
+    width: 100%;
+    height: 100%;
   }
   .coros-boot h1 {
     margin: 1cqw 0 3cqw;
@@ -49,7 +56,7 @@
     border-radius: 0;
     background: #080a08;
     color: #eef0ee;
-    font-family: Arial, sans-serif;
+    font-family: var(--qc-font-device-plain);
   }
   .fixture-grid-ghost {
     position: absolute;
@@ -129,7 +136,7 @@
     border-radius: 0;
     background: #0d100d;
     color: #eef0ee;
-    font-family: Arial, sans-serif;
+    font-family: var(--qc-font-device-plain);
   }
   .coros-scene-destination header,
   .coros-detail-editor header {
@@ -194,7 +201,7 @@
     border-radius: 0;
     background: #020202;
     color: #eef0ee;
-    font-family: Arial, sans-serif;
+    font-family: var(--qc-font-device-plain);
   }
 .input-gate-grid {
   position: absolute;

@@ -445,12 +445,14 @@ async fn midi_out_messages_are_bounded_and_forwarded_without_schema_drift() {
 }
 
 #[tokio::test]
-async fn read_only_device_introspection_maps_to_new_gateway_rpcs() {
+async fn read_only_device_introspection_excludes_persistent_identity_and_maps_safe_rpcs() {
     let (server, backend) = server();
-    server
-        .execute(&route(), "get_device_identity", None)
-        .await
-        .unwrap();
+    assert!(
+        server
+            .execute(&route(), "get_device_identity", None)
+            .await
+            .is_err()
+    );
     server
         .execute(&route(), "get_inhibited_modules", None)
         .await
@@ -459,13 +461,17 @@ async fn read_only_device_introspection_maps_to_new_gateway_rpcs() {
         .execute(&route(), "capture_screen", None)
         .await
         .unwrap();
+    server
+        .execute(&route(), "get_device_diagnostics", None)
+        .await
+        .unwrap();
     let calls = backend.0.lock().unwrap();
     assert_eq!(
         calls.iter().map(|call| call.0).collect::<Vec<_>>(),
         [
-            "device.identity",
             "device.inhibitedModules",
-            "device.captureScreen"
+            "device.captureScreen",
+            "device.diagnostics"
         ]
     );
 }
@@ -508,6 +514,36 @@ async fn backend_errors_preserve_code_message_and_retryability() {
     assert_eq!(detail["code"], "device_unavailable");
     assert_eq!(detail["message"], "USB disconnected");
     assert_eq!(detail["retryable"], true);
+}
+
+#[tokio::test]
+async fn model_results_remove_persistent_device_identifiers_recursively() {
+    struct IdentityBackend;
+    #[async_trait]
+    impl QcBackend for IdentityBackend {
+        async fn request(
+            &self,
+            _: &PrincipalRoute,
+            _: &'static str,
+            _: Map<String, Value>,
+        ) -> Result<Value, BackendError> {
+            Ok(json!({
+                "deviceName":"Anton's QC",
+                "serialNumber":"private",
+                "presetName":"Clean",
+                "blocks":[],
+                "nested":{"deviceSerial":"private","kept":true}
+            }))
+        }
+    }
+    let result = QcMcp::new(Arc::new(IdentityBackend))
+        .execute(&route(), "get_current_preset", None)
+        .await
+        .unwrap();
+    assert!(result.get("deviceName").is_none());
+    assert!(result.get("serialNumber").is_none());
+    assert!(result["nested"].get("deviceSerial").is_none());
+    assert_eq!(result["nested"]["kept"], true);
 }
 
 #[tokio::test]

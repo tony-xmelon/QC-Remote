@@ -1,0 +1,147 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-09-07",
+  "publisher": "Freevia",
+  "runtimeRemoteHosts": [
+    "accounts.google.com",
+    "api.anthropic.com",
+    "api.openai.com",
+    "cloudresourcemanager.googleapis.com",
+    "generativelanguage.googleapis.com",
+    "oauth2.googleapis.com"
+  ],
+  "flows": [
+    {
+      "id": "windows-online-model",
+      "releaseStatus": "pending-release-decision",
+      "platforms": ["Windows"],
+      "trigger": "The user enables online model sharing for the selected provider and endpoint, then sends a chat request.",
+      "recipients": ["OpenAI, Anthropic, or a user-configured compatible provider"],
+      "data": ["chat messages", "selected attachment content and filenames", "relevant connected-device context", "model and request metadata"],
+      "purpose": "Generate a requested conversational response or device-action proposal.",
+      "transport": "HTTPS to a fixed provider endpoint or a user-configured HTTPS endpoint; loopback HTTP is allowed only for a local model server.",
+      "retention": "Provider-controlled; QC Remote does not assert a provider retention period.",
+      "userControl": "Per-provider-and-endpoint consent can be disabled in Privacy settings. Attachment bytes are transmitted only with the request to which the user attached them and are omitted from later conversation-history requests. Recognizable credential-bearing URLs are blocked before transmission.",
+      "evidence": [
+        { "path": "apps/windows/src/App.tsx", "contains": "Allow online conversational models" },
+        { "path": "apps/windows/src-tauri/src/chat.rs", "contains": "validate_request" }
+      ]
+    },
+    {
+      "id": "windows-direct-gemini",
+      "releaseStatus": "development-only",
+      "platforms": ["Windows development builds"],
+      "trigger": "A development-build user enables online model sharing, configures direct Gemini access, and sends a chat request.",
+      "recipients": ["Google Gemini API"],
+      "data": ["chat messages", "selected attachment content and filenames", "relevant connected-device context", "model and request metadata"],
+      "purpose": "Exercise the development-only Gemini adapter; this code path is compiled out of public builds.",
+      "transport": "HTTPS to Google's fixed Gemini API endpoint.",
+      "retention": "Google-controlled according to the development account and service configuration; not asserted by QC Remote.",
+      "userControl": "Unavailable in public builds; a development user must separately enable provider sharing.",
+      "evidence": [
+        { "path": "apps/windows/src/model-chat.ts", "contains": "directGeminiEnabled" },
+        { "path": "apps/windows/src-tauri/src/chat.rs", "contains": "direct_gemini_enabled" }
+      ]
+    },
+    {
+      "id": "windows-antigravity",
+      "releaseStatus": "pending-release-decision",
+      "platforms": ["Windows"],
+      "trigger": "The user selects Antigravity, enables online model sharing, and sends a request.",
+      "recipients": ["The separately installed Antigravity CLI and the provider account configured in it"],
+      "data": ["chat messages", "relevant connected-device context", "temporary copies of selected attachments", "public URLs supplied in chat"],
+      "purpose": "Generate a requested response using the user's separately installed provider software.",
+      "transport": "Local child-process input followed by provider-managed network transport.",
+      "executionBoundary": "The CLI starts in a dedicated QC Remote working directory, which is not an operating-system sandbox. It runs with the signed-in user's Windows account permissions and any permissions configured in Antigravity.",
+      "retention": "Provider-controlled; temporary attachment copies are deleted after the request and stale copies are removed on startup.",
+      "userControl": "Per-provider consent can be disabled; Antigravity permissions and sign-in remain controlled by that installation. Attachment bytes are staged only for the request to which the user attached them and are omitted from later conversation-history requests. Recognizable credential-bearing URLs are blocked before transmission.",
+      "evidence": [
+        { "path": "apps/windows/src-tauri/src/chat.rs", "contains": "cleanup_stale_antigravity_attachments" },
+        { "path": "apps/windows/src/model-chat.ts", "contains": "Google AI subscription (Antigravity)" }
+      ]
+    },
+    {
+      "id": "windows-google-oauth",
+      "releaseStatus": "development-only",
+      "platforms": ["Windows development builds"],
+      "trigger": "A development-build user explicitly starts Google sign-in for Gemini API access.",
+      "recipients": ["Google OAuth, Cloud Resource Manager, and Gemini API services"],
+      "data": ["OAuth authorization code and PKCE verifier", "OAuth tokens", "selected Google Cloud project identifier", "Google account session data handled by the system browser"],
+      "purpose": "Authenticate the user and identify a user-selected quota project for Gemini API requests.",
+      "transport": "HTTPS to Google; the OAuth redirect returns through a temporary loopback listener.",
+      "retention": "Refresh credentials are stored using the platform credential facility until disconnected.",
+      "userControl": "The user starts sign-in, chooses a project, and can disconnect the account.",
+      "evidence": [
+        { "path": "apps/windows/src-tauri/src/chat.rs", "contains": "connect_google_oauth" },
+        { "path": "apps/windows/src-tauri/src/chat.rs", "contains": "cloudresourcemanager.googleapis.com" }
+      ]
+    },
+    {
+      "id": "android-firebase-gemini",
+      "releaseStatus": "development-only",
+      "platforms": ["Android development builds"],
+      "trigger": "A development-build user enables online model sharing and sends a chat request.",
+      "recipients": ["Google Firebase AI Logic, Gemini Developer API, Firebase App Check, and Google Play Integrity"],
+      "data": ["chat messages", "attachment names and media types", "relevant connected-device context", "model, SDK, runtime, app and integrity metadata"],
+      "purpose": "Generate a response and protect the publisher's Firebase-backed API access from abuse.",
+      "transport": "Provider SDK transport over TLS.",
+      "retention": "Google-controlled according to the configured services and account tier; not asserted by QC Remote.",
+      "userControl": "Default-off model-sharing choice in Privacy settings.",
+      "evidence": [
+        { "path": "apps/android/src/App.tsx", "contains": "Allow messages, attachment names and types" },
+        { "path": "apps/android/src/native-services.ts", "contains": "GeminiNative" }
+      ]
+    },
+    {
+      "id": "platform-speech-recognition",
+      "releaseStatus": "pending-release-decision",
+      "platforms": ["Windows", "Android"],
+      "trigger": "The user accepts the voice disclosure or enables voice processing, then starts voice input.",
+      "recipients": ["The operating system's configured speech-recognition provider"],
+      "data": ["microphone audio", "speech locale and recognition metadata", "returned transcript"],
+      "purpose": "Convert user-initiated speech to chat text.",
+      "transport": "Platform-controlled; it may be local or networked depending on the configured recognizer.",
+      "retention": "Controlled by the configured platform speech provider.",
+      "userControl": "Voice starts only on user action; Android adds a separate default-off voice-processing choice and both platforms expose disclosure controls.",
+      "evidence": [
+        { "path": "apps/windows/src/App.tsx", "contains": "voiceDisclosureKey" },
+        { "path": "apps/android/android/app/src/main/java/com/qccontrol/mobile/VoiceInputPlugin.java", "contains": "SpeechRecognizer.createSpeechRecognizer" }
+      ]
+    },
+    {
+      "id": "remote-relay",
+      "releaseStatus": "pending-release-decision",
+      "platforms": ["Windows", "Android", "relay service"],
+      "trigger": "The user pairs with and enables a remote relay.",
+      "recipients": ["The user-selected relay operator and its configured OAuth authorization server"],
+      "data": ["one-time pairing code", "generic app-host label", "relay credential", "OAuth bearer token for remote clients", "routed device commands and device-state responses with persistent hardware identifiers removed"],
+      "purpose": "Route authenticated remote control between a client and the paired device host.",
+      "transport": "HTTPS for pairing and WSS for the device session; OAuth introspection uses HTTPS.",
+      "retention": "Deployment-specific and unresolved until the relay operator is selected.",
+      "userControl": "The user chooses the endpoint, sees a relay-operator warning, and can unpair or disable the relay.",
+      "evidence": [
+        { "path": "packages/rust/qc-relay-client/src/lib.rs", "contains": "Sec-WebSocket-Protocol" },
+        { "path": "services/qc-relay/src/relay.rs", "contains": "sanitize_public_result" },
+        { "path": "services/qc-remote/src/lib.rs", "contains": "OAuth introspection endpoint must use HTTPS" },
+        { "path": "packages/typescript/qc-theme/src/legal.ts", "contains": "relay operator you trust" }
+      ]
+    },
+    {
+      "id": "local-device-and-diagnostics",
+      "releaseStatus": "planned-public",
+      "platforms": ["Windows", "Android"],
+      "trigger": "The user connects a device, controls it, or exports diagnostics.",
+      "recipients": ["No remote recipient unless the user separately enables a model or relay flow"],
+      "data": ["connected-device state and commands", "local preferences", "Windows redacted diagnostic exports", "Android local USB diagnostic status"],
+      "purpose": "Provide local device control, preferences, troubleshooting, Windows user-requested diagnostic export, and Android local diagnostic display.",
+      "transport": "Local USB/MIDI, process IPC, and app-private storage.",
+      "retention": "Preferences persist locally; session chat and pending attachments are cleared with the running session or the app's clear control.",
+      "userControl": "The user controls connection, local settings, Windows diagnostics export, Android local diagnostics display, and conversation clearing.",
+      "evidence": [
+        { "path": "packages/typescript/qc-theme/src/legal.ts", "contains": "does not include advertising or analytics" },
+        { "path": "apps/windows/src-tauri/src/lib.rs", "contains": "redacted_diagnostics" },
+        { "path": "apps/android/src/App.tsx", "contains": "QcUsbNative.diagnostics()" }
+      ]
+    }
+  ]
+}

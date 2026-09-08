@@ -207,7 +207,7 @@ export function QcHardwareIcon({ kind, className }: { kind: QcHardwareIconName; 
     );
   return (
     <svg className={className} viewBox="0 0 16 16" aria-hidden="true">
-      <path d="M9 1 3.5 8H7l-1 7 6.5-8H9z" fill={QC_COLORS.hardware.whiteLed} stroke="none" />
+      <path d="M9 1 3.5 8H7l-1 7 6.5-8H9z" fill="currentColor" stroke="none" />
     </svg>
   );
 }
@@ -406,8 +406,7 @@ export function QcDirectoryIcon({ kind, number }: { kind: QcDirectoryIconName; n
         )}
       </svg>
     );
-  // The following toolbar geometry is normalized directly from Neural DSP's
-  // CorOS 4.1 manual vectors (the documented 24px glyph area is x=31..55,
+  // Toolbar geometry uses the shared neutral 24px glyph area (x=31..55,
   // y=10..34 inside each 66x44 toolbar button).
   if (kind === "new-folder")
     return (

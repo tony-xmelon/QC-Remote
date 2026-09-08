@@ -19,6 +19,7 @@ use crate::{domain, profile};
 use prost::Message;
 use quick_xml::events::Event;
 use quick_xml::Reader;
+use quick_xml::XmlVersion;
 use serde::Serialize;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use thiserror::Error;
@@ -1857,7 +1858,10 @@ fn parse_catalog(xml: &[u8]) -> Result<HashMap<u32, ModelInfo>, StateDecodeError
                     .filter_map(|attribute| {
                         let key = String::from_utf8_lossy(attribute.key.local_name().as_ref())
                             .into_owned();
-                        let value = attribute.unescape_value().ok()?.into_owned();
+                        let value = attribute
+                            .normalized_value(XmlVersion::Implicit1_0)
+                            .ok()?
+                            .into_owned();
                         Some((key, value))
                     })
                     .collect::<HashMap<_, _>>();

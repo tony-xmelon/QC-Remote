@@ -4,6 +4,13 @@ QC Remote uses a local-first, bring-your-own-key (BYOK) model. The standalone
 MCP server exposes QC tools; it does not supply a language model or pay for model
 usage.
 
+> **Public-release boundary:** QC Remote is intended for a general audience and
+> has no app-wide minimum age. Direct Gemini API and Firebase AI Logic adapters
+> are development-only and are compiled out of public Windows and Android
+> builds. Do not treat their source-level documentation below as a statement
+> that those providers ship in the public product. Re-enabling either path
+> requires a new provider-terms review and a recorded release decision.
+
 ## Product policy
 
 - Free/offline use is provided through local OpenAI-compatible servers such as
@@ -31,7 +38,11 @@ its one-time browser sign-in.
 QC Remote never reads or copies Antigravity's OAuth tokens. It sends the
 bounded conversation/QC context to the local CLI process over streaming JSON
 standard input and requires schema-enforced JSON output. The process runs
-without a console window during normal chat and inside an isolated workspace.
+without a console window during normal chat and starts in a dedicated QC Remote
+working directory. That directory is not an operating-system sandbox:
+Antigravity runs with the signed-in user's Windows account permissions and may
+have the filesystem, network, and tool permissions granted to that installation. Review
+and restrict Antigravity's own permissions before enabling this provider.
 QC tool requests are returned to QC Remote for the same validation, one-action
 limit, and temporary-edit review used by every other model provider.
 

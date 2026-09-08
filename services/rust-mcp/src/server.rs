@@ -67,6 +67,7 @@ impl QcMcp {
                 .to_string()
             })?;
         validate_backend_result(spec.rpc, &result)?;
+        let result = sanitize_model_result(result);
         match model_query {
             Some(query) => filter_models(result, &query),
             None => Ok(result),
@@ -86,6 +87,28 @@ fn validate_backend_result(method: &str, result: &Value) -> Result<(), String> {
         ));
     }
     generated_result_kinds::validate_result(method, result)
+}
+
+fn sanitize_model_result(mut value: Value) -> Value {
+    fn visit(value: &mut Value) {
+        match value {
+            Value::Object(object) => {
+                object.retain(|name, _| {
+                    !matches!(
+                        name.to_ascii_lowercase().as_str(),
+                        "devicename" | "serial" | "serialnumber" | "deviceserial"
+                    )
+                });
+                for child in object.values_mut() {
+                    visit(child);
+                }
+            }
+            Value::Array(items) => items.iter_mut().for_each(visit),
+            _ => {}
+        }
+    }
+    visit(&mut value);
+    value
 }
 
 fn filter_models(mut result: Value, query: &str) -> Result<Value, String> {
@@ -204,7 +227,7 @@ impl ServerHandler for QcMcp {
                     )
                 })?;
                 Ok(ReadResourceResult::new(vec![ResourceContents::text(
-                    value.to_string(),
+                    sanitize_model_result(value).to_string(),
                     request.uri,
                 )])
                 .into())

@@ -26,7 +26,8 @@ test("Android preparation emits provenance and Firebase publishes the verified s
   assert.match(publish, /release-candidates\.mjs"\) verify/);
   assert.doesNotMatch(publish, /release-candidates\.mjs"\) stage/);
   assert.doesNotMatch(publish, /release-provenance\.mjs/);
-  assert.match(publish, /\[string\]\$Testers = "prezimir@gmail\.com"/);
+  assert.match(publish, /\[string\]\$Testers = ""/);
+  assert.doesNotMatch(publish, /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
   assert.match(publish, /google-services\.json/);
   assert.match(publish, /qc-theme\\src\\brand\.json/);
   assert.match(publish, /\$brandContract\.androidPackage/);
@@ -190,8 +191,8 @@ test("CI packages the Android app with pinned native prerequisites and provenanc
 
 test("CI actions use the current Node 24 action generations", () => {
   const workflow = readFileSync(new URL("../.github/workflows/software-parity.yml", import.meta.url), "utf8");
-  assert.equal((workflow.match(/actions\/checkout@v7/g) ?? []).length, 5);
-  assert.equal((workflow.match(/actions\/setup-node@v7/g) ?? []).length, 5);
+  assert.equal((workflow.match(/actions\/checkout@v7/g) ?? []).length, 6);
+  assert.equal((workflow.match(/actions\/setup-node@v7/g) ?? []).length, 6);
   assert.equal((workflow.match(/actions\/cache@v6/g) ?? []).length, 3);
   assert.equal((workflow.match(/actions\/setup-java@v6/g) ?? []).length, 1);
   assert.equal((workflow.match(/actions\/upload-artifact@v7/g) ?? []).length, 4);
@@ -217,16 +218,20 @@ test("CI combines both same-commit candidates into one hardware-testable bundle"
   const workflow = readFileSync(new URL("../.github/workflows/software-parity.yml", import.meta.url), "utf8");
   const runbook = readFileSync(new URL("../docs/HARDWARE_CONFORMANCE.md", import.meta.url), "utf8");
   assert.match(workflow, /release-bundle:/);
+  assert.match(workflow, /name: Create the gated public source release[\s\S]*if: \$\{\{ inputs\.distribution_scope == 'public-release' \}\}[\s\S]*npm run release:source/);
+  assert.match(workflow, /artifacts\/source\/qc-remote-source-\*\.zip/);
+  assert.match(workflow, /artifacts\/source\/qc-remote-source-\*\.zip\.sha256/);
+  assert.match(workflow, /artifacts\/source\/qc-remote-source-\*\.zip\.source\.json/);
   assert.match(
     workflow,
     /release-bundle:[\s\S]*needs: \[software-parity, ui-conformance, android-package, windows-package\]/,
   );
-  assert.match(workflow, /name: qc-control-android-\$\{\{ github\.sha \}\}[\s\S]*name: qc-control-windows-\$\{\{ github\.sha \}\}/);
+  assert.match(workflow, /name: qc-remote-android-\$\{\{ github\.sha \}\}[\s\S]*name: qc-remote-windows-\$\{\{ github\.sha \}\}/);
   assert.equal((workflow.match(/path: artifacts\r?$/gm) ?? []).length, 2);
   assert.match(workflow, /release-provenance\.mjs \$windows\[0\] \$android\[0\]/);
   assert.match(workflow, /release-candidates\.mjs verify/);
-  assert.match(workflow, /name: qc-control-release-bundle-\$\{\{ github\.sha \}\}/);
-  assert.match(runbook, /qc-control-release-bundle-<commit>/);
+  assert.match(workflow, /name: qc-remote-release-bundle-\$\{\{ github\.sha \}\}/);
+  assert.match(runbook, /qc-remote-release-bundle-<commit>/);
   assert.match(runbook, /hardware-test candidate, not a distributable release/);
 });
 

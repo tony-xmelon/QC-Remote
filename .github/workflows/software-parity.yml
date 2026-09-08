@@ -25,6 +25,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  public-repository-boundary:
+    name: Public source legal boundary
+    if: ${{ github.event.repository.visibility == 'public' }}
+    runs-on: windows-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out complete source history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Reject tracked or historical credentials
+        run: npm run legal:secrets
+
+      - name: Reject private conformance and device-derived material
+        run: npm run legal:source-ip
+
   software-parity:
     name: Shared contracts, apps, and native runtimes
     runs-on: windows-latest
@@ -91,7 +114,7 @@ jobs:
         run: npm run test:ui
 
       - name: Preserve failed UI screenshots and traces
-        if: failure()
+        if: ${{ failure() && github.event.repository.private }}
         uses: actions/upload-artifact@v7
         with:
           name: ui-conformance-failure-${{ github.run_attempt }}
@@ -106,6 +129,16 @@ jobs:
     timeout-minutes: 30
 
     steps:
+      - name: Reject private-test artifacts from a public repository
+        shell: pwsh
+        env:
+          DISTRIBUTION_SCOPE: ${{ inputs.distribution_scope }}
+          REPOSITORY_VISIBILITY: ${{ github.event.repository.visibility }}
+        run: |
+          if ($env:DISTRIBUTION_SCOPE -eq "private-test" -and $env:REPOSITORY_VISIBILITY -ne "private") {
+            throw "Private-test binaries would be publicly downloadable. Make the repository private or use the gated public-release scope."
+          }
+
       - name: Check out source
         uses: actions/checkout@v7
 
@@ -162,6 +195,20 @@ jobs:
       - name: Install JavaScript dependencies
         run: npm ci
 
+      - name: Restore environment-specific Firebase client configuration
+        if: ${{ inputs.distribution_scope == 'private-test' }}
+        shell: pwsh
+        env:
+          QC_FIREBASE_ANDROID_CONFIG_BASE64: ${{ secrets.QC_FIREBASE_ANDROID_CONFIG_BASE64 }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:QC_FIREBASE_ANDROID_CONFIG_BASE64)) { throw "QC_FIREBASE_ANDROID_CONFIG_BASE64 is required for an Android distributable." }
+          $configPath = Join-Path $env:GITHUB_WORKSPACE "apps/android/android/app/google-services.json"
+          [System.IO.File]::WriteAllBytes($configPath, [Convert]::FromBase64String($env:QC_FIREBASE_ANDROID_CONFIG_BASE64))
+          $config = Get-Content -Raw -LiteralPath $configPath | ConvertFrom-Json
+          $brand = Get-Content -Raw -LiteralPath (Join-Path $env:GITHUB_WORKSPACE "packages/typescript/qc-theme/src/brand.json") | ConvertFrom-Json
+          $clients = @($config.client | Where-Object { $_.client_info.android_client_info.package_name -eq $brand.androidPackage })
+          if ($clients.Count -ne 1) { throw "Firebase configuration must contain exactly one client for the branded Android package." }
+
       - name: Enforce public-release legal gate
         if: ${{ inputs.distribution_scope == 'public-release' }}
         run: npm run legal:check
@@ -172,7 +219,7 @@ jobs:
           QC_ANDROID_KEYSTORE_BASE64: ${{ secrets.QC_ANDROID_KEYSTORE_BASE64 }}
         run: |
           if ([string]::IsNullOrWhiteSpace($env:QC_ANDROID_KEYSTORE_BASE64)) { throw "QC_ANDROID_KEYSTORE_BASE64 is required for a hardware-testable Android candidate." }
-          $keystore = Join-Path $env:RUNNER_TEMP "qc-control.keystore"
+          $keystore = Join-Path $env:RUNNER_TEMP "qc-remote.keystore"
           [System.IO.File]::WriteAllBytes($keystore, [Convert]::FromBase64String($env:QC_ANDROID_KEYSTORE_BASE64))
           "QC_ANDROID_KEYSTORE=$keystore" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
@@ -181,12 +228,14 @@ jobs:
           QC_ANDROID_STORE_PASSWORD: ${{ secrets.QC_ANDROID_STORE_PASSWORD }}
           QC_ANDROID_KEY_ALIAS: ${{ secrets.QC_ANDROID_KEY_ALIAS }}
           QC_ANDROID_KEY_PASSWORD: ${{ secrets.QC_ANDROID_KEY_PASSWORD }}
+          QC_PUBLIC_RELEASE: ${{ inputs.distribution_scope == 'public-release' && '1' || '0' }}
+          VITE_QC_PUBLIC_RELEASE: ${{ inputs.distribution_scope == 'public-release' && '1' || '0' }}
         run: npm run android:build:debug
 
       - name: Preserve APK and release provenance
         uses: actions/upload-artifact@v7
         with:
-          name: qc-control-android-${{ github.sha }}
+          name: qc-remote-android-${{ github.sha }}
           path: |
             artifacts/android/QC-Remote-Android-*.apk
             artifacts/android/QC-Remote-Android-*.apk.source.json
@@ -202,6 +251,16 @@ jobs:
     timeout-minutes: 45
 
     steps:
+      - name: Reject private-test artifacts from a public repository
+        shell: pwsh
+        env:
+          DISTRIBUTION_SCOPE: ${{ inputs.distribution_scope }}
+          REPOSITORY_VISIBILITY: ${{ github.event.repository.visibility }}
+        run: |
+          if ($env:DISTRIBUTION_SCOPE -eq "private-test" -and $env:REPOSITORY_VISIBILITY -ne "private") {
+            throw "Private-test binaries would be publicly downloadable. Make the repository private or use the gated public-release scope."
+          }
+
       - name: Check out source
         uses: actions/checkout@v7
 
@@ -235,12 +294,15 @@ jobs:
 
       - name: Build Windows installer from the parity-approved commit
         shell: pwsh
+        env:
+          QC_PUBLIC_RELEASE: ${{ inputs.distribution_scope == 'public-release' && '1' || '0' }}
+          VITE_QC_PUBLIC_RELEASE: ${{ inputs.distribution_scope == 'public-release' && '1' || '0' }}
         run: ./scripts/build-windows-installer.ps1 -SkipPreflight
 
       - name: Preserve installer and release provenance
         uses: actions/upload-artifact@v7
         with:
-          name: qc-control-windows-${{ github.sha }}
+          name: qc-remote-windows-${{ github.sha }}
           path: |
             artifacts/windows/QC-Remote-Windows-*.exe
             artifacts/windows/QC-Remote-Windows-*.exe.source.json
@@ -257,6 +319,16 @@ jobs:
     timeout-minutes: 10
 
     steps:
+      - name: Reject private-test artifacts from a public repository
+        shell: pwsh
+        env:
+          DISTRIBUTION_SCOPE: ${{ inputs.distribution_scope }}
+          REPOSITORY_VISIBILITY: ${{ github.event.repository.visibility }}
+        run: |
+          if ($env:DISTRIBUTION_SCOPE -eq "private-test" -and $env:REPOSITORY_VISIBILITY -ne "private") {
+            throw "Private-test binaries would be publicly downloadable. Make the repository private or use the gated public-release scope."
+          }
+
       - name: Check out source
         uses: actions/checkout@v7
 
@@ -268,13 +340,13 @@ jobs:
       - name: Download the parity-approved Android candidate
         uses: actions/download-artifact@v8
         with:
-          name: qc-control-android-${{ github.sha }}
+          name: qc-remote-android-${{ github.sha }}
           path: artifacts
 
       - name: Download the parity-approved Windows candidate
         uses: actions/download-artifact@v8
         with:
-          name: qc-control-windows-${{ github.sha }}
+          name: qc-remote-windows-${{ github.sha }}
           path: artifacts
 
       - name: Regenerate and verify combined release provenance
@@ -286,10 +358,14 @@ jobs:
           node tools/release-provenance.mjs $windows[0] $android[0]
           node tools/release-candidates.mjs verify
 
+      - name: Create the gated public source release
+        if: ${{ inputs.distribution_scope == 'public-release' }}
+        run: npm run release:source
+
       - name: Preserve the hardware-testable cross-platform bundle
         uses: actions/upload-artifact@v7
         with:
-          name: qc-control-release-bundle-${{ github.sha }}
+          name: qc-remote-release-bundle-${{ github.sha }}
           path: |
             artifacts/windows/QC-Remote-Windows-*.exe
             artifacts/windows/QC-Remote-Windows-*.exe.source.json
@@ -297,5 +373,8 @@ jobs:
             artifacts/android/QC-Remote-Android-*.apk.source.json
             artifacts/release-manifest.json
             artifacts/sbom.cdx.json
+            artifacts/source/qc-remote-source-*.zip
+            artifacts/source/qc-remote-source-*.zip.sha256
+            artifacts/source/qc-remote-source-*.zip.source.json
           if-no-files-found: error
           retention-days: 14

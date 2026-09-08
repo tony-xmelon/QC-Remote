@@ -1,6 +1,10 @@
 # Visual references
 
-The large Quad Cortex skin is based on official Neural DSP reference material current on 2026-08-30. Most captures are retained as design and QA references, but the current private test build also contains identified official-reference artwork in its visual asset package. Those assets are a public-release blocker and must be removed or licensed before distribution.
+The large-device layout was evaluated against official Neural DSP reference
+material current on 2026-08-30. By publisher direction, QC Remote retains exact
+functional vectors, measured geometry, the top-panel overlay, and the visual
+reference evidence needed to prevent user-facing divergence. Personal test data
+and manufacturer support/contact content are not retained in release fixtures.
 
 ## Hardware
 
@@ -22,6 +26,12 @@ The manual’s current CorOS 4.1 screenshots define the screen treatment:
 - input/output and add-row pills on the left and right rails;
 - a dark eight-item Scene dropdown opened from the Scene indicator.
 
-The Windows hardware renderer follows the current `QC 1A Brit 2203` manual image for its default demo: four rows with eight internal device slots, `In 1` / add / `Prev. Row` / add rails on the left, and `Row 3` / add / `Multi Out` / add rails on the right. It recreates the layout with interactive HTML and original SVG glyphs; neither the manual screenshot nor top-panel SVG is shipped with the application.
+The Windows and Android hardware renderers share the same measured layout and
+canonical exact-vector sources. The top-panel SVG overlay and verified block
+sample sheet are bundled through the shared theme asset manifest.
 
-Device glyphs in the application are original inline SVG approximations keyed by semantic device category. Product and trademark labels remain isolated presentation tokens so they can be replaced if distribution requirements change.
+Device glyphs use the verified block sample sheet and exact retained category
+artwork, including the dedicated Pitch, Delay, and Compressor sources where the
+sheet is incomplete. Toolbar and parameter-screen vectors are pinned by the
+iconography manifest and tests. They must not be approximated or substituted
+without review and explicit approval.

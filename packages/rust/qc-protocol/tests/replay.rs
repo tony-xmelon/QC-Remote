@@ -1,4 +1,4 @@
-use qc_protocol::session::FrameAssembler;
+use qc_protocol::framing::FrameAssembler;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]

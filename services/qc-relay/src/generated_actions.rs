@@ -144,16 +144,6 @@ pub static ACTIONS: &[ActionPolicy] = &[
         gateway_true_arguments: &[],
     },
     ActionPolicy {
-        name: "get_device_identity",
-        rpc: "device.identity",
-        class: ActionClass::Read,
-        required_argument_confirmations: NONE,
-        allowed_arguments: &[],
-        required_arguments: &[],
-        gateway_arguments: &[],
-        gateway_true_arguments: &[],
-    },
-    ActionPolicy {
         name: "get_inhibited_modules",
         rpc: "device.inhibitedModules",
         class: ActionClass::Read,
@@ -236,6 +226,16 @@ pub static ACTIONS: &[ActionPolicy] = &[
     ActionPolicy {
         name: "capture_screen",
         rpc: "device.captureScreen",
+        class: ActionClass::Read,
+        required_argument_confirmations: NONE,
+        allowed_arguments: &[],
+        required_arguments: &[],
+        gateway_arguments: &[],
+        gateway_true_arguments: &[],
+    },
+    ActionPolicy {
+        name: "get_device_diagnostics",
+        rpc: "device.diagnostics",
         class: ActionClass::Read,
         required_argument_confirmations: NONE,
         allowed_arguments: &[],

@@ -8,8 +8,8 @@ use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine;
 use qc_protocol::commands::{DeviceCommand, DeviceOperation};
 use qc_protocol::responses::{
-    decode_captured_screen, decode_device_identity, decode_general_settings, decode_global_eq,
-    decode_global_tempo_settings, decode_graphics_tree, decode_inhibited_modules,
+    decode_captured_screen, decode_device_identity, decode_diagnostics, decode_general_settings,
+    decode_global_eq, decode_global_tempo_settings, decode_graphics_tree, decode_inhibited_modules,
     decode_io_settings, decode_library_files, decode_looper_status, decode_mode_cycle,
     decode_pinned_models, decode_preset_screenshot, decode_preset_tempo_settings,
     decode_recents_favorites, decode_tuner_settings, PngImage,
@@ -49,6 +49,30 @@ pub enum PlannedWrite {
     MidiControlChange { controller: u8, value: u8 },
 }
 
+impl PlannedWrite {
+    /// Device-protocol pacing for the encoded messages in this write.
+    ///
+    /// Hosts still own the actual sleep/timer primitive, but they must not
+    /// rediscover which QC operations are multi-report gestures.
+    pub fn inter_message_interval_ms(&self) -> u64 {
+        match self {
+            Self::HidOperation(operation) => operation_inter_message_interval_ms(operation),
+            Self::HidCommand(_) | Self::MidiControlChange { .. } => 0,
+        }
+    }
+}
+
+pub fn operation_inter_message_interval_ms(operation: &DeviceOperation) -> u64 {
+    if matches!(
+        operation,
+        DeviceOperation::ScreenTap { .. } | DeviceOperation::ScreenDrag { .. }
+    ) {
+        profile::REMOTE_GESTURE_INTERVAL_MS
+    } else {
+        0
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct HostMidiPlan {
     pub controller: u8,
@@ -77,24 +101,19 @@ pub fn plan_host_midi(method: &str, params: &Value) -> Result<HostMidiPlan, Stri
             value: profile::MIDI_PRESSED_VALUE,
             detail: "Tap Tempo sent".into(),
         }),
-        "device.showTuner" | "device.showGigView" => {
+        "device.showTuner" => {
             let shown = params
                 .get("shown")
                 .and_then(Value::as_bool)
                 .ok_or_else(|| "shown must be a boolean".to_string())?;
-            let (controller, feature) = if method == "device.showTuner" {
-                (profile::TUNER_CONTROLLER, "Tuner")
-            } else {
-                (profile::GIG_VIEW_CONTROLLER, "Gig View")
-            };
             Ok(HostMidiPlan {
-                controller,
+                controller: profile::TUNER_CONTROLLER,
                 value: if shown {
                     profile::MIDI_FEATURE_ON_VALUE
                 } else {
                     profile::MIDI_FEATURE_OFF_VALUE
                 },
-                detail: format!("{feature} {}", if shown { "opened" } else { "closed" }),
+                detail: format!("Tuner {}", if shown { "opened" } else { "closed" }),
             })
         }
         "device.selectModeSlot" => {
@@ -155,43 +174,6 @@ pub struct GatewayWritePlan {
     pub verification: GatewayVerification,
 }
 
-/// Whether a gateway write may be repeated before authoritative readback confirms it.
-///
-/// This is protocol policy, not host transport policy: both native hosts must make
-/// the same decision. Relative navigation and structural mutations are deliberately
-/// excluded because repeating them can produce a different device state.
-pub fn gateway_write_retryable(method: &str) -> bool {
-    matches!(
-        method,
-        "device.recallPreset"
-            | "device.reloadPreset"
-            | "device.selectScene"
-            | "device.toggleBypass"
-            | "device.previewParameter"
-            | "device.setParameter"
-            | "device.previewLaneControlParameter"
-            | "device.setLaneControlParameter"
-            | "device.setLaneControlSceneMode"
-            | "device.setParameterSceneMode"
-            | "device.setParameterExpression"
-            | "device.setExpressionBypass"
-            | "device.setBlockFootswitch"
-            | "device.setStompMomentary"
-            | "device.setStompLabel"
-            | "device.setMidiOut"
-            | "device.setPresetLoadMidiOut"
-            | "device.setChainInput"
-            | "device.setChainOutput"
-            | "device.setChainSplit"
-            | "device.setSplitMute"
-            | "device.setTempo"
-            | "device.setMasterVolume"
-            | "device.selectModeSlot"
-            | "device.showTuner"
-            | "device.showGigView"
-    )
-}
-
 /// Whether a gateway write must return as soon as its bytes reach the native
 /// transport and let the pushed state stream reconcile the authoritative QC
 /// result. Both hosts use this policy so realtime controls never acquire a
@@ -215,6 +197,99 @@ pub fn gateway_write_is_realtime(method: &str) -> bool {
             | "device.showGigView"
             | "device.controlLooper"
     )
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GatewayWriteVerificationPolicy {
+    pub timeout_ms: u64,
+    pub refresh_delays_ms: Vec<u64>,
+    pub correlated_readback_retry_intervals_ms: Vec<u64>,
+    pub verification_refresh_method: &'static str,
+    pub post_write_refresh_method: Option<&'static str>,
+    pub post_write_refresh_delay_ms: u64,
+    pub preflight_method: Option<&'static str>,
+    pub readback_method: Option<&'static str>,
+}
+
+fn gateway_verification_refresh_method() -> &'static str {
+    "device.currentPreset"
+}
+
+/// Shared schedule for asking the QC to re-emit authoritative state after a
+/// write. Hosts provide timers and USB writes only; retry cadence and the
+/// overall confirmation deadline are device behavior and live here once.
+pub fn gateway_write_verification_policy(method: &str) -> GatewayWriteVerificationPolicy {
+    let preset_transition = matches!(
+        method,
+        "device.recallPreset" | "device.navigateBank" | "device.reloadPreset"
+    );
+    let timeout_ms = if preset_transition {
+        profile::PRESET_SYNC_TIMEOUT_MS
+    } else {
+        profile::COMMAND_CONFIRMATION_TIMEOUT_MS
+    };
+    let settle_ms = if method == "device.copyScene" {
+        profile::HISTORY_STATE_REFRESH_DELAY_MS
+    } else {
+        0
+    };
+    let mut policy = gateway_verification_policy(timeout_ms, settle_ms);
+    policy.post_write_refresh_method =
+        matches!(method, "device.undo" | "device.redo").then_some("device.currentPreset");
+    policy.post_write_refresh_delay_ms = if matches!(method, "device.undo" | "device.redo") {
+        profile::HISTORY_STATE_REFRESH_DELAY_MS
+    } else {
+        0
+    };
+    policy.preflight_method = gateway_write_preflight_method(method);
+    policy.readback_method = gateway_write_readback_method(method);
+    policy
+}
+
+/// Verification-only policy used by the stages of a multi-write workflow.
+/// Keeping this constructor beside ordinary write policy prevents native hosts
+/// from rebuilding a partial policy and accidentally drifting in cadence.
+pub fn gateway_verification_policy(
+    timeout_ms: u64,
+    settle_ms: u64,
+) -> GatewayWriteVerificationPolicy {
+    GatewayWriteVerificationPolicy {
+        timeout_ms,
+        refresh_delays_ms: gateway_verification_refresh_delays(timeout_ms, settle_ms),
+        correlated_readback_retry_intervals_ms:
+            profile::CORRELATED_WRITE_READBACK_RETRY_INTERVALS_MS.to_vec(),
+        verification_refresh_method: gateway_verification_refresh_method(),
+        post_write_refresh_method: None,
+        post_write_refresh_delay_ms: 0,
+        preflight_method: None,
+        readback_method: None,
+    }
+}
+
+fn gateway_verification_refresh_delays(timeout_ms: u64, settle_ms: u64) -> Vec<u64> {
+    let configured = if timeout_ms > profile::COMMAND_CONFIRMATION_TIMEOUT_MS {
+        profile::PRESET_VERIFICATION_REFRESH_DELAYS_MS
+    } else {
+        profile::COMMAND_VERIFICATION_REFRESH_DELAYS_MS
+    };
+    let mut delays = Vec::with_capacity(configured.len());
+    for delay in configured {
+        let delay = (*delay).max(settle_ms);
+        if delay < timeout_ms && delays.last().copied() != Some(delay) {
+            delays.push(delay);
+        }
+    }
+    delays
+}
+
+/// Return the delay before one correlated settings readback attempt. Native
+/// hosts differ in how they wait (blocking on Windows, futures on Android), but
+/// neither owns the retry count or cadence.
+pub fn gateway_correlated_readback_delay(method: &str, attempt: usize) -> Option<u64> {
+    gateway_write_verification_policy(method)
+        .correlated_readback_retry_intervals_ms
+        .get(attempt)
+        .copied()
 }
 
 /// Authoritative state predicate associated with a planned write. Hosts only
@@ -331,6 +406,8 @@ pub enum GatewayVerification {
         #[serde(skip_serializing_if = "Option::is_none")]
         name: Option<String>,
         require_clean: bool,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        after_position_revision: Option<u64>,
     },
 }
 
@@ -340,6 +417,17 @@ pub enum GatewayVerification {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GatewayTransactionState {
     Pending,
+    Verified,
+    TimedOut,
+}
+
+/// The one shared refresh/confirmation sequencer used around a native QC
+/// write. Hosts wait for the requested delay, dispatch the requested read, and
+/// feed fresh observations back; they do not interpret the cadence themselves.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GatewayVerificationAction {
+    Wait { delay_ms: u64 },
+    Refresh { method: &'static str },
     Verified,
     TimedOut,
 }
@@ -408,6 +496,77 @@ impl GatewayTransaction {
 
     pub fn remaining_ms(&self, now_ms: u64) -> u64 {
         self.deadline_ms.saturating_sub(now_ms)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct GatewayVerificationRuntime {
+    transaction: GatewayTransaction,
+    started_at_ms: u64,
+    deadline_ms: u64,
+    refresh_delays_ms: Vec<u64>,
+    next_refresh: usize,
+    refresh_method: &'static str,
+}
+
+impl GatewayVerificationRuntime {
+    pub fn new(
+        verification: GatewayVerification,
+        after_observation_token: u128,
+        started_at_ms: u64,
+        policy: &GatewayWriteVerificationPolicy,
+    ) -> Self {
+        Self {
+            transaction: GatewayTransaction::new(
+                verification,
+                after_observation_token,
+                started_at_ms,
+                policy.timeout_ms,
+            ),
+            started_at_ms,
+            deadline_ms: started_at_ms.saturating_add(policy.timeout_ms),
+            refresh_delays_ms: policy.refresh_delays_ms.clone(),
+            next_refresh: 0,
+            refresh_method: policy.verification_refresh_method,
+        }
+    }
+
+    pub fn advance(
+        &mut self,
+        snapshot: Option<&GatewaySnapshot>,
+        parameter: Option<&BlockParameter>,
+        observation_token: u128,
+        now_ms: u64,
+    ) -> GatewayVerificationAction {
+        if self.transaction.remaining_ms(now_ms) == 0 {
+            return GatewayVerificationAction::TimedOut;
+        }
+        if snapshot.is_some_and(|snapshot| {
+            self.transaction
+                .state(snapshot, parameter, observation_token, now_ms)
+                == GatewayTransactionState::Verified
+        }) {
+            return GatewayVerificationAction::Verified;
+        }
+        if let Some(delay_ms) = self.refresh_delays_ms.get(self.next_refresh).copied() {
+            let refresh_at_ms = self.started_at_ms.saturating_add(delay_ms);
+            if now_ms >= refresh_at_ms {
+                self.next_refresh += 1;
+                return GatewayVerificationAction::Refresh {
+                    method: self.refresh_method,
+                };
+            }
+            return GatewayVerificationAction::Wait {
+                delay_ms: refresh_at_ms.min(self.deadline_ms).saturating_sub(now_ms),
+            };
+        }
+        GatewayVerificationAction::Wait {
+            delay_ms: self.transaction.remaining_ms(now_ms),
+        }
+    }
+
+    pub fn parameter_target(&self) -> Option<(u32, u32, u32)> {
+        self.transaction.verification.parameter_target()
     }
 }
 
@@ -644,6 +803,7 @@ impl GatewayVerification {
                 position,
                 name,
                 require_clean,
+                after_position_revision,
             } => {
                 snapshot.setlist_key.trim_end_matches('/') == setlist_key.trim_end_matches('/')
                     && snapshot.preset_position == *position
@@ -651,6 +811,8 @@ impl GatewayVerification {
                         .as_ref()
                         .is_none_or(|expected| snapshot.preset_name == *expected)
                     && (!require_clean || !snapshot.dirty)
+                    && after_position_revision
+                        .is_none_or(|revision| snapshot.position_revision > revision)
             }
         }
     }
@@ -724,10 +886,52 @@ pub struct PresetMutationPlan {
     pub saved_presets: Vec<PresetMutationRecord>,
 }
 
+/// Match the name CorOS persisted after resolving a collision. Short names
+/// retain the complete requested name. For longer names CorOS truncates the
+/// base so the base plus underscore and decimal suffix occupy 20 characters.
+/// Keeping this rule here prevents native hosts from accepting different
+/// catalog entries during authoritative save verification.
+pub fn stored_preset_name_matches(requested: &str, stored: &str) -> bool {
+    if requested == stored {
+        return true;
+    }
+    let Some((stored_base, suffix)) = stored.rsplit_once('_') else {
+        return false;
+    };
+    if suffix.is_empty() || !suffix.chars().all(|character| character.is_ascii_digit()) {
+        return false;
+    }
+    stored_base == requested
+        || (stored.chars().count() == domain::STORED_PRESET_NAME_CHARACTERS
+            && stored_base.chars().count() < requested.chars().count()
+            && requested.starts_with(stored_base))
+}
+
+/// Reconcile the active snapshot from an authoritative File-catalog entry.
+/// CorOS does not always publish a new SetlistPosition frame when the current
+/// slot is renamed, although the persisted File entry is already updated.
+pub fn reconcile_saved_preset_snapshot(
+    snapshot: &mut GatewaySnapshot,
+    setlist_key: &str,
+    position: u32,
+    name: &str,
+) -> bool {
+    if snapshot.setlist_key.trim_end_matches('/') != setlist_key.trim_end_matches('/')
+        || snapshot.preset_position != position
+    {
+        return false;
+    }
+    snapshot.preset_name = name.to_string();
+    true
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum GatewayResponseProjection {
     DeviceIdentity,
+    DeviceDiagnostics {
+        request_id: u64,
+    },
     TunerSettings,
     GeneralSettings,
     IoSettings,
@@ -766,6 +970,17 @@ fn image_response(image: PngImage) -> Value {
 }
 
 impl GatewayResponseProjection {
+    pub fn expected_request_id(&self) -> Option<u64> {
+        match self {
+            Self::DeviceDiagnostics { request_id }
+            | Self::PresetTempoSettings { request_id }
+            | Self::RecentsFavorites { request_id }
+            | Self::PresetScreenshot { request_id, .. } => Some(*request_id),
+            Self::LibraryFiles { request_id, .. } => *request_id,
+            _ => None,
+        }
+    }
+
     /// Decode the planned correlated reply into the public gateway shape.
     /// Keeping this beside the read plan prevents native hosts from owning
     /// subtly different protobuf validation and image projection rules.
@@ -773,6 +988,11 @@ impl GatewayResponseProjection {
         match self {
             Self::DeviceIdentity => serde_json::to_value(
                 decode_device_identity(payload).map_err(|error| error.to_string())?,
+            )
+            .map_err(|error| error.to_string()),
+            Self::DeviceDiagnostics { request_id } => serde_json::to_value(
+                decode_diagnostics(payload, Some(*request_id))
+                    .map_err(|error| error.to_string())?,
             )
             .map_err(|error| error.to_string()),
             Self::TunerSettings => serde_json::to_value(
@@ -876,6 +1096,7 @@ pub fn gateway_write_readback_method(method: &str) -> Option<&'static str> {
         | "device.setTunerMute"
         | "device.restoreTunerAudio"
         | "device.setTunerReference" => Some("device.tunerSettings"),
+        "device.setDeviceName" => Some("device.identity"),
         "device.setGeneralInteger"
         | "device.setGeneralToggle"
         | "device.setSceneBypassBehavior"
@@ -899,7 +1120,11 @@ pub fn gateway_write_readback_method(method: &str) -> Option<&'static str> {
 
 /// Reads required before a write whose wire behavior depends on global state.
 pub fn gateway_write_preflight_method(method: &str) -> Option<&'static str> {
-    (method == "device.setGlobalTempo").then_some("device.globalTempoSettings")
+    match method {
+        "device.setGlobalTempo" => Some("device.globalTempoSettings"),
+        "device.tapScreen" | "device.swipeScreen" => Some("device.captureScreen"),
+        _ => None,
+    }
 }
 
 /// Validate stale-state guards against the authoritative preflight reply.
@@ -950,6 +1175,9 @@ pub fn gateway_write_readback_matches(method: &str, params: &Value, response: &V
             })
     };
     match method {
+        "device.setDeviceName" => {
+            supplied_fields_match(params, response, &[("name", "customName")])
+        }
         "device.setTunerInput" => {
             supplied_fields_match(params, response, &[("inputPortId", "inputPortId")])
         }
@@ -1164,12 +1392,26 @@ pub struct GatewayReadPlan {
     pub projection: GatewayResponseProjection,
 }
 
+/// Additional authoritative read required to complete a public gateway read.
+/// The hosts execute the dependency; the device-specific composition remains
+/// in this runtime via [`compose_global_tempo_settings`].
+pub fn gateway_read_followup_method(method: &str) -> Option<&'static str> {
+    (method == "device.globalTempoSettings").then_some("device.presetTempoSettings")
+}
+
 impl PresetRecallPlan {
-    pub fn matches(&self, snapshot: &GatewaySnapshot) -> bool {
+    /// Match the requested destination without comparing generation-local
+    /// revision counters. A fully reinitialized session is itself fresh, but
+    /// its counters restart from zero.
+    pub fn matches_recovered(&self, snapshot: &GatewaySnapshot) -> bool {
         snapshot.setlist_key.trim_end_matches('/') == self.setlist_key.trim_end_matches('/')
             && snapshot.preset_position == self.position
-            && snapshot.position_revision > self.after_position_revision
             && (!self.require_clean || !snapshot.dirty)
+    }
+
+    pub fn matches(&self, snapshot: &GatewaySnapshot) -> bool {
+        self.matches_recovered(snapshot)
+            && snapshot.position_revision > self.after_position_revision
     }
 
     pub fn verification(&self) -> GatewayVerification {
@@ -1178,6 +1420,7 @@ impl PresetRecallPlan {
             position: self.position,
             name: None,
             require_clean: self.require_clean,
+            after_position_revision: Some(self.after_position_revision),
         }
     }
 }
@@ -1205,6 +1448,12 @@ pub fn plan_gateway_read(
             response_type: profile::MESSAGE_TYPE_VERSION,
             timeout_ms: 5_000,
             projection: GatewayResponseProjection::DeviceIdentity,
+        }),
+        "device.diagnostics" => Ok(GatewayReadPlan {
+            operation: DeviceOperation::ReadDiagnostics { request_id },
+            response_type: profile::MESSAGE_TYPE_DIAGNOSTICS,
+            timeout_ms: 5_000,
+            projection: GatewayResponseProjection::DeviceDiagnostics { request_id },
         }),
         "device.tunerSettings" => Ok(GatewayReadPlan {
             operation: DeviceOperation::ReadTuner,
@@ -1242,7 +1491,7 @@ pub fn plan_gateway_read(
             timeout_ms: 30_000,
             projection: GatewayResponseProjection::GlobalTempoSettings,
         }),
-        "device.presetTempoSettings" => Ok(GatewayReadPlan {
+        "device.presetTempoSettings" | "device.currentPreset" => Ok(GatewayReadPlan {
             operation: DeviceOperation::ReadCurrentPreset { request_id },
             response_type: profile::MESSAGE_TYPE_RECALL_PRESET,
             timeout_ms: 15_000,
@@ -1474,13 +1723,18 @@ pub fn plan_preset_mutation(
                 name: name.clone(),
                 instrument,
             }];
+            let mut rename = save_stage(
+                &before.setlist_key,
+                before.preset_position,
+                &name,
+                instrument,
+            );
+            // Renaming the active slot can update only the asynchronous File
+            // catalog. Requiring a SetlistPosition/name push here times out
+            // before the workflow reaches its authoritative catalog readback.
+            rename.verification = GatewayVerification::None;
             Ok(PresetMutationPlan {
-                stages: vec![save_stage(
-                    &before.setlist_key,
-                    before.preset_position,
-                    &name,
-                    instrument,
-                )],
+                stages: vec![rename],
                 detail: format!("Renamed and verified {name}"),
                 saved_name: name,
                 setlist_key: before.setlist_key.clone(),
@@ -1504,11 +1758,6 @@ pub fn plan_preset_mutation(
                 && source_position == destination_position
             {
                 return Err("The source and destination preset slots are identical.".into());
-            }
-            if before.setlist_key.trim_end_matches('/') != destination_key.trim_end_matches('/')
-                || before.preset_position != destination_position
-            {
-                return Err("The destination preset or setlist changed. Refresh and retry.".into());
             }
             if destination_key.starts_with("/opt/") {
                 return Err(
@@ -1539,6 +1788,7 @@ pub fn plan_preset_mutation(
                 position: source_position,
                 name: Some(source.name.clone()),
                 require_clean: false,
+                after_position_revision: None,
             };
             let saved_presets = vec![PresetMutationRecord {
                 setlist_key: destination_key.clone(),
@@ -1546,25 +1796,29 @@ pub fn plan_preset_mutation(
                 name: source.name.clone(),
                 instrument: source.instrument,
             }];
+            let mut stages = Vec::with_capacity(2);
+            if before.setlist_key.trim_end_matches('/') != source_key.trim_end_matches('/')
+                || before.preset_position != source_position
+            {
+                stages.push(PresetMutationStage {
+                    write: PlannedWrite::HidCommand(DeviceCommand::SetlistPosition {
+                        is_factory: source_key.starts_with("/opt/"),
+                        setlist_key: source_key,
+                        position: source_position,
+                    }),
+                    verification: source_verification,
+                    timeout_ms: 40_000,
+                    settle_ms: 0,
+                });
+            }
+            stages.push(save_stage(
+                &destination_key,
+                destination_position,
+                &source.name,
+                source.instrument,
+            ));
             Ok(PresetMutationPlan {
-                stages: vec![
-                    PresetMutationStage {
-                        write: PlannedWrite::HidCommand(DeviceCommand::SetlistPosition {
-                            is_factory: source_key.starts_with("/opt/"),
-                            setlist_key: source_key,
-                            position: source_position,
-                        }),
-                        verification: source_verification,
-                        timeout_ms: 40_000,
-                        settle_ms: 0,
-                    },
-                    save_stage(
-                        &destination_key,
-                        destination_position,
-                        &source.name,
-                        source.instrument,
-                    ),
-                ],
+                stages,
                 detail: format!("Copied {} · {} and verified", source.location, source.name),
                 saved_name: source.name,
                 setlist_key: destination_key,
@@ -1637,6 +1891,7 @@ pub fn plan_preset_mutation(
                         position: entry.position,
                         name: Some(entry.name.clone()),
                         require_clean: false,
+                        after_position_revision: None,
                     },
                     timeout_ms: 40_000,
                     settle_ms: 0,
@@ -3051,6 +3306,7 @@ fn verification_for_operation(
             position: *position,
             name: Some(name.clone()),
             require_clean: true,
+            after_position_revision: None,
         },
         DeviceOperation::SetSceneLabel { scene, label } => GatewayVerification::SceneLabel {
             scene: *scene,
@@ -3170,6 +3426,7 @@ fn verification_for_operation(
         | DeviceOperation::LoadIr { model_id: None, .. }
         | DeviceOperation::PresetScreenshot { .. }
         | DeviceOperation::CaptureScreen
+        | DeviceOperation::ReadDiagnostics { .. }
         | DeviceOperation::ReadGraphicsTree
         | DeviceOperation::ScreenTap { .. }
         | DeviceOperation::ScreenDrag { .. }
@@ -3679,11 +3936,22 @@ pub fn plan_gateway_write(
                 detail: format!("{name} accepted"),
             }
         }
+        "device.showGigView" => {
+            let shown = params
+                .get("shown")
+                .and_then(Value::as_bool)
+                .ok_or_else(|| "shown must be a boolean".to_string())?;
+            let command = DeviceCommand::ShowGigView(shown);
+            GatewayWritePlan {
+                write: PlannedWrite::HidCommand(command),
+                detail: format!("{} {}", "Gig View", if shown { "opened" } else { "closed" }),
+                verification: GatewayVerification::None,
+            }
+        }
         "device.pressFootswitch"
         | "device.tapTempo"
         | "device.selectModeSlot"
         | "device.showTuner"
-        | "device.showGigView"
         | "device.controlLooper" => {
             let midi = plan_host_midi(method, params)?;
             GatewayWritePlan {
@@ -3737,37 +4005,6 @@ mod tests {
             expression_maximum: None,
             led_value: None,
             wire_value_kind: "float".into(),
-        }
-    }
-
-    #[test]
-    fn retry_policy_is_shared_and_excludes_relative_or_structural_writes() {
-        for method in [
-            "device.recallPreset",
-            "device.selectScene",
-            "device.previewParameter",
-            "device.previewLaneControlParameter",
-            "device.setParameter",
-            "device.setTempo",
-            "device.showTuner",
-        ] {
-            assert!(
-                gateway_write_retryable(method),
-                "{method} should be retryable"
-            );
-        }
-        for method in [
-            "device.navigateBank",
-            "device.moveBlock",
-            "device.addBlock",
-            "device.removeBlock",
-            "device.copyScene",
-            "device.tapTempo",
-        ] {
-            assert!(
-                !gateway_write_retryable(method),
-                "{method} must not be retried"
-            );
         }
     }
 
@@ -3839,6 +4076,15 @@ mod tests {
             gateway_write_readback_method("device.setGlobalEqBand"),
             Some("device.globalEq")
         );
+        assert_eq!(
+            gateway_write_readback_method("device.setDeviceName"),
+            Some("device.identity")
+        );
+        assert!(gateway_write_readback_matches(
+            "device.setDeviceName",
+            &json!({"name": "Stage QC"}),
+            &json!({"customName": "Stage QC", "deviceType": 0})
+        ));
         assert!(gateway_write_readback_matches(
             "device.setGlobalEqBand",
             &json!({"band": 2, "gain": 0.75, "filterType": 2, "enabled": true}),
@@ -3889,6 +4135,80 @@ mod tests {
     }
 
     #[test]
+    fn verification_deadlines_and_refresh_cadence_are_shared_by_hosts() {
+        let command = gateway_write_verification_policy("device.setParameter");
+        assert_eq!(command.timeout_ms, profile::COMMAND_CONFIRMATION_TIMEOUT_MS);
+        assert_eq!(
+            command.refresh_delays_ms,
+            profile::COMMAND_VERIFICATION_REFRESH_DELAYS_MS
+        );
+        assert_eq!(
+            command.correlated_readback_retry_intervals_ms,
+            profile::CORRELATED_WRITE_READBACK_RETRY_INTERVALS_MS
+        );
+        assert_eq!(
+            gateway_correlated_readback_delay("device.setParameter", 0),
+            Some(0)
+        );
+        assert_eq!(
+            gateway_correlated_readback_delay("device.setParameter", 4),
+            Some(1_000)
+        );
+        assert_eq!(
+            gateway_correlated_readback_delay("device.setParameter", 5),
+            None
+        );
+        assert_eq!(command.preflight_method, None);
+        assert_eq!(command.readback_method, None);
+        assert_eq!(command.verification_refresh_method, "device.currentPreset");
+
+        let undo = gateway_write_verification_policy("device.undo");
+        assert_eq!(undo.post_write_refresh_method, Some("device.currentPreset"));
+        assert_eq!(
+            undo.post_write_refresh_delay_ms,
+            profile::HISTORY_STATE_REFRESH_DELAY_MS
+        );
+
+        let ordinary = gateway_write_verification_policy("device.toggleBypass");
+        assert_eq!(ordinary.post_write_refresh_method, None);
+        assert_eq!(ordinary.post_write_refresh_delay_ms, 0);
+
+        let global_tempo = gateway_write_verification_policy("device.setGlobalTempo");
+        assert_eq!(
+            global_tempo.preflight_method,
+            Some("device.globalTempoSettings")
+        );
+        assert_eq!(
+            global_tempo.readback_method,
+            Some("device.globalTempoSettings")
+        );
+
+        for method in ["device.tapScreen", "device.swipeScreen"] {
+            assert_eq!(
+                gateway_write_verification_policy(method).preflight_method,
+                Some("device.captureScreen")
+            );
+        }
+
+        let copy = gateway_write_verification_policy("device.copyScene");
+        assert_eq!(
+            copy.refresh_delays_ms.first().copied(),
+            Some(profile::HISTORY_STATE_REFRESH_DELAY_MS)
+        );
+        assert!(copy
+            .refresh_delays_ms
+            .windows(2)
+            .all(|pair| pair[0] < pair[1]));
+
+        let preset = gateway_write_verification_policy("device.recallPreset");
+        assert_eq!(preset.timeout_ms, profile::PRESET_SYNC_TIMEOUT_MS);
+        assert_eq!(
+            preset.refresh_delays_ms,
+            profile::PRESET_VERIFICATION_REFRESH_DELAYS_MS
+        );
+    }
+
+    #[test]
     fn event_transactions_share_freshness_matching_and_timeout_policy() {
         let before = GatewaySnapshot {
             tempo: 100,
@@ -3918,6 +4238,59 @@ mod tests {
         assert_eq!(
             transaction.state(&after, None, 5_700, 5_700),
             GatewayTransactionState::TimedOut
+        );
+    }
+
+    #[test]
+    fn verification_runtime_owns_refresh_order_waits_and_deadline() {
+        let policy = GatewayWriteVerificationPolicy {
+            timeout_ms: 650,
+            refresh_delays_ms: vec![0, 250],
+            correlated_readback_retry_intervals_ms: Vec::new(),
+            verification_refresh_method: "device.currentPreset",
+            post_write_refresh_method: None,
+            post_write_refresh_delay_ms: 0,
+            preflight_method: None,
+            readback_method: None,
+        };
+        let mut runtime = GatewayVerificationRuntime::new(
+            GatewayVerification::Tempo { bpm: 120 },
+            5,
+            1_000,
+            &policy,
+        );
+        let before = GatewaySnapshot {
+            tempo: 100,
+            ..GatewaySnapshot::default()
+        };
+        let after = GatewaySnapshot {
+            tempo: 120,
+            ..before.clone()
+        };
+        assert_eq!(
+            runtime.advance(Some(&before), None, 5, 1_000),
+            GatewayVerificationAction::Refresh {
+                method: "device.currentPreset"
+            }
+        );
+        assert_eq!(
+            runtime.advance(Some(&before), None, 6, 1_001),
+            GatewayVerificationAction::Wait { delay_ms: 249 }
+        );
+        assert_eq!(
+            runtime.advance(Some(&after), None, 6, 1_100),
+            GatewayVerificationAction::Verified
+        );
+
+        let mut timeout = GatewayVerificationRuntime::new(
+            GatewayVerification::Tempo { bpm: 120 },
+            5,
+            1_000,
+            &policy,
+        );
+        assert_eq!(
+            timeout.advance(Some(&before), None, 5, 1_650),
+            GatewayVerificationAction::TimedOut
         );
     }
 
@@ -4062,10 +4435,7 @@ mod tests {
         .unwrap();
         assert_eq!(
             gig_view.write,
-            PlannedWrite::MidiControlChange {
-                controller: profile::GIG_VIEW_CONTROLLER,
-                value: profile::MIDI_FEATURE_OFF_VALUE,
-            }
+            PlannedWrite::HidCommand(DeviceCommand::ShowGigView(false))
         );
         assert!(plan_gateway_write("device.showTuner", &json!({}), Some(&snapshot)).is_err());
         assert!(plan_gateway_write(
@@ -4582,6 +4952,15 @@ mod tests {
         .unwrap();
         assert_eq!(plan.position, 16);
         assert!(!plan.matches(&before));
+        assert!(!plan.verification().matches(
+            &GatewaySnapshot {
+                setlist_key: "/user/live".into(),
+                preset_position: 16,
+                position_revision: 14,
+                ..GatewaySnapshot::default()
+            },
+            None
+        ));
         let after = GatewaySnapshot {
             setlist_key: "/user/live/".into(),
             preset_position: 16,
@@ -4590,6 +4969,13 @@ mod tests {
             ..GatewaySnapshot::default()
         };
         assert!(plan.matches(&after));
+        assert!(plan.verification().matches(&after, None));
+        assert!(plan.matches_recovered(&GatewaySnapshot {
+            setlist_key: "/user/live".into(),
+            preset_position: 16,
+            position_revision: 1,
+            ..GatewaySnapshot::default()
+        }));
 
         let cross_setlist = plan_preset_recall(
             "device.recallPreset",
@@ -4851,25 +5237,54 @@ mod tests {
         assert_eq!(save.stages.len(), 1);
         assert_eq!(save.instrument, 2);
 
-        let destination = GatewaySnapshot {
-            preset_position: 10,
-            ..snapshot.clone()
-        };
+        let rename = plan_preset_mutation(
+            "device.renameCurrentPreset",
+            &json!({
+                "name": "Renamed", "expectedPresetName": "Current",
+                "expectedPosition": 8, "confirmRename": true
+            }),
+            Some(&snapshot),
+            &library,
+        )
+        .unwrap();
+        assert_eq!(rename.stages.len(), 1);
+        assert_eq!(rename.stages[0].verification, GatewayVerification::None);
+        assert_eq!(rename.saved_presets[0].name, "Renamed");
+
         let copy = plan_preset_mutation(
             "device.copyPreset",
             &json!({
                 "sourceSetlistKey": "/media/p4/Presets/Live", "sourcePosition": 9,
                 "sourceName": "Source", "destinationSetlistKey": "/media/p4/Presets/Live",
                 "destinationPosition": 10, "expectedPresetName": "Current",
-                "expectedPosition": 10, "confirmOverwrite": true
+                "expectedPosition": 8, "confirmOverwrite": true
             }),
-            Some(&destination),
+            Some(&snapshot),
             &library,
         )
         .unwrap();
         assert_eq!(copy.stages.len(), 2);
         assert_eq!(copy.saved_name, "Source");
         assert_eq!(copy.instrument, 3);
+
+        let active_source = GatewaySnapshot {
+            preset_name: "Source".into(),
+            preset_position: 9,
+            ..snapshot.clone()
+        };
+        let copy_from_active = plan_preset_mutation(
+            "device.copyPreset",
+            &json!({
+                "sourceSetlistKey": "/media/p4/Presets/Live", "sourcePosition": 9,
+                "sourceName": "Source", "destinationSetlistKey": "/media/p4/Presets/Live",
+                "destinationPosition": 10, "expectedPresetName": "Source",
+                "expectedPosition": 9, "confirmOverwrite": true
+            }),
+            Some(&active_source),
+            &library,
+        )
+        .unwrap();
+        assert_eq!(copy_from_active.stages.len(), 1);
 
         let duplicate = plan_preset_mutation(
             "device.duplicateSetlist",
@@ -5017,6 +5432,30 @@ mod tests {
 
     #[test]
     fn correlated_reads_and_remote_screen_writes_are_planned_once() {
+        use prost::Message;
+        use qc_protocol::proto::cortex_protobuf_v2 as pa;
+
+        let diagnostics = plan_gateway_read("device.diagnostics", &Value::Null, 73).unwrap();
+        assert_eq!(diagnostics.response_type, profile::MESSAGE_TYPE_DIAGNOSTICS);
+        assert!(matches!(
+            diagnostics.operation,
+            DeviceOperation::ReadDiagnostics { request_id: 73 }
+        ));
+        assert_eq!(diagnostics.projection.expected_request_id(), Some(73));
+        let payload = pa::DiagnosticsMessage {
+            action: pa::message_action::Enum::Update as i32,
+            request_id: Some(pa::diagnostics_message::RequestId::RequestId(73)),
+            soc1_to_soc2_dropped_count: Some(
+                pa::diagnostics_message::Soc1ToSoc2DroppedCount::Soc1ToSoc2DroppedCount(4),
+            ),
+            ..Default::default()
+        }
+        .encode_to_vec();
+        assert_eq!(
+            diagnostics.projection.decode(&payload).unwrap()["soc1ToSoc2DroppedCount"],
+            4
+        );
+
         let tuner = plan_gateway_read("device.tunerSettings", &Value::Null, 0).unwrap();
         assert_eq!(tuner.response_type, 6);
         assert_eq!(tuner.timeout_ms, 5_000);
@@ -5025,6 +5464,17 @@ mod tests {
             tuner.projection,
             GatewayResponseProjection::TunerSettings
         ));
+
+        let preset_refresh = plan_gateway_read("device.currentPreset", &Value::Null, 74).unwrap();
+        assert_eq!(
+            preset_refresh.response_type,
+            profile::MESSAGE_TYPE_RECALL_PRESET
+        );
+        assert!(matches!(
+            preset_refresh.operation,
+            DeviceOperation::ReadCurrentPreset { request_id: 74 }
+        ));
+        assert_eq!(preset_refresh.projection.expected_request_id(), Some(74));
 
         let screenshot = plan_gateway_read(
             "device.presetScreenshot",
@@ -5173,7 +5623,7 @@ mod tests {
             &json!({"command": "record", "value": 1}),
         )
         .is_err());
-        assert_eq!(crate::generated_gateway::PERFORMANCE_MIDI_METHODS.len(), 6);
+        assert_eq!(crate::generated_gateway::PERFORMANCE_MIDI_METHODS.len(), 5);
         assert!(crate::generated_gateway::PERFORMANCE_MIDI_METHODS
             .iter()
             .all(|method| is_host_midi_method(method)));
@@ -5221,6 +5671,11 @@ mod tests {
 
     #[test]
     fn global_tempo_composition_and_guarding_are_shared_by_native_hosts() {
+        assert_eq!(
+            gateway_read_followup_method("device.globalTempoSettings"),
+            Some("device.presetTempoSettings")
+        );
+        assert_eq!(gateway_read_followup_method("device.globalEq"), None);
         let composed = compose_global_tempo_settings(
             &json!({"mode":"GLOBAL", "bpm":120, "beats":[]}),
             &json!({"bpm":96, "ledEnabled":true, "beats":["DOWN"]}),
@@ -5311,6 +5766,10 @@ mod tests {
                 to_y: 40.0
             })
         ));
+        assert_eq!(
+            swipe.write.inter_message_interval_ms(),
+            profile::REMOTE_GESTURE_INTERVAL_MS
+        );
         assert!(plan_gateway_write(
             "device.swipeScreen",
             &json!({"x":10, "y":20, "toX":10, "toY":20}),
@@ -5374,5 +5833,43 @@ mod tests {
             None,
         )
         .is_err());
+    }
+
+    #[test]
+    fn saved_preset_collision_names_retain_the_complete_requested_name() {
+        assert!(stored_preset_name_matches("Crying Wah", "Crying Wah"));
+        assert!(stored_preset_name_matches("Crying Wah", "Crying Wah_1"));
+        assert!(stored_preset_name_matches("Crying Wah", "Crying Wah_27"));
+        assert!(!stored_preset_name_matches(
+            "Crying Wah Plus",
+            "Crying Wah_1"
+        ));
+        assert!(!stored_preset_name_matches("Crying Wah", "Crying Wah copy"));
+        assert!(!stored_preset_name_matches("Crying Wah", "Crying Wah_"));
+        assert!(!stored_preset_name_matches("Crying Wah", "Crying Wah_x"));
+    }
+
+    #[test]
+    fn authoritative_saved_entry_reconciles_only_the_active_slot_name() {
+        let mut snapshot = GatewaySnapshot {
+            setlist_key: "/media/p4/Presets/My Presets".into(),
+            preset_position: 15,
+            preset_name: "Old".into(),
+            ..GatewaySnapshot::default()
+        };
+        assert!(reconcile_saved_preset_snapshot(
+            &mut snapshot,
+            "/media/p4/Presets/My Presets/",
+            15,
+            "Renamed"
+        ));
+        assert_eq!(snapshot.preset_name, "Renamed");
+        assert!(!reconcile_saved_preset_snapshot(
+            &mut snapshot,
+            "/media/p4/Presets/Other",
+            15,
+            "Wrong"
+        ));
+        assert_eq!(snapshot.preset_name, "Renamed");
     }
 }

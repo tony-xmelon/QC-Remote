@@ -76,6 +76,33 @@ try {
             throw "Android APK is missing required legal material: $legalAsset"
         }
     }
+    if ($env:QC_PUBLIC_RELEASE -eq "1") {
+        $forbiddenProviderMarkers = @(
+            "com/qccontrol/mobile/GeminiPlugin",
+            "com/google/firebase/ai",
+            "generativelanguage.googleapis.com",
+            "I confirm I am 18"
+        )
+        $providerPayloads = @($apkArchive.Entries | Where-Object {
+            $_.FullName -like "classes*.dex" -or $_.FullName -like "assets/public/assets/*.js"
+        })
+        foreach ($entry in $providerPayloads) {
+            $entryStream = $entry.Open()
+            try {
+                $memory = New-Object System.IO.MemoryStream
+                $entryStream.CopyTo($memory)
+                $entryText = [System.Text.Encoding]::UTF8.GetString($memory.ToArray())
+                foreach ($marker in $forbiddenProviderMarkers) {
+                    if ($entryText.Contains($marker)) {
+                        throw "Public Android APK exposes disabled provider marker '$marker' in $($entry.FullName)."
+                    }
+                }
+            }
+            finally {
+                $entryStream.Dispose()
+            }
+        }
+    }
 }
 finally {
     $apkArchive.Dispose()

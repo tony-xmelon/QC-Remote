@@ -75,7 +75,7 @@ public final class QcRelayPlugin extends Plugin {
     private void beginPair(PluginCall call) {
         String endpoint = normalizedEndpoint(call.getString("endpoint", ""));
         String pairingCode = call.getString("pairingCode", "").trim();
-        String deviceName = call.getString("deviceName", android.os.Build.MODEL).trim();
+        String deviceName = call.getString("deviceName", "QC Remote on Android").trim();
         if (endpoint == null || deviceName.isEmpty()
             || pairingCode.length() < GeneratedRelayProfile.PAIRING_CODE_MINIMUM_LENGTH
             || pairingCode.length() > GeneratedRelayProfile.PAIRING_CODE_MAXIMUM_LENGTH) {
@@ -100,7 +100,11 @@ public final class QcRelayPlugin extends Plugin {
                         if (credential.length() < GeneratedRelayProfile.MINIMUM_CREDENTIAL_LENGTH)
                             throw new IllegalStateException("Relay returned an invalid credential.");
                         new RelayCredentialStore(getContext()).save(endpoint, credential);
-                        startService();
+                        // Pairing is durable even when the QC is not attached.
+                        // The connectedDevice service starts after USB access
+                        // is granted, never before Android's runtime prerequisite.
+                        if (QcUsbPlugin.relayForegroundServiceEligible()) startService();
+                        else relayState = "stopped";
                         JSObject result = new JSObject(); result.put("paired", true); result.put("endpoint", endpoint);
                         call.resolve(result);
                     } catch (Exception error) { call.reject("Could not securely store the device credential.", "PAIRING_STORAGE_ERROR", error); }
@@ -126,7 +130,14 @@ public final class QcRelayPlugin extends Plugin {
         startRelay(call);
     }
 
-    private void startRelay(PluginCall call) { startService(); call.resolve(); }
+    private void startRelay(PluginCall call) {
+        if (!QcUsbPlugin.relayForegroundServiceEligible()) {
+            call.reject("Connect the Quad Cortex and grant USB access before starting Remote.", "USB_PERMISSION_REQUIRED");
+            return;
+        }
+        startService();
+        call.resolve();
+    }
 
     private boolean needsNotificationPermission() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU

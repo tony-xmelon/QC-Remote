@@ -71,7 +71,7 @@
       "label": "Persistent direct USB session",
       "parity": "required",
       "owner": "native-equivalent",
-      "sharedEvidence": [{ "path": "packages/rust/qc-protocol/src/session.rs", "contains": "pub struct SessionMachine" }],
+      "sharedEvidence": [{ "path": "packages/rust/qc-device-runtime/src/transport.rs", "contains": "pub struct TransportRuntime" }],
       "windows": { "status": "implemented", "evidence": [{ "path": "services/device-broker/src/usb.rs", "contains": "pub struct QcUsb" }] },
       "android": { "status": "implemented", "evidence": [{ "path": "apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java", "contains": "class QcUsbPlugin" }, { "path": "packages/rust/qc-android/src/lib.rs", "contains": "StateDecoder" }] }
     },
@@ -125,6 +125,7 @@
       "label": "Push-to-talk transcript routed through chat",
       "parity": "required",
       "owner": "native-equivalent",
+      "sharedEvidence": [{ "path": "packages/typescript/qc-ui/src/use-assistant-conversation.ts", "contains": "export function useAssistantConversation" }],
       "windows": { "status": "implemented", "evidence": [{ "path": "apps/windows/src/voice.ts", "contains": "createSpeechRecognition" }, { "path": "apps/windows/src/App.tsx", "contains": "submitVoiceOnEnd" }] },
       "android": { "status": "implemented", "evidence": [{ "path": "apps/android/src/App.tsx", "contains": "await sendInput(transcript)" }] }
     },
@@ -142,8 +143,45 @@
       "label": "Connection and transport diagnostics",
       "parity": "required",
       "owner": "native-equivalent",
+      "sharedEvidence": [{ "path": "contracts/gateway-methods.v1.json", "contains": "system.status" }, { "path": "packages/rust/qc-device-runtime/src/transport.rs", "contains": "pub struct TransportRuntime" }],
       "windows": { "status": "implemented", "evidence": [{ "path": "apps/windows/src/tauri-transport.ts", "contains": "export const diagnosticsFiles" }] },
       "android": { "status": "implemented", "evidence": [{ "path": "apps/android/src/App.tsx", "contains": "QcUsbNative.diagnostics()" }] }
+    },
+    {
+      "id": "native-state-and-readiness",
+      "label": "Shared staged startup, native state decoding, and complete authoritative readiness",
+      "parity": "required",
+      "owner": "shared",
+      "sharedEvidence": [{ "path": "packages/rust/qc-device-runtime/src/state_runtime.rs", "contains": "pub struct DeviceStateRuntime" }, { "path": "packages/rust/qc-device-runtime/src/initialization.rs", "contains": "pub struct DeviceStartupRuntime" }, { "path": "packages/rust/qc-device-runtime/src/initialization.rs", "contains": "self.synchronized && self.seed_complete()" }],
+      "windows": { "status": "implemented", "evidence": [{ "path": "services/device-broker/src/worker.rs", "contains": "DeviceStateRuntime::new()" }, { "path": "services/device-broker/src/usb.rs", "contains": "DeviceStartupRuntime::start" }, { "path": "services/device-broker/src/usb.rs", "contains": "post_boot_initialization" }] },
+      "android": { "status": "implemented", "evidence": [{ "path": "packages/rust/qc-android/src/lib.rs", "contains": "DeviceStateRuntime" }, { "path": "packages/rust/qc-android/src/lib.rs", "contains": "DeviceStartupRuntime::start" }, { "path": "apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java", "contains": "stateDecoder.handshakeAttempt" }] }
+    },
+    {
+      "id": "verified-device-operations",
+      "label": "Shared command planning, pacing, preflight, and authoritative verification",
+      "parity": "required",
+      "owner": "shared",
+      "sharedEvidence": [{ "path": "packages/rust/qc-device-runtime/src/request.rs", "contains": "pub struct GatewayVerificationRuntime" }, { "path": "packages/rust/qc-device-runtime/src/request.rs", "contains": "pub fn gateway_correlated_readback_delay" }, { "path": "contracts/qc-usb-profile.v1.json", "contains": "correlatedWriteReadbackRetryIntervalsMs" }],
+      "windows": { "status": "implemented", "evidence": [{ "path": "services/device-broker/src/rpc.rs", "contains": "GatewayVerificationRuntime::new" }, { "path": "services/device-broker/src/rpc.rs", "contains": "gateway_correlated_readback_delay(method, attempt)" }] },
+      "android": { "status": "implemented", "evidence": [{ "path": "apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java", "contains": "stateDecoder.gatewayVerificationAdvance" }, { "path": "apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java", "contains": "stateDecoder.gatewayReadbackRetryDelay" }] }
+    },
+    {
+      "id": "backup-and-preset-catalog",
+      "label": "Native backup and preset-catalog lifecycle",
+      "parity": "required",
+      "owner": "shared",
+      "sharedEvidence": [{ "path": "packages/rust/qc-device-runtime/src/backup.rs", "contains": "pub struct BackupRuntime" }, { "path": "packages/rust/qc-device-runtime/src/catalog.rs", "contains": "pub struct CatalogVerificationRuntime" }],
+      "windows": { "status": "implemented", "evidence": [{ "path": "services/device-broker/src/worker.rs", "contains": "BackupRuntime" }, { "path": "services/device-broker/src/worker.rs", "contains": "CatalogVerificationRuntime" }] },
+      "android": { "status": "implemented", "evidence": [{ "path": "packages/rust/qc-android/src/lib.rs", "contains": "BackupRuntime" }, { "path": "packages/rust/qc-android/src/lib.rs", "contains": "CatalogVerificationRuntime" }] }
+    },
+    {
+      "id": "shared-branding-and-assets",
+      "label": "Shared brand, palette, typography, and visual asset registry",
+      "parity": "required",
+      "owner": "shared",
+      "sharedEvidence": [{ "path": "packages/typescript/qc-theme/src/index.ts", "contains": "export const QC_BRAND" }, { "path": "packages/typescript/qc-theme/src/index.ts", "contains": "export const QC_VISUAL_ASSETS" }],
+      "windows": { "status": "implemented", "evidence": [{ "path": "apps/windows/src/main.tsx", "contains": "QC_BRAND, QC_NATIVE_THEME" }, { "path": "apps/windows/src/App.tsx", "contains": "QC_LEGAL" }] },
+      "android": { "status": "implemented", "evidence": [{ "path": "apps/android/src/main.tsx", "contains": "QC_BRAND, QC_COLORS, QC_NATIVE_THEME" }, { "path": "apps/android/src/App.tsx", "contains": "QC_VISUAL_ASSETS" }] }
     },
     {
       "id": "local-workspaces",

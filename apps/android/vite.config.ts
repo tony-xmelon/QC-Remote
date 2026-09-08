@@ -18,9 +18,11 @@ const legalAssets = () => ({
   }
 });
 
-export default defineConfig({
+export default defineConfig(() => ({
   plugins: [react(), legalAssets()],
-  publicDir: fileURLToPath(new URL("../../packages/typescript/qc-theme/assets", import.meta.url)),
+  // Theme assets are imported explicitly so local visual references can never
+  // leak into development servers or release bundles through publicDir.
+  publicDir: false as const,
   base: "./",
   build: { outDir: "dist", emptyOutDir: true }
-});
+}));

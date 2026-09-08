@@ -17,7 +17,7 @@ struct ProbeResult {
 
 fn probe() -> ProbeResult {
     let started = Instant::now();
-    let mut session = qc_protocol::session::SessionMachine::new(0);
+    let mut session = qc_device_runtime::transport::TransportRuntime::new(0);
     match usb::QcUsb::connect(&mut session, &started, |_, _| {}) {
         Ok(connection) => ProbeResult {
             present: true,

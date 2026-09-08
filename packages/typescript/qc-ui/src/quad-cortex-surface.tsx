@@ -204,7 +204,7 @@ function MasterVolume({ value, onAction }: { value: number; onAction: (action: H
 
 function CorOsDirectory({ snapshot, directory }: { snapshot: PresetSnapshot; directory: PresetDirectoryState }) {
   const corpusFallback = snapshot.setlistKey === "coros-4.1.0-corpus" && !directory.list;
-  const corpusFolders = ["My Presets", "ALI Live", "ALI Rec", "ALI AcousticLive"];
+  const corpusFolders = ["My Presets", "Live Set", "Recording Set", "Acoustic Set"];
   const corpusPresets: PresetEntry[] = Array.from({ length: 8 }, (_, index) => ({
     position: 248 + index,
     location: `32${String.fromCharCode(65 + index)}`,
@@ -523,16 +523,16 @@ export function QuadCortexSurface({ formFactor, snapshot, selectedBlockId, skin,
   const bankDownLed = parameterLed(4, { active: false, assigned: false, color: navigationLedColor });
   const displaySnapshot = fixtureSnapshot(screenView, snapshot);
   const fixtureOnly = screenView !== "grid";
-  const svgCropStyle = skin.svgAsset ? {
+  const chassisVectorCropStyle = skin.svgAsset ? {
     width: `${skin.svgAsset.sourceWidth / skin.svgAsset.crop.width * 100}%`,
     left: `${-skin.svgAsset.crop.x / skin.svgAsset.crop.width * 100}%`,
     top: `${-skin.svgAsset.crop.y / skin.svgAsset.crop.height * 100}%`
   } as CSSProperties : undefined;
   return <section className={`qc-chassis ${skin.className}`} aria-label={formFactor.displayName}>
-    {skin.svgAsset && <div className="official-svg-viewport" aria-hidden="true"><img className="official-svg-source" src={`${skin.svgAsset.url}#qc-foreground`} alt="" style={svgCropStyle} /></div>}
+    {skin.svgAsset && <div className="chassis-vector-viewport" aria-hidden="true"><img className="chassis-vector-source" src={`${skin.svgAsset.url}#qc-foreground`} alt="" style={chassisVectorCropStyle} /></div>}
     <div className="chassis-edge" aria-hidden="true" />
     <MasterVolume value={snapshot.masterVolume} onAction={onAction} />
-    <div className="device-plate"><QcHardwareIcon kind="brand-pulse" className="pulse-mark" /><span>{QC_BRAND.appWordmark}</span><small>{QC_BRAND.surfaceCaption}</small></div>
+    <div className="device-plate"><QcHardwareIcon kind="brand-pulse" className="pulse-mark" /><span>{QC_BRAND.deviceWordmark}</span><small>{QC_BRAND.surfaceCaption}</small></div>
     <div className="qc-screen-bezel">{fixtureOnly
       ? <div className="qc-screen-fixture-root"><Suspense fallback={null}><CorOsScreenFixture view={screenView} snapshot={displaySnapshot} gigPresetList={gigPresetList} onClose={onCloseScreen} /></Suspense></div>
       : <div className="qc-screen-fixture-root is-live-grid"><CorOsGrid snapshot={displaySnapshot} presetSlotAccent={presetSlotAccent} selectedBlockId={selectedBlockId} onAction={onAction} onOpenPreset={onOpenPreset} onUndo={onUndo} canUndo={canUndo} undoLabel={undoLabel} onSave={onSave} onOpenRouting={onOpenRouting} onRefresh={onRefresh} presetDirectory={presetDirectory} routingPicker={routingPicker} savePreset={savePreset} onContextAction={onContextAction} />{parameterEditor && <CorOsParameterEditor {...parameterEditor} />}</div>}

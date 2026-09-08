@@ -26,8 +26,8 @@ test("the mobile control deck follows the physical three-row QC layout", () => {
   assert.match(appSource, /onPointerDown=\{resetScreenDimmer\}/);
   assert.match(styles, /\.android-app\.screen-dimmed::after \{ background: var\(--qc-palette-0008\); \}/);
   assert.match(appSource, /Keep screen awake while connected/);
-  assert.match(appSource, /const toggleIoView = async \(\) => \{[\s\S]*QcUsbNative\.swipeScreen\(qcRemoteScreen\.openIo\)[\s\S]*setMobileScreenView\("io-overview"\)/);
-  assert.match(appSource, /else if \(ioViewOpen\) await QcUsbNative\.tapScreenDirect\(qcRemoteScreen\.done\)/);
+  assert.match(appSource, /const toggleIoView = async \(\) => \{[\s\S]*androidGatewayTransport\.swipeScreen\([\s\S]*qcRemoteScreen\.openIo\.x[\s\S]*setMobileScreenView\("io-overview"\)/);
+  assert.match(appSource, /else if \(ioViewOpen\) await androidGatewayTransport\.tapScreen\([\s\S]*qcRemoteScreen\.done\.x/);
   assert.match(appSource, /const toggleGigView = async \(\) => \{[\s\S]*androidGatewayTransport\.showGigView\(true\)[\s\S]*setMobileScreenView\("gig"\)/);
   assert.match(appSource, /gigPresetList=\{presetWorkflow\.presetList\}/);
   assert.match(appSource, /onClick=\{toggleIoView\} aria-pressed=\{ioViewOpen\}/);
@@ -132,7 +132,7 @@ test("Firebase AI and Play Integrity initialize only inside a consent-gated Gemi
   const appSource = readFileSync(new URL("./App.tsx", import.meta.url), "utf8");
   const mainSource = readFileSync(new URL("../android/app/src/main/java/com/qccontrol/mobile/MainActivity.java", import.meta.url), "utf8");
   const geminiSource = readFileSync(new URL("../android/app/src/main/java/com/qccontrol/mobile/GeminiPlugin.java", import.meta.url), "utf8");
-  assert.match(appSource, /native && onlineModelsAllowed/);
+  assert.match(appSource, /native && directGeminiAvailable && onlineModelsAllowed && geminiAgeEligible/);
   assert.doesNotMatch(mainSource, /FirebaseApp(?:Check)?|PlayIntegrity/);
   assert.match(geminiSource, /private synchronized void ensureAppCheckConfigured\(\)/);
   assert.match(geminiSource, /ensureAppCheckConfigured\(\);\s*return models\.computeIfAbsent/);
@@ -168,9 +168,14 @@ test("Android exposes shared About, privacy, legal, and third-party notices", ()
   assert.match(themeSource, /relay operator you trust/);
   assert.match(appSource, /QC_LEGAL\.privacy\.relay/);
   assert.match(appSource, /localStorage\.getItem\(androidOnlineModelConsentKey\) === "accepted"/);
-  assert.match(appSource, /native && onlineModelsAllowed/);
-  assert.match(appSource, /disabled=\{busy \|\| !onlineModelsAllowed\}/);
+  assert.match(appSource, /native && directGeminiAvailable && onlineModelsAllowed && geminiAgeEligible/);
+  assert.match(appSource, /disabled=\{busy \|\| !onlineModelsAllowed \|\| !geminiAgeEligible\}/);
+  assert.match(appSource, /I confirm I am 18 or older to use the development Gemini feature; local device control has no app-wide age limit/);
   assert.match(appSource, /Allow messages, attachment names and types, and relevant device context to be sent to Gemini/);
+  assert.match(appSource, /No on-device recognizer is reported; Android's configured speech service may send audio off this device/);
+  const voicePlugin = readFileSync(new URL("../android/app/src/main/java/com/qccontrol/mobile/VoiceInputPlugin.java", import.meta.url), "utf8");
+  assert.match(voicePlugin, /isOnDeviceRecognitionAvailable/);
+  assert.match(voicePlugin, /createOnDeviceSpeechRecognizer/);
   assert.match(appSource, /Online model sharing is disabled; no data was sent/);
   assert.match(appSource, /conversation\.setMessages\(\[\]\)/);
 });

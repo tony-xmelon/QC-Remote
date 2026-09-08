@@ -3,7 +3,6 @@ name = "qc-device-broker"
 version = "0.1.0"
 publish = false
 edition = "2021"
-license = "MIT"
 description = "Native single-owner Quad Cortex USB broker"
 
 [dependencies]

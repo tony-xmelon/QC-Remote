@@ -34,7 +34,12 @@ const rustPairs = (source, structure) => [...source.matchAll(
   new RegExp(`${structure} \\{\\s*name: "([^"]+)",\\s*rpc: "([^"]+)"`, "g")
 )].map((match) => [match[1], match[2]]);
 
-const expectedGatewayRpcs = ["system.status", ...contractRpcs];
+// The native gateway retains device.identity for local safety checks and app
+// settings, but it is intentionally absent from every model/MCP/relay catalog
+// because it returns a persistent hardware identifier.
+const localOnlyGatewayRpcs = actionsContract.localOnlyGatewayRpcs ?? [];
+const expectedGatewayRpcs = ["system.status", ...localOnlyGatewayRpcs, ...contractRpcs];
+const expectedPublicRelayRpcs = ["system.status", ...contractRpcs];
 assert.deepEqual(
   sorted(gatewayContract.methods.map(({ rpc }) => rpc)),
   sorted(expectedGatewayRpcs),
@@ -42,7 +47,7 @@ assert.deepEqual(
 );
 assert.deepEqual(
   sorted(stringArray(androidActions, "ALLOWED")),
-  sorted(expectedGatewayRpcs),
+  sorted(expectedPublicRelayRpcs),
   "Android relay allowlist drifted from the shared MCP action contract",
 );
 assert.deepEqual(
@@ -67,6 +72,7 @@ console.log(JSON.stringify({
   verified: true,
   actions: contractPairs.length,
   gatewayMethods: expectedGatewayRpcs.length,
+  localOnlyGatewayRpcs,
   windows: "shared generated tools + shared executor",
   android: "shared generated tools + shared executor + exact relay allowlist",
   remoteMcp: "exact Rust MCP and relay action maps",

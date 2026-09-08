@@ -1,9 +1,9 @@
 @scope (.qc-screen-fixture-root) {
-.gig-official, .gig-official * { box-sizing: border-box; font-family: Arial, sans-serif; }
+.gig-official, .gig-official * { box-sizing: border-box; font-family: var(--qc-font-device-plain); }
 .qc-screen.gig-official { position: absolute; inset: 0; display: grid; grid-template-rows: 7.5cqw 1cqw 51.5cqw; overflow: hidden; background: #101110; color: #f3f4f3; container-type: inline-size; }
 .gig-official > header { display: flex; align-items: center; padding: 0 1cqw 0 2cqw; font-size: 4cqw; }
 .gig-official > header span { flex: 1; }
-.gig-official > header button { width: 8.25cqw; height: 5.5cqw; margin-left: 1cqw; border: 0; border-radius: 1cqw; background: #171b18; color: #eee; font: 3cqw Arial, sans-serif; }
+.gig-official > header button { width: 8.25cqw; height: 5.5cqw; margin-left: 1cqw; border: 0; border-radius: 1cqw; background: #171b18; color: #eee; font: 3cqw var(--qc-font-device-plain); }
 .gig-official > header button b { color: #f2d125; }
 .gig-official > header .gig-mode-icon { display: block; width: 3cqw; height: 3cqw; margin: auto; color: var(--qc-icon-primary); }
 .gig-official > header .gig-mode-icon-preset { transform: translate(2px, -1px); }

@@ -28,16 +28,14 @@ interface QcUsbNativePlugin {
   scan(): Promise<{ devices: QcUsbDevice[]; connected: boolean; synchronized: boolean }>;
   connect(): Promise<{ connected: boolean; synchronized: boolean; name: string; deviceId: number }>;
   disconnect(): Promise<void>;
-  diagnostics(): Promise<{ connected: boolean; device: string; messagesReceived: number; messagesSent: number; messagesReceivedByType?: Record<string, number>; messagesSentByType?: Record<string, number>; decodeErrors: number; expectedWriteStalls: number; lastMessageType: number; connectedAt: number; setlistKnown: boolean; presetPosition: number; modelCount: number; readAttempts: number; negativeReads: number; interfaceId: number; inputEndpointAddress: number; inputMaxPacketSize: number; reportBytes: number; midiAvailable: boolean; midiInterfaceId: number; midiOutputEndpointAddress: number; lastMidiQueueDelayMs: number; maxMidiQueueDelayMs: number; lastHidWriteDurationMs: number; maxHidWriteDurationMs: number; lastStateAt: number; lastError?: string }>;
-  swipeScreen(options: { x: number; y: number; toX: number; toY: number }): Promise<{ accepted: boolean }>;
-  tapScreenDirect(options: { x: number; y: number }): Promise<{ accepted: boolean }>;
+  diagnostics(): Promise<{ connected: boolean; device: string; messagesReceived: number; messagesSent: number; messagesReceivedByType?: Record<string, number>; messagesSentByType?: Record<string, number>; decodeErrors: number; expectedWriteStalls: number; lastMessageType: number; connectedAt: number; setlistKnown: boolean; presetPosition: number; modelCount: number; readAttempts: number; negativeReads: number; interfaceId: number; inputEndpointAddress: number; inputMaxPacketSize: number; reportBytes: number; midiAvailable: boolean; midiInterfaceId: number; midiOutputEndpointAddress: number; lastMidiQueueDelayMs: number; maxMidiQueueDelayMs: number; lastHidWriteDurationMs: number; maxHidWriteDurationMs: number; lastStateAt: number; flightRecorder?: { version: number; entries: Array<{ atUnixMs: number; processId: number; event: string; messageType?: number; reportCount?: number }> }; lastError?: string }>;
   gatewayInvoke<T>(options: { method: string; params?: Record<string, unknown>; expectedState?: Record<string, unknown> }): Promise<T>;
   addListener(eventName: "qcStateBatch", listener: (frame: NativeStateFrame<QcStateUpdate>) => void): Promise<PluginListenerHandle>;
   addListener(eventName: "qcConnection", listener: (status: { state: "available" | "disconnected"; name?: string }) => void): Promise<PluginListenerHandle>;
 }
 
 interface VoiceInputNativePlugin {
-  available(): Promise<{ available: boolean }>;
+  available(): Promise<{ available: boolean; onDeviceAvailable: boolean }>;
   start(): Promise<{ transcript: string }>;
   stop(): Promise<void>;
   addListener(eventName: "partialResult", listener: (result: { transcript: string }) => void): Promise<PluginListenerHandle>;

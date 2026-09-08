@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { appendConversationMessage, type ConversationMessage, type ConversationRole } from "@qc-remote/core";
+import { appendConversationMessage, type ConversationMessage, type ConversationOrigin, type ConversationRole } from "@qc-remote/core";
 
 export interface AssistantSubmission<TAttachment> {
   token: number;
@@ -26,8 +26,9 @@ export function useAssistantConversation<TAttachment = never>(options: Assistant
   const activeRequestToken = useRef<number | undefined>(undefined);
   const pendingRef = useRef(false);
 
-  const append = useCallback((role: ConversationRole, text: string, attachments?: TAttachment[]) => {
-    setMessages((current) => appendConversationMessage(current, nextMessageId.current++, role, text, attachments));
+  const append = useCallback((role: ConversationRole, text: string, attachments?: TAttachment[], origin?: ConversationOrigin) => {
+    const resolvedOrigin = origin ?? (role === "user" ? "user" : role === "tool" ? "device-tool" : "app");
+    setMessages((current) => appendConversationMessage(current, nextMessageId.current++, role, text, attachments, resolvedOrigin));
   }, []);
 
   const begin = useCallback((text: string, attachments: TAttachment[] = [], attachmentFallback = "Please analyze the attached file."): AssistantSubmission<TAttachment> | undefined => {

@@ -3,23 +3,6 @@
     "windowsThemeColor": "#111317",
     "androidThemeColor": "#08090b"
   },
-  "appIcon": {
-    "backgroundStart": "#293039",
-    "backgroundEnd": "#090c10",
-    "deckStart": "#4d545c",
-    "deckEnd": "#14181d",
-    "deckStroke": "#68737e",
-    "bezel": "#090c10",
-    "bezelStroke": "#77818b",
-    "screenStart": "#101923",
-    "screenEnd": "#05080b",
-    "routeBlue": "#5edfff",
-    "routeGreen": "#6cf09b",
-    "switch": "#d9e0e6",
-    "switchStroke": "#69737d",
-    "ledOff": "#8b949d",
-    "ledWhite": "#f0f3f5"
-  },
   "android": {
     "background": "#08090b",
     "primary": "#101419",

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://qc-control.local/contracts/native-broker.v1.schema.json",
+  "$id": "https://qc-remote.local/contracts/native-broker.v1.schema.json",
   "title": "QC native broker JSON-RPC v1",
   "description": "Native QC state/command broker with a compatibility raw-protobuf transport. Frames are four-byte big-endian length followed by UTF-8 JSON.",
   "$defs": {

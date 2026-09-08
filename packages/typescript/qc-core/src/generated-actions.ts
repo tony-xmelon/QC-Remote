@@ -344,21 +344,6 @@ export const SHARED_QC_ACTIONS = [
     }
   },
   {
-    "name": "get_device_identity",
-    "rpc": "device.identity",
-    "classification": "read",
-    "description": "Read the connected Quad Cortex serial number, firmware version, type and custom name.",
-    "properties": {},
-    "required": [],
-    "access": "read-only",
-    "inputSchema": {
-      "type": "object",
-      "properties": {},
-      "required": [],
-      "additionalProperties": false
-    }
-  },
-  {
     "name": "get_inhibited_modules",
     "rpc": "device.inhibitedModules",
     "classification": "read",
@@ -613,6 +598,21 @@ export const SHARED_QC_ACTIONS = [
     "rpc": "device.captureScreen",
     "classification": "read",
     "description": "Capture the current Quad Cortex touchscreen as a PNG image.",
+    "properties": {},
+    "required": [],
+    "access": "read-only",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "get_device_diagnostics",
+    "rpc": "device.diagnostics",
+    "classification": "read",
+    "description": "Read DSP load, memory, error flags, and USB audio, MIDI, and HID transport counters from the connected Quad Cortex.",
     "properties": {},
     "required": [],
     "access": "read-only",

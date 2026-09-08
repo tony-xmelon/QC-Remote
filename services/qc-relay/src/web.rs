@@ -384,7 +384,7 @@ impl IntoResponse for ApiError {
             }
             Self::Relay(RelayError::AmbiguousDevice) => (StatusCode::CONFLICT, "ambiguous_device"),
             Self::Relay(RelayError::Timeout) => (StatusCode::GATEWAY_TIMEOUT, "device_timeout"),
-            Self::Relay(RelayError::Device(_)) => (StatusCode::BAD_GATEWAY, "device_error"),
+            Self::Relay(RelayError::Device { .. }) => (StatusCode::BAD_GATEWAY, "device_error"),
         };
         let mut response = (status, Json(json!({ "error": code }))).into_response();
         if let Some(value) = challenge.and_then(|value| HeaderValue::from_str(&value).ok()) {

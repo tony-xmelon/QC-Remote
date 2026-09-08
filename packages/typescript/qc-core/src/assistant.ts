@@ -166,5 +166,5 @@ export function validateAssistantActions(reply: AssistantReply): ValidatedAssist
 export function formatSnapshotSummary(snapshot: PresetSnapshot): string {
   const active = snapshot.blocks.filter((block) => block.bypassed === false).length;
   const bypassed = snapshot.blocks.filter((block) => block.bypassed === true).length;
-  return `${snapshot.deviceName} is on ${snapshot.setlistName} ${snapshot.presetLocation} · ${snapshot.presetName}, Scene ${sceneLetter(snapshot.activeScene)} (${snapshot.scenes[snapshot.activeScene] ?? "unnamed"}), ${snapshot.tempo} BPM. The Grid has ${snapshot.blocks.length} blocks (${active} active, ${bypassed} bypassed) and is ${snapshot.dirty ? "modified but not saved" : "clean"}.`;
+  return `Quad Cortex is on ${snapshot.setlistName} ${snapshot.presetLocation} · ${snapshot.presetName}, Scene ${sceneLetter(snapshot.activeScene)} (${snapshot.scenes[snapshot.activeScene] ?? "unnamed"}), ${snapshot.tempo} BPM. The Grid has ${snapshot.blocks.length} blocks (${active} active, ${bypassed} bypassed) and is ${snapshot.dirty ? "modified but not saved" : "clean"}.`;
 }

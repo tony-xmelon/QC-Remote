@@ -76,6 +76,189 @@ for (const nativeComponent of ["qc-protocol", "qc-device-runtime", "qc-android"]
 assert(androidBuild.includes("buildSharedQcRust"), "Android must build its shared Rust runtime.");
 assert(androidBuild.includes("libqc_android.so"), "Android must package the Rust JNI library.");
 
+const usbProfile = JSON.parse(await text("contracts/qc-usb-profile.v1.json"));
+assert(usbProfile.remoteGestureIntervalMs > 0, "The USB profile must own remote gesture pacing.");
+assert(usbProfile.postInitializationWriteDelayMs >= 0, "The USB profile must own first-command stabilization timing.");
+assert(usbProfile.presetLibrarySettlementQuietMs > 0, "The USB profile must own File-stream settlement timing.");
+for (const field of [
+  "commandVerificationRefreshDelaysMs",
+  "presetVerificationRefreshDelaysMs",
+  "correlatedWriteReadbackRetryIntervalsMs",
+]) {
+  assert(Array.isArray(usbProfile[field]) && usbProfile[field].length > 0,
+    `The USB profile must own ${field}.`);
+}
+
+const transportRuntime = await text("packages/rust/qc-device-runtime/src/transport.rs");
+for (const symbol of ["TransportRuntime", "next_handshake_write", "take_keepalive", "encode_reports", "push_report", "normalize_inbound_report"]) {
+  assert(transportRuntime.includes(symbol), `The shared native transport runtime is missing ${symbol}.`);
+}
+const backupRuntime = await text("packages/rust/qc-device-runtime/src/backup.rs");
+for (const symbol of ["BackupRuntime", "BackupAction", "absorb", "advance"]) {
+  assert(backupRuntime.includes(symbol), `The shared native backup runtime is missing ${symbol}.`);
+}
+const stateRuntime = await text("packages/rust/qc-device-runtime/src/state_runtime.rs");
+for (const symbol of ["DeviceStateRuntime", "StateObservation", "install_model_catalog", "preset_library"]) {
+  assert(stateRuntime.includes(symbol), `The shared native state runtime is missing ${symbol}.`);
+}
+const initializationRuntime = await text("packages/rust/qc-device-runtime/src/initialization.rs");
+for (const symbol of [
+  "DeviceStartupRuntime",
+  "DeviceStartupAction",
+  "DeviceStartupPhase",
+  "InitializationRuntime",
+  "InitializationAction",
+  "REQUIRED_SEED_TYPES",
+  "begin_building",
+  "advance",
+]) {
+  assert(initializationRuntime.includes(symbol), `The shared native initialization runtime is missing ${symbol}.`);
+}
+assert(initializationRuntime.includes("self.synchronized && self.seed_complete()"),
+  "Shared initialization readiness must require the full authoritative seed.");
+const correlationRuntime = await text("packages/rust/qc-device-runtime/src/correlation.rs");
+for (const symbol of ["ResponseExpectation", "matches", "expired", "timeout_message"]) {
+  assert(correlationRuntime.includes(symbol), `The shared native response-correlation runtime is missing ${symbol}.`);
+}
+const capabilityRuntime = await text("packages/rust/qc-device-runtime/src/capabilities.rs");
+for (const symbol of ["RetailCapabilityState", "CapabilityEvidence", "SAFE_PROBES"]) {
+  assert(capabilityRuntime.includes(symbol), `The shared native capability runtime is missing ${symbol}.`);
+}
+const transferRuntime = await text("packages/rust/qc-device-runtime/src/transfer.rs");
+for (const symbol of ["ChunkTransferRuntime", "UpdaterTransferRuntime", "TransferIdentity", "NetworkExecutionDecision::Disabled"]) {
+  assert(transferRuntime.includes(symbol), `The shared native transfer runtime is missing ${symbol}.`);
+}
+assert(!/(?:reqwest|ureq|hyper|TcpStream|HttpClient)/.test(transferRuntime),
+  "The shared transfer state machine must not acquire a network execution client.");
+const forwardProtocol = await text("packages/rust/qc-protocol/src/forward.rs");
+for (const symbol of ["decode_product_forward_request", "decode_backups_forward_request", "decode_logs_forward_request", "decode_updater_forward_request"]) {
+  assert(forwardProtocol.includes(symbol), `The shared forward protocol codec is missing ${symbol}.`);
+}
+const requestRuntime = await text("packages/rust/qc-device-runtime/src/request.rs");
+for (const symbol of [
+  "inter_message_interval_ms",
+  "operation_inter_message_interval_ms",
+  "gateway_write_verification_policy",
+  "fn gateway_verification_refresh_delays",
+]) {
+  assert(requestRuntime.includes(symbol), `The shared native write planner is missing pacing policy ${symbol}.`);
+}
+assert(requestRuntime.includes('"device.tapScreen" | "device.swipeScreen" => Some("device.captureScreen")'),
+  "Shared write policy must own the remote-screen gesture prerequisite.");
+assert(requestRuntime.includes("gateway_read_followup_method"),
+  "Shared read policy must own composite QC read dependencies.");
+assert(requestRuntime.includes("gateway_verification_refresh_method"),
+  "Shared write policy must own the authoritative verification refresh method.");
+for (const hostPath of ["packages/rust/qc-android/src/lib.rs", "services/device-broker/src/worker.rs"]) {
+  const source = await text(hostPath);
+  assert(source.includes("DeviceStateRuntime"), `${hostPath} must use the shared atomic device-state runtime.`);
+}
+for (const hostPath of ["packages/rust/qc-android/src/lib.rs", "services/device-broker/src/usb.rs"]) {
+  const source = await text(hostPath);
+  assert(source.includes("DeviceStartupRuntime"), `${hostPath} must use the shared staged startup runtime.`);
+}
+for (const hostPath of ["packages/rust/qc-android/src/lib.rs", "services/device-broker/src/worker.rs"]) {
+  const source = await text(hostPath);
+  assert(source.includes("ResponseExpectation"), `${hostPath} must use shared response correlation.`);
+}
+const androidUsbHost = await text("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java");
+const androidNativeFacade = await text("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcNativeStateDecoder.java");
+const androidJni = await text("packages/rust/qc-android/src/lib.rs");
+assert(androidJni.includes("InitializationRuntime"),
+  "Android JNI must retain the shared post-boot initialization runtime.");
+for (const symbol of ["handshakeAttempt", "startupObserved", "startupBeginBuilding", "postBootInitializationStarted", "initializationObserved", "initializationAdvance"]) {
+  assert(androidUsbHost.includes(symbol), `Android USB host is missing shared initialization bridge ${symbol}.`);
+}
+assert(androidUsbHost.includes("decision.beginBuilding"),
+  "Android must consume the shared staged-startup transition instead of inferring it from a message type.");
+assert(!androidUsbHost.includes('"disconnected".equals(decision.phase)'),
+  "Android must not duplicate the shared startup phase transition table.");
+assert(!androidUsbHost.includes("nextHandshakeAttempt"),
+  "Android must obtain the encoded reset command and HID layout from one shared handshake decision.");
+assert(!/stateDecoder\.session\w+\(System\.currentTimeMillis\(\)/.test(androidUsbHost),
+  "Android must drive the shared transport runtime with a monotonic clock like Windows.");
+assert(!/PERFORMANCE_MIDI_GAP_MS[\s\S]{0,120}System\.currentTimeMillis/.test(androidUsbHost),
+  "Android must enforce shared performance-MIDI pacing on a monotonic clock.");
+assert(androidUsbHost.includes("handshakeAttempt(monotonicMillis(), session)"),
+  "Android must drive shared handshake deadlines with its monotonic clock.");
+assert(/InitializationDecision\.COMPLETE[\s\S]{0,260}sessionHandshakeComplete\([\s\S]{0,100}decision\.synchronizedState/.test(androidUsbHost),
+  "Android must advance shared transport readiness at the same post-seed boundary as Windows.");
+assert(androidUsbHost.includes("sessionScheduleReconnect(monotonicMillis())"),
+  "Android must obtain automatic reconnect cadence from the shared transport runtime.");
+assert(androidUsbHost.includes("sessionReconnectDue(now)"),
+  "Android must let the shared transport runtime gate automatic reconnect attempts.");
+assert(!/scheduleAutomaticReconnect[\s\S]{0,800},\s*250,\s*TimeUnit\.MILLISECONDS/.test(androidUsbHost),
+  "Android must not hard-code an automatic reconnect delay.");
+assert(androidUsbHost.includes("systemTimeCommand(System.currentTimeMillis())"),
+  "Android must send the shared device-facing system-time command after staged startup.");
+assert(androidUsbHost.includes("gatewayResponseMatches"), "Android USB reads must use shared response correlation.");
+assert(androidUsbHost.includes("plan.interMessageIntervalMs"), "Android must consume shared write pacing metadata.");
+assert(!androidUsbHost.includes("pacedRemoteGesture"), "Android must not infer remote gesture pacing from encoded messages.");
+assert(androidUsbHost.includes("gatewayVerificationAdvance"), "Android must execute the shared native verification state machine.");
+assert(androidUsbHost.includes("gatewayReadbackRetryDelay"), "Android must consume shared correlated-readback retry timing.");
+assert(!androidUsbHost.includes("plan.refreshDelaysMs"), "Android must not interpret native verification refresh cadence.");
+assert(androidUsbHost.includes("plan.postWriteRefreshMethod"), "Android must consume shared post-write refresh selection.");
+assert(androidUsbHost.includes("plan.followupMethod"), "Android must consume shared composite-read dependencies.");
+assert(androidUsbHost.includes("QcUsbProfile.POST_INITIALIZATION_WRITE_DELAY_MS"), "Android must consume shared first-command stabilization timing.");
+assert(!androidUsbHost.includes("writeMessage(message, !includeReportId)"), "Android must not replay mutations while awaiting readback.");
+assert(androidUsbHost.includes("QcUsbProfile.PRESET_LIBRARY_SETTLEMENT_QUIET_MS"), "Android must use generated File-stream settlement timing.");
+assert(!/(?:littleEndianInt|littleEndianLong|decodeCommandEnvelope|DecodedEnvelope)/.test(androidNativeFacade),
+  "Android Java must not duplicate a positional JNI plan codec.");
+for (const method of ["nativeEncodeCommand", "nativePlanGatewayWrite", "nativePlanGatewayWorkflow", "nativePlanGatewayRead", "nativeHandshakeAttempt", "nativeStartupObserved", "nativeStartupBeginBuilding", "nativeInitializationAdvance"]) {
+  assert(androidNativeFacade.includes(`native String ${method}`), `${method} must cross JNI as a named semantic envelope.`);
+}
+assert(androidNativeFacade.includes("native void nativePostBootInitializationStarted"),
+  "Post-boot state seeding must have a distinct staged-startup JNI boundary.");
+assert(androidNativeFacade.includes("native byte[] nativeEncodeFrame"),
+  "Raw QC HID frame encoding must remain a byte-array JNI boundary.");
+assert(/nativeEncodeFrame[\s\S]*?->\s*jbyteArray/.test(androidJni),
+  "The Rust JNI frame encoder must match Java's byte-array declaration.");
+assert(androidJni.includes("fn messages_json"), "Android JNI must serialize native plan messages through one semantic helper.");
+assert(!androidJni.includes("fn message_envelope"), "Android JNI must not maintain a private positional message envelope.");
+const windowsRpc = await text("services/device-broker/src/rpc.rs");
+assert(windowsRpc.includes("gateway_write_verification_policy"), "Windows must consume shared write verification policy.");
+assert(windowsRpc.includes("verification_policy.preflight_method"), "Windows must consume shared preflight method selection.");
+assert(windowsRpc.includes("verification_policy.readback_method"), "Windows must consume shared readback method selection.");
+assert(windowsRpc.includes("GatewayVerificationAction::Refresh { method }"), "Windows must execute shared verification refresh actions.");
+assert(windowsRpc.includes("policy.post_write_refresh_method"), "Windows must consume shared post-write refresh selection.");
+assert(windowsRpc.includes("gateway_read_followup_method(method)"), "Windows must consume shared composite-read dependencies.");
+assert(windowsRpc.includes("gateway_verification_policy(stage.timeout_ms, 0)"), "Windows workflows must consume shared refresh cadence.");
+assert(windowsRpc.includes("gateway_correlated_readback_delay(method, attempt)"), "Windows must consume shared correlated-readback retry timing.");
+assert(windowsRpc.includes("profile::COMMAND_CONFIRMATION_TIMEOUT_MS"),
+  "Windows decoder/readback waits must consume the shared command-confirmation bound.");
+assert(windowsRpc.includes("profile::PRESET_SYNC_TIMEOUT_MS"),
+  "Windows preset catalog waits must consume the same shared bound as Android.");
+assert(!/wait_for_preset_list\([\s\S]{0,120}Duration::from_secs\(25\)/.test(windowsRpc),
+  "Windows must not retain a private preset-catalog timeout.");
+const windowsUsb = await text("services/device-broker/src/usb.rs");
+assert(windowsUsb.includes("next_handshake_write"), "Windows must obtain its reset command and HID layout from the shared transport runtime.");
+assert(windowsUsb.includes("attempt.matches_reply"), "Windows must use shared opaque-session handshake correlation.");
+assert(windowsUsb.includes("post_boot_initialization"),
+  "Windows must seed readiness from the shared staged-startup observations.");
+assert(windowsUsb.includes("commands::sync_system_time(unix_time_ms())"),
+  "Windows must send the same shared device-facing system-time command after staged startup.");
+await rejectPatterns(
+  [
+    "packages/rust/qc-android/src/lib.rs",
+    "services/device-broker/src/main.rs",
+    "services/device-broker/src/usb.rs",
+    "services/device-broker/src/worker.rs",
+  ],
+  [
+    ["host-owned QC session machine", /qc_protocol::session::SessionMachine/],
+    ["host-owned QC frame assembler", /FrameAssembler::new\s*\(/],
+    ["host-owned QC frame encoder", /framing::encode\s*\(/],
+    ["host-owned QC backup assembler", /BackupAssembler/],
+    ["host-owned QC backup deadline policy", /BACKUP_(?:FIRST_CHUNK|STREAM_STALL|MAXIMUM_ATTEMPTS)/],
+    ["host-owned QC request-id extraction", /qc_protocol::wire::request_id/],
+    ["hard-coded remote gesture pacing", /(?:Duration::from_millis|thread::sleep)\s*\(\s*20\s*\)/],
+  ],
+);
+assert(
+  !androidUsbHost.includes("normalizeInputReport"),
+  "Android must pass raw HID reports to the shared Rust transport runtime.",
+);
+
 for (const packagePath of ["apps/windows/package.json", "apps/android/package.json"]) {
   const manifest = JSON.parse(await text(packagePath));
   const dependencies = { ...manifest.dependencies, ...manifest.optionalDependencies };
@@ -87,7 +270,18 @@ for (const packagePath of ["apps/windows/package.json", "apps/android/package.js
 
 console.log(JSON.stringify({
   verified: true,
-  windowsRuntime: "Tauri + qc-device-broker + qc-device-runtime + qc-protocol",
-  androidRuntime: "Capacitor + Java/JNI + qc-android + qc-device-runtime + qc-protocol",
+  sharedTransportRuntime: "qc-device-runtime::transport",
+  sharedBackupRuntime: "qc-device-runtime::backup",
+  sharedStateRuntime: "qc-device-runtime::state_runtime",
+  sharedInitializationRuntime: "qc-device-runtime::initialization",
+  sharedStagedStartupRuntime: "qc-device-runtime::initialization::DeviceStartupRuntime",
+  sharedResponseCorrelation: "qc-device-runtime::correlation",
+  sharedCapabilityEvidence: "qc-device-runtime::capabilities",
+  sharedTransferRecovery: "qc-device-runtime::transfer",
+  sharedForwardProtocol: "qc-protocol::forward",
+  sharedWritePacing: "qc-device-runtime::request::PlannedWrite",
+  sharedWriteVerification: "qc-device-runtime::request::GatewayVerificationRuntime",
+  windowsRuntime: "Tauri + thin qc-device-broker adapter + qc-device-runtime + qc-protocol",
+  androidRuntime: "Capacitor + thin Java/JNI adapter + qc-device-runtime + qc-protocol",
   pythonPackaged: false,
 }));

@@ -45,7 +45,7 @@ SCANNED_SOURCES = [
     "packages/rust/qc-protocol/src/responses.rs",
     "packages/rust/qc-protocol/src/profile.rs",
     "packages/rust/qc-protocol/src/wire.rs",
-    "packages/rust/qc-protocol/src/session.rs",
+    "packages/rust/qc-device-runtime/src/transport.rs",
     "packages/rust/qc-device-runtime/src/request.rs",
     "services/device-broker/src/worker.rs",
     "services/device-broker/src/rpc.rs",

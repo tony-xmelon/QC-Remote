@@ -169,6 +169,24 @@ class ToolSafetyTests(unittest.TestCase):
         self.assertEqual([model["id"] for model in result["models"]], [2])
         self.assertEqual(backend.calls, [("device.listModels", {})])
 
+    def test_model_results_remove_persistent_device_identifiers_recursively(self) -> None:
+        class IdentityBackend(RecordingBackend):
+            def request(self, method: str, params: dict[str, Any] | None = None) -> Any:
+                super().request(method, params)
+                return {
+                    "deviceName": "Anton's QC",
+                    "serialNumber": "private",
+                    "presetName": "Clean",
+                    "blocks": [],
+                    "nested": {"deviceSerial": "private", "kept": True},
+                }
+
+        result = QcTools(IdentityBackend()).get_current_preset()
+        self.assertNotIn("deviceName", result)
+        self.assertNotIn("serialNumber", result)
+        self.assertNotIn("deviceSerial", result["nested"])
+        self.assertTrue(result["nested"]["kept"])
+
     def test_parameter_nodes_accept_routing_columns_but_blocks_do_not(self) -> None:
         for column in (8, 9):
             self.tools.get_block_details(0, column, "Clean")

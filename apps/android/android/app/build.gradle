@@ -7,6 +7,7 @@ def qcSigningValues = [
     keyPassword: System.getenv('QC_ANDROID_KEY_PASSWORD')
 ]
 def qcSigningConfigured = qcSigningValues.values().every { value -> value != null && !value.trim().isEmpty() }
+def qcPublicRelease = System.getenv('QC_PUBLIC_RELEASE') == '1'
 if (qcSigningValues.values().any { value -> value != null && !value.trim().isEmpty() } && !qcSigningConfigured) {
     throw new GradleException('QC Android signing requires QC_ANDROID_KEYSTORE, QC_ANDROID_STORE_PASSWORD, QC_ANDROID_KEY_ALIAS, and QC_ANDROID_KEY_PASSWORD together.')
 }
@@ -21,6 +22,7 @@ android {
         versionCode 28
         versionName "0.3.23"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField "boolean", "QC_DIRECT_GEMINI_ENABLED", qcPublicRelease ? "false" : "true"
         ndk {
             abiFilters 'arm64-v8a', 'x86_64'
         }
@@ -28,6 +30,16 @@ android {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    buildFeatures {
+        buildConfig true
+    }
+    sourceSets {
+        main {
+            java {
+                if (qcPublicRelease) exclude 'com/qccontrol/mobile/GeminiPlugin.java'
+            }
         }
     }
     signingConfigs {
@@ -67,9 +79,11 @@ dependencies {
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
-    implementation platform('com.google.firebase:firebase-bom:34.18.0')
-    implementation 'com.google.firebase:firebase-ai'
-    implementation 'com.google.firebase:firebase-appcheck-playintegrity'
+    if (!qcPublicRelease) {
+        implementation platform('com.google.firebase:firebase-bom:34.18.0')
+        implementation 'com.google.firebase:firebase-ai'
+        implementation 'com.google.firebase:firebase-appcheck-playintegrity'
+    }
     implementation 'com.google.guava:guava:31.0.1-android'
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'
     testImplementation "junit:junit:$junitVersion"
@@ -108,7 +122,7 @@ preBuild.dependsOn buildSharedQcRust
 
 try {
     def servicesJSON = file('google-services.json')
-    if (servicesJSON.text) {
+    if (!qcPublicRelease && servicesJSON.text) {
         apply plugin: 'com.google.gms.google-services'
     }
 } catch(Exception e) {

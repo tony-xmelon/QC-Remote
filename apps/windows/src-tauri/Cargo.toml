@@ -1,5 +1,5 @@
 [package]
-name = "qc-voice-control"
+name = "qc-remote"
 version = "0.1.97"
 publish = false
 description = "Unofficial modular desktop controller for Quad Cortex"
@@ -7,7 +7,7 @@ authors = ["Antoni Ivanov"]
 edition = "2021"
 
 [lib]
-name = "qc_voice_control_lib"
+name = "qc_remote_lib"
 crate-type = ["rlib"]
 
 [build-dependencies]

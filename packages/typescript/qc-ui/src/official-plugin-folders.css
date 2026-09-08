@@ -1,5 +1,5 @@
 @scope (.qc-screen-fixture-root) {
-.plugin-folders-official, .plugin-folders-official * { box-sizing: border-box; font-family: Roboto, Arial, sans-serif; }
+.plugin-folders-official, .plugin-folders-official * { box-sizing: border-box; font-family: var(--qc-font-device-plain); }
 .qc-screen.plugin-folders-official { position: absolute; inset: 0; display: block; overflow: hidden; background: #101010; color: #eee; container-type: inline-size; }
 .plugin-folders-official button { border: 0; color: inherit; font: inherit; }
 .plugin-folders-official > header { height: 7.5cqw; display: flex; align-items: center; gap: 1cqw; padding: 0 1cqw; }

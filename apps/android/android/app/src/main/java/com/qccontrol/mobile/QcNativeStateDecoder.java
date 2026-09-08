@@ -5,7 +5,6 @@ import com.getcapacitor.JSObject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.nio.charset.StandardCharsets;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -38,23 +37,41 @@ final class QcNativeStateDecoder implements AutoCloseable {
     }
 
     static final class PlannedGatewayWrite {
+        final String method;
         final String detail;
         final String verificationJson;
         final boolean midi;
         final int controller;
         final int value;
-        final boolean retryable;
         final boolean realtime;
+        final long interMessageIntervalMs;
+        final long confirmationTimeoutMs;
+        final String postWriteRefreshMethod;
+        final long postWriteRefreshDelayMs;
+        final String preflightMethod;
+        final String readbackMethod;
         final List<EncodedMessage> messages;
 
-        PlannedGatewayWrite(String detail, String verificationJson, boolean midi, int controller, int value, boolean retryable, boolean realtime, List<EncodedMessage> messages) {
+        PlannedGatewayWrite(
+            String method, String detail, String verificationJson, boolean midi, int controller, int value,
+            boolean realtime, long interMessageIntervalMs,
+            long confirmationTimeoutMs,
+            String postWriteRefreshMethod, long postWriteRefreshDelayMs,
+            String preflightMethod, String readbackMethod, List<EncodedMessage> messages
+        ) {
+            this.method = method;
             this.detail = detail;
             this.verificationJson = verificationJson;
             this.midi = midi;
             this.controller = controller;
             this.value = value;
-            this.retryable = retryable;
             this.realtime = realtime;
+            this.interMessageIntervalMs = interMessageIntervalMs;
+            this.confirmationTimeoutMs = confirmationTimeoutMs;
+            this.postWriteRefreshMethod = postWriteRefreshMethod;
+            this.postWriteRefreshDelayMs = postWriteRefreshDelayMs;
+            this.preflightMethod = preflightMethod;
+            this.readbackMethod = readbackMethod;
             this.messages = messages;
         }
     }
@@ -65,7 +82,10 @@ final class QcNativeStateDecoder implements AutoCloseable {
         final String verificationJson;
         final List<EncodedMessage> messages;
 
-        PlannedGatewayStage(long timeoutMs, long settleMs, String verificationJson, List<EncodedMessage> messages) {
+        PlannedGatewayStage(
+            long timeoutMs, long settleMs, String verificationJson,
+            List<EncodedMessage> messages
+        ) {
             this.timeoutMs = timeoutMs;
             this.settleMs = settleMs;
             this.verificationJson = verificationJson;
@@ -100,23 +120,18 @@ final class QcNativeStateDecoder implements AutoCloseable {
         final int responseType;
         final long timeoutMs;
         final String projectionJson;
+        final String followupMethod;
         final List<EncodedMessage> messages;
 
-        PlannedGatewayRead(int responseType, long timeoutMs, String projectionJson, List<EncodedMessage> messages) {
+        PlannedGatewayRead(
+            int responseType, long timeoutMs, String projectionJson,
+            String followupMethod, List<EncodedMessage> messages
+        ) {
             this.responseType = responseType;
             this.timeoutMs = timeoutMs;
             this.projectionJson = projectionJson;
+            this.followupMethod = followupMethod;
             this.messages = messages;
-        }
-    }
-
-    private static final class DecodedEnvelope {
-        final List<EncodedMessage> messages;
-        final int nextOffset;
-
-        DecodedEnvelope(List<EncodedMessage> messages, int nextOffset) {
-            this.messages = messages;
-            this.nextOffset = nextOffset;
         }
     }
 
@@ -150,42 +165,189 @@ final class QcNativeStateDecoder implements AutoCloseable {
     int modelCount() { return nativeModelCount(requireHandle()); }
 
     void sessionOpened(long nowMs) { nativeSessionOpened(requireHandle(), nowMs); }
-    int nextHandshakeAttempt(long nowMs) { return nativeNextHandshakeAttempt(requireHandle(), nowMs); }
-    void sessionHandshakeComplete(long nowMs) { nativeSessionHandshakeComplete(requireHandle(), nowMs); }
+    void sessionHandshakeComplete(long nowMs, boolean synchronizedState) {
+        nativeSessionHandshakeComplete(
+            requireHandle(), nowMs, synchronizedState ? 1 : 0);
+    }
     void sessionStateObserved(long nowMs, boolean presetSynchronized) {
         nativeSessionStateObserved(requireHandle(), nowMs, presetSynchronized ? 1 : 0);
     }
     boolean sessionShouldKeepalive(long nowMs) {
         return nativeSessionShouldKeepalive(requireHandle(), nowMs) == 1;
     }
-    void sessionOutbound(long nowMs) { nativeSessionOutbound(requireHandle(), nowMs); }
-    void sessionDisconnected(long nowMs) { nativeSessionDisconnected(requireHandle(), nowMs); }
 
-    EncodedMessage resetCommand(long requestId, String sessionId) throws Exception {
-        return one("reset", new JSObject().put("requestId", requestId).put("sessionId", sessionId));
+    static final class StartupDecision {
+        static final int WAIT = 0;
+        static final int SEND = 1;
+        static final int CONNECTED = 2;
+        static final int INVALID = 3;
+        static final int FAILED = 4;
+
+        final int kind;
+        final String phase;
+        final boolean beginBuilding;
+        final String error;
+        final List<EncodedMessage> messages;
+
+        StartupDecision(
+            int kind, String phase, boolean beginBuilding, String error,
+            List<EncodedMessage> messages
+        ) {
+            this.kind = kind;
+            this.phase = phase;
+            this.beginBuilding = beginBuilding;
+            this.error = error;
+            this.messages = messages;
+        }
     }
 
-    List<EncodedMessage> initializationCommands() throws Exception {
-        // The QC keeps no trustworthy clock of its own; the attached host sets
-        // it during the handshake and the device dates saved content with it.
-        return commands("initialize", new JSObject().put("nowMs", System.currentTimeMillis()));
+    static final class HandshakeDecision {
+        static final int WAIT = 0;
+        static final int SEND = 1;
+        static final int TIMED_OUT = 2;
+
+        final int kind;
+        final int attempt;
+        final long requestId;
+        final boolean includeReportId;
+        final StartupDecision startup;
+
+        HandshakeDecision(
+            int kind, int attempt, long requestId, boolean includeReportId,
+            StartupDecision startup
+        ) {
+            this.kind = kind;
+            this.attempt = attempt;
+            this.requestId = requestId;
+            this.includeReportId = includeReportId;
+            this.startup = startup;
+        }
+    }
+
+    static final class InitializationDecision {
+        static final int WAIT = 0;
+        static final int SEND = 1;
+        static final int COMPLETE = 2;
+
+        final int kind;
+        final boolean synchronizedState;
+        final List<EncodedMessage> messages;
+
+        InitializationDecision(int kind, boolean synchronizedState, List<EncodedMessage> messages) {
+            this.kind = kind;
+            this.synchronizedState = synchronizedState;
+            this.messages = messages;
+        }
+    }
+    void sessionKeepaliveSent(long nowMs) { nativeSessionKeepaliveSent(requireHandle(), nowMs); }
+    void sessionOutbound(long nowMs) { nativeSessionOutbound(requireHandle(), nowMs); }
+    void sessionDisconnected(long nowMs) { nativeSessionDisconnected(requireHandle(), nowMs); }
+    long sessionScheduleReconnect(long nowMs) {
+        return nativeSessionScheduleReconnect(requireHandle(), nowMs);
+    }
+    boolean sessionReconnectDue(long nowMs) {
+        return nativeSessionReconnectDue(requireHandle(), nowMs) == 1;
+    }
+    void sessionReconnectAttempted(long nowMs) {
+        nativeSessionReconnectAttempted(requireHandle(), nowMs);
+    }
+
+    HandshakeDecision handshakeAttempt(long nowMs, String sessionId) {
+        try {
+            JSONObject decision = new JSONObject(
+                nativeHandshakeAttempt(requireHandle(), nowMs, sessionId));
+            int kind = decision.getInt("kind");
+            if (kind < HandshakeDecision.WAIT || kind > HandshakeDecision.TIMED_OUT)
+                throw new IllegalStateException("Native QC handshake decision is invalid.");
+            if (kind != HandshakeDecision.SEND)
+                return new HandshakeDecision(kind, 0, 0, false, null);
+            return new HandshakeDecision(
+                kind, decision.getInt("attempt"), nonNegativeLong(decision, "requestId"),
+                decision.getBoolean("includeReportId"),
+                startupDecision(decision.getJSONObject("startup")));
+        } catch (Exception error) {
+            throw new IllegalStateException("Native QC handshake decision is invalid.", error);
+        }
+    }
+
+    StartupDecision startupObserved(int messageType, byte[] payload) {
+        return startupDecision(nativeStartupObserved(requireHandle(), messageType, payload));
+    }
+
+    StartupDecision startupBeginBuilding() {
+        return startupDecision(nativeStartupBeginBuilding(requireHandle()));
+    }
+
+    boolean startupConnected() {
+        return nativeStartupConnected(requireHandle()) == 1;
+    }
+
+    void postBootInitializationStarted(long nowMs, long requestId) {
+        nativePostBootInitializationStarted(requireHandle(), nowMs, requestId);
+    }
+
+    void initializationObserved(int messageType) {
+        nativeInitializationObserved(requireHandle(), messageType);
+    }
+
+    InitializationDecision initializationAdvance(long nowMs) {
+        try {
+            JSONObject decision = new JSONObject(nativeInitializationAdvance(requireHandle(), nowMs));
+            int kind = decision.getInt("kind");
+            if (kind < InitializationDecision.WAIT || kind > InitializationDecision.COMPLETE)
+                throw new IllegalStateException("Native QC initialization decision is invalid.");
+            return new InitializationDecision(
+                kind, decision.getBoolean("synchronized"),
+                encodedMessages(decision.getJSONArray("messages")));
+        } catch (Exception error) {
+            throw new IllegalStateException("Native QC initialization decision is invalid.", error);
+        }
+    }
+
+    private static StartupDecision startupDecision(String raw) {
+        try {
+            return startupDecision(new JSONObject(raw));
+        } catch (Exception error) {
+            throw new IllegalStateException("Native QC startup decision is invalid.", error);
+        }
+    }
+
+    private static StartupDecision startupDecision(JSONObject decision) throws Exception {
+        int kind = decision.getInt("kind");
+        if (kind < StartupDecision.WAIT || kind > StartupDecision.FAILED)
+            throw new IllegalStateException("Native QC startup decision is invalid.");
+        return new StartupDecision(
+            kind, decision.getString("phase"), decision.getBoolean("beginBuilding"),
+            nullableString(decision, "error"),
+            encodedMessages(decision.getJSONArray("messages")));
+    }
+
+    void catalogVerificationStarted(long verificationId, long nowMs) {
+        nativeCatalogVerificationStarted(requireHandle(), verificationId, nowMs);
+    }
+
+    JSObject catalogVerificationAdvance(long verificationId, long nowMs) throws Exception {
+        return new JSObject(nativeCatalogVerificationAdvance(requireHandle(), verificationId, nowMs));
+    }
+
+    void catalogListingObserved(long verificationId, long nowMs, boolean matches) {
+        nativeCatalogListingObserved(requireHandle(), verificationId, nowMs, matches ? 1 : 0);
+    }
+
+    void catalogVerificationCancelled(long verificationId) {
+        nativeCatalogVerificationCancelled(requireHandle(), verificationId);
     }
 
     EncodedMessage readCommand(int messageType) throws Exception {
         return one("read", new JSObject().put("messageType", messageType));
     }
 
-    EncodedMessage currentPresetCommand(long requestId) throws Exception {
-        return one("readCurrentPreset", new JSObject().put("requestId", requestId));
-    }
-
-    List<EncodedMessage> screenSwipeCommands(int x, int y, int toX, int toY) throws Exception {
-        return commands("screenSwipe", new JSObject()
-            .put("x", x).put("y", y).put("toX", toX).put("toY", toY));
-    }
-
     EncodedMessage keepaliveCommand() throws Exception {
         return one("keepalive", new JSObject());
+    }
+
+    EncodedMessage systemTimeCommand(long unixTimeMs) throws Exception {
+        return one("systemTime", new JSObject().put("unixTimeMs", unixTimeMs));
     }
 
     EncodedMessage backupCommand() throws Exception {
@@ -197,40 +359,34 @@ final class QcNativeStateDecoder implements AutoCloseable {
         return "null".equals(json) ? null : new JSObject(json);
     }
 
-    JSObject consumeBackupChunk(byte[] payload, String name) throws Exception {
-        return new JSObject(nativeConsumeBackupChunk(requireHandle(), payload, name));
+    void backupStarted(long nowMs, long timeoutMs) {
+        nativeBackupStarted(requireHandle(), nowMs, timeoutMs);
     }
 
-    List<EncodedMessage> gatewayCommands(String method, JSObject args) throws Exception {
-        return gatewayPlan(method, args).messages;
+    JSObject backupAdvance(long nowMs) throws Exception {
+        return new JSObject(nativeBackupAdvance(requireHandle(), nowMs));
+    }
+
+    void backupCancelled() { nativeBackupCancelled(requireHandle()); }
+
+    JSObject consumeBackupChunk(byte[] payload, String name, long nowMs) throws Exception {
+        return new JSObject(nativeConsumeBackupChunk(requireHandle(), payload, name, nowMs));
     }
 
     PlannedGatewayWrite gatewayPlan(String method, JSObject args) throws Exception {
-        byte[] encoded = nativePlanGatewayWrite(requireHandle(), method, args.toString());
-        if (encoded.length < 13) throw new IllegalStateException("Native QC gateway plan is truncated.");
-        int detailLength = littleEndianInt(encoded, 0);
-        if (detailLength < 0 || 4 + detailLength + 9 > encoded.length) {
-            throw new IllegalStateException("Native QC gateway detail is truncated.");
-        }
-        String detail = new String(encoded, 4, detailLength, StandardCharsets.UTF_8);
-        int verificationOffset = 4 + detailLength;
-        int verificationLength = littleEndianInt(encoded, verificationOffset);
-        int laneOffset = verificationOffset + 4 + verificationLength;
-        int commandOffset = laneOffset + 5;
-        if (verificationLength < 0 || commandOffset + 4 > encoded.length) {
-            throw new IllegalStateException("Native QC gateway verification is truncated.");
-        }
-        String verificationJson = new String(encoded, verificationOffset + 4, verificationLength, StandardCharsets.UTF_8);
-        int lane = Byte.toUnsignedInt(encoded[laneOffset]);
-        if (lane > 1) throw new IllegalStateException("Native QC gateway execution lane is invalid.");
-        int retryable = Byte.toUnsignedInt(encoded[laneOffset + 3]);
-        if (retryable > 1) throw new IllegalStateException("Native QC gateway retry policy is invalid.");
-        int realtime = Byte.toUnsignedInt(encoded[laneOffset + 4]);
-        if (realtime > 1) throw new IllegalStateException("Native QC gateway completion policy is invalid.");
+        JSONObject plan = new JSONObject(nativePlanGatewayWrite(requireHandle(), method, args.toString()));
+        String lane = plan.getString("lane");
+        if (!"hid".equals(lane) && !"midi".equals(lane))
+            throw new IllegalStateException("Native QC gateway execution lane is invalid.");
         return new PlannedGatewayWrite(
-            detail, verificationJson, lane == 1, Byte.toUnsignedInt(encoded[laneOffset + 1]),
-            Byte.toUnsignedInt(encoded[laneOffset + 2]), retryable == 1, realtime == 1,
-            decodeCommandEnvelope(encoded, commandOffset));
+            plan.getString("method"), plan.getString("detail"), plan.getJSONObject("verification").toString(),
+            "midi".equals(lane), plan.getInt("controller"), plan.getInt("value"),
+            plan.getBoolean("realtime"), nonNegativeLong(plan, "interMessageIntervalMs"),
+            nonNegativeLong(plan, "confirmationTimeoutMs"),
+            nullableString(plan, "postWriteRefreshMethod"),
+            nonNegativeLong(plan, "postWriteRefreshDelayMs"),
+            nullableString(plan, "preflightMethod"), nullableString(plan, "readbackMethod"),
+            encodedMessages(plan.getJSONArray("messages")));
     }
 
     int gatewayTransactionState(
@@ -246,14 +402,31 @@ final class QcNativeStateDecoder implements AutoCloseable {
         return nativeGatewayReadbackMatches(method, params.toString(), response.toString()) == 1;
     }
 
-    String gatewayWriteReadbackMethod(String method) {
-        String readMethod = nativeGatewayWriteReadbackMethod(method);
-        return readMethod.isEmpty() ? null : readMethod;
+    long gatewayReadbackRetryDelay(String method, int attempt) {
+        return nativeGatewayReadbackRetryDelay(method, attempt);
     }
 
-    String gatewayWritePreflightMethod(String method) {
-        String readMethod = nativeGatewayWritePreflightMethod(method);
-        return readMethod.isEmpty() ? null : readMethod;
+    long gatewayVerificationStarted(
+        PlannedGatewayWrite plan, long afterSequence, long startedAtMs
+    ) {
+        return nativeGatewayVerificationStarted(
+            requireHandle(), plan.verificationJson, plan.method, afterSequence,
+            startedAtMs, plan.confirmationTimeoutMs);
+    }
+
+    JSONObject gatewayVerificationAdvance(
+        long verificationId, long observationSequence, long nowMs
+    ) throws Exception {
+        return new JSONObject(nativeGatewayVerificationAdvance(
+            requireHandle(), verificationId, observationSequence, nowMs));
+    }
+
+    void gatewayVerificationCancelled(long verificationId) {
+        nativeGatewayVerificationCancelled(requireHandle(), verificationId);
+    }
+
+    boolean storedPresetNameMatches(String requested, String stored) {
+        return nativeStoredPresetNameMatches(requested, stored) == 1;
     }
 
     boolean gatewayWritePreflightMatches(String method, JSONObject params, JSONObject response) {
@@ -265,44 +438,20 @@ final class QcNativeStateDecoder implements AutoCloseable {
     }
 
     PlannedGatewayWorkflow gatewayWorkflow(String method, JSObject args) throws Exception {
-        byte[] encoded = nativePlanGatewayWorkflow(requireHandle(), method, args.toString());
-        if (encoded.length < 12) throw new IllegalStateException("Native QC gateway workflow is truncated.");
-        int detailLength = littleEndianInt(encoded, 0);
-        if (detailLength < 0 || 4 + detailLength + 8 > encoded.length)
-            throw new IllegalStateException("Native QC gateway workflow detail is truncated.");
-        String detail = new String(encoded, 4, detailLength, StandardCharsets.UTF_8);
-        int offset = 4 + detailLength;
-        int completionLength = littleEndianInt(encoded, offset);
-        offset += 4;
-        if (completionLength < 0 || offset + completionLength + 4 > encoded.length)
-            throw new IllegalStateException("Native QC gateway workflow completion metadata is truncated.");
-        JSObject completion = new JSObject(new String(encoded, offset, completionLength, StandardCharsets.UTF_8));
-        offset += completionLength;
-        int count = littleEndianInt(encoded, offset);
-        offset += 4;
-        if (count < 0) throw new IllegalStateException("Native QC gateway workflow stage count is invalid.");
-        List<PlannedGatewayStage> stages = new ArrayList<>(count);
-        for (int index = 0; index < count; index++) {
-            if (offset + 20 > encoded.length) throw new IllegalStateException("Native QC gateway workflow stage is truncated.");
-            long timeoutMs = littleEndianLong(encoded, offset);
-            offset += 8;
-            long settleMs = littleEndianLong(encoded, offset);
-            offset += 8;
-            int verificationLength = littleEndianInt(encoded, offset);
-            offset += 4;
-            if (verificationLength < 0 || offset + verificationLength + 4 > encoded.length)
-                throw new IllegalStateException("Native QC gateway workflow verification is truncated.");
-            String verificationJson = new String(encoded, offset, verificationLength, StandardCharsets.UTF_8);
-            offset += verificationLength;
-            DecodedEnvelope messages = decodeCommandEnvelopeAt(encoded, offset);
-            offset = messages.nextOffset;
-            stages.add(new PlannedGatewayStage(timeoutMs, settleMs, verificationJson, messages.messages));
+        JSONObject plan = new JSONObject(nativePlanGatewayWorkflow(requireHandle(), method, args.toString()));
+        JSONArray stageValues = plan.getJSONArray("stages");
+        List<PlannedGatewayStage> stages = new ArrayList<>(stageValues.length());
+        for (int index = 0; index < stageValues.length(); index++) {
+            JSONObject stage = stageValues.getJSONObject(index);
+            stages.add(new PlannedGatewayStage(
+                nonNegativeLong(stage, "timeoutMs"), nonNegativeLong(stage, "settleMs"),
+                stage.getJSONObject("verification").toString(),
+                encodedMessages(stage.getJSONArray("messages"))));
         }
-        if (offset != encoded.length) throw new IllegalStateException("Native QC gateway workflow has trailing data.");
         return new PlannedGatewayWorkflow(
-            detail, completion.getString("savedName"), completion.getString("setlistKey"),
-            completion.getInteger("position"), completion.getInteger("instrument"),
-            completion.optJSONArray("savedPresets") == null ? new JSONArray() : completion.optJSONArray("savedPresets"), stages);
+            plan.getString("detail"), plan.getString("savedName"), plan.getString("setlistKey"),
+            plan.getInt("position"), plan.getInt("instrument"),
+            plan.optJSONArray("savedPresets") == null ? new JSONArray() : plan.optJSONArray("savedPresets"), stages);
     }
 
     void recordSavedPreset(PlannedGatewayWorkflow workflow) {
@@ -317,21 +466,21 @@ final class QcNativeStateDecoder implements AutoCloseable {
     }
 
     PlannedGatewayRead gatewayRead(String method, JSObject args, long requestId) throws Exception {
-        byte[] encoded = nativePlanGatewayRead(method, args.toString(), requestId);
-        if (encoded.length < 18) throw new IllegalStateException("Native QC gateway read plan is truncated.");
-        int responseType = (encoded[0] & 0xff) | ((encoded[1] & 0xff) << 8);
-        long timeoutMs = littleEndianLong(encoded, 2);
-        int projectionLength = littleEndianInt(encoded, 10);
-        int commandOffset = 14 + projectionLength;
-        if (projectionLength < 0 || commandOffset + 4 > encoded.length)
-            throw new IllegalStateException("Native QC gateway response projection is truncated.");
-        String projectionJson = new String(encoded, 14, projectionLength, StandardCharsets.UTF_8);
-        return new PlannedGatewayRead(responseType, timeoutMs, projectionJson,
-            decodeCommandEnvelope(encoded, commandOffset));
+        JSONObject plan = new JSONObject(nativePlanGatewayRead(method, args.toString(), requestId));
+        return new PlannedGatewayRead(
+            plan.getInt("responseType"), nonNegativeLong(plan, "timeoutMs"),
+            plan.getJSONObject("projection").toString(),
+            nullableString(plan, "followupMethod"),
+            encodedMessages(plan.getJSONArray("messages")));
     }
 
     JSObject decodeGatewayResponse(PlannedGatewayRead plan, byte[] payload) throws Exception {
         return new JSObject(nativeDecodeGatewayResponse(plan.projectionJson, payload));
+    }
+
+    boolean gatewayResponseMatches(PlannedGatewayRead plan, int messageType, byte[] payload) {
+        return nativeGatewayResponseMatches(
+            plan.projectionJson, plan.responseType, messageType, payload) == 1;
     }
 
     List<byte[]> encodeFrame(EncodedMessage message) {
@@ -375,45 +524,7 @@ final class QcNativeStateDecoder implements AutoCloseable {
     }
 
     private List<EncodedMessage> commands(String command, JSObject args) throws Exception {
-        return decodeCommandEnvelope(nativeEncodeCommand(requireHandle(), command, args.toString()));
-    }
-
-    private List<EncodedMessage> decodeCommandEnvelope(byte[] encoded) {
-        return decodeCommandEnvelope(encoded, 0);
-    }
-
-    private List<EncodedMessage> decodeCommandEnvelope(byte[] encoded, int start) {
-        DecodedEnvelope decoded = decodeCommandEnvelopeAt(encoded, start);
-        if (decoded.nextOffset != encoded.length) throw new IllegalStateException("Native QC command envelope has trailing data.");
-        return decoded.messages;
-    }
-
-    private static DecodedEnvelope decodeCommandEnvelopeAt(byte[] encoded, int start) {
-        if (start < 0 || start + 4 > encoded.length) throw new IllegalStateException("Native QC command envelope is truncated.");
-        int count = littleEndianInt(encoded, start);
-        int offset = start + 4;
-        List<EncodedMessage> messages = new ArrayList<>(count);
-        for (int index = 0; index < count; index++) {
-            if (offset + 6 > encoded.length) throw new IllegalStateException("Native QC command envelope is truncated.");
-            int messageType = (encoded[offset] & 0xff) | ((encoded[offset + 1] & 0xff) << 8);
-            int length = littleEndianInt(encoded, offset + 2);
-            offset += 6;
-            if (length < 0 || offset + length > encoded.length) throw new IllegalStateException("Native QC command payload is truncated.");
-            messages.add(new EncodedMessage(messageType, Arrays.copyOfRange(encoded, offset, offset + length)));
-            offset += length;
-        }
-        return new DecodedEnvelope(messages, offset);
-    }
-
-    private static int littleEndianInt(byte[] value, int offset) {
-        return (value[offset] & 0xff) | ((value[offset + 1] & 0xff) << 8) |
-            ((value[offset + 2] & 0xff) << 16) | ((value[offset + 3] & 0xff) << 24);
-    }
-
-    private static long littleEndianLong(byte[] value, int offset) {
-        long result = 0;
-        for (int index = 0; index < 8; index++) result |= (long) (value[offset + index] & 0xff) << (index * 8);
-        return result;
+        return encodedMessages(new JSONArray(nativeEncodeCommand(requireHandle(), command, args.toString())));
     }
 
     private static List<JSObject> objects(String json) throws Exception {
@@ -425,29 +536,91 @@ final class QcNativeStateDecoder implements AutoCloseable {
         return result;
     }
 
+    private static long nonNegativeLong(JSONObject value, String key) throws Exception {
+        long result = value.getLong(key);
+        if (result < 0) throw new IllegalStateException("Native QC gateway " + key + " is invalid.");
+        return result;
+    }
+
+    private static String nullableString(JSONObject value, String key) throws Exception {
+        return value.isNull(key) ? null : value.getString(key);
+    }
+
+    private static long[] nonNegativeLongArray(JSONArray values) throws Exception {
+        long[] result = new long[values.length()];
+        for (int index = 0; index < result.length; index++) {
+            result[index] = values.getLong(index);
+            if (result[index] < 0) throw new IllegalStateException("Native QC gateway timing is invalid.");
+        }
+        return result;
+    }
+
+    private static List<EncodedMessage> encodedMessages(JSONArray values) throws Exception {
+        List<EncodedMessage> result = new ArrayList<>(values.length());
+        for (int index = 0; index < values.length(); index++) {
+            JSONObject value = values.getJSONObject(index);
+            int messageType = value.getInt("messageType");
+            JSONArray payloadValues = value.getJSONArray("payload");
+            byte[] payload = new byte[payloadValues.length()];
+            for (int payloadIndex = 0; payloadIndex < payload.length; payloadIndex++) {
+                int octet = payloadValues.getInt(payloadIndex);
+                if (octet < 0 || octet > 255) throw new IllegalStateException("Native QC payload octet is invalid.");
+                payload[payloadIndex] = (byte) octet;
+            }
+            result.add(new EncodedMessage(messageType, payload));
+        }
+        return result;
+    }
+
     private static native long nativeCreate();
     private static native String nativeMergeExpectedState(String paramsJson, String expectedJson);
     private static native int nativeReportSize();
     private static native int nativeOutboundReportId();
     private static native int nativeInboundReportId();
-    private static native byte[] nativeEncodeCommand(long handle, String command, String argsJson);
-    private static native byte[] nativePlanGatewayWrite(long handle, String method, String argsJson);
-    private static native byte[] nativePlanGatewayWorkflow(long handle, String method, String argsJson);
+    private static native String nativeEncodeCommand(long handle, String command, String argsJson);
+    private static native String nativePlanGatewayWrite(long handle, String method, String argsJson);
+    private static native String nativePlanGatewayWorkflow(long handle, String method, String argsJson);
     private static native void nativeRecordSavedPreset(long handle, String setlistKey, int position, String name, int instrument);
-    private static native byte[] nativePlanGatewayRead(String method, String argsJson, long requestId);
+    private static native String nativePlanGatewayRead(String method, String argsJson, long requestId);
     private static native String nativeDecodeGatewayResponse(String projectionJson, byte[] payload);
+    private static native int nativeGatewayResponseMatches(
+        String projectionJson, int expectedType, int actualType, byte[] payload);
     private static native String nativeTempoClock(byte[] payload);
-    private static native String nativeConsumeBackupChunk(long handle, byte[] payload, String name);
+    private static native void nativeBackupStarted(long handle, long nowMs, long timeoutMs);
+    private static native String nativeBackupAdvance(long handle, long nowMs);
+    private static native void nativeBackupCancelled(long handle);
+    private static native String nativeConsumeBackupChunk(long handle, byte[] payload, String name, long nowMs);
+    private static native String nativeHandshakeAttempt(long handle, long nowMs, String sessionId);
+    private static native String nativeStartupObserved(long handle, int messageType, byte[] payload);
+    private static native String nativeStartupBeginBuilding(long handle);
+    private static native int nativeStartupConnected(long handle);
+    private static native void nativePostBootInitializationStarted(
+        long handle, long nowMs, long requestId);
+    private static native void nativeInitializationObserved(long handle, int messageType);
+    private static native String nativeInitializationAdvance(long handle, long nowMs);
+    private static native void nativeCatalogVerificationStarted(
+        long handle, long verificationId, long nowMs);
+    private static native String nativeCatalogVerificationAdvance(
+        long handle, long verificationId, long nowMs);
+    private static native void nativeCatalogListingObserved(
+        long handle, long verificationId, long nowMs, int matches);
+    private static native void nativeCatalogVerificationCancelled(long handle, long verificationId);
     private static native int nativeGatewayTransactionState(
         long handle, String verificationJson, long afterObservedAtMs,
         long deadlineMs, long observedAtMs, long nowMs);
+    private static native long nativeGatewayVerificationStarted(
+        long handle, String verificationJson, String policyMethod, long afterSequence,
+        long startedAtMs, long timeoutMs);
+    private static native String nativeGatewayVerificationAdvance(
+        long handle, long verificationId, long observationSequence, long nowMs);
+    private static native void nativeGatewayVerificationCancelled(long handle, long verificationId);
     private static native int nativeGatewayReadbackMatches(
         String method, String paramsJson, String responseJson);
+    private static native long nativeGatewayReadbackRetryDelay(String method, int attempt);
+    private static native int nativeStoredPresetNameMatches(String requested, String stored);
     private static native String nativeComposeGlobalTempoSettings(String globalJson, String presetJson);
     private static native int nativeGatewayWritePreflightMatches(
         String method, String paramsJson, String responseJson);
-    private static native String nativeGatewayWritePreflightMethod(String method);
-    private static native String nativeGatewayWriteReadbackMethod(String method);
     private static native byte[] nativeEncodeFrame(int messageType, byte[] payload);
     private static native byte[] nativePushReport(long handle, byte[] report);
     private static native void nativeReset(long handle);
@@ -463,10 +636,14 @@ final class QcNativeStateDecoder implements AutoCloseable {
     private static native String nativePresetList(long handle, String setlistKey);
     private static native String nativePresetSlots(long handle);
     private static native void nativeSessionOpened(long handle, long nowMs);
-    private static native int nativeNextHandshakeAttempt(long handle, long nowMs);
-    private static native void nativeSessionHandshakeComplete(long handle, long nowMs);
+    private static native void nativeSessionHandshakeComplete(
+        long handle, long nowMs, int synchronizedState);
     private static native void nativeSessionStateObserved(long handle, long nowMs, int presetSynchronized);
     private static native int nativeSessionShouldKeepalive(long handle, long nowMs);
+    private static native void nativeSessionKeepaliveSent(long handle, long nowMs);
     private static native void nativeSessionOutbound(long handle, long nowMs);
     private static native void nativeSessionDisconnected(long handle, long nowMs);
+    private static native long nativeSessionScheduleReconnect(long handle, long nowMs);
+    private static native int nativeSessionReconnectDue(long handle, long nowMs);
+    private static native void nativeSessionReconnectAttempted(long handle, long nowMs);
 }

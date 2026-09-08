@@ -196,7 +196,10 @@ async fn reconnect_can_reach_a_connected_phone_while_usb_is_not_ready() {
             .await
         })
     };
-    let DeviceFrame::Invoke { id, method, .. } = connection.outbound.recv().await.unwrap() else {
+    let DeviceFrame::Invoke {
+        id, method, ..
+    } = connection.outbound.recv().await.unwrap()
+    else {
         panic!()
     };
     assert_eq!(method, "device.reconnect");
@@ -209,6 +212,46 @@ async fn reconnect_can_reach_a_connected_phone_while_usb_is_not_ready() {
         })
         .await;
     assert_eq!(caller.await.unwrap().unwrap(), json!({"connected": true}));
+}
+
+#[tokio::test]
+async fn ordinary_invocation_waits_for_a_transient_readiness_gap() {
+    let credentials = DeviceCredentialStore::new();
+    let pairing = PairingManager::new(credentials.clone());
+    let (alice, credential) = paired("alice", "phone-a", &credentials, &pairing).await;
+    let hub = RelayHub::with_timeout(credentials, Duration::from_secs(1));
+    let mut connection = hub.connect(credential).await;
+
+    let caller = {
+        let hub = hub.clone();
+        tokio::spawn(async move {
+            hub.invoke_for_principal(
+                &alice,
+                PrincipalInvokeRequest {
+                    action: "get_current_preset".into(),
+                    arguments: json!({}),
+                    confirmation: None,
+                },
+            )
+            .await
+        })
+    };
+    tokio::time::sleep(Duration::from_millis(25)).await;
+    connection.set_ready(true);
+
+    let DeviceFrame::Invoke { id, method, .. } = connection.outbound.recv().await.unwrap() else {
+        panic!()
+    };
+    assert_eq!(method, "device.snapshot");
+    connection
+        .accept(DeviceFrame::Result {
+            id,
+            ok: true,
+            result: Some(json!({"preset":"Clean"})),
+            error: None,
+        })
+        .await;
+    assert_eq!(caller.await.unwrap().unwrap(), json!({"preset":"Clean"}));
 }
 
 #[tokio::test]

@@ -18,9 +18,14 @@ const legalAssets = () => ({
   }
 });
 
-export default defineConfig({
+export default defineConfig(() => ({
+  define: {
+    __QC_DIRECT_GEMINI_ENABLED__: JSON.stringify(process.env.VITE_QC_PUBLIC_RELEASE !== "1")
+  },
   plugins: [react(), legalAssets()],
-  publicDir: fileURLToPath(new URL("../../packages/typescript/qc-theme/assets", import.meta.url)),
+  // Theme assets are imported explicitly so local visual references can never
+  // leak into development servers or release bundles through publicDir.
+  publicDir: false,
   clearScreen: false,
   server: {
     port: 1420,
@@ -30,4 +35,4 @@ export default defineConfig({
     }
   },
   envPrefix: ["VITE_", "TAURI_"]
-});
+}));

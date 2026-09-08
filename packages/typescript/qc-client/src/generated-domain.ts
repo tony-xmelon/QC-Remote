@@ -4,6 +4,7 @@ export const QC_GRID_COLUMNS = 8;
 export const QC_SCENE_COUNT = 8;
 export const QC_MINIMUM_TEMPO_BPM = 40;
 export const QC_MAXIMUM_TEMPO_BPM = 240;
+export const QC_STORED_PRESET_NAME_CHARACTERS = 20;
 export const QC_IPC_MAX_FRAME_BYTES = 16777216;
 export const QC_STATE_EVENT_DEFAULT_LIMIT = 256;
 export const QC_STATE_EVENT_MAXIMUM_LIMIT = 4096;

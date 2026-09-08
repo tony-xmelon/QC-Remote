@@ -7,7 +7,23 @@ html body #root#root .qc-screen-bezel,
 html body #root#root .qc-screen-bezel *,
 html body #root#root .qc-screen-bezel *::before,
 html body #root#root .qc-screen-bezel *::after {
-  font-family: "Arimo Variable", Arial, sans-serif !important;
+  font-family: var(--qc-font-device-plain);
+}
+
+html body #root#root .qc-screen-bezel :is(.qc-ui-icon, .qc-screen-glyph, .qc-looper-action-glyph) {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  overflow: visible;
+  vertical-align: -0.125em;
+}
+
+html body #root#root .qc-screen-bezel :is(.qc-screen-glyph, .qc-looper-action-glyph) {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 html body #root#root .qc-screen-bezel :is(
@@ -50,5 +66,5 @@ html body #root#root .qc-screen-bezel :is(
   .gig-official.is-hybrid,
   .coros-gig-view:has(.gig-tiles.is-preset)
 ) * {
-  font-family: "Roboto Variable", "Arimo Variable", Arial, sans-serif !important;
+  font-family: var(--qc-font-device-plain);
 }

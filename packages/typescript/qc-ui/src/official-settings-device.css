@@ -1,6 +1,6 @@
 @scope (.qc-screen-fixture-root) {
-.coros-settings-official.settings-device,.coros-settings-official.settings-device * { font-family: Roboto, Arial, sans-serif; }
-.coros-settings-official.settings-system,.coros-settings-official.settings-system * { font-family: Roboto, Arial, sans-serif; }
+.coros-settings-official.settings-device,.coros-settings-official.settings-device * { font-family: var(--qc-font-device-plain); }
+.coros-settings-official.settings-system,.coros-settings-official.settings-system * { font-family: var(--qc-font-device-plain); }
 .qc-screen.coros-settings-official.settings-system { background: #101010; color: #f8fcf8; }
 .coros-settings-official.settings-system button { font: inherit; }
 .coros-settings-official.settings-system .settings-section,
@@ -49,7 +49,7 @@
 }
 
 @scope (.qc-screen-fixture-root) {
-.coros-settings-captured,.coros-settings-captured * { box-sizing: border-box; font-family: Roboto, Arial, sans-serif; font-weight: 400; }
+.coros-settings-captured,.coros-settings-captured * { box-sizing: border-box; font-family: var(--qc-font-device-plain); font-weight: 400; }
 .qc-screen.coros-settings-captured { background: #101010; color: #f4f4f4; }
 .coros-settings-captured button { font: inherit; }
 .coros-settings-captured .settings-section,

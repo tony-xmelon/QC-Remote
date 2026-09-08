@@ -12,7 +12,7 @@ use std::{
     },
     time::Duration,
 };
-use tokio::sync::{mpsc, oneshot, Mutex, RwLock};
+use tokio::sync::{mpsc, oneshot, Mutex, Notify, RwLock};
 use uuid::Uuid;
 
 #[derive(Clone, Debug, thiserror::Error, Eq, PartialEq)]
@@ -35,8 +35,12 @@ pub enum RelayError {
     Disconnected,
     #[error("device request timed out")]
     Timeout,
-    #[error("device rejected request: {0}")]
-    Device(String),
+    #[error("device rejected request: {code}: {message}")]
+    Device {
+        code: String,
+        message: String,
+        retryable: bool,
+    },
 }
 
 #[derive(Clone)]
@@ -54,6 +58,7 @@ struct Session {
     id: Uuid,
     principal_id: PrincipalId,
     ready: AtomicBool,
+    readiness_changed: Notify,
     outbound: mpsc::Sender<DeviceFrame>,
     dispatch: Mutex<()>,
     pending: Mutex<HashMap<String, oneshot::Sender<Result<Value, RelayError>>>>,
@@ -100,6 +105,7 @@ impl RelayHub {
             id: Uuid::new_v4(),
             principal_id: credential.principal_id,
             ready: AtomicBool::new(false),
+            readiness_changed: Notify::new(),
             outbound: tx,
             dispatch: Mutex::new(()),
             pending: Mutex::new(HashMap::new()),
@@ -150,6 +156,7 @@ impl RelayHub {
         let arguments = normalize_public_arguments(policy, request.arguments)?;
         self.dispatch_policy(principal, request.device_id, policy, arguments)
             .await
+            .map(sanitize_public_result)
     }
 
     /// Dispatches an RPC already validated by the Rust MCP safety layer. This is
@@ -170,6 +177,7 @@ impl RelayHub {
             .map_err(|_| RelayError::Forbidden)?;
         self.dispatch_policy(principal, device_id, policy, arguments)
             .await
+            .map(sanitize_public_result)
     }
 
     async fn dispatch_policy(
@@ -190,8 +198,8 @@ impl RelayHub {
         if &session.principal_id != principal {
             return Err(RelayError::Forbidden);
         }
-        if !session.ready.load(Ordering::Acquire)
-            && !matches!(policy.rpc, "device.reconnect" | "device.resetSession")
+        if !matches!(policy.rpc, "device.reconnect" | "device.resetSession")
+            && !wait_for_readiness(&session).await
         {
             return Err(RelayError::DeviceOffline);
         }
@@ -232,7 +240,16 @@ impl RelayHub {
         principal: &PrincipalId,
         request: PrincipalInvokeRequest,
     ) -> Result<Value, RelayError> {
-        let device_id = self.active_device_for_principal(principal).await?;
+        // A native USB refresh can make a connected phone briefly unready. Keep
+        // routing to that sole phone so dispatch_policy can wait for its next
+        // readiness update instead of exposing a spurious offline error.
+        let device_id = match self.active_device_for_principal(principal).await {
+            Ok(device_id) => device_id,
+            Err(RelayError::DeviceOffline) => {
+                self.connected_device_for_principal(principal).await?
+            }
+            Err(error) => return Err(error),
+        };
         self.invoke(
             principal,
             InvokeRequest {
@@ -284,6 +301,28 @@ impl RelayHub {
     }
 }
 
+fn sanitize_public_result(mut value: Value) -> Value {
+    fn visit(value: &mut Value) {
+        match value {
+            Value::Object(object) => {
+                object.retain(|name, _| {
+                    !matches!(
+                        name.to_ascii_lowercase().as_str(),
+                        "devicename" | "serial" | "serialnumber" | "deviceserial"
+                    )
+                });
+                for child in object.values_mut() {
+                    visit(child);
+                }
+            }
+            Value::Array(items) => items.iter_mut().for_each(visit),
+            _ => {}
+        }
+    }
+    visit(&mut value);
+    value
+}
+
 fn normalize_public_arguments(
     policy: &ActionPolicy,
     arguments: Value,
@@ -320,7 +359,10 @@ fn normalize_public_arguments(
 
 impl DeviceConnection {
     pub fn set_ready(&self, ready: bool) {
-        self.session.ready.store(ready, Ordering::Release);
+        let changed = self.session.ready.swap(ready, Ordering::AcqRel) != ready;
+        if changed {
+            self.session.readiness_changed.notify_waiters();
+        }
     }
 
     pub async fn accept(&self, frame: DeviceFrame) {
@@ -337,10 +379,13 @@ impl DeviceConnection {
                 error,
                 ..
             } => {
-                let message = error
-                    .map(|error| format!("{}: {}", error.code, error.message))
-                    .unwrap_or_else(|| "unspecified device error".into());
-                (id, Err(RelayError::Device(message)))
+                let error = error.unwrap_or_else(|| crate::protocol::DeviceError::new(
+                    "DEVICE_ERROR", "unspecified device error", false));
+                (id, Err(RelayError::Device {
+                    code: error.code,
+                    message: error.message,
+                    retryable: error.retryable,
+                }))
             }
             DeviceFrame::Ready { usb_connected, .. } => {
                 self.set_ready(usb_connected);
@@ -366,6 +411,30 @@ impl DeviceConnection {
     }
 }
 
+async fn wait_for_readiness(session: &Session) -> bool {
+    if session.ready.load(Ordering::Acquire) {
+        return true;
+    }
+    let wait = async {
+        loop {
+            let changed = session.readiness_changed.notified();
+            if session.ready.load(Ordering::Acquire) {
+                return;
+            }
+            changed.await;
+            if session.ready.load(Ordering::Acquire) {
+                return;
+            }
+        }
+    };
+    tokio::time::timeout(
+        Duration::from_millis(qc_relay_protocol::READINESS_GRACE_MS),
+        wait,
+    )
+    .await
+    .is_ok()
+}
+
 async fn fail_all(session: &Session, error: RelayError) {
     for (_, pending) in session.pending.lock().await.drain() {
         let _ = pending.send(Err(error.clone()));
@@ -387,5 +456,20 @@ mod timeout_tests {
             assert_eq!(request_timeout(ordinary, rpc), Duration::from_secs(195));
         }
         assert_eq!(request_timeout(ordinary, "device.setParameter"), ordinary);
+    }
+
+    #[test]
+    fn public_results_remove_persistent_device_identifiers_recursively() {
+        let result = sanitize_public_result(serde_json::json!({
+            "deviceName": "Anton's QC",
+            "presetName": "Clean",
+            "snapshot": {"serialNumber": "private", "blocks": []},
+            "items": [{"deviceSerial": "private", "name": "kept"}]
+        }));
+        assert_eq!(result["presetName"], "Clean");
+        assert_eq!(result["items"][0]["name"], "kept");
+        assert!(result.get("deviceName").is_none());
+        assert!(result["snapshot"].get("serialNumber").is_none());
+        assert!(result["items"][0].get("deviceSerial").is_none());
     }
 }

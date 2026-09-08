@@ -1,0 +1,25 @@
+name: Feature request
+description: Suggest an independently designed QC Remote improvement
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: checkboxes
+    id: safe-material
+    attributes:
+      label: Safe request
+      options:
+        - label: I have not included confidential material, copied product/manual artwork, copyrighted media, proprietary presets, or other material I am not authorized to share.
+          required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: Explain the user need without asking QC Remote to copy third-party artwork, branding, text, or protected content.
+    validations:
+      required: true
+  - type: textarea
+    id: approach
+    attributes:
+      label: Suggested behavior
+      description: Describe a functional outcome; original design proposals are preferred.

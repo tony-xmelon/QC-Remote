@@ -6,6 +6,7 @@
     "scenes": 8,
     "minimumTempoBpm": 40,
     "maximumTempoBpm": 240,
+    "storedPresetNameCharacters": 20,
     "ipcMaxFrameBytes": 16777216,
     "stateEventDefaultLimit": 256,
     "stateEventMaximumLimit": 4096

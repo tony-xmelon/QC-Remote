@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://qc-control.local/contracts/qc-payloads.v1.schema.json",
+  "$id": "https://qc-remote.local/contracts/qc-payloads.v1.schema.json",
   "title": "QC shared application payloads v1",
   "description": "Canonical snapshots, native state events, editor details, and action results shared by Rust, TypeScript, and Python.",
   "x-generate": ["TunerSettings", "GlobalBypassRows", "MasterVolumeAssignment", "GeneralSettings", "InputPortSettings", "OutputPortSettings", "HeadphonesFeed", "HeadphonesSettings", "UsbPortSettings", "ExpressionPortSettings", "MidiPortSettings", "IoSettings", "GlobalEqParameter", "GlobalEqSettings", "ModeCycle", "TempoSettings", "TempoModeSettings", "LooperStatus", "BypassExpression", "GridBlock", "FootswitchState", "MidiOutMessage", "MidiOutSource", "GridRoute", "IoPortState", "ModeSlot", "BypassUpdate", "QcStateUpdate", "ScalePoint", "BlockParameter", "BlockDetails", "PresetSnapshot", "DeviceActionResult"],

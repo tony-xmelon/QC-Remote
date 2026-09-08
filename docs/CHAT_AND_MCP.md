@@ -3,10 +3,12 @@
 QC Remote has two separate AI-facing integrations. They share the same guarded
 device operations, but they serve different hosts:
 
-- The Windows chat uses a native provider bridge inside the Tauri application.
-  It supports OpenAI Responses-compatible endpoints, Google Gemini through
-  Google OAuth or BYOK, Anthropic through its native Messages API, and keyless
-  local Responses servers. Provider and credential policy is documented in
+- The Windows development chat uses a native provider bridge inside the Tauri
+  application. It supports OpenAI Responses-compatible endpoints, Google Gemini
+  through Google OAuth or BYOK, Anthropic through its native Messages API, and
+  keyless local Responses servers. Direct Gemini is excluded from the planned
+  general-audience public release until its provider boundary is implemented.
+  Provider and credential policy is documented in
   [MODEL_PROVIDERS.md](MODEL_PROVIDERS.md).
 - The standalone MCP server supplies QC resources and tools to any MCP host.
 
@@ -29,10 +31,11 @@ its process environment. The general `OPENAI_API_KEY` is sent only to
 stored in Windows Credential Manager takes precedence for its exact provider
 base URL. Remote endpoints must use HTTPS.
 
-For Gemini, select **Google Gemini (BYOK)**, create a key in Google AI Studio,
-and save it in the credential editor. The fixed Google endpoint uses Chat
+In a private development build, Gemini can be selected through Google OAuth or
+BYOK. This adapter must not be included as a reachable public feature under the
+current no-app-wide-age release decision. The fixed Google endpoint uses Chat
 Completions and function calling; `QC_GEMINI_API_KEY` and `GEMINI_API_KEY` are
-also supported as environment fallbacks.
+development environment fallbacks, not public-release configuration.
 
 An OpenAI Responses-compatible loopback endpoint can use a URL such as
 `http://127.0.0.1:11434/v1` without a key. The local server must implement the

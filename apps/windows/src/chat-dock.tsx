@@ -1,6 +1,7 @@
 import { type ClipboardEventHandler, type ReactNode, type RefObject } from "react";
 import type { ConversationMessage } from "@qc-remote/core";
 import { AssistantAttachmentList, CollapsibleAssistantResult, QcUiIcon } from "@qc-remote/ui";
+import { QC_LEGAL } from "@qc-remote/theme";
 import type { ChatAttachment } from "./model-chat";
 
 const attachmentTypes = "image/jpeg,image/png,image/webp,image/gif,audio/mpeg,audio/wav,audio/aiff,audio/aac,audio/ogg,audio/flac,audio/m4a,audio/opus,audio/webm,video/mp4,video/mpeg,video/quicktime,video/avi,video/webm,video/wmv,video/3gpp,application/pdf,.txt,.md,.markdown,.csv,.json,.xml,.yaml,.yml,.log,.js,.jsx,.ts,.tsx,.css,.html,.htm,.py,.rs,.toml";
@@ -47,16 +48,17 @@ export function ChatDock(props: ChatDockProps) {
       {/* The pane is collapsible from the pane itself, not only from the View menu. */}
       <button type="button" className="chat-collapse" onClick={props.onCollapse} aria-expanded={true} aria-label="Collapse assistant" title="Collapse assistant (Ctrl+L)"><QcUiIcon kind="next" /></button>
     </header>
+    <p id="ai-transparency-notice" className="ai-transparency-notice" role="note">{QC_LEGAL.aiTransparency}</p>
     <div ref={props.conversationRef} className="conversation-preview" aria-live="polite" onScroll={props.onScroll} onWheel={props.onUserScroll} onTouchMove={props.onUserScroll} onPointerDown={props.onUserScroll}>
-      {props.messages.map((item) => <div className={`${item.role}-message`} key={item.id}>
-        {item.role !== "tool" && <span>{item.role.toUpperCase()}</span>}
+      {props.messages.map((item) => <div className={`${item.role}-message`} key={item.id} data-content-origin={item.origin ?? (item.role === "tool" ? "device-tool" : item.role)}>
+        {item.role !== "tool" && <span>{item.role === "assistant" ? item.origin === "ai" ? "AI" : "APP" : item.role.toUpperCase()}</span>}
         <AssistantAttachmentList attachments={item.attachments} className="chat-message-attachments" fileClassName="chat-file-chip" />
         {item.role === "tool" ? <CollapsibleAssistantResult text={item.text} /> : item.text}
       </div>)}
     </div>
     {props.pendingAction}
     <div className="composer">
-      <textarea ref={props.inputRef} value={props.value} onChange={(event) => props.onValueChange(event.target.value)} onPaste={props.onPaste} onKeyDown={(event) => {
+      <textarea ref={props.inputRef} aria-describedby="ai-transparency-notice" value={props.value} onChange={(event) => props.onValueChange(event.target.value)} onPaste={props.onPaste} onKeyDown={(event) => {
         if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); props.onSend(); }
       }} placeholder="Ask about this preset or describe a change…" rows={1} />
       {props.attachments.length > 0 && <div className="composer-attachments" aria-label="Attached files">{props.attachments.map((attachment, index) => <div className="composer-file" key={`${attachment.name}-${index}`}>{attachment.mediaType.startsWith("image/") ? <img src={`data:${attachment.mediaType};base64,${attachment.data}`} alt="" /> : <span className="composer-file-icon"><QcUiIcon kind="file" /></span>}<span>{attachment.name}</span><button type="button" aria-label={`Remove ${attachment.name}`} onClick={() => props.onRemoveAttachment(index)}><QcUiIcon kind="close" /></button></div>)}</div>}

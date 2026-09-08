@@ -11,7 +11,7 @@
 .settings-midi-detail > div > label > i.is-on::after { top: .25cqw; bottom: auto; }
 .settings-midi-detail > div:first-of-type { height: 6.75cqw; }
 .coros-settings-official.settings-account,
-.coros-settings-official.settings-account * { font-family: "Segoe UI", sans-serif; }
+.coros-settings-official.settings-account * { font-family: var(--qc-font-device-plain); }
 .coros-settings-official.settings-account b > svg { width: 3cqw; height: 3cqw; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .coros-settings-official.settings-account .settings-account-detail > header { height: 4.875cqw; }
 .coros-midi-out > header > span { transform: translateY(-1px); }

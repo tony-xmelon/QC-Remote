@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { parseAssistantIntent } from "../packages/typescript/qc-core/src/assistant.ts";
 import { resolveOfflineAssistantIntent } from "../packages/typescript/qc-core/src/assistant-intent-resolution.ts";
-import { SHARED_QC_ASSISTANT_TOOLS } from "../packages/typescript/qc-core/src/assistant-tools.ts";
+import { SHARED_QC_ASSISTANT_TOOLS, assistantCompactToolCatalog, validateAssistantToolCalls } from "../packages/typescript/qc-core/src/assistant-tools.ts";
 import { demoSnapshot } from "../packages/typescript/qc-client/src/index.ts";
 import { ASSISTANT_ACCESS_MODE_STORAGE_KEY, readAssistantAccessMode, writeAssistantAccessMode } from "../packages/typescript/qc-ui/src/assistant-access-storage.ts";
 import { applyPreparedOfflineAssistantAction, runOfflineAssistantIntent } from "../packages/typescript/qc-ui/src/offline-assistant-workflow.ts";
@@ -129,6 +129,9 @@ test("publishes strict schemas for every allowed QC model tool", () => {
   for (const name of ["set_bypass", "set_parameter", "set_master_volume", "press_footswitch", "move_block", "add_block", "remove_block", "set_chain_split", "save_current_unsaved_preset", "save_preset_as", "rename_current_preset", "create_device_backup", "reconnect_device", "reset_device_session", "disconnect_device"]) {
     assert.ok(qcChatTools.some((tool) => tool.name === name), name);
   }
+  assert.equal(qcChatTools.some((tool) => tool.name === "get_device_identity"), false);
+  assert.equal(assistantCompactToolCatalog("full").includes("get_device_identity"), false);
+  assert.deepEqual(validateAssistantToolCalls({ actions: [{ name: "get_device_identity", args: {} }] }, "full"), []);
 });
 
 test("keeps device data out of model policy instructions", () => {
@@ -155,6 +158,14 @@ test("distinguishes local model endpoints from providers needing disclosure", ()
   assert.equal(isLoopbackChatUrl("http://localhost:1234/v1"), true);
   assert.equal(isLoopbackChatUrl("https://api.openai.com/v1"), false);
   assert.equal(isLoopbackChatUrl("not a url"), false);
+});
+
+test("Windows direct Gemini access requires feature-specific age eligibility", () => {
+  const source = readFileSync(new URL("../apps/windows/src/App.tsx", import.meta.url), "utf8");
+  assert.match(source, /geminiAgeEligibilityKey/);
+  assert.match(source, /settings\.provider !== "gemini-openai" \|\| geminiAgeEligible/);
+  assert.match(source, /remoteChatConsentAllows\(chatSettings, remoteChatConsent\) && providerAgeEligibilityAllows\(chatSettings, geminiAgeEligible\)/);
+  assert.match(source, /does not set an app-wide age limit/);
 });
 
 test("classifies read-only tools separately from direct device controls", () => {

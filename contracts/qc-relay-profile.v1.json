@@ -10,6 +10,7 @@
   "maxResultFrameBytes": 16777216,
   "completedRequestCacheSize": 512,
   "readinessIntervalMs": 1000,
+  "readinessGraceMs": 1500,
   "androidPingIntervalMs": 25000,
   "maximumFailureCount": 10,
   "maximumBackoffExponent": 6,

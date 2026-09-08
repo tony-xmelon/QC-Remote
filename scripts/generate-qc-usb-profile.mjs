@@ -39,7 +39,28 @@ const subscriptionValues = profile.liveSubscriptions.map((name) => {
 if (new Set(subscriptionValues).size !== subscriptionValues.length) {
   throw new Error("liveSubscriptions contains duplicate message types");
 }
+for (const [name, delays, timeout] of [
+  ["commandVerificationRefreshDelaysMs", profile.commandVerificationRefreshDelaysMs, profile.commandConfirmationTimeoutMs],
+  ["presetVerificationRefreshDelaysMs", profile.presetVerificationRefreshDelaysMs, profile.presetSyncTimeoutMs],
+]) {
+  if (!Array.isArray(delays) || delays.length === 0
+      || delays.some((delay, index) => !Number.isSafeInteger(delay) || delay < 0
+        || delay >= timeout || (index > 0 && delay <= delays[index - 1]))) {
+    throw new Error(`${name} must contain unique ascending non-negative delays below its timeout`);
+  }
+}
+if (!Array.isArray(profile.correlatedWriteReadbackRetryIntervalsMs)
+    || profile.correlatedWriteReadbackRetryIntervalsMs.length === 0
+    || profile.correlatedWriteReadbackRetryIntervalsMs[0] !== 0
+    || profile.correlatedWriteReadbackRetryIntervalsMs.some(
+      (delay, index, values) => !Number.isSafeInteger(delay) || delay < 0
+        || (index > 0 && delay <= values[index - 1]))) {
+  throw new Error("correlatedWriteReadbackRetryIntervalsMs must start at zero and increase");
+}
 const subscriptions = subscriptionValues.join(", ");
+const commandVerificationRefreshDelays = profile.commandVerificationRefreshDelaysMs.join(", ");
+const presetVerificationRefreshDelays = profile.presetVerificationRefreshDelaysMs.join(", ");
+const correlatedWriteReadbackRetryIntervals = profile.correlatedWriteReadbackRetryIntervalsMs.join(", ");
 const javaMessageTypes = protocolMessageTypes
   .map(([name, value]) => `    static final int MESSAGE_TYPE_${constantName(name)} = ${value};`)
   .join("\n");
@@ -63,13 +84,22 @@ final class QcUsbProfile {
     static final long LIVENESS_REPLY_TIMEOUT_MS = ${profile.livenessReplyTimeoutMs}L;
     static final long RECONNECT_INTERVAL_MS = ${profile.reconnectIntervalMs}L;
     static final long PERFORMANCE_MIDI_GAP_MS = ${profile.performanceMidiGapMs}L;
+    static final long REMOTE_GESTURE_INTERVAL_MS = ${profile.remoteGestureIntervalMs}L;
     static final long HANDSHAKE_TIMEOUT_MS = ${profile.handshakeTimeoutMs}L;
     static final long HANDSHAKE_ATTEMPT_TIMEOUT_MS = ${profile.handshakeAttemptTimeoutMs}L;
     static final long INITIAL_SYNC_TIMEOUT_MS = ${profile.initialSyncTimeoutMs}L;
+    static final long POST_INITIALIZATION_WRITE_DELAY_MS = ${profile.postInitializationWriteDelayMs}L;
     static final long READY_WAIT_TIMEOUT_MS = ${profile.readyWaitTimeoutMs}L;
     static final long PRESET_SYNC_TIMEOUT_MS = ${profile.presetSyncTimeoutMs}L;
     static final long COMMAND_CONFIRMATION_TIMEOUT_MS = ${profile.commandConfirmationTimeoutMs}L;
+    static final long[] COMMAND_VERIFICATION_REFRESH_DELAYS_MS = {${commandVerificationRefreshDelays}};
+    static final long[] PRESET_VERIFICATION_REFRESH_DELAYS_MS = {${presetVerificationRefreshDelays}};
+    static final long[] CORRELATED_WRITE_READBACK_RETRY_INTERVALS_MS = {${correlatedWriteReadbackRetryIntervals}};
     static final long HISTORY_STATE_REFRESH_DELAY_MS = ${profile.historyStateRefreshDelayMs}L;
+    static final long PRESET_LIBRARY_REFRESH_COALESCE_MS = ${profile.presetLibraryRefreshCoalesceMs}L;
+    static final long PRESET_LIBRARY_VERIFICATION_TIMEOUT_MS = ${profile.presetLibraryVerificationTimeoutMs}L;
+    static final long PRESET_LIBRARY_VERIFICATION_RETRY_MS = ${profile.presetLibraryVerificationRetryMs}L;
+    static final long PRESET_LIBRARY_SETTLEMENT_QUIET_MS = ${profile.presetLibrarySettlementQuietMs}L;
     static final long BACKUP_TOTAL_TIMEOUT_MS = ${profile.backupTotalTimeoutMs}L;
     static final long BACKUP_FIRST_CHUNK_TIMEOUT_MS = ${profile.backupFirstChunkTimeoutMs}L;
     static final long BACKUP_STREAM_STALL_TIMEOUT_MS = ${profile.backupStreamStallTimeoutMs}L;
@@ -102,13 +132,22 @@ pub const KEEPALIVE_INTERVAL_MS: u64 = ${profile.keepaliveIntervalMs};
 pub const LIVENESS_REPLY_TIMEOUT_MS: u64 = ${profile.livenessReplyTimeoutMs};
 pub const RECONNECT_INTERVAL_MS: u64 = ${profile.reconnectIntervalMs};
 pub const PERFORMANCE_MIDI_GAP_MS: u64 = ${profile.performanceMidiGapMs};
+pub const REMOTE_GESTURE_INTERVAL_MS: u64 = ${profile.remoteGestureIntervalMs};
 pub const HANDSHAKE_TIMEOUT_MS: u64 = ${profile.handshakeTimeoutMs};
 pub const HANDSHAKE_ATTEMPT_TIMEOUT_MS: u64 = ${profile.handshakeAttemptTimeoutMs};
 pub const INITIAL_SYNC_TIMEOUT_MS: u64 = ${profile.initialSyncTimeoutMs};
+pub const POST_INITIALIZATION_WRITE_DELAY_MS: u64 = ${profile.postInitializationWriteDelayMs};
 pub const READY_WAIT_TIMEOUT_MS: u64 = ${profile.readyWaitTimeoutMs};
 pub const PRESET_SYNC_TIMEOUT_MS: u64 = ${profile.presetSyncTimeoutMs};
 pub const COMMAND_CONFIRMATION_TIMEOUT_MS: u64 = ${profile.commandConfirmationTimeoutMs};
+pub const COMMAND_VERIFICATION_REFRESH_DELAYS_MS: &[u64] = &[${commandVerificationRefreshDelays}];
+pub const PRESET_VERIFICATION_REFRESH_DELAYS_MS: &[u64] = &[${presetVerificationRefreshDelays}];
+pub const CORRELATED_WRITE_READBACK_RETRY_INTERVALS_MS: &[u64] = &[${correlatedWriteReadbackRetryIntervals}];
 pub const HISTORY_STATE_REFRESH_DELAY_MS: u64 = ${profile.historyStateRefreshDelayMs};
+pub const PRESET_LIBRARY_REFRESH_COALESCE_MS: u64 = ${profile.presetLibraryRefreshCoalesceMs};
+pub const PRESET_LIBRARY_VERIFICATION_TIMEOUT_MS: u64 = ${profile.presetLibraryVerificationTimeoutMs};
+pub const PRESET_LIBRARY_VERIFICATION_RETRY_MS: u64 = ${profile.presetLibraryVerificationRetryMs};
+pub const PRESET_LIBRARY_SETTLEMENT_QUIET_MS: u64 = ${profile.presetLibrarySettlementQuietMs};
 pub const BACKUP_TOTAL_TIMEOUT_MS: u64 = ${profile.backupTotalTimeoutMs};
 pub const BACKUP_FIRST_CHUNK_TIMEOUT_MS: u64 = ${profile.backupFirstChunkTimeoutMs};
 pub const BACKUP_STREAM_STALL_TIMEOUT_MS: u64 = ${profile.backupStreamStallTimeoutMs};
@@ -136,8 +175,17 @@ MAX_INFLATED_BYTES = ${profile.maxInflatedBytes}
 KEEPALIVE_INTERVAL_MS = ${profile.keepaliveIntervalMs}
 LIVENESS_REPLY_TIMEOUT_MS = ${profile.livenessReplyTimeoutMs}
 PERFORMANCE_MIDI_GAP_MS = ${profile.performanceMidiGapMs}
+REMOTE_GESTURE_INTERVAL_MS = ${profile.remoteGestureIntervalMs}
+POST_INITIALIZATION_WRITE_DELAY_MS = ${profile.postInitializationWriteDelayMs}
 READY_WAIT_TIMEOUT_MS = ${profile.readyWaitTimeoutMs}
 HISTORY_STATE_REFRESH_DELAY_MS = ${profile.historyStateRefreshDelayMs}
+COMMAND_VERIFICATION_REFRESH_DELAYS_MS = (${commandVerificationRefreshDelays})
+PRESET_VERIFICATION_REFRESH_DELAYS_MS = (${presetVerificationRefreshDelays})
+CORRELATED_WRITE_READBACK_RETRY_INTERVALS_MS = (${correlatedWriteReadbackRetryIntervals})
+PRESET_LIBRARY_REFRESH_COALESCE_MS = ${profile.presetLibraryRefreshCoalesceMs}
+PRESET_LIBRARY_VERIFICATION_TIMEOUT_MS = ${profile.presetLibraryVerificationTimeoutMs}
+PRESET_LIBRARY_VERIFICATION_RETRY_MS = ${profile.presetLibraryVerificationRetryMs}
+PRESET_LIBRARY_SETTLEMENT_QUIET_MS = ${profile.presetLibrarySettlementQuietMs}
 BACKUP_TOTAL_TIMEOUT_MS = ${profile.backupTotalTimeoutMs}
 BACKUP_FIRST_CHUNK_TIMEOUT_MS = ${profile.backupFirstChunkTimeoutMs}
 BACKUP_STREAM_STALL_TIMEOUT_MS = ${profile.backupStreamStallTimeoutMs}

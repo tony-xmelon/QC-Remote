@@ -4,8 +4,8 @@ use qc_device_runtime::{
     generated_gateway,
     request::{
         self as runtime_request, finalize_device_backup, GatewayResponseProjection,
-        GatewayTransaction, GatewayTransactionState, GatewayVerification, GatewayWritePlan,
-        PlannedWrite, PresetMutationPlan,
+        GatewayVerification, GatewayVerificationAction, GatewayVerificationRuntime,
+        GatewayWritePlan, PlannedWrite, PresetMutationPlan,
     },
 };
 use qc_protocol::responses::decode_tempo_clock;
@@ -284,7 +284,10 @@ fn ready_connection_state(controller: &DeviceController, detail: &str) -> Value 
         // USB synchronization and state decoding run on separate workers.
         // A successful reconnect must not return until the first decoded
         // preset is queryable by the very next gateway call.
-        let _ = controller.wait_for_gateway_snapshot(Duration::from_secs(3), |_| true);
+        let _ = controller.wait_for_gateway_snapshot(
+            Duration::from_millis(profile::COMMAND_CONFIRMATION_TIMEOUT_MS),
+            |_| true,
+        );
     }
     json!({
         "phase": status.phase,
@@ -388,18 +391,12 @@ fn execute_gateway_read(
     method: &str,
     params: &Value,
 ) -> Result<Value, String> {
-    if method != "device.globalTempoSettings" {
-        return execute_single_gateway_read(controller, method, params);
-    }
-
-    // CorOS stores the metronome controls in the loaded preset's TempoControl,
-    // while PRESET/GLOBAL mode is parameter 1 of the device GlobalTempo block.
-    // Compose both authoritative reads so callers never compare a preset write
-    // with the unrelated device-global metronome values.
-    let global = execute_single_gateway_read(controller, method, params)?;
-    let preset =
-        execute_single_gateway_read(controller, "device.presetTempoSettings", &Value::Null)?;
-    runtime_request::compose_global_tempo_settings(&global, &preset)
+    let primary = execute_single_gateway_read(controller, method, params)?;
+    let Some(followup_method) = runtime_request::gateway_read_followup_method(method) else {
+        return Ok(primary);
+    };
+    let followup = execute_single_gateway_read(controller, followup_method, &Value::Null)?;
+    runtime_request::compose_global_tempo_settings(&primary, &followup)
 }
 
 fn gateway_identity(controller: &DeviceController) -> Result<Value, String> {
@@ -408,22 +405,35 @@ fn gateway_identity(controller: &DeviceController) -> Result<Value, String> {
 
 fn gateway_set_device_name(controller: &DeviceController, params: &Value) -> Result<Value, String> {
     let plan = plan_gateway_write(controller, "device.setDeviceName", params)?;
+    let policy = runtime_request::gateway_write_verification_policy("device.setDeviceName");
     let name = params
         .get("name")
         .and_then(Value::as_str)
         .unwrap_or_default();
     execute_gateway_write(controller, &plan)?;
-    let identity = gateway_identity(controller)?;
-    if identity.get("customName").and_then(Value::as_str) != Some(name) {
-        return Err("The Quad Cortex did not confirm the requested device name".into());
-    }
-    Ok(json!({"detail": format!("Device name changed to {name}"), "identity": identity}))
+    let read_method = policy
+        .readback_method
+        .ok_or_else(|| "Device-name write is missing its shared readback policy".to_string())?;
+    let identity =
+        execute_correlated_readback(controller, "device.setDeviceName", params, read_method)?;
+    Ok(json!({
+        "accepted": true,
+        "verified": true,
+        "verification": "authoritative_readback",
+        "detail": format!("Device name changed to {name}"),
+        "identity": identity
+    }))
 }
 
 fn gateway_history(controller: &DeviceController, undo: bool) -> Result<Value, String> {
     let method = if undo { "device.undo" } else { "device.redo" };
     let plan = plan_gateway_write(controller, method, &Value::Null)?;
+    let policy = runtime_request::gateway_write_verification_policy(method);
     execute_gateway_write(controller, &plan)?;
+    if let Some(refresh_method) = policy.post_write_refresh_method {
+        thread::sleep(Duration::from_millis(policy.post_write_refresh_delay_ms));
+        dispatch_gateway_refresh(controller, refresh_method)?;
+    }
     Ok(accepted_unverified(plan.detail))
 }
 
@@ -447,10 +457,7 @@ fn gateway_screen_gesture(
     method: &str,
     params: &Value,
 ) -> Result<Value, String> {
-    gateway_capture_screen(controller)?;
-    let plan = plan_gateway_write(controller, method, params)?;
-    execute_gateway_write(controller, &plan)?;
-    Ok(accepted_unverified(plan.detail))
+    gateway_operation(controller, params, method)
 }
 
 fn gateway_tempo_clock(controller: &DeviceController) -> Result<Value, String> {
@@ -570,10 +577,7 @@ fn gateway_performance_midi(
             "dispatchLatencyMs".into(),
             json!(receipt.dispatch_latency_ms),
         );
-        object.insert(
-            "hostStartedAtUnixMs".into(),
-            json!(host_started_at_unix_ms),
-        );
+        object.insert("hostStartedAtUnixMs".into(), json!(host_started_at_unix_ms));
         object.insert("throttleDelayMs".into(), json!(receipt.throttle_delay_ms));
     }
     Ok(result)
@@ -587,41 +591,58 @@ fn unix_ms() -> u64 {
         .min(u128::from(u64::MAX)) as u64
 }
 
-fn wait_for_transaction_event(
+fn dispatch_gateway_refresh(controller: &DeviceController, method: &str) -> Result<(), String> {
+    let plan = runtime_request::plan_gateway_read(method, &json!({}), next_request_id())?;
+    for message in plan
+        .operation
+        .try_encode()
+        .map_err(|error| error.to_string())?
+    {
+        controller.send_command(message)?;
+    }
+    Ok(())
+}
+
+fn verify_gateway_write_on_schedule(
     controller: &DeviceController,
     events: &std::sync::mpsc::Receiver<crate::worker::DecodedStateFrame>,
     verification: GatewayVerification,
     after_sequence: u64,
-    timeout: Duration,
-) -> Option<qc_device_runtime::GatewaySnapshot> {
+    policy: &runtime_request::GatewayWriteVerificationPolicy,
+) -> Result<Option<qc_device_runtime::GatewaySnapshot>, String> {
+    let started = Instant::now();
     let parameter_target = verification.parameter_target();
-    let started = std::time::Instant::now();
-    let transaction = GatewayTransaction::new(
-        verification,
-        u128::from(after_sequence),
-        0,
-        timeout.as_millis().min(u128::from(u64::MAX)) as u64,
-    );
+    let mut runtime =
+        GatewayVerificationRuntime::new(verification, u128::from(after_sequence), 0, policy);
+    let mut observation_sequence = after_sequence;
     loop {
         let now_ms = started.elapsed().as_millis().min(u128::from(u64::MAX)) as u64;
-        let remaining = transaction.remaining_ms(now_ms);
-        if remaining == 0 {
-            return None;
-        }
-        let frame = events.recv_timeout(Duration::from_millis(remaining)).ok()?;
-        let snapshot = controller.gateway_snapshot()?;
+        let snapshot = controller.gateway_snapshot();
         let parameter =
             parameter_target.and_then(|target| observed_gateway_parameter(controller, target));
-        let now_ms = started.elapsed().as_millis().min(u128::from(u64::MAX)) as u64;
-        match transaction.state(
-            &snapshot,
+        match runtime.advance(
+            snapshot.as_ref(),
             parameter.as_ref(),
-            u128::from(frame.sequence),
+            u128::from(observation_sequence),
             now_ms,
         ) {
-            GatewayTransactionState::Verified => return Some(snapshot),
-            GatewayTransactionState::TimedOut => return None,
-            GatewayTransactionState::Pending => {}
+            GatewayVerificationAction::Verified => return Ok(snapshot),
+            GatewayVerificationAction::TimedOut => return Ok(None),
+            GatewayVerificationAction::Refresh { method } => {
+                dispatch_gateway_refresh(controller, method)?;
+            }
+            GatewayVerificationAction::Wait { delay_ms } => {
+                match events.recv_timeout(Duration::from_millis(delay_ms)) {
+                    Ok(frame) => observation_sequence = frame.sequence,
+                    Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {}
+                    Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
+                        return Err(
+                            "QC state event stream disconnected during write verification"
+                                .to_string(),
+                        );
+                    }
+                }
+            }
         }
     }
 }
@@ -653,6 +674,7 @@ fn gateway_toggle_bypass(controller: &DeviceController, params: &Value) -> Resul
 
 fn gateway_block_details(controller: &DeviceController, params: &Value) -> Result<Value, String> {
     assert_expected_preset(controller, params)?;
+    refresh_current_preset_state(controller)?;
     let details = state_block_details(controller, params)?;
     if details.is_null() {
         Err("No block exists at that grid position".into())
@@ -692,15 +714,8 @@ fn gateway_lane_control_details(
 fn refresh_current_preset_state(controller: &DeviceController) -> Result<(), String> {
     let events = controller.subscribe_state_events();
     let after_sequence = controller.latest_state_sequence();
-    let request_id = next_request_id();
-    request_command(
-        controller,
-        qc_protocol::commands::read_current_preset(request_id),
-        profile::MESSAGE_TYPE_RECALL_PRESET,
-        Some(request_id),
-        Duration::from_secs(15),
-    )?;
-    let deadline = Instant::now() + Duration::from_secs(2);
+    execute_gateway_read(controller, "device.currentPreset", &json!({}))?;
+    let deadline = Instant::now() + Duration::from_millis(profile::COMMAND_CONFIRMATION_TIMEOUT_MS);
     loop {
         let remaining = deadline.saturating_duration_since(Instant::now());
         let frame = events.recv_timeout(remaining).map_err(|_| {
@@ -965,19 +980,23 @@ fn execute_correlated_readback(
     // the new value. Poll the authoritative read briefly instead of treating
     // that normal apply delay as a failed write. This stays off the realtime
     // path and never resends the mutation.
-    let deadline = Instant::now() + Duration::from_secs(2);
-    loop {
+    let mut attempt = 0;
+    while let Some(interval_ms) =
+        runtime_request::gateway_correlated_readback_delay(method, attempt)
+    {
+        if interval_ms > 0 {
+            thread::sleep(Duration::from_millis(interval_ms));
+        }
         let response = execute_gateway_read(controller, read_method, &json!({}))?;
         if runtime_request::gateway_write_readback_matches(method, params, &response) {
             return Ok(response);
         }
-        if Instant::now() >= deadline {
-            return Err(format!(
-                "correlated {read_method} readback did not match within 2 seconds"
-            ));
-        }
-        thread::sleep(Duration::from_millis(50));
+        attempt += 1;
     }
+    Err(format!(
+        "correlated {read_method} readback did not match after {} attempts",
+        attempt
+    ))
 }
 
 fn gateway_operation(
@@ -985,7 +1004,8 @@ fn gateway_operation(
     params: &Value,
     method: &str,
 ) -> Result<Value, String> {
-    if let Some(read_method) = runtime_request::gateway_write_preflight_method(method) {
+    let verification_policy = runtime_request::gateway_write_verification_policy(method);
+    if let Some(read_method) = verification_policy.preflight_method {
         let response = execute_gateway_read(controller, read_method, &json!({}))?;
         if !runtime_request::gateway_write_preflight_matches(method, params, &response) {
             return Err(format!(
@@ -1004,7 +1024,7 @@ fn gateway_operation(
     execute_gateway_write(controller, &plan)?;
     controller.record_library_mutation(method, params);
     if !plan.verification.requires_authoritative_readback() {
-        let Some(read_method) = runtime_request::gateway_write_readback_method(method) else {
+        let Some(read_method) = verification_policy.readback_method else {
             return Ok(accepted_unverified(plan.detail));
         };
         let response = execute_correlated_readback(controller, method, params, read_method)
@@ -1017,28 +1037,13 @@ fn gateway_operation(
             "readback": response
         }));
     }
-    if method == "device.copyScene" {
-        // CorOS applies a scene copy asynchronously. An immediate preset READ
-        // can return the pre-copy colors and no later snapshot, especially
-        // when a second swap restores the first. Let that one transaction
-        // settle before requesting its authoritative preset readback.
-        thread::sleep(Duration::from_millis(250));
-    }
-    let request_id = next_request_id();
-    request_command(
-        controller,
-        qc_protocol::commands::read_current_preset(request_id),
-        15,
-        Some(request_id),
-        Duration::from_secs(15),
-    )?;
-    let snapshot = wait_for_transaction_event(
+    let snapshot = verify_gateway_write_on_schedule(
         controller,
         &events,
         plan.verification.clone(),
         after_sequence,
-        Duration::from_secs(2),
-    )
+        &verification_policy,
+    )?
     .ok_or_else(|| {
         format!(
             "{} was sent, but authoritative preset readback did not confirm it",
@@ -1064,22 +1069,6 @@ fn gateway_operation(
     }))
 }
 
-fn wait_for_recovered_position(
-    controller: &DeviceController,
-    setlist_key: &str,
-    position: u32,
-    require_clean: bool,
-) -> Option<qc_device_runtime::GatewaySnapshot> {
-    let matches = |snapshot: &qc_device_runtime::GatewaySnapshot| {
-        snapshot.setlist_key.trim_end_matches('/') == setlist_key.trim_end_matches('/')
-            && snapshot.preset_position == position
-            && (!require_clean || !snapshot.dirty)
-    };
-    controller
-        .wait_for_gateway_snapshot(Duration::from_secs(4), matches)
-        .filter(matches)
-}
-
 fn execute_preset_recall(
     controller: &DeviceController,
     plan: runtime_request::PresetRecallPlan,
@@ -1092,82 +1081,43 @@ fn execute_preset_recall(
             Some(request_id),
         )
     };
-    let target_matches = |snapshot: &qc_device_runtime::GatewaySnapshot| {
-        snapshot.setlist_key.trim_end_matches('/') == plan.setlist_key.trim_end_matches('/')
-            && snapshot.preset_position == plan.position
-            && (!plan.require_clean || !snapshot.dirty)
-    };
     let device_events = controller.subscribe_state_events();
     let after_sequence = controller.latest_state_sequence();
     let verification = plan.verification();
-    let confirm = || -> Result<qc_device_runtime::GatewaySnapshot, String> {
-        if let Some(after) = wait_for_transaction_event(
-            controller,
-            &device_events,
-            verification.clone(),
-            after_sequence,
-            Duration::from_millis(650),
-        ) {
-            return Ok(after);
-        }
-
-        // Some CorOS builds apply a recall but omit its unsolicited position
-        // push. Ask for the current address using the QC's correlated READ;
-        // this does not reload the preset and the reply also feeds the normal
-        // state decoder, keeping the UI and hardware authoritative together.
-        let request_id = next_request_id();
-        let readback = qc_protocol::commands::read_setlist_position(request_id);
-        request_command(
-            controller,
-            readback,
-            2,
-            Some(request_id),
-            Duration::from_secs(1),
-        )?;
-        wait_for_transaction_event(
-            controller,
-            &device_events,
-            verification.clone(),
-            after_sequence,
-            Duration::from_millis(300),
-        )
-        .ok_or_else(|| "The QC position readback did not reach the state engine".to_string())
-    };
-
+    let verification_policy =
+        runtime_request::gateway_write_verification_policy("device.recallPreset");
     controller.send_command(recall_message(next_request_id()))?;
-    let after = match confirm() {
-        Ok(after) if plan.matches(&after) => after,
-        _ => {
-            // If neither the pushed position nor a correlated READ arrives,
-            // the QC's HID command channel is wedged even though its stream
-            // can still look connected. Closing that session flushes any
-            // accepted recall; the fresh handshake then reads the real slot.
+    let after = match verify_gateway_write_on_schedule(
+        controller,
+        &device_events,
+        verification,
+        after_sequence,
+        &verification_policy,
+    )? {
+        Some(after) => after,
+        None => {
+            // Match Android's recovery rule: reset the transport once, trust
+            // the fresh synchronized snapshot, and never replay the mutation.
             controller.reset_session()?;
-            let status = controller.wait_for_ready(Duration::from_secs(12));
+            let status = controller.wait_for_ready(preset_recall_recovery_timeout());
             if status.phase != "ready" {
                 return Err(format!(
                     "Preset recall required USB recovery, but reconnection ended in {}: {}",
                     status.phase, status.detail
                 ));
             }
-            // The original command may have been dropped by the wedged HID
-            // channel rather than merely missing its unsolicited echo. Replay
-            // the idempotent recall/reload once on the fresh session.
-            controller.send_command(recall_message(next_request_id()))?;
-            // wait_for_ready may observe the fresh handshake after its state
-            // frame has already been published. The synchronized snapshot is
-            // authoritative after a session reset, so inspect it before
-            // waiting for another unsolicited position frame.
-            let recovered = wait_for_recovered_position(
-                controller,
-                &plan.setlist_key,
-                plan.position,
-                plan.require_clean,
-            )
-            .ok_or_else(|| {
-                "The recovered QC session did not publish its active position".to_string()
-            })?;
-            if target_matches(&recovered) {
+            // USB startup can become protocol-ready a few milliseconds before
+            // the decoder worker has reduced the retained startup burst. Wait
+            // for that authoritative projection instead of sampling the race.
+            let recovered = controller
+                .wait_for_gateway_snapshot(
+                    Duration::from_millis(profile::COMMAND_CONFIRMATION_TIMEOUT_MS),
+                    |_| true,
+                )
+                .ok_or_else(|| {
+                    "The recovered QC session did not publish its active position".to_string()
+                })?;
+            if plan.matches_recovered(&recovered) {
                 recovered
             } else {
                 return Err(format!(
@@ -1177,7 +1127,11 @@ fn execute_preset_recall(
             }
         }
     };
-    if !target_matches(&after) {
+    // Freshness was already established by the event verifier above, or by a
+    // complete reconnect plus synchronized snapshot in the recovery branch.
+    // A recovered session starts a new revision generation, so comparing its
+    // revision counter with the prior session would reject correct readback.
+    if !plan.matches_recovered(&after) {
         return Err(format!(
             "Preset recall targeted slot {}, but live device readback remained on slot {}.",
             plan.position, after.preset_position
@@ -1185,7 +1139,7 @@ fn execute_preset_recall(
     }
     // recallPreset, navigateBank and reloadPreset are all contracted as
     // DeviceActionResult, so they must carry verification semantics like every
-    // other device action. The target_matches checks above are an authoritative
+    // other device action. The plan checks above are an authoritative
     // device readback - the call returns Err when the QC did not land on the
     // requested slot - so reporting the readback here is accurate, not
     // optimistic. Omitting these fields made the host reject a correct result
@@ -1197,6 +1151,10 @@ fn execute_preset_recall(
         "detail": plan.detail,
         "snapshot": after
     }))
+}
+
+fn preset_recall_recovery_timeout() -> Duration {
+    Duration::from_millis(profile::READY_WAIT_TIMEOUT_MS)
 }
 
 fn gateway_recall_preset(controller: &DeviceController, params: &Value) -> Result<Value, String> {
@@ -1293,7 +1251,10 @@ fn gateway_list_preset_slots(controller: &DeviceController) -> Result<Value, Str
     }
     controller.refresh_preset_library()?;
     if controller
-        .wait_for_preset_list(&snapshot.setlist_key, Duration::from_secs(25))
+        .wait_for_preset_list(
+            &snapshot.setlist_key,
+            Duration::from_millis(profile::PRESET_SYNC_TIMEOUT_MS),
+        )
         .is_none()
     {
         return Err("The active preset slots did not finish loading".into());
@@ -1316,13 +1277,15 @@ fn execute_preset_mutation(
         execute_planned_write(controller, &stage.write)?;
         let verification = stage.verification;
         if !matches!(verification, GatewayVerification::None) {
-            let after = wait_for_transaction_event(
+            let verification_policy =
+                runtime_request::gateway_verification_policy(stage.timeout_ms, 0);
+            let after = verify_gateway_write_on_schedule(
                 controller,
                 &events,
                 verification.clone(),
                 before_sequence,
-                Duration::from_millis(stage.timeout_ms),
-            )
+                &verification_policy,
+            )?
             .ok_or_else(|| {
                 "The preset operation did not produce a verified device snapshot".to_string()
             })?;
@@ -1349,7 +1312,7 @@ fn execute_preset_mutation(
                 listing.files.iter().any(|file| {
                     file.position == preset.position
                         && !file.name.is_empty()
-                        && stored_preset_name_matches(&preset.name, &file.name)
+                        && runtime_request::stored_preset_name_matches(&preset.name, &file.name)
                 })
             })
         })?;
@@ -1360,7 +1323,7 @@ fn execute_preset_mutation(
                 .find(|file| {
                     file.position == preset.position
                         && !file.name.is_empty()
-                        && stored_preset_name_matches(&preset.name, &file.name)
+                        && runtime_request::stored_preset_name_matches(&preset.name, &file.name)
                 })
                 .ok_or_else(|| {
                     format!(
@@ -1395,19 +1358,6 @@ fn execute_preset_mutation(
         "savedName": plan.saved_name,
         "snapshot": after,
     }))
-}
-
-fn stored_preset_name_matches(requested: &str, stored: &str) -> bool {
-    if requested == stored {
-        return true;
-    }
-    let Some((base, suffix)) = stored.rsplit_once('_') else {
-        return false;
-    };
-    !base.is_empty()
-        && !suffix.is_empty()
-        && suffix.chars().all(|character| character.is_ascii_digit())
-        && requested.starts_with(base)
 }
 
 fn ensure_preset_listing_loaded(
@@ -1718,6 +1668,14 @@ mod tests {
     use super::*;
 
     #[test]
+    fn preset_recall_recovery_uses_the_complete_shared_ready_window() {
+        assert_eq!(
+            preset_recall_recovery_timeout(),
+            Duration::from_millis(profile::READY_WAIT_TIMEOUT_MS)
+        );
+    }
+
+    #[test]
     fn preset_recall_results_satisfy_their_own_generated_contract() {
         // Regression: recallPreset, navigateBank and reloadPreset are contracted
         // as DeviceActionResult but returned only {detail, snapshot}. The host
@@ -1762,15 +1720,34 @@ mod tests {
 
     #[test]
     fn coros_preset_name_deduplication_is_accepted_without_accepting_unrelated_names() {
-        assert!(stored_preset_name_matches("Crying Wah", "Crying Wah"));
-        assert!(stored_preset_name_matches("Crying Wah", "Crying Wah_1"));
-        assert!(stored_preset_name_matches(
+        assert!(runtime_request::stored_preset_name_matches(
+            "Crying Wah",
+            "Crying Wah"
+        ));
+        assert!(runtime_request::stored_preset_name_matches(
+            "Crying Wah",
+            "Crying Wah_1"
+        ));
+        assert!(runtime_request::stored_preset_name_matches(
             "Cali Basswalk [Ret1]",
             "Cali Basswalk [Ret_1"
         ));
-        assert!(!stored_preset_name_matches("Crying Wah", "Crying Wah copy"));
-        assert!(!stored_preset_name_matches("Crying Wah", "Other_1"));
-        assert!(!stored_preset_name_matches("Crying Wah", "Crying Wah_x"));
+        assert!(!runtime_request::stored_preset_name_matches(
+            "Crying Wah",
+            "Crying Wah copy"
+        ));
+        assert!(!runtime_request::stored_preset_name_matches(
+            "Crying Wah",
+            "Other_1"
+        ));
+        assert!(!runtime_request::stored_preset_name_matches(
+            "Crying Wah",
+            "Crying Wah_x"
+        ));
+        assert!(!runtime_request::stored_preset_name_matches(
+            "Crying Wah Plus",
+            "Crying Wah_1"
+        ));
     }
 
     #[test]

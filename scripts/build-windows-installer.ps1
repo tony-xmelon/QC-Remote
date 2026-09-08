@@ -63,6 +63,14 @@ try {
 finally {
     Pop-Location
 }
+if ($env:QC_PUBLIC_RELEASE -eq "1") {
+    $publicWebAssets = Get-ChildItem (Join-Path $repositoryRoot "apps\windows\dist\assets") -File -Filter "*.js"
+    foreach ($marker in @("generativelanguage.googleapis.com", "Google Gemini API")) {
+        if ($publicWebAssets | Select-String -SimpleMatch $marker -Quiet) {
+            throw "Public Windows web assets expose disabled direct-Gemini marker '$marker'."
+        }
+    }
+}
 $tauriConfig = Get-Content -LiteralPath (Join-Path $tauriRoot "tauri.conf.json") -Raw | ConvertFrom-Json
 $expectedInstallerName = "$($tauriConfig.productName)_$($tauriConfig.version)_x64-setup.exe"
 $expectedInstallerPath = Join-Path $env:CARGO_TARGET_DIR "release\bundle\nsis\$expectedInstallerName"

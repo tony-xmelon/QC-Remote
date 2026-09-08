@@ -8,7 +8,6 @@ const iconsSource = readFileSync(join(root, "packages/typescript/qc-ui/src/theme
 const deviceGlyphSource = readFileSync(join(root, "packages/typescript/qc-ui/src/device-glyph.tsx"), "utf8");
 const fixtureSource = readFileSync(join(root, "packages/typescript/qc-ui/src/coros-screen-fixtures.tsx"), "utf8");
 const colors = JSON.parse(readFileSync(join(root, "packages/typescript/qc-theme/src/colors.json"), "utf8"));
-const detailsRoot = join(root, "references/qc-ui-official-details/coros-4.1.0");
 const appGoldenRoot = join(root, "references/qc-ui-app-golden/v1");
 const appGolden = JSON.parse(readFileSync(join(appGoldenRoot, "manifest.json"), "utf8"));
 
@@ -31,17 +30,9 @@ for (const family of manifest.families) {
   for (const paletteToken of family.paletteTokens) if (!token(paletteToken)) failures.push(`${family.type} has unknown palette token ${paletteToken}`);
 }
 
-for (const exact of manifest.exactOfficialVectors) {
-  const source = readFileSync(join(detailsRoot, exact.source), "utf8").toLowerCase();
-  for (const color of exact.colors) {
-    const namedColor = color === `#${"f".repeat(6)}` ? 'fill="white"' : color === `#${"0".repeat(6)}` ? 'fill="black"' : null;
-    if (!source.includes(color.toLowerCase()) && !(namedColor && source.includes(namedColor))) failures.push(`${exact.icon} source lacks ${color}`);
-  }
-  for (const path of exact.paths) if (!source.includes(path.toLowerCase())) failures.push(`${exact.icon} source lacks vector ${path}`);
-}
-
-if (!deviceGlyphSource.includes("export function QcDeviceGlyph")) failures.push("missing canonical code-drawn device glyph owner");
-if (/<image\b|qc-block-samples|QC_VISUAL_ASSETS/.test(deviceGlyphSource)) failures.push("device glyphs must not depend on removed reference artwork");
+if (!deviceGlyphSource.includes("export function QcDeviceGlyph")) failures.push("missing canonical device glyph owner");
+const categoryGlyphSource = readFileSync(join(root, "packages/typescript/qc-ui/src/device-category-glyph.tsx"), "utf8");
+if (!deviceGlyphSource.includes("QcDeviceCategoryGlyph") || /<image\b|data:image|base64/.test(deviceGlyphSource + categoryGlyphSource)) failures.push("device glyphs must use the shared neutral vector registry without sprite or raster exceptions");
 
 for (const measurement of manifest.screenMeasurements) {
   const measuredTokens = measurement.paletteTokens.map((paletteToken) => token(paletteToken)?.toLowerCase());
@@ -102,4 +93,4 @@ if (failures.length) {
 
 const variants = manifest.families.reduce((sum, family) => sum + family.variants.length, 0);
 const coveredVariants = variants - Object.values(uncovered).reduce((sum, missing) => sum + missing.length, 0);
-console.log(JSON.stringify({ verified: true, coverageComplete: Object.keys(uncovered).length === 0, families: manifest.families.length, variants, screenMeasuredVariants: coveredVariants, exactOfficialVectors: manifest.exactOfficialVectors.length, paletteAnchors: [...new Set(manifest.families.flatMap((family) => family.paletteTokens))].length, uncovered }));
+console.log(JSON.stringify({ verified: true, coverageComplete: Object.keys(uncovered).length === 0, families: manifest.families.length, variants, screenMeasuredVariants: coveredVariants, neutralVectorRegistry: true, paletteAnchors: [...new Set(manifest.families.flatMap((family) => family.paletteTokens))].length, uncovered }));

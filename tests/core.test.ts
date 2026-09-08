@@ -25,7 +25,7 @@ test("tempo pulse phase remains stable across the QC's 24 clock ticks", () => {
 import { QcCommandCoordinator } from "../packages/typescript/qc-core/src/command-coordinator.ts";
 import { inputRouteOptions, routeOptionValue, routeOptionsForRow, routePickerGroup, routePickerLabel } from "../packages/typescript/qc-core/src/routing.ts";
 import { assistantActionCommand, assistantCommandDetail, assistantIntentCommand } from "../packages/typescript/qc-core/src/assistant-execution.ts";
-import { appendConversationMessage, recentModelConversation, runToolConversation, textModelConversationPrompt } from "../packages/typescript/qc-core/src/chat-session.ts";
+import { appendConversationMessage, recentModelConversation, remotePromptContainsCredentialUrl, runToolConversation, textModelConversationPrompt } from "../packages/typescript/qc-core/src/chat-session.ts";
 import { SHARED_QC_ASSISTANT_TOOLS, assistantSystemInstructions, assistantToolCatalog, booleanAssistantArgument, isReadOnlyQcAssistantTool, numericAssistantArgument, parseAssistantAccessMode, validateAssistantToolCalls } from "../packages/typescript/qc-core/src/assistant-tools.ts";
 
 test("core stays independent of UI and native runtimes", () => {
@@ -375,6 +375,39 @@ test("assistant replies use one allow-list and validation path", () => {
   assert.deepEqual(validateAssistantActions(reply), [{ name: "select_scene", scene: 2 }]);
   assert.match(formatSnapshotSummary(demoSnapshot), /Scene A \(Clean\), 120 BPM/);
   assert.deepEqual(parseAssistantIntent("previous preset"), { kind: "preset-step", delta: -1 });
+});
+
+test("prior attachment bytes are not silently retransmitted with later model turns", () => {
+  const history = [
+    { id: 1, role: "user" as const, text: "Inspect this", attachments: [{ name: "private.wav", mediaType: "audio/wav", data: "private-base64" }] },
+    { id: 2, role: "assistant" as const, text: "Done", origin: "ai" as const },
+  ];
+  assert.deepEqual(recentModelConversation(history, 10, { includeAttachments: false }), [
+    { role: "user", content: "Inspect this" },
+    { role: "assistant", content: "Done" },
+  ]);
+  assert.equal(recentModelConversation(history, 10)[0]?.attachments?.[0]?.data, "private-base64");
+});
+
+test("remote prompts reject credential-bearing URLs without blocking public links", () => {
+  for (const prompt of [
+    "open https://user:password@example.com/file",
+    "inspect https://example.com/file?access_token=private",
+    "inspect https://storage.example.com/file?X-Amz-Signature=private&X-Amz-Expires=60",
+    "inspect https://storage.example.com/file?x-goog-credential=private",
+    "inspect https://example.com/file?sig=private",
+  ]) assert.equal(remotePromptContainsCredentialUrl(prompt), true);
+  for (const prompt of [
+    "watch https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    "read https://example.com/article?lang=en&page=2",
+    "set delay to 20%",
+  ]) assert.equal(remotePromptContainsCredentialUrl(prompt), false);
+});
+
+test("snapshot summaries do not disclose custom device names", () => {
+  const summary = formatSnapshotSummary({ ...demoSnapshot, deviceName: "Personal Stage Rig" });
+  assert.match(summary, /^Quad Cortex is on /);
+  assert.doesNotMatch(summary, /Personal Stage Rig/);
 });
 
 test("assistant device commands resolve once for every platform", () => {

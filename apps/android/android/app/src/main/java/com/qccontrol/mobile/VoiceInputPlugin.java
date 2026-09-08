@@ -3,6 +3,7 @@ package com.qccontrol.mobile;
 import android.Manifest;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Build;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
@@ -28,8 +29,15 @@ public class VoiceInputPlugin extends Plugin implements RecognitionListener {
     @PluginMethod
     public void available(PluginCall call) {
         JSObject result = new JSObject();
-        result.put("available", SpeechRecognizer.isRecognitionAvailable(getContext()));
+        boolean onDeviceAvailable = onDeviceRecognitionAvailable();
+        result.put("available", onDeviceAvailable || SpeechRecognizer.isRecognitionAvailable(getContext()));
+        result.put("onDeviceAvailable", onDeviceAvailable);
         call.resolve(result);
+    }
+
+    private boolean onDeviceRecognitionAvailable() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+            && SpeechRecognizer.isOnDeviceRecognitionAvailable(getContext());
     }
 
     @PluginMethod
@@ -49,14 +57,16 @@ public class VoiceInputPlugin extends Plugin implements RecognitionListener {
 
     private void beginRecognition(PluginCall call) {
         getActivity().runOnUiThread(() -> {
-            if (!SpeechRecognizer.isRecognitionAvailable(getContext())) {
+            if (!onDeviceRecognitionAvailable() && !SpeechRecognizer.isRecognitionAvailable(getContext())) {
                 call.reject("Speech recognition is unavailable on this device.", "VOICE_UNAVAILABLE");
                 return;
             }
             if (activeCall != null) activeCall.reject("Voice input was replaced by a new request.", "VOICE_REPLACED");
             activeCall = call;
             if (recognizer != null) recognizer.destroy();
-            recognizer = SpeechRecognizer.createSpeechRecognizer(getContext());
+            recognizer = onDeviceRecognitionAvailable()
+                ? SpeechRecognizer.createOnDeviceSpeechRecognizer(getContext())
+                : SpeechRecognizer.createSpeechRecognizer(getContext());
             recognizer.setRecognitionListener(this);
             Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
             intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);

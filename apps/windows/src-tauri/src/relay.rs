@@ -3,8 +3,8 @@ use serde::Serialize;
 use std::sync::{Arc, Mutex};
 use tokio::sync::watch;
 
-// Keep the legacy service key so upgrades retain access to saved relay credentials.
-const CREDENTIAL_SERVICE: &str = "QC Control";
+const CREDENTIAL_SERVICE: &str = "QC Remote";
+const LEGACY_CREDENTIAL_SERVICE: &str = "QC Control";
 const CREDENTIAL_ACCOUNT: &str = "outbound-public-relay-v1";
 const ACCESS_MODE_ACCOUNT: &str = "outbound-public-relay-access-v1";
 
@@ -139,8 +139,18 @@ fn credential_entry() -> Result<keyring::Entry, String> {
         .map_err(|_| "Windows Credential Manager is unavailable".to_string())
 }
 
+fn legacy_credential_entry() -> Result<keyring::Entry, String> {
+    keyring::Entry::new(LEGACY_CREDENTIAL_SERVICE, CREDENTIAL_ACCOUNT)
+        .map_err(|_| "Windows Credential Manager is unavailable".to_string())
+}
+
 fn access_mode_entry() -> Result<keyring::Entry, String> {
     keyring::Entry::new(CREDENTIAL_SERVICE, ACCESS_MODE_ACCOUNT)
+        .map_err(|_| "Windows Credential Manager is unavailable".to_string())
+}
+
+fn legacy_access_mode_entry() -> Result<keyring::Entry, String> {
+    keyring::Entry::new(LEGACY_CREDENTIAL_SERVICE, ACCESS_MODE_ACCOUNT)
         .map_err(|_| "Windows Credential Manager is unavailable".to_string())
 }
 
@@ -150,6 +160,13 @@ fn load_access_mode() -> AccessMode {
             entry
                 .get_password()
                 .map_err(|_| "Relay access mode is not stored".to_string())
+        })
+        .or_else(|_| {
+            legacy_access_mode_entry().and_then(|entry| {
+                entry
+                    .get_password()
+                    .map_err(|_| "Relay access mode is not stored".to_string())
+            })
         })
         .ok()
         .and_then(|value| AccessMode::parse(&value).ok())
@@ -173,7 +190,15 @@ fn load_credentials() -> Result<Option<Credentials>, String> {
         Ok(value) => serde_json::from_str(&value).map(Some).map_err(|_| {
             "The stored public-relay credential is invalid; unpair and pair again".into()
         }),
-        Err(keyring::Error::NoEntry) => Ok(None),
+        Err(keyring::Error::NoEntry) => match legacy_credential_entry()?.get_password() {
+            Ok(value) => serde_json::from_str(&value).map(Some).map_err(|_| {
+                "The stored public-relay credential is invalid; unpair and pair again".into()
+            }),
+            Err(keyring::Error::NoEntry) => Ok(None),
+            Err(_) => Err(
+                "Could not read the public-relay credential from Windows Credential Manager".into(),
+            ),
+        },
         Err(_) => {
             Err("Could not read the public-relay credential from Windows Credential Manager".into())
         }
@@ -190,9 +215,19 @@ fn store_credentials(credentials: &Credentials) -> Result<(), String> {
 
 fn clear_credentials() -> Result<(), String> {
     match credential_entry()?.delete_credential() {
+        Ok(()) | Err(keyring::Error::NoEntry) => {}
+        Err(_) => {
+            return Err(
+                "Could not remove the public-relay credential from Windows Credential Manager"
+                    .into(),
+            );
+        }
+    }
+    match legacy_credential_entry()?.delete_credential() {
         Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
         Err(_) => Err(
-            "Could not remove the public-relay credential from Windows Credential Manager".into(),
+            "Could not remove the legacy public-relay credential from Windows Credential Manager"
+                .into(),
         ),
     }
 }

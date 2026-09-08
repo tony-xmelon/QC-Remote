@@ -1,0 +1,44 @@
+name: Bug report
+description: Report reproducible QC Remote behavior without sharing protected or sensitive material
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        QC Remote is independent and unofficial. Please describe the behavior in text using the minimum information needed to reproduce it.
+  - type: checkboxes
+    id: safe-material
+    attributes:
+      label: Safe report
+      options:
+        - label: I have not included credentials, tokens, serial numbers, personal data, device/manual screenshots, copyrighted media, proprietary presets, captures, or other material I am not authorized to share.
+          required: true
+  - type: input
+    id: app-version
+    attributes:
+      label: QC Remote version
+      placeholder: e.g. Windows 0.1.x or Android 0.3.x
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      placeholder: e.g. Windows 11 or Android 15
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What happened?
+      description: Describe the expected result, actual result, and minimal reproduction steps. Redact identifying values.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Redacted diagnostics
+      description: Paste only QC Remote's redacted diagnostic export after reviewing it yourself. Do not attach raw device dumps or logs containing sensitive values.
+      render: text

@@ -1,12 +1,15 @@
 use crate::flight::FlightRecorder;
 use hidapi::{HidApi, HidDevice};
 use prost::Message;
+use qc_device_runtime::initialization::{
+    DeviceStartupAction, DeviceStartupRuntime, InitializationAction,
+};
+use qc_device_runtime::transport::{ReportLayout, TransportRuntime};
 use qc_protocol::commands::{self, OutboundMessage};
 use qc_protocol::framing;
 use qc_protocol::profile;
 use qc_protocol::proto;
 use qc_protocol::proto::cortex_protobuf_v2 as pa;
-use qc_protocol::session::{FrameAssembler, SessionMachine};
 use std::cell::UnsafeCell;
 use std::collections::HashMap;
 use std::io::Read;
@@ -30,6 +33,8 @@ pub enum UsbError {
     NotAvailable,
     #[error("Quad Cortex HID opened, but no ResetCommsBuffers reply arrived within the native handshake timeout")]
     HandshakeTimeout,
+    #[error("Quad Cortex initialization failed: {0}")]
+    Initialization(String),
     #[error("USB read failed: {0}")]
     Read(String),
     #[error("invalid QC frame: {0}")]
@@ -300,8 +305,6 @@ pub struct QcUsb {
     // ahead of HidApi so shutdown joins both I/O lanes and releases USB first.
     io: HidIo,
     _api: HidApi,
-    frames: FrameAssembler,
-    frame_report_count: usize,
     next_sequence: u64,
     flight: FlightRecorder,
 }
@@ -318,15 +321,13 @@ impl QcUsb {
         Ok(Self {
             io,
             _api: api,
-            frames: FrameAssembler::new(),
-            frame_report_count: 0,
             next_sequence: 1,
             flight,
         })
     }
 
     pub fn connect(
-        session: &mut SessionMachine,
+        session: &mut TransportRuntime,
         session_clock: &Instant,
         mut report_handshake_attempt: impl FnMut(u32, UsbTelemetry),
     ) -> Result<ConnectedQc, UsbError> {
@@ -337,20 +338,32 @@ impl QcUsb {
             if session.handshake_timed_out(now_ms) {
                 return Err(UsbError::HandshakeTimeout);
             }
-            let Some(attempt) = session.next_handshake_attempt(now_ms) else {
+            let session_id = uuid::Uuid::new_v4().simple().to_string();
+            let Some(attempt) = session.next_handshake_write(now_ms, session_id) else {
                 std::thread::yield_now();
                 continue;
             };
-            let session_id = uuid::Uuid::new_v4().simple().to_string();
             usb.flight
-                .event(format!("handshake-attempt-{}", attempt.number));
-            usb.send_command(commands::reset_comms(attempt.number as u64, session_id));
-            report_handshake_attempt(attempt.number, usb.telemetry());
+                .event(format!("handshake-attempt-{}", attempt.attempt));
+            usb.send_command_with_layout(attempt.message.clone(), attempt.layout);
+            report_handshake_attempt(attempt.attempt, usb.telemetry());
             while session.awaiting_handshake_reply(session_clock.elapsed().as_millis() as u64) {
-                if let Some(message) = usb.read_message(200)? {
+                if let Some(message) = usb.read_message(session, 200)? {
                     if message.message_type == profile::MESSAGE_TYPE_RESET_COMMS_BUFFERS {
+                        if !attempt.matches_reply(&message.payload) {
+                            usb.flight.event("handshake-reply-mismatch");
+                            continue;
+                        }
                         usb.flight.event("handshake-reply");
-                        let connected = usb.finish_hello(attempt.number as u64 + 1)?;
+                        let (mut startup, _) =
+                            DeviceStartupRuntime::start(attempt.request_id(), attempt.session_id());
+                        let first_action = startup.observe(message.message_type, &message.payload);
+                        let connected = usb.finish_hello(
+                            attempt.attempt as u64 + 1,
+                            startup,
+                            first_action,
+                            session,
+                        )?;
                         session.handshake_completed(
                             session_clock.elapsed().as_millis() as u64,
                             connected.synchronized,
@@ -365,50 +378,93 @@ impl QcUsb {
         }
     }
 
-    fn finish_hello(mut self, request_id: u64) -> Result<ConnectedQc, UsbError> {
-        // Version, ModelRepo, connection state and live subscriptions share
-        // one protocol plan with Android. Directory enumeration stays on
-        // demand so it cannot starve the active preset.
+    fn finish_hello(
+        mut self,
+        request_id: u64,
+        mut startup: DeviceStartupRuntime,
+        mut startup_action: DeviceStartupAction,
+        session: &mut TransportRuntime,
+    ) -> Result<ConnectedQc, UsbError> {
+        // Cortex Control stages startup. Each decoded response opens exactly
+        // one following state; message-type arrival alone is not a gate.
         self.flight.event("initialization-started");
-        for message in commands::initialization(unix_time_ms()) {
-            self.send_command(message);
-        }
-        self.flight.event("initialization-sent");
-        let deadline = Instant::now() + Duration::from_millis(profile::INITIAL_SYNC_TIMEOUT_MS);
+        let initialization_clock = Instant::now();
         let mut message_counts: HashMap<u16, usize> = HashMap::new();
         let mut latest_messages = HashMap::new();
         let mut initial_messages = Vec::new();
-        let mut synchronized = self.collect_until_preset(
-            deadline,
-            100,
-            &mut initial_messages,
-            &mut message_counts,
-            &mut latest_messages,
-        )?;
-        if !synchronized {
-            self.send_command(commands::read_current_preset(request_id));
-            let deadline = Instant::now() + Duration::from_millis(profile::PRESET_SYNC_TIMEOUT_MS);
-            synchronized = self.collect_until_preset(
-                deadline,
-                200,
-                &mut initial_messages,
-                &mut message_counts,
-                &mut latest_messages,
-            )?;
-        }
-        let required_seed_types = [2_u16, 13, 14, 17, 34];
-        for message_type in required_seed_types {
-            if !latest_messages.contains_key(&message_type) {
-                self.send_command(commands::read(message_type));
+
+        loop {
+            startup_action = match startup_action {
+                DeviceStartupAction::Wait => DeviceStartupAction::Wait,
+                DeviceStartupAction::Send(messages) => {
+                    for message in messages {
+                        self.send_command(message);
+                    }
+                    DeviceStartupAction::Wait
+                }
+                DeviceStartupAction::SendThenBuild(messages) => {
+                    for message in messages {
+                        self.send_command(message);
+                    }
+                    startup.begin_building()
+                }
+                DeviceStartupAction::Connected => break,
+                DeviceStartupAction::Invalid(error) => {
+                    return Err(UsbError::Initialization(format!(
+                        "device rejected startup: {error:?}"
+                    )))
+                }
+                DeviceStartupAction::Failed(error) => {
+                    return Err(UsbError::Initialization(format!(
+                        "protocol startup error: {error:?}"
+                    )))
+                }
+            };
+            if !matches!(startup_action, DeviceStartupAction::Wait) {
+                continue;
+            }
+            if initialization_clock.elapsed().as_millis() as u64 >= profile::READY_WAIT_TIMEOUT_MS {
+                return Err(UsbError::Initialization(format!(
+                    "timed out in {:?}",
+                    startup.phase()
+                )));
+            }
+            if let Some(message) = self.read_message(session, 100)? {
+                record_initial(
+                    &mut initial_messages,
+                    &mut message_counts,
+                    &mut latest_messages,
+                    message.clone(),
+                );
+                startup_action = startup.observe(message.message_type, &message.payload);
             }
         }
-        let seed_deadline = Instant::now() + Duration::from_secs(3);
-        while Instant::now() < seed_deadline
-            && required_seed_types
-                .iter()
-                .any(|message_type| !latest_messages.contains_key(message_type))
-        {
-            if let Some(message) = self.read_message(100)? {
+
+        self.flight.event("initialization-connected");
+        self.send_command(commands::sync_system_time(unix_time_ms()));
+
+        // Keep the existing bounded preset/state coherence check, but start it
+        // only after the Updater gate and seed it from everything captured
+        // during staged boot. This cannot replay Version/ModelRepo/subscriptions.
+        let now_ms = initialization_clock.elapsed().as_millis() as u64;
+        let mut initialization = startup
+            .post_boot_initialization(now_ms, request_id)
+            .map_err(|error| {
+                UsbError::Initialization(format!("could not start state seed: {error:?}"))
+            })?;
+        let synchronized = loop {
+            let now_ms = initialization_clock.elapsed().as_millis() as u64;
+            match initialization.advance(now_ms) {
+                InitializationAction::Wait => {}
+                InitializationAction::Send(messages) => {
+                    for message in messages {
+                        self.send_command(message);
+                    }
+                }
+                InitializationAction::Complete { synchronized } => break synchronized,
+            }
+            if let Some(message) = self.read_message(session, 100)? {
+                initialization.observe(message.message_type);
                 record_initial(
                     &mut initial_messages,
                     &mut message_counts,
@@ -416,7 +472,7 @@ impl QcUsb {
                     message,
                 );
             }
-        }
+        };
         // Directory transfer is deliberately not started here. File READ can
         // enqueue hundreds of folder messages and starve the first live
         // command for several seconds; the directory API starts it on demand.
@@ -434,70 +490,50 @@ impl QcUsb {
         })
     }
 
-    fn collect_until_preset(
-        &mut self,
-        deadline: Instant,
-        read_timeout_ms: i32,
-        initial_messages: &mut Vec<IncomingMessage>,
-        message_counts: &mut HashMap<u16, usize>,
-        latest_messages: &mut HashMap<u16, IncomingMessage>,
-    ) -> Result<bool, UsbError> {
-        while Instant::now() < deadline {
-            if let Some(message) = self.read_message(read_timeout_ms)? {
-                let is_preset = message.message_type == profile::MESSAGE_TYPE_RECALL_PRESET;
-                record_initial(initial_messages, message_counts, latest_messages, message);
-                if is_preset {
-                    return Ok(true);
-                }
-            }
-        }
-        Ok(false)
+    pub fn send(&mut self, message_type: u16, payload: Vec<u8>) {
+        self.send_command(OutboundMessage {
+            message_type,
+            payload,
+        });
     }
 
-    pub fn send(&mut self, message_type: u16, payload: Vec<u8>) {
-        let reports = framing::encode(message_type, &payload);
+    pub fn send_command(&mut self, message: OutboundMessage) {
+        self.send_command_with_layout(message, ReportLayout::ReportIdPrefixed);
+    }
+
+    fn send_command_with_layout(&mut self, message: OutboundMessage, layout: ReportLayout) {
+        let message_type = message.message_type;
+        let reports = TransportRuntime::encode_reports(&message, layout);
         self.flight.outbound(message_type, reports.len());
         for report in reports {
             // Windows reports the QC's accepted status-stage STALL only after
             // the data was delivered. Keep that wait on the permanent TX lane
             // so it cannot block report ingestion or the command dispatcher.
-            if self.io.write(report.to_vec()).is_err() {
+            if self.io.write(report).is_err() {
                 self.flight.event("hid-writer-stopped");
             }
         }
         self.io.record_message(message_type);
     }
 
-    pub fn send_command(&mut self, message: OutboundMessage) {
-        self.send(message.message_type, message.payload);
-    }
-
     pub fn telemetry(&self) -> UsbTelemetry {
         self.io.telemetry()
     }
 
-    pub fn read_message(&mut self, timeout_ms: i32) -> Result<Option<IncomingMessage>, UsbError> {
+    pub fn read_message(
+        &mut self,
+        session: &mut TransportRuntime,
+        timeout_ms: i32,
+    ) -> Result<Option<IncomingMessage>, UsbError> {
         let Some(report) = self.io.read(timeout_ms)? else {
             return Ok(None);
         };
-        if report.len() >= 3 && report[2] & framing::FLAG_FIRST != 0 {
-            self.frame_report_count = 1;
-        } else if self.frame_report_count > 0 {
-            self.frame_report_count = self.frame_report_count.saturating_add(1);
-        }
-        let assembled = match self.frames.push(report) {
-            Ok(assembled) => assembled,
-            Err(error) => {
-                self.frame_report_count = 0;
-                return Err(error.into());
-            }
-        };
-        let Some((message_type, mut payload)) = assembled else {
+        let Some(frame) = session.push_report(&report)? else {
             return Ok(None);
         };
-        self.flight
-            .inbound(message_type, self.frame_report_count.max(1));
-        self.frame_report_count = 0;
+        let message_type = frame.message_type;
+        let mut payload = frame.payload;
+        self.flight.inbound(message_type, frame.report_count);
         // ModelRepo is the largest compressed message. Keep its decompression
         // off this permanent USB worker; the metadata worker inflates it only
         // when the catalog is actually consumed.

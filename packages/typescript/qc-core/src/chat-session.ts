@@ -1,19 +1,41 @@
 export type ConversationRole = "user" | "assistant" | "tool";
-export type ConversationMessage<TAttachment = unknown> = { id: number; role: ConversationRole; text: string; attachments?: TAttachment[] };
+export type ConversationOrigin = "ai" | "app" | "user" | "device-tool";
+export type ConversationMessage<TAttachment = unknown> = { id: number; role: ConversationRole; text: string; attachments?: TAttachment[]; origin?: ConversationOrigin };
 export type ModelConversationMessage<TAttachment = unknown> = { role: "user" | "assistant"; content: string; attachments?: TAttachment[] };
 export type ToolLoopResponse<TToolCall, TUsage> = { text: string; toolCalls: TToolCall[]; usage?: TUsage };
 export type ToolExecutionResult<TAttachment = unknown> = { detail: string; attachments?: TAttachment[] };
 export type ToolLoopResult = { cancelled: boolean; producedResponse: boolean; totalToolCalls: number };
 
-export function recentModelConversation<TAttachment>(messages: readonly ConversationMessage<TAttachment>[], limit: number): ModelConversationMessage<TAttachment>[] {
+const sensitiveUrlParameter = /^(?:access_?token|api_?key|auth(?:orization)?|code|credential|jwt|key|pass(?:word)?|secret|sig(?:nature)?|token|x-amz-(?:credential|security-token|signature)|x-goog-(?:credential|signature))$/i;
+
+/** Reject remote prompts containing URLs that appear to grant private access. */
+export function remotePromptContainsCredentialUrl(text: string): boolean {
+  for (const match of text.matchAll(/https?:\/\/[^\s<>"'`]+/gi)) {
+    try {
+      const url = new URL(match[0].replace(/[),.;!?]+$/, ""));
+      if (url.username || url.password) return true;
+      for (const key of url.searchParams.keys()) if (sensitiveUrlParameter.test(key)) return true;
+    } catch {
+      // Malformed text is left to the model; only recognizable credential URLs
+      // are blocked so ordinary prose and local device commands keep working.
+    }
+  }
+  return false;
+}
+
+export function recentModelConversation<TAttachment>(
+  messages: readonly ConversationMessage<TAttachment>[],
+  limit: number,
+  options: { includeAttachments?: boolean } = {},
+): ModelConversationMessage<TAttachment>[] {
   return messages.filter((entry) => entry.role !== "tool").slice(-Math.max(0, limit)).map((entry) => ({
     role: entry.role as "user" | "assistant", content: entry.text,
-    ...(entry.attachments?.length ? { attachments: entry.attachments } : {})
+    ...(options.includeAttachments !== false && entry.attachments?.length ? { attachments: entry.attachments } : {})
   }));
 }
 
-export function appendConversationMessage<TAttachment>(messages: readonly ConversationMessage<TAttachment>[], id: number, role: ConversationRole, text: string, attachments?: TAttachment[]): ConversationMessage<TAttachment>[] {
-  return [...messages, { id, role, text, ...(attachments?.length ? { attachments } : {}) }];
+export function appendConversationMessage<TAttachment>(messages: readonly ConversationMessage<TAttachment>[], id: number, role: ConversationRole, text: string, attachments?: TAttachment[], origin?: ConversationOrigin): ConversationMessage<TAttachment>[] {
+  return [...messages, { id, role, text, ...(attachments?.length ? { attachments } : {}), ...(origin ? { origin } : {}) }];
 }
 
 /** Serialize bounded history for providers that expose only a text prompt API. */

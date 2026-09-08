@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "incidentId": "QC-WIN-2026-09-07-YSOD-01",
+  "status": "mitigated-monitoring",
+  "releaseBlocking": false,
+  "platform": "windows",
+  "device": {
+    "product": "Neural DSP Quad Cortex",
+    "firmwareReportedByIdentity": "d14e",
+    "serial": "sha256:219618c3781c"
+  },
+  "run": {
+    "sourceReport": "tmp/windows-physical-hardening-full-r12.json",
+    "startedAtLocal": "2026-09-07T16:09:32+03:00",
+    "finishedAtLocal": "2026-09-07T16:12:15+03:00",
+    "transport": "gateway-stdio",
+    "contractVersion": 1,
+    "contractSha256": "cfe28176a7f7909b5e1b60ea8281733ec88db5c7e61be1a93f1abc185305ce64",
+    "summary": { "passed": 95, "failed": 1, "skipped": 12, "complete": false }
+  },
+  "operatorObservation": {
+    "report": "The Quad Cortex displayed a yellow screen of death.",
+    "source": "physical-device operator",
+    "machineVerifiable": false
+  },
+  "observedSequence": [
+    {
+      "order": 1,
+      "source": "conformance report",
+      "event": "duplicate_setlist passed after 39931 ms",
+      "details": {
+        "createdSetlist": "QC-MCP-TEST-mtrfu2py-copy",
+        "createdSetlistPath": "/media/p4/Presets/QC-MCP-TEST-mtrfu2py-copy",
+        "activePreset": "Fender Deluxe 37",
+        "activePresetPosition": 0,
+        "verification": "authoritative snapshot present in source report"
+      }
+    },
+    {
+      "order": 2,
+      "source": "conformance harness and broker",
+      "event": "The harness-owned scratch-preset restoration recall required USB recovery",
+      "details": {
+        "targetSetlistPath": "/media/p4/Presets/My Presets",
+        "targetPresetPosition": 13,
+        "targetPresetName": "QC MCP TEST"
+      }
+    },
+    {
+      "order": 3,
+      "source": "conformance report",
+      "event": "Recovery ended while handshaking",
+      "details": {
+        "error": "-32010: Preset recall required USB recovery, but reconnection ended in handshaking: Waiting for Quad Cortex ResetCommsBuffers reply (attempt 3)",
+        "resetMessagesSent": 3,
+        "resetRepliesObserved": 0,
+        "connected": false,
+        "synchronized": false
+      }
+    },
+    {
+      "order": 4,
+      "source": "native broker probe",
+      "event": "The HID endpoint initially opened but no ResetCommsBuffers reply arrived within 30292 ms",
+      "details": { "present": true, "connected": false, "synchronized": false }
+    },
+    {
+      "order": 5,
+      "source": "physical-device operator and subsequent native broker probe",
+      "event": "The operator reported the yellow screen; the subsequent probe found the Quad Cortex non-enumerable",
+      "details": {
+        "present": false,
+        "connected": false,
+        "synchronized": false,
+        "probeDetail": "Quad Cortex is not currently enumerable"
+      }
+    }
+  ],
+  "causality": {
+    "established": false,
+    "statement": "The yellow screen occurred after setlist duplication and during or after the restoration recall recovery sequence. Current evidence does not establish whether duplication, recall, USB reset recovery, their timing, or an independent firmware condition caused the crash."
+  },
+  "impact": {
+    "windowsEvidenceValid": true,
+    "backupAttempted": false,
+    "automaticRestorationCompleted": true,
+    "possibleResidualState": [
+      "The temporary setlist QC-MCP-TEST-mtrfu2py-copy may remain on the device.",
+      "The device may still select Fender Deluxe 37 in the temporary setlist after reboot."
+    ],
+    "androidComparison": "The preceding Android physical run completed 107 passed, 0 failed, 0 skipped and remained synchronized; no yellow-screen failure was observed there."
+  },
+  "postRebootRecovery": {
+    "probe": {
+      "present": true,
+      "connected": true,
+      "synchronized": true,
+      "handshakeMs": 1292,
+      "activePresetName": "Fender Deluxe 37"
+    },
+    "authoritativeStartingLocation": {
+      "setlistKey": "/media/p4/Presets/QC-MCP-TEST-mtrfu2py-copy",
+      "presetPosition": 0,
+      "presetName": "Fender Deluxe 37"
+    },
+    "catalogState": "The residual setlist key remained active, but the refreshed folder catalog no longer contained QC-MCP-TEST-mtrfu2py-copy; therefore no delete was issued.",
+    "recoveryAction": "Recalled /media/p4/Presets/My Presets slot 13 with optimistic location guards and verified QC MCP TEST as active.",
+    "recovered": true
+  },
+  "mitigationUnderTest": {
+    "changes": [
+      "Preset-recall recovery now uses the shared complete ready-wait timeout instead of a hard-coded 12-second wait.",
+      "Eventually consistent preset-catalog verification now uses shared bounded exponential backoff on Windows and Android. The observed Windows run issued 66 type-4 directory requests during one duplicate_setlist call; the new 500 ms, 1 s, 2 s, 4 s, then 8 s cadence reduces a 45-second stalled verification to approximately nine full-catalog requests.",
+      "The physical harness now records transport lifecycle checkpoints around setlist duplication, catalog confirmation, restoration recall, recall failure, and cleanup."
+    ],
+    "softwareValidation": [
+      "Rust formatting passed",
+      "31 device-broker tests and 57 shared device-runtime tests passed",
+      "strict Clippy passed",
+      "release build passed"
+    ],
+    "physicalValidation": "Completed in tmp/windows-physical-hardening-full-r16.json: 105 passed, 0 failed, 1 intentionally skipped backup. After additionally bounding the broker's internal command and decoder queues, tmp/windows-physical-hardening-full-r17.json repeated the complete non-backup surface with 105 passed, 0 failed, and 1 intentionally skipped backup. The current shared state, backup, transport, request, initialization, and catalog runtime checkpoint was then validated by tmp/windows-physical-hardening-full-r24.json: 105 passed, 0 failed, 1 intentionally skipped backup, including 280 successful stress operations, duplicate_setlist, save, rename, copy, move, delete, session reset/reconnect, screen gestures, and automatic starting-preset restoration. r24 ended ready, connected, and synchronized with a 1678 ms handshake; no yellow screen or USB loss recurred. Its aggregate realtime send latency was 0.165 ms median, 0.340 ms p95, and 1.000 ms maximum; event latency was 41 ms median, 133 ms p95, and 250 ms maximum. Earlier post-mitigation runs r13, r15, r22, and r23 also completed duplicate_setlist without a yellow screen."
+  },
+  "requiredFollowUp": [
+    "Keep the incident in monitoring because firmware causality cannot be proven from one crash.",
+    "Run the separately gated Windows backup case before final distribution; it was intentionally excluded from r16 and is independent of this incident mitigation."
+  ]
+}

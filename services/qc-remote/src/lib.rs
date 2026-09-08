@@ -40,8 +40,12 @@ fn backend_error(code: &'static str, message: impl Into<String>, retryable: bool
 }
 
 fn map_relay_error(error: RelayError) -> BackendError {
-    if matches!(error, RelayError::Device(_)) {
-        return backend_error("device_error", "The paired device rejected the request", false);
+    if let RelayError::Device { retryable, .. } = error {
+        return if retryable {
+            backend_error("device_unavailable", "The paired device is temporarily unavailable", true)
+        } else {
+            backend_error("device_error", "The paired device rejected the request", false)
+        };
     }
     let (code, retryable) = match error {
         RelayError::DeviceOffline | RelayError::Disconnected | RelayError::Timeout => ("device_unavailable", true),
@@ -50,7 +54,7 @@ fn map_relay_error(error: RelayError) -> BackendError {
         RelayError::ConfirmationRequired | RelayError::ConfirmationArgumentRequired(_) => ("confirmation_required", false),
         RelayError::UnknownAction => ("unsupported_action", false),
         RelayError::InvalidArguments => ("invalid_arguments", false),
-        RelayError::Device(_) => unreachable!("device errors are sanitized above"),
+        RelayError::Device { .. } => unreachable!("device errors are sanitized above"),
     };
     backend_error(code, error.to_string(), retryable)
 }
@@ -162,5 +166,31 @@ impl BearerTokenValidator for IntrospectionValidator {
             scopes: result.scope.split_ascii_whitespace().map(str::to_owned).collect(),
             expires_at,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn device_error_retryability_survives_the_public_mcp_boundary() {
+        let transient = map_relay_error(RelayError::Device {
+            code: "READBACK_TIMEOUT".into(),
+            message: "sensitive device detail".into(),
+            retryable: true,
+        });
+        assert_eq!(transient.code, "device_unavailable");
+        assert!(transient.retryable);
+        assert!(!transient.message.contains("sensitive"));
+
+        let terminal = map_relay_error(RelayError::Device {
+            code: "INVALID_ARGUMENT".into(),
+            message: "sensitive device detail".into(),
+            retryable: false,
+        });
+        assert_eq!(terminal.code, "device_error");
+        assert!(!terminal.retryable);
+        assert!(!terminal.message.contains("sensitive"));
     }
 }

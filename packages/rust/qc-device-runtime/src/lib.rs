@@ -8,8 +8,16 @@ use qc_protocol::state::{
 use serde::Serialize;
 use std::collections::HashMap;
 
+pub mod backup;
+pub mod capabilities;
+pub mod catalog;
+pub mod correlation;
 pub mod generated_gateway;
+pub mod initialization;
 pub mod request;
+pub mod state_runtime;
+pub mod transfer;
+pub mod transport;
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]

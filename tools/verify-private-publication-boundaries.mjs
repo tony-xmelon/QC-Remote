@@ -1,9 +1,14 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { basename, dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const ignoredDirectories = new Set([".claude", ".git", ".venv", "artifacts", "node_modules", "references", "target", "tmp"]);
+const privateReferencePatterns = [
+  /^references\/qc-ui-[^/]+\//i,
+  /^packages\/typescript\/qc-theme\/assets\/(?:qc-overview-001|qc-block-samples)\.svg$/i,
+];
 
 function walk(directory) {
   return readdirSync(directory).flatMap((entry) => {
@@ -49,11 +54,24 @@ export function publicationBoundaryErrors(files) {
   return errors;
 }
 
+export function trackedPrivateReferenceErrors(paths) {
+  return paths.map((path) => path.replaceAll("\\", "/")).flatMap((path) => {
+    if (privateReferencePatterns.some((pattern) => pattern.test(path))) {
+      return [`${path} is private reference evidence and must not be tracked or publicly distributed`];
+    }
+    if (path === "apps/android/android/app/google-services.json") {
+      return [`${path} is environment-specific Firebase client configuration and must be injected at build time`];
+    }
+    return [];
+  });
+}
+
 export function currentPublicationBoundaryErrors(root = repositoryRoot) {
   const files = walk(root)
     .filter((path) => ["package.json", "cargo.toml", "pyproject.toml"].includes(basename(path).toLowerCase()))
     .map((path) => ({ path: path.slice(root.length + 1).replaceAll("\\", "/"), content: readFileSync(path, "utf8") }));
-  return publicationBoundaryErrors(files);
+  const tracked = execFileSync("git", ["ls-files"], { cwd: root, encoding: "utf8" }).trim().split(/\r?\n/).filter(Boolean);
+  return [...publicationBoundaryErrors(files), ...trackedPrivateReferenceErrors(tracked)];
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {

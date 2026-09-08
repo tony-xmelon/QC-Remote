@@ -17,7 +17,7 @@ from PIL import Image, ImageChops, ImageEnhance, ImageFilter, ImageOps
 PANEL_SIZE = (1096, 718)
 GRID_SIZE = (800, 480)
 
-# Normalized measurements from Neural DSP's official qc-overview-001.svg.
+# Normalized measurements from the neutral QC chassis vector.
 SVG_LANDMARKS = {
     "screen": {"cx": 0.5, "cy": 0.3213, "w": 0.5396, "h": 0.4649},
     "volume": {"cx": 0.1034, "cy": 0.2947, "w": 0.1121, "h": 0.1711},
@@ -135,7 +135,7 @@ def landmark_metrics(path: Path) -> dict[str, object]:
         "mean_absolute_error_percent": round(sum(errors) / len(errors) * 100, 3),
         "maximum_error_percent": round(max(errors) * 100, 3),
         "group_mean_error_percent": groups,
-        "source": "Neural DSP qc-overview-001.svg",
+        "source": "QC Remote neutral chassis vector",
     }
 
 

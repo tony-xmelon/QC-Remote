@@ -15,12 +15,13 @@ test("device typography ships deterministic Windows and Android faces", () => {
   const deviceCss = read("packages/typescript/qc-ui/src/qc-device-typography.css");
   const themePackage = JSON.parse(read("packages/typescript/qc-theme/package.json"));
   assert.match(themeCss, /@fontsource-variable\/arimo/);
-  assert.match(themeCss, /@fontsource-variable\/roboto/);
+  assert.doesNotMatch(themeCss, /@fontsource-variable\/roboto/);
   assert.equal(themePackage.dependencies["@fontsource-variable/arimo"], "^5.3.0");
-  assert.equal(themePackage.dependencies["@fontsource-variable/roboto"], "^5.3.0");
+  assert.equal(themePackage.dependencies["@fontsource-variable/roboto"], undefined);
   assert.match(deviceCss, /html body #root#root \.qc-screen-bezel \*/);
-  assert.match(deviceCss, /font-family: "Arimo Variable"/);
-  assert.match(deviceCss, /font-family: "Roboto Variable"/);
+  assert.match(deviceCss, /font-family: var\(--qc-font-device-plain\)/);
+  assert.match(themeCss, /--qc-font-device-plain:\s*"Arimo Variable"/);
+  assert.match(themeCss, /--qc-font-device-route:\s*"Arimo Variable"/);
 });
 
 test("shared theme retains every measured native QC color", () => {
@@ -107,11 +108,36 @@ test("shared glyph registry covers hardware, routing, directory, editing, and co
   const icons = read("packages/typescript/qc-ui/src/theme-icons.tsx");
   for (const component of ["QcRouteGlyph", "QcModeGlyph", "QcDirectoryIcon", "QcEditorIcon", "QcUiIcon"]) assert.ok(icons.includes("export function " + component));
   assert.equal(readdirSync("packages/typescript/qc-ui/src").filter((entry) => /icon/i.test(entry)).join(","), "theme-icons.tsx");
+  const categories = read("packages/typescript/qc-ui/src/device-category-glyph.tsx");
+  const screenGlyphs = read("packages/typescript/qc-ui/src/screen-glyphs.tsx");
+  assert.match(categories, /export function QcDeviceCategoryGlyph/);
+  for (const component of ["QcScreenGlyph", "QcCaptureKindGlyph", "QcIoPortGlyph", "QcGigStompGlyph", "QcLooperActionGlyph"]) assert.ok(screenGlyphs.includes("export function " + component));
+  assert.doesNotMatch(categories, /<image\b|data:image|base64/);
+  assert.doesNotMatch(screenGlyphs, /<image\b|data:image|base64/);
   assert.doesNotMatch(read("packages/typescript/qc-ui/src/quad-cortex-surface.tsx"), /function (?:RoutePickerGlyph|DirectoryIcon|ModeGlyph)/);
   assert.doesNotMatch(read("packages/typescript/qc-ui/src/parameter-editor.tsx"), /function ParameterMenuIcon/);
   const fixtures = read("packages/typescript/qc-ui/src/coros-screen-fixtures.tsx");
   assert.match(fixtures, /return <QcModeGlyph mode=\{mode\} \/>/, "fixture modes must delegate to the shared glyph registry");
   assert.match(fixtures, /return <QcDirectoryIcon kind=\{kind\} number=\{number\} \/>/, "fixture Directory icons must delegate to the shared glyph registry");
+});
+
+test("screen controls use shared vectors and theme-owned fonts without character or raster fallbacks", () => {
+  const sourceFiles = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "--", "apps/windows/src", "apps/android/src", "packages/typescript/qc-ui/src"], { encoding: "utf8" })
+    .trim().split(/\r?\n/).filter((file) => /\.(?:css|ts|tsx)$/.test(file) && existsSync(file));
+  const iconCharacter = /[▲▼►▶◀◁▷‹›⌄⌃⋮＋✕✓✔✚⏵⏴■↵⇥✎☆⌫◇♩▥⚙▤↑↓↶↻◉♜▰◴◫♞▣]/u;
+  const literalFont = /(font(?:-family)?|fontFamily)\s*[:=][^;\n}]*(?:Arial|Roboto|Helvetica|Segoe UI|sans-serif|system-ui)/i;
+  for (const file of sourceFiles) {
+    assert.doesNotMatch(read(file), iconCharacter, `${file} must render controls through shared SVG glyph components`);
+    assert.doesNotMatch(read(file), literalFont, `${file} must use shared typography tokens`);
+  }
+
+  const imageOwners = sourceFiles.flatMap((file) => [...read(file).matchAll(/<img\b/g)].map(() => file));
+  assert.deepEqual(imageOwners.sort(), [
+    "apps/android/src/App.tsx",
+    "apps/windows/src/chat-dock.tsx",
+    "packages/typescript/qc-ui/src/assistant-chat-primitives.tsx",
+    "packages/typescript/qc-ui/src/quad-cortex-surface.tsx"
+  ], "only the app mark, neutral chassis asset, and user-supplied chat images may use img elements");
 });
 
 test("production and comparison screens cannot select alternate icon artwork", () => {
@@ -128,23 +154,37 @@ test("production and comparison screens cannot select alternate icon artwork", (
   assert.match(icons, /\| "cab-previous"\s*\| "cab-next"/s, "genuinely distinct contextual artwork must have semantic names");
 });
 
-test("official Directory toolbar glyphs retain exact CorOS vector colors and geometry", () => {
+test("Directory toolbar glyphs use shared colors and the exact device geometry", () => {
   const colors = JSON.parse(read("packages/typescript/qc-theme/src/colors.json"));
   assert.equal(colors.captured.iconPrimary, "#f8fcf8");
   assert.equal(colors.captured.iconToolbarMuted, "#606060");
   const icons = read("packages/typescript/qc-ui/src/theme-icons.tsx");
   for (const path of [
     "M14 4H1v2h13V4Z",
-    "m15 6 4-5 4 5h-8Z",
     "M22 4.254c0 .259-.101.508-.281.695",
     "M10 2a8 8 0 1 0 4.914 14.314",
-  ]) assert.ok(icons.includes(path), `missing official Directory vector: ${path}`);
-  assert.doesNotMatch(icons, /fill=["']#(?:fff|ffffff|616161)["']/i, "official colors must come from the shared measured palette");
+  ]) assert.ok(icons.includes(path), `missing exact Directory vector: ${path}`);
+  assert.doesNotMatch(icons, /fill=["']#(?:fff|ffffff|616161)["']/i, "toolbar colors must come from the shared palette");
 });
 
 test("all canonical visual assets match the theme fingerprints", () => {
   for (const [name, asset] of Object.entries(QC_VISUAL_ASSETS)) {
     assert.equal(sha256(asset.sourcePath), asset.sha256, `${name}: ${asset.sourcePath}`);
+  }
+});
+
+test("canonical asset sources are shared neutral vectors or fonts, never rasters", () => {
+  const canonicalExtensions = /\.(?:svg|woff2?|ttf|otf)$/i;
+  const rasterExtensions = /\.(?:png|ico|webp|jpe?g|gif|avif)$/i;
+  const sourcePaths = Object.values(QC_VISUAL_ASSETS).map((asset) => asset.sourcePath.replaceAll("\\", "/"));
+  assert.deepEqual(sourcePaths.sort(), [
+    "packages/typescript/qc-theme/assets/app-icon.svg",
+    "packages/typescript/qc-theme/assets/qc-chassis-neutral.svg",
+  ]);
+  for (const path of sourcePaths) {
+    assert.match(path, canonicalExtensions, `${path} must be an SVG or font source`);
+    assert.doesNotMatch(path, rasterExtensions, `${path} must not make a raster canonical`);
+    assert.ok(path.startsWith("packages/typescript/qc-theme/"), `${path} must live in the shared theme package`);
   }
 });
 
@@ -157,7 +197,10 @@ test("every tracked visual, font, audio, or video asset is owned by the theme ma
     exact.add(asset.sourcePath);
     if ("derivedPathPrefixes" in asset) prefixes.push(...asset.derivedPathPrefixes);
   }
-  for (const file of visualFiles) assert.ok(file.startsWith("references/") || exact.has(file) || prefixes.some((prefix) => file.startsWith(prefix)), `${file} is not owned by qc-theme/src/assets.json`);
+  for (const file of visualFiles) assert.ok(exact.has(file) || prefixes.some((prefix) => file.startsWith(prefix)), `${file} is not owned by qc-theme/src/assets.json`);
+  for (const file of visualFiles.filter((path) => /\.(?:png|ico|webp|jpe?g|gif|avif)$/i.test(path))) {
+    assert.ok(prefixes.some((prefix) => file.startsWith(prefix)), `${file} raster must be a declared generated platform output`);
+  }
 });
 
 test("product visual assets have no byte-for-byte duplicates", () => {
@@ -228,16 +271,25 @@ test("product branding has one shared owner across web and native hosts", () => 
   assert.match(read("scripts/generate-android-branding.ps1"), /brand\.appWordmark/);
 });
 
-test("release apps default to the independent hardware skin", () => {
+test("launcher branding remains at the approved device-layout baseline", () => {
+  const svg = read("packages/typescript/qc-theme/assets/app-icon.svg");
+  const generator = read("scripts/generate-app-branding.ps1");
+  assert.match(svg, /original top-down floor-modeler symbol/i);
+  assert.match(svg, /eight footswitches/i);
+  assert.match(generator, /assets\\app-icon\.svg/);
+  assert.doesNotMatch(generator, /System\.Drawing|app-icon-source\.png/);
+});
+
+test("release apps default to the neutral chassis vector skin", () => {
   const formFactors = read("packages/typescript/qc-form-factors/src/index.ts");
   const android = read("apps/android/src/App.tsx");
-  assert.match(formFactors, /defaultSkinId: "obsidian"/);
-  assert.doesNotMatch(formFactors, /defaultSkinId: "official-svg"/);
+  assert.match(formFactors, /defaultSkinId: "neutral-svg"/);
   assert.match(android, /entry\.id === formFactor\.defaultSkinId/);
-  assert.doesNotMatch(android, /entry\.id === "official-svg"/);
-  assert.doesNotMatch(formFactors, /Official SVG Overlay|qc-overview-001/);
+  assert.doesNotMatch(android, /entry\.id === "neutral-svg"/);
+  assert.match(formFactors, /QC Chassis Vector/);
   const assets = read("packages/typescript/qc-theme/src/assets.json");
-  assert.doesNotMatch(assets, /Neural DSP|qc-block-samples|qc-overview-001/);
+  assert.match(assets, /QC Remote neutral chassis vector/);
+  assert.doesNotMatch(assets, /qc-block-samples|blockSprite/);
 });
 
 test("authored app and device sources cannot bypass the shared visual contract", () => {

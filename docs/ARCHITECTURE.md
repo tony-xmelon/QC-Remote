@@ -29,10 +29,11 @@ by development tests invoked independently of the shipped clients.
 
 ### `services/device-broker` and `packages/rust/qc-device-runtime`
 
-The Rust broker is the Windows composition root and exclusive device-session
-owner. It exposes framed `gateway.v1` over stdio, owns Windows HID and event
-correlation, and delegates platform-neutral snapshot/preset-library behavior to
-`qc-device-runtime` and all wire semantics to `qc-protocol`.
+The Rust broker is the Windows composition root and exclusive OS-level device
+owner. It exposes framed `gateway.v1` over stdio, owns Windows HID handles and
+IPC, and delegates device-session policy, report normalization/assembly,
+snapshot/preset-library behavior, and operation policy to `qc-device-runtime`.
+Stateless wire encoding and decoding live in `qc-protocol`.
 
 The Python device gateway is the parity oracle, not a deployed composition root.
 
@@ -77,7 +78,7 @@ Contains versioned, language-neutral schemas for commands, results, snapshots, e
 
 Five protocol manifests currently prevent platform drift:
 
-- `ProductionAutomation.proto` owns every numeric `CortexMessageType` wire ID. `qc-usb-profile.v1.json` owns USB identity, handshake/sync timing, named subscriptions, frame limits, keepalive policy, and performance MIDI mappings; generation resolves its subscription names through that protobuf enum.
+- `ProductionAutomation.proto` owns every numeric `CortexMessageType` wire ID. `qc-usb-profile.v1.json` owns USB identity, handshake/sync timing, named subscriptions, frame limits, keepalive policy, remote-gesture/File-stream pacing, and performance MIDI mappings; generation resolves its subscription names through that protobuf enum.
 - `qc-domain.v1.json` owns Grid/scene/tempo limits, scene colors, route IDs/labels/groups, and IPC frame limits.
 - `gateway-methods.v1.json` owns every gateway RPC, TypeScript client method,
   generated Rust allowlist, generated Android dispatch class, and the identical
@@ -107,12 +108,19 @@ Each request carries a protocol version, request ID, command kind, payload, and 
 - `qc-form-factors` owns declarative geometry and skins. Manifests refer to semantic controls such as `footswitch:A`, not backend methods.
 
 Realtime native adapters timestamp observations at the device boundary and
-batch all updates decoded from one device frame. A single Rust engine in
-`packages/rust/qc-protocol` owns HID framing and receive-frame assembly,
-handshake/initialization messages, intent-level outbound device commands,
-protobuf state normalization, and complete ModelRepo
-parameter/display semantics. Windows links it directly into the native broker;
-Android reaches it through a narrow JNI facade. `qc-core` owns pending-command
+batch all updates decoded from one device frame. `qc-protocol` owns the
+stateless HID codec, protobuf schemas, typed commands, state normalization, and
+complete ModelRepo parameter/display semantics. The long-lived
+`qc-device-runtime::transport::TransportRuntime` owns native report-layout
+normalization, receive-frame assembly and recovery, handshake selection,
+connection phases, keepalive reservation, reconnect cadence, read-error
+tolerance, post-handshake initialization, and preset-catalog verification
+policy. It also owns encoded-write pacing, mutation confirmation/readback
+cadence, the event-driven verification state machine, preflight/readback/refresh
+selection, post-write refreshes, composite read dependencies, response
+type/request-id correlation, and monotonic request deadlines. Windows links it
+directly into the native broker; Android reaches it
+through JNI and passes raw endpoint bytes into it. `qc-core` owns pending-command
 reconciliation, command transactions, batch reduction, and the provider-neutral
 bounded chat/tool-loop controller, so both clients share wire interpretation,
 ordering, editor metadata, routing rules, and stale-echo behavior while retaining only the
@@ -133,11 +141,16 @@ reduction. Tauri and Capacitor therefore own only event subscription mechanics.
 Cross-native transport policy lives in `contracts/qc-usb-profile.v1.json`; its
 generated Java/Rust/Python constants take message IDs from
 `ProductionAutomation.proto`. Runtime reconnect cadence, handshake attempts,
-keepalive scheduling, outbound-idle tracking, and read-error tolerance live in
-`qc-protocol::session::SessionMachine`, called by both native hosts. Native
+report-layout probing, frame recovery, keepalive scheduling, and read-error
+tolerance live in `qc-device-runtime::transport::TransportRuntime`, used by
+both native hosts. Native
 adapters may differ in OS lifecycle and endpoint APIs, but they do not
 independently choose session policy, handshake versions, subscriptions, frame
 limits, keepalive timing, or performance MIDI mappings.
+Android obtains its automatic-reconnect delay and due/attempt reservation from
+the same runtime as the Windows worker; clearing decoded state does not reset
+that transport decision. Both hosts also use the generated preset-sync and
+command-confirmation bounds for protocol-facing waits.
 
 The outbound public-relay clients likewise generate their protocol version,
 device WebSocket path, request/result limits, replay window, readiness cadence,

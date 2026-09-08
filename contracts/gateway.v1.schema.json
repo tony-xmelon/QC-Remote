@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://qc-voice-control.local/contracts/gateway.v1.schema.json",
+  "$id": "https://qc-remote.local/contracts/gateway.v1.schema.json",
   "title": "QC Gateway JSON-RPC v1",
   "description": "Envelope and domain payloads exchanged with the private device gateway.",
   "x-payload-schema": "qc-payloads.v1.schema.json",
@@ -81,6 +81,7 @@
             "device.setGlobalBypass",
             "device.presetScreenshot",
             "device.captureScreen",
+            "device.diagnostics",
             "device.graphicsTree",
             "device.tapScreen",
             "device.swipeScreen",

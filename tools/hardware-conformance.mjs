@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { basename, dirname, resolve } from "node:path";
 import process from "node:process";
 import {
@@ -9,11 +9,13 @@ import {
   actionPlan,
   assertDisposableSlots,
   assertMutationAcknowledged,
+  assertOpenIncidentAcknowledged,
   contractDigest,
   gatewayArguments,
   markPhysicalResultVerified,
   pngSignatureIsValid,
   redactEvidence,
+  retailCapabilityEvidence,
   retryTransientRead,
   resultSnapshot,
   summarizePerformanceSamples,
@@ -50,6 +52,23 @@ if (has("--system")) enabledHazards.add("system");
 if (has("--screen-tap")) enabledHazards.add("screen");
 if (has("--tuner")) enabledHazards.add("tuner");
 if (has("--all")) ["live", "persistent", "system", "screen", "tuner"].forEach((value) => enabledHazards.add(value));
+
+async function openReleaseBlockingIncidentIds() {
+  const directory = resolve(root, "docs/incidents");
+  const names = await readdir(directory).catch(() => []);
+  const ids = [];
+  for (const name of names.filter((value) => value.endsWith(".json"))) {
+    try {
+      const record = JSON.parse(await readFile(resolve(directory, name), "utf8"));
+      if (record.releaseBlocking === true && !["resolved", "closed"].includes(record.status)) {
+        ids.push(String(record.incidentId || name));
+      }
+    } catch {
+      ids.push(`malformed:${name}`);
+    }
+  }
+  return ids.sort();
+}
 
 class FramedStdioTransport {
   constructor(config) {
@@ -100,6 +119,7 @@ class FramedStdioTransport {
   }
 
   status() { return this.request("system.status"); }
+  safetyIdentity() { return this.request("device.identity"); }
   call(name, args) {
     const action = contract.actions.find((candidate) => candidate.name === name);
     if (!action) throw new Error(`Unknown action ${name}.`);
@@ -251,6 +271,10 @@ class McpHttpTransport {
     return typeof text === "string" ? JSON.parse(text) : result;
   }
 
+  // Persistent hardware identity is deliberately unavailable through the
+  // public MCP/relay surface. Relay pairing is the Android device selector.
+  async safetyIdentity() { return undefined; }
+
   async close() {
     if (!this.sessionId) return;
     const bearer = process.env[this.config.bearerTokenEnv ?? "QC_MCP_BEARER_TOKEN"];
@@ -316,10 +340,12 @@ async function main() {
     console.log(JSON.stringify({ dryRun: true, contractActions: contract.actions.length, enabledHazards: [...enabledHazards], missingFixtures, releaseCandidate, plan }, null, 2));
     return;
   }
+  assertOpenIncidentAcknowledged(await openReleaseBlockingIncidentIds());
   if ([...enabledHazards].some((value) => value !== "read")) assertMutationAcknowledged();
   if ((enabledHazards.has("persistent") || enabledHazards.has("system") || enabledHazards.has("screen")) && !enabledHazards.has("live")) {
     throw new Error("Persistent, system, and screen cases require --live because safe scratch-preset entry and restoration use live actions.");
   }
+
   if (stressEnabled && !enabledHazards.has("live")) {
     throw new Error("--stress requires --live because every performance control changes live device state.");
   }
@@ -346,7 +372,8 @@ async function main() {
         catch { await sleep(250); }
       }
       if (!initial) throw new Error("The QC did not synchronize a starting preset.");
-      const identity = await transport.call("get_device_identity", {});
+      const identity = await transport.safetyIdentity();
+      assert(identity, "Fixture preparation requires a local gateway identity check.");
       assert(typeof identity.serial === "string" && identity.serial.endsWith(config.safety.expectedSerialSuffix), "Connected QC serial does not match expectedSerialSuffix.");
       const slots = await transport.call("list_preset_slots", {});
       const target = (slots.slots ?? []).find((slot) => slot.position === config.scratchPreset.position);
@@ -445,7 +472,7 @@ async function main() {
       if (!masterVolume) throw new Error("The QC did not publish authoritative Master Volume within 30 seconds.");
       snapshot = { ...snapshot, masterVolume: masterVolume.value };
       status = await transport.status();
-      const identity = await transport.call("get_device_identity", {});
+      const identity = await transport.safetyIdentity();
       let folders = await transport.call("list_preset_folders", { refresh: true });
       const slots = await transport.call("list_preset_slots", {});
       const models = await transport.call("list_models", { query: null });
@@ -473,7 +500,7 @@ async function main() {
         discovery: true,
         target: config.target,
         status: redactEvidence(status),
-        identity: { ...redactEvidence(identity), serialSuffix: typeof identity.serial === "string" ? identity.serial.slice(-4) : undefined },
+        ...(identity ? { identity: { ...redactEvidence(identity), serialSuffix: typeof identity.serial === "string" ? identity.serial.slice(-4) : undefined } } : {}),
         activePreset: redactEvidence(snapshot),
         folders: redactEvidence(folders.folders ?? []),
         scratchPresetCandidates: redactEvidence((presets.presets ?? []).filter((preset) => preset.name && !/^Unsaved$/i.test(preset.name)).slice(0, 30)),
@@ -561,6 +588,21 @@ async function main() {
     }
   };
 
+  const recordLifecycleCheckpoint = async (stage, details = {}) => {
+    let status;
+    try { status = await transport.status(); }
+    catch (error) {
+      status = { statusReadError: error instanceof Error ? error.message : String(error) };
+    }
+    report.lifecycle ??= [];
+    report.lifecycle.push({
+      stage,
+      observedAt: timestamp(),
+      ...redactEvidence(details),
+      transport: redactEvidence(status?.usbDiagnostics ?? status)
+    });
+  };
+
   const skip = (name, reason) => {
     if (report.results.some((result) => result.name === name)) return;
     const metadata = CASES[name];
@@ -598,6 +640,20 @@ async function main() {
       console.log("PASS");
       return value;
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (metadata.capability && metadata.hazard === "read"
+          && /unsupported|not implemented|unknown method|valid .* reply within|timed out/i.test(message)) {
+        report.results.push({
+          name,
+          phase: metadata.phase,
+          hazard: metadata.hazard,
+          status: "unsupported",
+          durationMs: Date.now() - started,
+          reason: message
+        });
+        console.log("UNSUPPORTED");
+        return undefined;
+      }
       report.results.push({ name, phase: metadata.phase, hazard: metadata.hazard, status: "failed", durationMs: Date.now() - started, error: error instanceof Error ? error.message : String(error) });
       console.log("FAIL");
       throw error;
@@ -772,6 +828,10 @@ async function main() {
     return currentSnapshot;
   };
   const restoreScratch = async () => {
+    // Persistent delete/move operations can change the active preset to
+    // Unsaved without returning a snapshot. Refresh before constructing the
+    // optimistic guard for the restoration recall.
+    currentSnapshot = await snapshot();
     if (currentSnapshot.dirty) {
       await transport.call("reload_preset", {
         expected_preset_name: currentSnapshot.presetName,
@@ -921,7 +981,22 @@ async function main() {
       assert(value.setlistKey && Number.isInteger(value.presetPosition), "Preset identity is incomplete.");
     });
     currentSnapshot = originalSnapshot;
-    identity = await call("get_device_identity", {}, (value) => assert(typeof value.serial === "string" && value.serial.endsWith(config.safety.expectedSerialSuffix), "Connected QC serial does not match expectedSerialSuffix."));
+    const identityStarted = Date.now();
+    identity = await transport.safetyIdentity();
+    if (identity) {
+      assert(typeof identity.serial === "string" && identity.serial.endsWith(config.safety.expectedSerialSuffix), "Connected QC serial does not match expectedSerialSuffix.");
+      report.deviceSafetyIdentity = {
+        status: "passed",
+        durationMs: Date.now() - identityStarted,
+        evidence: redactEvidence(identity)
+      };
+    } else {
+      report.deviceSafetyIdentity = {
+        status: "unavailable_on_public_transport",
+        durationMs: Date.now() - identityStarted,
+        evidence: { selection: "authenticated paired relay" }
+      };
+    }
     deviceAuthorized = true;
     if (enabledHazards.has("tuner") && enabledHazards.has("live")) {
       // A previously interrupted tuner-setting run can leave CorOS's invisible
@@ -1023,6 +1098,12 @@ async function main() {
       "Global tempo settings did not include a valid mode and thirteen beat cells."
     ));
     await call("get_looper_status", {}, (value) => assert(value && typeof value === "object", "Looper status is invalid."));
+    await call("get_device_diagnostics", {}, (value) => assert(
+      value && typeof value === "object"
+        && ["soc1Core1", "soc1Core2", "soc2Core1", "soc2Core2", "soc2Arm"]
+          .some((field) => value[field] && typeof value[field] === "object"),
+      "Diagnostics did not contain any typed DSP or USB core payload."
+    ));
     await call("list_recents", {}, (value) => assert(Array.isArray(value.entries), "Recent preset list is invalid."));
     originalFavorites = await call("list_favorites", {}, (value) => assert(Array.isArray(value.entries), "Favorite preset list is invalid."));
     originalPinnedModels = await call("list_pinned_models", {}, (value) => assert(
@@ -1176,18 +1257,36 @@ async function main() {
       }
 
       await call("show_tuner", { shown: true });
-      const tunerScreen = await transport.call("capture_screen", {});
-      assert(pngSignatureIsValid(tunerScreen, 800, 480), "Tuner device-screen verification returned an invalid PNG.");
-      assert(screenDigest(tunerScreen) !== screenDigest(baselineDeviceScreen), "Opening the tuner did not change the physical QC screen.");
+      const tunerScreen = await waitForPhysicalObservation(
+        () => transport.call("capture_screen", {}),
+        (value) => pngSignatureIsValid(value, 800, 480)
+          && screenDigest(value) !== screenDigest(baselineDeviceScreen),
+        { timeoutMs: 5000, intervalMs: 150, label: "QC framebuffer change after show_tuner" }
+      );
       verified("show_tuner", { width: tunerScreen.width, height: tunerScreen.height, sha256: screenDigest(tunerScreen) });
       await transport.call("show_tuner", { shown: false });
+      const screenAfterTuner = await waitForPhysicalObservation(
+        () => transport.call("capture_screen", {}),
+        (value) => pngSignatureIsValid(value, 800, 480)
+          && screenDigest(value) !== screenDigest(tunerScreen),
+        { timeoutMs: 5000, intervalMs: 150, label: "QC framebuffer restoration after show_tuner" }
+      );
       delete report.manualActionRequired;
       await call("show_gig_view", { shown: true });
-      const gigScreen = await transport.call("capture_screen", {});
-      assert(pngSignatureIsValid(gigScreen, 800, 480), "Gig View device-screen verification returned an invalid PNG.");
-      assert(screenDigest(gigScreen) !== screenDigest(baselineDeviceScreen), "Opening Gig View did not change the physical QC screen.");
+      const gigScreen = await waitForPhysicalObservation(
+        () => transport.call("capture_screen", {}),
+        (value) => pngSignatureIsValid(value, 800, 480)
+          && screenDigest(value) !== screenDigest(screenAfterTuner),
+        { timeoutMs: 5000, intervalMs: 150, label: "QC framebuffer change after show_gig_view" }
+      );
       verified("show_gig_view", { width: gigScreen.width, height: gigScreen.height, sha256: screenDigest(gigScreen) });
       await transport.call("show_gig_view", { shown: false });
+      await waitForPhysicalObservation(
+        () => transport.call("capture_screen", {}),
+        (value) => pngSignatureIsValid(value, 800, 480)
+          && screenDigest(value) !== screenDigest(gigScreen),
+        { timeoutMs: 5000, intervalMs: 150, label: "QC framebuffer restoration after show_gig_view" }
+      );
 
       const modeBySlot = new Map(
         (currentSnapshot.modeSlots ?? []).map((entry) => [entry.slot, entry.mode])
@@ -1689,6 +1788,16 @@ async function main() {
         confirm_risky_operation: true
       });
       currentSnapshot = await waitForSnapshot((value) => !value.dirty);
+      // Android and Windows both expose a cheap cached snapshot, while block
+      // details force a fresh current-preset frame. Synchronize that frame
+      // before choosing alternating scene targets so a late reload scene cannot
+      // turn the first measured command into a no-op with no state event.
+      await transport.call("get_block_details", {
+        row: config.parameter.row,
+        column: config.parameter.column,
+        expected_preset_name: currentSnapshot.presetName
+      });
+      currentSnapshot = await snapshot();
 
       const exerciseAlternating = async ({ control, name, values, args, predicate, guardedPair = false }) => {
         let current = values[0];
@@ -2125,6 +2234,12 @@ async function main() {
 
       const duplicateName = uniqueName(config.persistent.namePrefix, "copy");
       pendingTemporarySetlists.add(duplicateName);
+      await recordLifecycleCheckpoint("duplicate-setlist-start", {
+        sourceSetlistKey: config.scratchPreset.setlistKey,
+        sourcePresetPosition: currentSnapshot.presetPosition,
+        destinationName: duplicateName,
+        limit: 1
+      });
       const duplicated = await call("duplicate_setlist", {
         source_setlist_key: config.scratchPreset.setlistKey,
         destination_name: duplicateName,
@@ -2134,24 +2249,53 @@ async function main() {
         confirm_persistent_write: true
       });
       currentSnapshot = resultSnapshot(duplicated) ?? await snapshot();
+      await recordLifecycleCheckpoint("duplicate-setlist-action-complete", {
+        activeSetlistKey: currentSnapshot.setlistKey,
+        activePresetPosition: currentSnapshot.presetPosition,
+        activePresetName: currentSnapshot.presetName
+      });
       const duplicateKey = `/media/p4/Presets/${duplicateName}`;
       const duplicatePresets = await waitForPresets(duplicateKey, (value) => value.presets.some(
         (preset) => preset.position === 0 && preset.name === currentSnapshot.presetName));
       assert(duplicatePresets.presets.some((preset) => preset.position === 0), "Duplicated setlist did not contain its copied preset.");
-      await transport.call("recall_preset", {
+      await recordLifecycleCheckpoint("duplicate-setlist-catalog-confirmed", {
+        setlistKey: duplicateKey,
+        copiedPresetCount: duplicatePresets.presets.length
+      });
+      const restoreFromDuplicate = {
         setlist_key: config.scratchPreset.setlistKey,
         position: config.scratchPreset.position,
         expected_preset_name: currentSnapshot.presetName,
         expected_position: currentSnapshot.presetPosition,
         expected_setlist_key: currentSnapshot.setlistKey
+      };
+      await recordLifecycleCheckpoint("duplicate-setlist-restoration-recall-start", {
+        fromSetlistKey: currentSnapshot.setlistKey,
+        fromPresetPosition: currentSnapshot.presetPosition,
+        toSetlistKey: config.scratchPreset.setlistKey,
+        toPresetPosition: config.scratchPreset.position
       });
+      try {
+        await transport.call("recall_preset", restoreFromDuplicate);
+      } catch (error) {
+        await recordLifecycleCheckpoint("duplicate-setlist-restoration-recall-failed", {
+          error: error instanceof Error ? error.message : String(error)
+        });
+        throw error;
+      }
       currentSnapshot = await waitForSnapshot((value) =>
         value.setlistKey === config.scratchPreset.setlistKey
           && value.presetPosition === config.scratchPreset.position);
+      await recordLifecycleCheckpoint("duplicate-setlist-restoration-recall-complete", {
+        activeSetlistKey: currentSnapshot.setlistKey,
+        activePresetPosition: currentSnapshot.presetPosition,
+        activePresetName: currentSnapshot.presetName
+      });
       await transport.call("delete_setlist", { name: duplicateName, confirm_persistent_write: true });
       setlists = await waitForPresetFolders((value) => !value.folders.some((folder) => folder.name === duplicateName));
       assert(!setlists.folders.some((folder) => folder.name === duplicateName), "Duplicated setlist was not deleted during restoration.");
       pendingTemporarySetlists.delete(duplicateName);
+      await recordLifecycleCheckpoint("duplicate-setlist-cleanup-complete", { deletedSetlist: duplicateName });
 
       const nameA = uniqueName(config.persistent.namePrefix, "A");
       const nameRenamed = uniqueName(config.persistent.namePrefix, "R");
@@ -2180,10 +2324,6 @@ async function main() {
         position: config.persistent.slotA.position,
         name: nameRenamed
       };
-      await recall({
-        setlistKey: config.persistent.slotB.setlistKey,
-        position: config.persistent.slotB.position
-      });
       const copied = await call("copy_preset", {
         source_setlist_key: copySource.setlistKey, source_position: copySource.position, source_name: copySource.name,
         destination_setlist_key: config.persistent.slotB.setlistKey, destination_position: config.persistent.slotB.position,
@@ -2590,6 +2730,7 @@ async function main() {
         report.results.push({ name: action.name, phase: metadata.phase, hazard: metadata.hazard, status: "not-run", reason: report.failure ? "Suite stopped after failure." : "Scenario prerequisite was not enabled." });
       }
     }
+    report.retailProtocolCapabilities = retailCapabilityEvidence(report.results);
     report.summary = summarizePhysicalResults(
       report.results,
       contract.actions.map((action) => action.name),

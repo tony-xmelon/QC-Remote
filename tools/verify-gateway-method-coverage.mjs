@@ -32,8 +32,8 @@ assert.deepEqual(contract.methods.filter(({ python }) => python === false), [],
   "canonical gateway RPCs must not be excluded from the Python compatibility surface");
 assert.deepEqual(
   [...contractRpcs].sort(),
-  ["system.status", ...actionContract.actions.map(({ rpc }) => rpc)].sort(),
-  "canonical actions and gateway RPCs must have exact membership parity",
+  ["system.status", ...actionContract.actions.map(({ rpc }) => rpc), ...(actionContract.localOnlyGatewayRpcs ?? [])].sort(),
+  "canonical actions plus explicit local-only methods must have exact gateway membership parity",
 );
 
 for (const dispatchName of ["androidDispatch", "brokerDispatch"]) {

@@ -1,4 +1,4 @@
-# QC Voice Control — Windows implementation plan
+# QC Remote — Windows implementation plan
 
 > Historical plan, superseded by [ARCHITECTURE.md](ARCHITECTURE.md) and
 > [NATIVE_BROKER.md](NATIVE_BROKER.md). The shipped application uses the shared
@@ -148,7 +148,7 @@ Undo/redo initially covers commands made through this application. It must not c
 - User Guide
 - Keyboard and Mouse Reference
 - Report a Problem / Send Feedback…
-- About QC Voice Control
+- About QC Remote
 - Third-Party Notices
 - Privacy
 - Legal Notices
@@ -206,7 +206,13 @@ A skin supplies:
 
 Skin packages may not define hardware commands, execute code, or access files/network. Geometry belongs to the form factor; appearance belongs to the skin. This lets one form factor have multiple visual themes without duplicating layout.
 
-Release builds must use original vector/CSS assets that evoke the physical layout. The current private test build still contains identified official-reference artwork for visual comparison; it must be removed or licensed before public distribution. Do not redistribute Neural DSP artwork, fonts, logos, or trademarks unless permission and attribution requirements are established. Legal Notices records the unofficial nature of the app and all third-party licenses.
+Release builds use original vector/CSS assets that evoke the physical layout.
+Captured and extracted official-reference material is outside the public source
+and build boundaries. Do not redistribute Neural DSP artwork, fonts, logos, or
+trademarks unless permission and attribution requirements are established.
+Functional layout similarity still requires the final visual-risk decision.
+Legal Notices records the unofficial nature of the app and all third-party
+licenses.
 
 ## 5. QC screen interaction
 

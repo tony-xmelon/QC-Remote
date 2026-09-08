@@ -8,9 +8,7 @@ export type OfficialBlockVisualKey =
 
 export interface OfficialBlockVisual {
   key: OfficialBlockVisualKey;
-  tile: [number, number];
   color: string;
-  referenceAsset?: "pitch" | "delay" | "compressor";
 }
 
 export interface OfficialBlockCategory extends OfficialBlockVisual {
@@ -18,34 +16,32 @@ export interface OfficialBlockCategory extends OfficialBlockVisual {
   meaning: string;
 }
 
-// CorOS 4.1 manual order. The official block-samples sheet is deliberately
-// *not* category ordered: coordinates below are matched by glyph. Delay and
-// Compressor are taken from verified Neural DSP Grid references because that
-// sheet does not contain their device glyphs.
+// CorOS 4.1 manual order. Every consumer renders the shared neutral vector
+// registry; no category has a sprite or raster exception.
 export const OFFICIAL_BLOCK_CATEGORIES: readonly OfficialBlockCategory[] = [
-  { key: "plugin", label: "Plugins", tile: [560, 0], color: QC_COLORS.category.plugin, meaning: "Compatible Neural DSP X plugin devices." },
-  { key: "amp", label: "Amp", tile: [480, 0], color: QC_COLORS.category.amp, meaning: "Amplifier devices for guitar and bass." },
-  { key: "capture", label: "Neural Capture", tile: [640, 0], color: QC_COLORS.category.capture, meaning: "Neural Capture devices." },
-  { key: "cab", label: "Cab", tile: [80, 82], color: QC_COLORS.category.cab, meaning: "Mono and stereo cabinet simulations with selectable microphones." },
-  { key: "overdrive", label: "Overdrive", tile: [400, 0], color: QC_COLORS.category.overdrive, meaning: "Boost, distortion, fuzz, and overdrive pedal devices." },
-  { key: "delay", label: "Delay", tile: [240, 0], color: QC_COLORS.category.delay, referenceAsset: "delay", meaning: "Mono and stereo digital, analog, and tape delays." },
-  { key: "reverb", label: "Reverb", tile: [240, 82], color: QC_COLORS.category.reverb, meaning: "Digital and analog reverbs." },
-  { key: "compressor", label: "Compressor", tile: [400, 82], color: QC_COLORS.category.compressor, referenceAsset: "compressor", meaning: "Mono, stereo, and side-chain dynamics processors." },
-  { key: "pitch", label: "Pitch", tile: [0, 82], color: QC_COLORS.category.pitch, referenceAsset: "pitch", meaning: "Pitch shifter devices." },
-  { key: "modulation", label: "Modulation", tile: [160, 0], color: QC_COLORS.category.modulation, meaning: "Chorus, flanger, phaser, tremolo, and other modulation devices." },
-  { key: "morph", label: "Morph", tile: [560, 82], color: QC_COLORS.category.morph, meaning: "Complex audio processor devices." },
-  { key: "synth", label: "Synth", tile: [480, 82], color: QC_COLORS.category.synth, meaning: "Devices that generate sounds by shaping and manipulating waveforms." },
-  { key: "filter", label: "Filter", tile: [240, 0], color: QC_COLORS.category.filter, meaning: "Dynamic and fixed filter devices." },
-  { key: "equalizer", label: "EQ", tile: [80, 0], color: QC_COLORS.category.equalizer, meaning: "Graphic and parametric equalizers." },
-  { key: "ir-loader", label: "IR Loader", tile: [160, 82], color: QC_COLORS.category.irLoader, meaning: "Third-party impulse-response loaders." },
-  { key: "wah", label: "Wah", tile: [320, 82], color: QC_COLORS.category.wah, meaning: "Wah pedal devices." },
-  { key: "fx-loop", label: "FX Loop", tile: [0, 0], color: QC_COLORS.category.fxLoop, meaning: "External-device integration through Send and Return ports." },
-  { key: "looper", label: "Looper", tile: [320, 0], color: QC_COLORS.category.looper, meaning: "Real-time audio recording and layering." },
-  { key: "utility", label: "Utility", tile: [400, 82], color: QC_COLORS.category.utility, meaning: "Routing, mixing, gain, and other audio tools." }
+  { key: "plugin", label: "Plugins", color: QC_COLORS.category.plugin, meaning: "Compatible Neural DSP X plugin devices." },
+  { key: "amp", label: "Amp", color: QC_COLORS.category.amp, meaning: "Amplifier devices for guitar and bass." },
+  { key: "capture", label: "Neural Capture", color: QC_COLORS.category.capture, meaning: "Neural Capture devices." },
+  { key: "cab", label: "Cab", color: QC_COLORS.category.cab, meaning: "Mono and stereo cabinet simulations with selectable microphones." },
+  { key: "overdrive", label: "Overdrive", color: QC_COLORS.category.overdrive, meaning: "Boost, distortion, fuzz, and overdrive pedal devices." },
+  { key: "delay", label: "Delay", color: QC_COLORS.category.delay, meaning: "Mono and stereo digital, analog, and tape delays." },
+  { key: "reverb", label: "Reverb", color: QC_COLORS.category.reverb, meaning: "Digital and analog reverbs." },
+  { key: "compressor", label: "Compressor", color: QC_COLORS.category.compressor, meaning: "Mono, stereo, and side-chain dynamics processors." },
+  { key: "pitch", label: "Pitch", color: QC_COLORS.category.pitch, meaning: "Pitch shifter devices." },
+  { key: "modulation", label: "Modulation", color: QC_COLORS.category.modulation, meaning: "Chorus, flanger, phaser, tremolo, and other modulation devices." },
+  { key: "morph", label: "Morph", color: QC_COLORS.category.morph, meaning: "Complex audio processor devices." },
+  { key: "synth", label: "Synth", color: QC_COLORS.category.synth, meaning: "Devices that generate sounds by shaping and manipulating waveforms." },
+  { key: "filter", label: "Filter", color: QC_COLORS.category.filter, meaning: "Dynamic and fixed filter devices." },
+  { key: "equalizer", label: "Equalizer", color: QC_COLORS.category.equalizer, meaning: "Graphic and parametric equalizers." },
+  { key: "ir-loader", label: "IR Loader", color: QC_COLORS.category.irLoader, meaning: "Third-party impulse-response loaders." },
+  { key: "wah", label: "Wah", color: QC_COLORS.category.wah, meaning: "Wah pedal devices." },
+  { key: "fx-loop", label: "FX Loop", color: QC_COLORS.category.fxLoop, meaning: "External-device integration through Send and Return ports." },
+  { key: "looper", label: "Looper", color: QC_COLORS.category.looper, meaning: "Real-time audio recording and layering." },
+  { key: "utility", label: "Utility", color: QC_COLORS.category.utility, meaning: "Routing, mixing, gain, and other audio tools." }
 ];
 
 export const OFFICIAL_BLOCK_VISUALS = Object.fromEntries(
-  OFFICIAL_BLOCK_CATEGORIES.map(({ key, tile, color, referenceAsset }) => [key, { key, tile, color, referenceAsset }])
+  OFFICIAL_BLOCK_CATEGORIES.map(({ key, color }) => [key, { key, color }])
 ) as Record<OfficialBlockVisualKey, OfficialBlockVisual>;
 
 export function officialBlockVisual(block: GridBlock): OfficialBlockVisual {
@@ -78,41 +74,5 @@ export function blockUsesActiveFill(block: GridBlock): boolean {
   return block.bypassed !== true && (block.plugin === true || category.includes("plugin"));
 }
 
-export interface PublishedPluginBadge {
-  abbreviation: string;
-  name: string;
-  aliases: readonly string[];
-}
-
-/** CorOS 4.1 / Cortex Control 4.1 published PCOM badge vocabulary. */
-export const PUBLISHED_PLUGIN_BADGES: readonly PublishedPluginBadge[] = [
-  { abbreviation: "PLI", name: "Archetype: Plini X", aliases: ["plini-x", "plinix", "plini"] },
-  { abbreviation: "GOJ", name: "Archetype: Gojira X", aliases: ["gojira-x", "gojirax", "gojira"] },
-  { abbreviation: "SLO", name: "Soldano SLO-100 X", aliases: ["slo100-x", "slo100x", "soldano", "slo-100"] },
-  { abbreviation: "NAM", name: "Fortin Nameless Suite X", aliases: ["nameless-x", "namelessx", "nameless"] },
-  { abbreviation: "WON", name: "Archetype: Cory Wong X", aliases: ["cory-x", "coryx", "cory-wong", "cory wong", "neural_dsp_cory_wong"] },
-  { abbreviation: "NLY", name: "Archetype: Nolly X", aliases: ["nolly-x", "nollyx", "nolly"] },
-  { abbreviation: "PLX", name: "Parallax X", aliases: ["parallax-x", "parallaxx", "parallax"] },
-  { abbreviation: "MAY", name: "Archetype: John Mayer X", aliases: ["mayer-x", "mayerx", "john-mayer", "john mayer", "neural_dsp_mayer"] },
-  { abbreviation: "PET", name: "Archetype: Petrucci X", aliases: ["petrucci-x", "petruccix", "petrucci"] },
-  { abbreviation: "MSH", name: "Archetype: Misha Mansoor X", aliases: ["misha-x", "mishax", "misha-mansoor", "misha mansoor"] },
-  { abbreviation: "RAB", name: "Archetype: Rabea X", aliases: ["rabea-x", "rabeax", "rabea"] },
-  { abbreviation: "HEN", name: "Archetype: Tim Henson X", aliases: ["henson-x", "hensonx", "tim-henson", "tim henson"] }
-] as const;
-
-const normalizedPluginIdentity = (value: string): string => value.toLowerCase().replace(/[^a-z0-9]+/g, "");
-
-/** Returns the exact three-letter QC badge for a published plugin device. */
-export function pluginBadge(block: GridBlock): string | undefined {
-  if (block.plugin !== true && !`${block.category ?? ""}`.toLowerCase().includes("plugin")) return undefined;
-  const identities = [block.pluginId, block.name].filter((value): value is string => Boolean(value)).map(normalizedPluginIdentity);
-  for (const published of PUBLISHED_PLUGIN_BADGES) {
-    if (published.aliases.some((alias) => {
-      const normalizedAlias = normalizedPluginIdentity(alias);
-      return identities.some((identity) => identity === normalizedAlias || identity.includes(normalizedAlias));
-    })) return published.abbreviation;
-  }
-  // Keep future catalog additions visible until their official code is added.
-  const fallback = normalizedPluginIdentity(block.pluginId ?? "").replace(/(?:archetype|neuraldsp|suite|plugin|x)$/g, "");
-  return fallback ? fallback.slice(0, 3).toUpperCase() : undefined;
-}
+export { pluginBadge, PUBLISHED_PLUGIN_BADGES } from "./plugin-badges.ts";
+export type { PublishedPluginBadge } from "./plugin-badges.ts";

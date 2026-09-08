@@ -6,26 +6,14 @@ import { blockUsesActiveFill, OFFICIAL_BLOCK_CATEGORIES, officialBlockVisual, pl
 
 const block = (name: string, category: string, kind = "utility"): GridBlock => ({ id: name, name, category, kind, row: 0, column: 0 });
 
-const expectedCategories: Array<[OfficialBlockVisualKey, string, [number, number], string]> = [
-  ["plugin", "Plugins", [560, 0], "#ff7000"],
-  ["amp", "Amp", [480, 0], "#ff2727"],
-  ["capture", "Neural Capture", [640, 0], "#959595"],
-  ["cab", "Cab", [80, 82], "#6954ff"],
-  ["overdrive", "Overdrive", [400, 0], "#ff7000"],
-  ["delay", "Delay", [240, 0], "#00ffdd"],
-  ["reverb", "Reverb", [240, 82], "#00ffdd"],
-  ["compressor", "Compressor", [400, 82], "#45f862"],
-  ["pitch", "Pitch", [0, 82], "#ffd236"],
-  ["modulation", "Modulation", [160, 0], "#3500f1"],
-  ["morph", "Morph", [560, 82], "#87daff"],
-  ["synth", "Synth", [480, 82], "#e44a5d"],
-  ["filter", "Filter", [240, 0], "#87daff"],
-  ["equalizer", "EQ", [80, 0], "#0a74e0"],
-  ["ir-loader", "IR Loader", [160, 82], "#6954ff"],
-  ["wah", "Wah", [320, 82], "#959595"],
-  ["fx-loop", "FX Loop", [0, 0], "#959595"],
-  ["looper", "Looper", [320, 0], "#ff2727"],
-  ["utility", "Utility", [400, 82], "#959595"]
+const expectedCategories: Array<[OfficialBlockVisualKey, string, string]> = [
+  ["plugin", "Plugins", "#ff7000"], ["amp", "Amp", "#ff2727"], ["capture", "Neural Capture", "#959595"],
+  ["cab", "Cab", "#6954ff"], ["overdrive", "Overdrive", "#ff7000"], ["delay", "Delay", "#00ffdd"],
+  ["reverb", "Reverb", "#00ffdd"], ["compressor", "Compressor", "#45f862"], ["pitch", "Pitch", "#ffd236"],
+  ["modulation", "Modulation", "#3500f1"], ["morph", "Morph", "#87daff"], ["synth", "Synth", "#e44a5d"],
+  ["filter", "Filter", "#87daff"], ["equalizer", "Equalizer", "#0a74e0"], ["ir-loader", "IR Loader", "#6954ff"],
+  ["wah", "Wah", "#959595"], ["fx-loop", "FX Loop", "#959595"], ["looper", "Looper", "#ff2727"],
+  ["utility", "Utility", "#959595"]
 ];
 
 test("official plugin-folder panels fill the physical framebuffer", () => {
@@ -62,7 +50,7 @@ test("physical interaction fixtures preserve the captured CorOS overlay structur
   }
   assert.match(fixture, /dy=\{browserChrome \? -11 : 0\}/);
   assert.match(css, /\.qc-screen\.coros-block-context > aside \{[^}]*left: 30px;[^}]*width: 322px;/s);
-  assert.match(css, /\.qc-screen\.coros-block-context > aside button \{[^}]*grid-template-columns: 57px 1fr;[^}]*font: 16px Roboto,Arial,sans-serif;/s);
+  assert.match(css, /\.qc-screen\.coros-block-context > aside button \{[^}]*grid-template-columns: 57px 1fr;[^}]*font: 16px var\(--qc-font-device-plain\);/s);
   assert.match(css, /\.coros-block-context > \.block-context-scrim \{[^}]*rgba\(71,74,71,\.92\)/s);
   assert.match(css, /\.coros-block-context > aside button span svg \{[^}]*width: 24px;[^}]*height: 24px;/s);
   assert.match(css, /\.physical-eq-underlay header nav \.physical-eq-confirm \{[^}]*width: 98px;/s);
@@ -105,14 +93,17 @@ test("official tuner retains the measured 440 Hz encoder geometry", () => {
   assert.match(css, /\.tuner-official > footer > section:last-child::after \{[^}]*border: \.375cqw solid #40f860;/s);
 });
 
-test("official device-preset actions retain the observed sixth category glyph", () => {
+test("official device-preset actions use the shared sixth category glyph", () => {
+  const fixture = readFileSync("packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", "utf8");
   const css = readFileSync("packages/typescript/qc-ui/src/official-device-browser.css", "utf8");
-  assert.match(css, /\.coros-device-presets\.is-official-actions > nav button:nth-child\(6\) i > span \{[^}]*width: 5cqw;[^}]*data:image\/svg\+xml/);
+  assert.match(fixture, /categories\.map[\s\S]*?<DeviceCategoryGlyph label=\{label\}/);
+  assert.doesNotMatch(css, /data:image\/svg\+xml|nth-child\(6\) i > span/);
 });
 
 test("official low-score refinements retain their measured geometry and glyphs", () => {
   const fixture = readFileSync("packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", "utf8");
-  const officialManifest = readFileSync("references/qc-ui-official-manual/coros-4.1.0/manifest.json", "utf8");
+  const screenGlyphs = readFileSync("packages/typescript/qc-ui/src/screen-glyphs.tsx", "utf8");
+  const themeIcons = readFileSync("packages/typescript/qc-ui/src/theme-icons.tsx", "utf8");
   const browserCss = readFileSync("packages/typescript/qc-ui/src/official-device-browser.css", "utf8");
   const gigCss = readFileSync("packages/typescript/qc-ui/src/official-gig.css", "utf8");
   const ioCss = readFileSync("packages/typescript/qc-ui/src/official-io.css", "utf8");
@@ -123,8 +114,8 @@ test("official low-score refinements retain their measured geometry and glyphs",
   assert.match(browserCss, /\.device-browser-official:not\(\.is-plugins\) nav button\.is-active i \{ border-color: #f82420; background: #101010; \}/);
   assert.match(browserCss, /\.device-browser-official:not\(\.is-plugins\) \.device-browser-grid main i:first-of-type \{ background: #101010; \}/);
   assert.match(browserCss, /\.device-browser-official:not\(\.is-plugins\) \.device-browser-list > button \{ padding-left: 2\.125cqw;[^}]*font-size: 2cqw; \}/);
-  assert.match(browserCss, /\.device-browser-grid \.amp-mode::before \{[^}]*width: 2\.875cqw;[^}]*height: 2\.875cqw;[^}]*data:image\/svg\+xml/);
-  assert.match(browserCss, /\.device-browser-grid \.amp-mode::after \{[^}]*content: "PRESET";[^}]*left: 4\.5cqw;/);
+  assert.match(browserCss, /\.device-browser-grid \.amp-mode > svg \{[^}]*width: 2\.875cqw;[^}]*height: 2\.875cqw;/);
+  assert.match(browserCss, /\.device-browser-grid \.amp-mode > span \{[^}]*left: 4\.5cqw;[^}]*font: 700 3cqw\/1/);
   assert.match(browserCss, /\.device-browser-grid main i:first-of-type \{[^}]*height: 8\.875cqw;/);
   assert.match(browserCss, /\.device-browser-official\.is-plugins \.device-browser-list header \{ background: #101010; color: #b0b4b0; \}/);
   assert.match(browserCss, /\.device-browser-official\.is-plugins nav button\.is-active i \{ border-color: #40f860; \}/);
@@ -146,7 +137,7 @@ test("official low-score refinements retain their measured geometry and glyphs",
   assert.match(captureCss, /\.coros-global-eq \.global-eq-tabs \{ height: 10\.42%; \}/);
   assert.match(captureCss, /\.global-eq-controls \{ margin-top: \.5cqw; \}/);
   assert.match(captureCss, /\.global-eq-controls \.io-dial-wrap \{ inset: 4\.625cqw 1cqw auto; height: 8cqw; \}/);
-  assert.match(settingsCss, /\.coros-settings-official\.settings-system,\.coros-settings-official\.settings-system \* \{ font-family: Roboto, Arial, sans-serif; \}/);
+  assert.match(settingsCss, /\.coros-settings-official\.settings-system,\.coros-settings-official\.settings-system \* \{ font-family: var\(--qc-font-device-plain\); \}/);
   assert.match(settingsCss, /\.coros-settings-official\.settings-system > main > nav button\.is-active \{ background: #181c18; color: #40f860; \}/);
   assert.match(settingsCss, /\.coros-settings-official\.settings-system \.settings-system-detail > div i b\.is-on \{ background: #40f860; \}/);
   assert.match(fixture, /function CorOsCapturedSettings[\s\S]*?className=\{`qc-screen coros-settings-official coros-settings-captured/);
@@ -159,7 +150,8 @@ test("official low-score refinements retain their measured geometry and glyphs",
   assert.match(settingsCss, /\.settings-info \.captured-settings-detail > h1:nth-of-type\(2\) \{ margin-bottom: 2\.5cqw; \}/);
   assert.match(settingsCss, /\.settings-info \.information-table:last-child > span:nth-child\(2\),[\s\S]*?min-height: 6\.125cqw;/);
   assert.match(settingsCss, /\.coros-settings-captured \.settings-edit > svg \{ width: 3cqw; height: 3cqw;/);
-  assert.match(fixture, /className="settings-edit"[\s\S]*?M11 14 20 5l-3-3-9 9-1 4 4-1Z/);
+  assert.match(fixture, /className="settings-edit"[\s\S]*?<QcScreenGlyph kind="edit" \/>/);
+  assert.match(screenGlyphs, /kind === "edit"[\s\S]*?M11 14 20 5l-3-3-9 9-1 4 4-1Z/);
   assert.match(captureCss, /\.global-eq-controls \.io-dial \{ right: -\.1875cqw; width: 8\.375cqw; height: 8\.375cqw; \}/);
   assert.match(remainingCss, /\.coros-device-presets\.is-official-factory section:nth-child\(2\) header \.preset-close\{[^}]*transform:translateX\(\.75cqw\);font-size:0\}/);
   assert.match(remainingCss, /\.coros-device-presets\.is-official-factory section:nth-child\(2\) header \.preset-confirm\{[^}]*transform:translateX\(\.25cqw\);font-size:0\}/);
@@ -168,7 +160,8 @@ test("official low-score refinements retain their measured geometry and glyphs",
   assert.match(remainingCss, /\.coros-device-presets\.is-official-actions>main>section,\.coros-device-presets\.is-official-actions section>button\{background:#2e2e2e\}/);
   assert.match(remainingCss, /\.coros-device-presets\.is-official-factory section:first-child header button\.is-active::before\{[^}]*background:#f8d030;/);
   assert.match(remainingCss, /\.coros-device-presets\.is-official-factory section:nth-child\(2\) header \.preset-confirm\{background:#1838f8\}/);
-  assert.match(fixture, /function DevicePresetGlyph\(\)[\s\S]*?<g fill="currentColor">[\s\S]*?m6 10 10-6 10 6-10 6Z/);
+  assert.match(fixture, /function DevicePresetGlyph\(\)[\s\S]*?<QcPresetStackIcon \/>/);
+  assert.match(themeIcons, /function QcPresetStackIcon\(\)[\s\S]*?<path d="m12 3 8 4-8 4-8-4 8-4Zm8 8-8 4-8-4m16 4-8 4-8-4" \/>/);
   assert.match(fixture, /get\("tempoState"\) === "official"/);
   assert.match(fixture, /beat === \(official \? 1 : 0\)/);
   assert.match(fixture, /className=\{official \? "is-active" : ""\} \/>Global/);
@@ -176,7 +169,6 @@ test("official low-score refinements retain their measured geometry and glyphs",
   assert.match(remainingCss, /\.coros-tempo\.tempo-official>header \.tempo-scene\{display:none\}/);
   assert.match(remainingCss, /\.coros-tempo:not\(\.tempo-official\)>header button\{margin-left:2\.25cqw\}/);
   assert.match(remainingCss, /\.tempo-official \.tempo-display i:nth-child\(3\)::after\{content:"";/);
-  assert.match(officialManifest, /"tempoState": "official"/);
 });
 
 test("official MIDI Out retains the measured disabled header action", () => {
@@ -194,24 +186,36 @@ test("official System brightness values remain right-aligned", () => {
   assert.match(css, /\.settings-system-detail > div strong \{ position: absolute; right: 1\.75cqw; top: 1\.375cqw; \}/);
 });
 
-test("runtime block glyphs are original code-drawn marks without reference artwork", () => {
+test("runtime block glyphs use only the shared neutral vector registry", () => {
   const renderer = readFileSync("packages/typescript/qc-ui/src/device-glyph.tsx", "utf8");
-  assert.match(renderer, /const mark = \(\{ plugin: "PLG"/);
-  assert.doesNotMatch(renderer, /<image\b|QC_VISUAL_ASSETS|REFERENCE_BLOCK_ICONS|data:image/);
+  const registry = readFileSync("packages/typescript/qc-ui/src/device-category-glyph.tsx", "utf8");
+  assert.match(renderer, /<QcDeviceCategoryGlyph\b/);
+  assert.doesNotMatch(renderer + registry, /<image\b|data:image|base64|QC_VISUAL_ASSETS|REFERENCE_BLOCK_ICONS/);
+  for (const [, label] of expectedCategories) assert.match(registry, new RegExp(`label === "${label}"`));
 });
 
-test("Morph, Filter, Utility Gate, and Pitch remain attached to their verified vector glyphs", () => {
-  assert.deepEqual(officialBlockVisual(block("Freeze", "Morph")).tile, [560, 82]);
-  assert.deepEqual(officialBlockVisual(block("Envelope Filter", "Filter")).tile, [240, 0]);
-  assert.deepEqual(officialBlockVisual(block("Adaptive Gate", "Utility")).tile, [400, 82]);
-  assert.equal(officialBlockVisual(block("Adaptive Gate", "Utility")).referenceAsset, undefined);
-  assert.equal(officialBlockVisual(block("Dual Octaver", "Pitch")).referenceAsset, "pitch");
+test("plugin badges are generated overlays, separate from base block vectors", () => {
+  const renderer = readFileSync("packages/typescript/qc-ui/src/device-glyph.tsx", "utf8");
+  const categories = readFileSync("packages/typescript/qc-ui/src/device-category-glyph.tsx", "utf8");
+  const badges = readFileSync("packages/typescript/qc-ui/src/plugin-badge-glyph.tsx", "utf8");
+  const catalog = readFileSync("packages/typescript/qc-ui/src/plugin-badges.ts", "utf8");
+  assert.match(renderer, /<QcPluginBadgeGlyph abbreviation=\{badge\}/);
+  assert.doesNotMatch(categories, /official-plugin-badge|abbreviation|PUBLISHED_PLUGIN_BADGES/);
+  assert.match(badges, /<rect[\s\S]*<text/);
+  assert.match(catalog, /export const PUBLISHED_PLUGIN_BADGES/);
+});
+
+test("Morph, Filter, Utility Gate, and Pitch remain attached to the right shared glyph", () => {
+  assert.equal(officialBlockVisual(block("Freeze", "Morph")).key, "morph");
+  assert.equal(officialBlockVisual(block("Envelope Filter", "Filter")).key, "filter");
+  assert.equal(officialBlockVisual(block("Adaptive Gate", "Utility")).key, "utility");
+  assert.equal(officialBlockVisual(block("Dual Octaver", "Pitch")).key, "pitch");
 });
 
 test("category registry matches the complete CorOS manual order, icon, color, and meaning", () => {
   assert.equal(OFFICIAL_BLOCK_CATEGORIES.length, 19);
   assert.deepEqual(
-    OFFICIAL_BLOCK_CATEGORIES.map(({ key, label, tile, color }) => [key, label, tile, color]),
+    OFFICIAL_BLOCK_CATEGORIES.map(({ key, label, color }) => [key, label, color]),
     expectedCategories
   );
   for (const category of OFFICIAL_BLOCK_CATEGORIES) assert.ok(category.meaning.length > 12, `${category.label} needs a meaning`);
@@ -243,8 +247,6 @@ test("category aliases keep device-list terminology attached to the correct fami
 test("Adaptive Gate uses official gray Utility artwork rather than the yellow Pitch glyph", () => {
   const visual = officialBlockVisual(block("Adaptive Gate", "Utility"));
   assert.equal(visual.key, "utility");
-  assert.deepEqual(visual.tile, [400, 82]);
-  assert.equal(visual.referenceAsset, undefined);
   assert.equal(visual.color, "#959595");
 });
 

@@ -910,6 +910,64 @@ class PyQuadCortexDevice:
             raise RuntimeError("The Quad Cortex inhibited-modules reply was incomplete.")
         return {"globalGate": bool(message.global_gate), "globalEq": bool(message.global_eq)}
 
+    def diagnostics(self) -> dict[str, Any]:
+        """Read diagnostics without exposing log upload or production tooling."""
+        native_request = self._native_gateway_request()
+        if native_request is not None:
+            return native_request("device.diagnostics", {})
+
+        message = _pyquadcortex_method(self._require_session(), "diagnostics")()
+
+        def dsp(field: str) -> dict[str, Any] | None:
+            if not message.HasField(field):
+                return None
+            value = getattr(message, field)
+            return {
+                "status1": int(value.status1), "status2": int(value.status2),
+                "status3": int(value.status3), "status4": int(value.status4),
+                "processCpu": float(value.process_cpu),
+                "processCpuMax": float(value.process_cpu_max),
+                "internalHeapUsage": float(value.internal_heap_usage),
+                "externalHeapUsage": float(value.external_heap_usage),
+                "internalPmHeapUsage": float(value.internal_pm_heap_usage),
+                "externalDmaUsage": float(value.ext_dma_usage),
+                "errorFlags": int(value.error_flags),
+            }
+
+        usb = None
+        if message.HasField("SOC2ARMCoreDiagnostics"):
+            value = message.SOC2ARMCoreDiagnostics
+            usb = {
+                "connected": int(value.USBConnected),
+                "inputReadIndex": int(value.inReadIdx), "inputWriteIndex": int(value.inWriteIdx),
+                "outputReadIndex": int(value.outReadIdx), "outputWriteIndex": int(value.outWriteIdx),
+                "audioRxFrames": int(value.USBAudioRxFrame), "audioTxFrames": int(value.USBAudioTxFrame),
+                "audioTxFramesSkipped": int(value.USBAudioTxFrameSkipped),
+                "audioTxFramesAborted": int(value.USBAudioTxFrameAborted),
+                "audioOutputDistanceAverage": int(value.USBAudioOutRdWrDistanceAverage),
+                "audioMinSamples": int(value.USBAudioRdWrMinNumSamples),
+                "audioMaxSamples": int(value.USBAudioRdWrMaxNumSamples),
+                "audioPlusOneSampleCount": int(value.USBAudioPlusOneSampleCount),
+                "audioMinusOneSampleCount": int(value.USBAudioMinusOneSampleCount),
+                "audioFeedbackState": int(value.USBAudioFeedbackState),
+                "audioStreamingEndpointEnabled": int(value.USBAudioStreamingEPEnabled),
+                "audioStreamingEndpointDisabled": int(value.USBAudioStreamingEPDisabled),
+                "midiOutCount": int(value.USBMidiOutCount), "midiInCount": int(value.USBMidiInCount),
+                "hidInCount": int(value.USBHIDInCount), "hidOutCount": int(value.USBHIDOutCount),
+                "hidInDroppedCount": int(value.USBHIDInDroppedCount),
+                "hidOutDroppedCount": int(value.USBHIDOutDroppedCount),
+            }
+        return {
+            "requestId": int(message.request_id) if message.HasField("request_id") else None,
+            "soc1Core1": dsp("SOC1Core1Diagnostics"),
+            "soc1Core2": dsp("SOC1Core2Diagnostics"),
+            "soc2Core1": dsp("SOC2Core1Diagnostics"),
+            "soc2Core2": dsp("SOC2Core2Diagnostics"),
+            "soc2Arm": usb,
+            "soc1ToSoc2DroppedCount": int(message.soc1_to_soc2_dropped_count)
+            if message.HasField("soc1_to_soc2_dropped_count") else None,
+        }
+
     def tuner_settings(self) -> dict[str, Any]:
         """Read tuner preferences without engaging or changing the tuner."""
         message = _pyquadcortex_method(self._require_session(), "tuner")()

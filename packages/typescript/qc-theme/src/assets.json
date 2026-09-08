@@ -1,19 +1,22 @@
 {
-  "appIcon": {
-    "url": "/app-icon.svg",
-    "sourcePath": "packages/typescript/qc-theme/assets/app-icon.svg",
-    "sha256": "1ec412cab547af8675a2a8694cfa161c000d70fe237b397b0d526f357539fda3"
+  "chassisVector": {
+    "sourcePath": "packages/typescript/qc-theme/assets/qc-chassis-neutral.svg",
+    "sha256": "9e107a358e260d26e48b4e07979df9b17b34c24da463ae204352f02a7683e3a6",
+    "sourceWidth": 1096.94,
+    "sourceHeight": 719.079,
+    "crop": { "x": 0, "y": 0, "width": 1096.94, "height": 719.079 },
+    "source": "QC Remote neutral chassis vector"
   },
-  "appIconPng": {
-    "sourcePath": "packages/typescript/qc-theme/app-icon-source.png",
-    "sha256": "a3563c62c0ecc58fcf48780103a5a05035a824c3bd0db82d29b52f51bf0db57a",
+  "appIcon": {
+    "sourcePath": "packages/typescript/qc-theme/assets/app-icon.svg",
+    "sha256": "1ec412cab547af8675a2a8694cfa161c000d70fe237b397b0d526f357539fda3",
     "derivedPathPrefixes": [
       "apps/windows/src-tauri/icons/",
       "apps/android/android/app/src/main/res/drawable",
       "apps/android/android/app/src/main/res/mipmap-"
     ],
     "generators": [
-      "Tauri icon generator from the canonical PNG",
+      "Tauri icon generator from the canonical SVG",
       "scripts/generate-android-branding.ps1"
     ]
   }

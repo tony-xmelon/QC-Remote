@@ -1,0 +1,225 @@
+{
+  "schemaVersion": 1,
+  "incidentId": "QC-ANDROID-2026-09-07-YSOD-01",
+  "status": "open-investigation",
+  "releaseBlocking": true,
+  "platform": "android",
+  "device": {
+    "product": "Neural DSP Quad Cortex",
+    "firmwareReportedByEarlierIdentity": "d14e",
+    "serial": "sha256:219618c3781c"
+  },
+  "androidHost": {
+    "manufacturer": "OnePlus",
+    "model": "CPH2449",
+    "transportToTestHost": "wireless-adb",
+    "qcUsbAttachment": "direct USB host connection"
+  },
+  "app": {
+    "package": "com.qccontrol.mobile",
+    "versionName": "0.3.23",
+    "versionCode": 28,
+    "targetSdk": 36,
+    "installedAtLocal": "2026-09-07T22:18:54+03:00",
+    "processStartedAtLocal": "2026-09-07T22:18:54.975+03:00"
+  },
+  "run": {
+    "sourceReport": null,
+    "conformanceHarnessRunning": false,
+    "backupAttempted": false,
+    "publicRelayProcessWasPresent": true,
+    "phoneRelayServiceActive": false,
+    "remoteMcpCommandPathAvailable": false
+  },
+  "operatorObservation": {
+    "report": "The Quad Cortex displayed a yellow screen of death.",
+    "source": "physical-device operator",
+    "machineVerifiable": false,
+    "reportedImmediatelyBeforeEvidenceCapture": true
+  },
+  "observedSequence": [
+    {
+      "order": 1,
+      "source": "ADB package and process logs",
+      "event": "The current-source Android APK was installed and MainActivity started",
+      "details": {
+        "installedAtLocal": "2026-09-07T22:18:54+03:00",
+        "processStartedAtLocal": "2026-09-07T22:18:54.975+03:00",
+        "appProcessRemainedAlive": true,
+        "fatalAndroidExceptionObserved": false
+      }
+    },
+    {
+      "order": 2,
+      "source": "Android startup code and ADB USB state",
+      "event": "The app detected the directly attached Quad Cortex; startup is capable of automatically opening and handshaking the USB session",
+      "details": {
+        "inference": true,
+        "reason": "App.tsx scans at startup and calls attemptUsbConnection when a QC device is present. The Android log did not contain a definitive command-level trace proving that the handshake completed.",
+        "qcEnumeratedByAndroidAtLocal": "2026-09-07T22:21:38+03:00",
+        "usbManufacturer": "Neural DSP",
+        "usbProduct": "Quad Cortex"
+      }
+    },
+    {
+      "order": 3,
+      "source": "physical-device operator",
+      "event": "The operator reported a yellow screen of death on the Quad Cortex",
+      "details": {
+        "exactOnsetTimeKnown": false,
+        "screenshotCaptured": false
+      }
+    },
+    {
+      "order": 4,
+      "source": "host process inventory and Android service state",
+      "event": "No physical conformance harness or phone relay service was active",
+      "details": {
+        "androidR61ReportExists": false,
+        "phoneQcRelayServiceActive": false,
+        "remoteMcpActionsPossible": false,
+        "priorCompletedAndroidReport": "tmp/android-physical-hardening-full-backup-r60.json",
+        "priorReportFinishedAtLocal": "2026-09-07T18:52:17+03:00"
+      }
+    },
+    {
+      "order": 5,
+      "source": "safety response",
+      "event": "All known Android device-driving paths were stopped",
+      "details": {
+        "publicRelayStopped": true,
+        "androidAppForceStopped": true,
+        "stoppedByLocal": "2026-09-07T22:23:21.0622740+03:00"
+      }
+    }
+  ],
+  "causality": {
+    "established": false,
+    "statement": "The yellow screen was reported shortly after the Android app was installed and started while the Quad Cortex was directly attached. No conformance suite, backup, phone relay service, or remote MCP action was active. The app's automatic USB open/handshake path is the nearest plausible software interaction, but available logs do not prove that it completed or caused the firmware crash. USB attachment, startup handshake timing, a residual device condition from earlier testing, or an independent firmware condition remain possible."
+  },
+  "impact": {
+    "currentAndroidPhysicalCertificationValid": false,
+    "currentRunProducedEvidence": false,
+    "releaseBlocked": true,
+    "deviceStateRecoveryNotYetVerified": true
+  },
+  "mitigationsImplemented": [
+    {
+      "mitigation": "USB attachment and startup report the device as available but do not automatically open or handshake it; connection now requires an explicit user action.",
+      "evidence": [
+        "apps/android/src/App.tsx",
+        "apps/android/src/native-sync.test.ts"
+      ],
+      "verification": "The full software-parity gate, including 55 Android tests, passed; no physical-device validation has been performed after the incident."
+    },
+    {
+      "mitigation": "A bounded, payload-free USB flight recorder distinguishes lifecycle events and message types without storing command payloads, credentials, serial numbers, or user content. Routine action and traffic checkpoints persist on a dedicated I/O lane; durable lifecycle checkpoints do not add storage work to realtime USB traffic.",
+      "evidence": [
+        "apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbFlightRecorder.java",
+        "apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java",
+        "apps/android/src/native-sync.test.ts"
+      ],
+      "verification": "Android assembleDebug, Android lintDebug, focused recorder/source tests, and the full current-source software-parity gate passed after the final recorder refinement; recorder behavior has not yet been validated during a controlled physical run."
+    },
+    {
+      "mitigation": "The physical conformance runner refuses every --execute run while this incident is open unless QC_HARDWARE_INCIDENT_ACK names it exactly.",
+      "evidence": [
+        "tools/hardware-conformance.mjs",
+        "tools/hardware-conformance-lib.mjs",
+        "tests/hardware-conformance.test.ts"
+      ],
+      "verification": "32 hardware-conformance tests passed, and an unacknowledged execution attempt stopped before transport startup."
+    },
+    {
+      "mitigation": "A dedicated Android probe performs one explicitly acknowledged open/handshake/initialization cycle, captures the local flight record, and disconnects in finally without exposing gateway, relay, or backup operations.",
+      "evidence": [
+        "tools/android-webview-adb.mjs",
+        "tools/probe-android-usb-adb.mjs",
+        "apps/android/src/native-sync.test.ts"
+      ],
+      "verification": "Syntax and fail-closed source tests passed; the probe has not been run against the recovered device."
+    }
+  ],
+  "mitigationDecision": "The mitigations reduce inadvertent exposure and improve evidence collection, but do not establish cause or demonstrate device safety. The incident remains open and release-blocking.",
+  "mitigationBuild": {
+    "artifact": "apps/android/android/app/build/outputs/apk/debug/app-debug.apk",
+    "bytes": 24344441,
+    "builtAtLocal": "2026-09-07T23:35:55.7201322+03:00",
+    "sha256": "07260d83545cc73fc21b35f821a3b2f515852163b082c548376b7cb99fb300a6",
+    "installedOnPhone": true,
+    "softwareParityGate": "passed-current-source-with-stable-working-tree-fingerprint",
+    "priorSoftwareParityGate": "passed-before-final-recorder-refinement",
+    "physicalTrafficDuringValidation": false
+  },
+  "postIncidentSoftwareEvidence": {
+    "capturedAtLocal": "2026-09-07T23:04:10.1713662+03:00",
+    "physicalTrafficGenerated": false,
+    "androidAndDeduplicationTests": {
+      "passed": 97,
+      "failed": 0
+    },
+    "sharedDeviceRuntimeTests": {
+      "passed": 57,
+      "failed": 0
+    },
+    "windowsBrokerTests": {
+      "passed": 31,
+      "failed": 0
+    },
+    "androidRustBoundaryTests": {
+      "passed": 3,
+      "failed": 0
+    },
+    "protocolAndReplayTests": {
+      "passed": 65,
+      "failed": 0
+    },
+    "commandSurface": {
+      "actions": 105,
+      "gatewayMethods": 107,
+      "missingPhysicalFixtures": 0
+    },
+    "statusOnlyProbe": {
+      "report": "tmp/android-usb-status-post-ysod.json",
+      "capturedAt": "2026-09-07T20:37:15.955Z",
+      "deviceCount": 1,
+      "usbPermission": true,
+      "connected": false,
+      "synchronized": false,
+      "messagesSent": 0,
+      "messagesReceived": 0,
+      "decodeErrors": 0,
+      "flightEvents": [
+        "plugin-loaded",
+        "scan-available",
+        "scan-available"
+      ]
+    },
+    "controlledHandshakeProbe": {
+      "report": "tmp/android-usb-handshake-post-ysod.json",
+      "postDisconnectReport": "tmp/android-usb-status-after-handshake.json",
+      "capturedAt": "2026-09-07T20:38:38.928Z",
+      "handshakeAttempt": 1,
+      "handshakeReplyLatencyMs": 13,
+      "transportReady": true,
+      "messagesSent": 33,
+      "messagesReceivedBeforeDisconnect": 44,
+      "decodeErrors": 0,
+      "maximumHidWriteDurationMs": 2,
+      "gatewayReadRecoveries": 0,
+      "gatewayWriteRecoveries": 0,
+      "finalConnected": false,
+      "finalReaderActive": false,
+      "transportClosedRecorded": true,
+      "backupAttempted": false,
+      "relayUsed": false,
+      "gatewayActionInvoked": false
+    }
+  },
+  "requiredFollowUp": [
+    "Do not resume physical mutation, stress, backup, relay, or automatic-connect testing until the Quad Cortex has recovered and its state has been checked.",
+    "Validate the new command-level Android USB flight recorder on-device and retain its exported lifecycle evidence.",
+    "Reproduce first with a gated attach/open/handshake-only protocol and no relay or conformance commands.",
+    "Keep this incident release-blocking until the trigger is understood or a mitigation is validated by controlled physical regression runs."
+  ]
+}

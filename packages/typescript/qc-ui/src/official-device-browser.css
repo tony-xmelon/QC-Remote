@@ -1,7 +1,7 @@
 @scope (.qc-screen-fixture-root) {
-.device-browser-official, .device-browser-official * { box-sizing: border-box; font-family: Arial, sans-serif; }
+.device-browser-official, .device-browser-official * { box-sizing: border-box; font-family: var(--qc-font-device-plain); }
 .device-browser-official:not(.is-plugins),
-.device-browser-official:not(.is-plugins) * { font-family: Roboto, Arial, sans-serif; }
+.device-browser-official:not(.is-plugins) * { font-family: var(--qc-font-device-plain); }
 .qc-screen.device-browser-official { position: absolute; inset: 0; display: grid; grid-template-columns: 50% 50%; grid-template-rows: 100%; overflow: hidden; background: #181c18; color: #eee; container-type: inline-size; }
 .device-browser-official > main { grid-column: 1; grid-row: 1; display: grid; grid-template-columns: 12.875cqw 37.125cqw; grid-template-rows: 100%; overflow: hidden; background: #181c18; }
 .device-browser-official nav { padding-top: 1.125cqw; }
@@ -26,8 +26,8 @@
 .device-browser-official.is-plugins nav button:nth-child(6) svg { transform: scale(.94, 1.18); }
 .device-browser-list { overflow: hidden; background: #282c28; }
 .device-browser-list header { height: 7.5cqw; display: flex; align-items: center; color: #929692; font-size: 2.25cqw; }
-.device-browser-list header button { width: 12.5cqw; height: 6.5cqw; border: 0; border-radius: 1cqw 1cqw 0 0; background: #171b18; color: #929692; font: 2cqw Arial, sans-serif; }
-.device-browser-official:not(.is-plugins) .device-browser-list header button { font-family: Roboto, Arial, sans-serif; }
+.device-browser-list header button { width: 12.5cqw; height: 6.5cqw; border: 0; border-radius: 1cqw 1cqw 0 0; background: #171b18; color: #929692; font: 2cqw var(--qc-font-device-plain); }
+.device-browser-official:not(.is-plugins) .device-browser-list header button { font-family: var(--qc-font-device-plain); }
 .device-browser-official:not(.is-plugins) .device-browser-list header button { position: relative; top: .5cqw; }
 .device-browser-official:not(.is-plugins) .device-browser-list header button:nth-child(2) { margin-left: .625cqw; }
 .device-browser-list header button.is-active { background: #282c28; color: #eee; }
@@ -35,8 +35,8 @@
 .device-browser-list header i { width: 8.25cqw; height: 5.5cqw; margin-left: auto; margin-right: 1cqw; display: grid; place-items: center; border-radius: 1cqw; background: #171b18; color: #eee; font-size: 3cqw; font-style: normal; }
 .device-browser-list header i svg { width: 3cqw; height: 3cqw; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .device-browser-list header i .qc-ui-icon-refresh { fill: currentColor; stroke: none; transform: translate(1px, -2px); }
-.device-browser-list > button { width: 100%; height: 7.5cqw; padding: 0 2cqw; border: 0; background: transparent; color: #eee; text-align: left; font: 2cqw Arial, sans-serif; }
-.device-browser-official:not(.is-plugins) .device-browser-list > button { padding-left: 2.125cqw; font-family: Roboto, Arial, sans-serif; font-size: 2cqw; }
+.device-browser-list > button { width: 100%; height: 7.5cqw; padding: 0 2cqw; border: 0; background: transparent; color: #eee; text-align: left; font: 2cqw var(--qc-font-device-plain); }
+.device-browser-official:not(.is-plugins) .device-browser-list > button { padding-left: 2.125cqw; font-family: var(--qc-font-device-plain); font-size: 2cqw; }
 .device-browser-list > button b { color: #f4d224; }
 .device-browser-official:not(.is-plugins) .device-browser-list > button { position: relative; top: 1px; }
 .device-browser-official.is-plugins .device-browser-list > button { padding-left: .875cqw; position: relative; top: 1px; }
@@ -65,11 +65,9 @@
 .device-browser-grid header .plugin-mode { position: absolute; left: 32cqw; top: 7.25cqw; color: #aaaeaa; font-size: 3cqw; }
 .device-browser-grid header .plugin-mode { display: flex; align-items: center; gap: 1.5cqw; }
 .device-browser-grid header .plugin-mode-matrix { width: 3cqw; height: 3cqw; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 1px; }
-.device-browser-grid header .plugin-mode-matrix i { width: auto; height: auto; display: grid; place-items: center; border-radius: 0; background: #aaaeaa; color: #404440; font: 700 1.1cqw/1 Arial, sans-serif; }
+.device-browser-grid header .plugin-mode-matrix i { width: auto; height: auto; display: grid; place-items: center; border-radius: 0; background: #aaaeaa; color: #404440; font: 700 1.1cqw/1 var(--qc-font-device-plain); }
 .device-browser-grid header .plugin-mode svg,.device-browser-grid .amp-mode svg { width: 3cqw; height: 3cqw; fill: currentColor; stroke: none; vertical-align: middle; }
 .device-browser-grid .amp-mode { position: absolute; z-index: 2; left: 32cqw; top: 6.5cqw; width: 17cqw; height: 4.25cqw; color: transparent; font-size: 0; }
-.device-browser-grid .amp-mode::before { content: ""; position: absolute; left: 0; top: .875cqw; width: 2.875cqw; height: 2.875cqw; background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 23 23'%3E%3Cg fill='%23aaaeaa'%3E%3Crect x='1' y='1' width='5' height='5'/%3E%3Crect x='7' y='1' width='5' height='5'/%3E%3Crect x='13' y='1' width='4' height='5'/%3E%3Crect x='18' y='1' width='4' height='5'/%3E%3Crect x='1' y='7' width='4' height='4'/%3E%3Crect x='6' y='7' width='5' height='4'/%3E%3Crect x='12' y='7' width='5' height='4'/%3E%3Crect x='18' y='7' width='4' height='4'/%3E%3Crect x='1' y='12' width='5' height='4'/%3E%3Crect x='7' y='12' width='4' height='4'/%3E%3Crect x='12' y='12' width='5' height='4'/%3E%3Crect x='18' y='12' width='4' height='4'/%3E%3Crect x='1' y='17' width='4' height='5'/%3E%3Crect x='6' y='17' width='5' height='5'/%3E%3Crect x='12' y='17' width='5' height='5'/%3E%3Crect x='18' y='17' width='4' height='5'/%3E%3C/g%3E%3C/svg%3E"); }
-.device-browser-grid .amp-mode::after { content: "PRESET"; position: absolute; left: 4.5cqw; top: .75cqw; color: #808880; font: 700 3cqw/1 Arial, sans-serif; }
 .device-browser-grid main { position: absolute; inset: 12.5% 0 0; background: transparent !important; }
 .device-browser-grid main::before { content: ""; position: absolute; left: 0; right: 5.5cqw; top: 10.75cqw; border-top: 2px solid #707870; }
 .device-browser-grid.is-plugins main::after,
@@ -121,6 +119,7 @@
 .device-browser-official.is-plugins .device-browser-grid .grid-block.b6 { border-color: #408878; }
 .device-browser-official.is-plugins .device-browser-grid .grid-block.b7 { border-color: #804c48; }
 
-.coros-device-presets.is-official-actions > nav button:nth-child(6) i > span { width: 5cqw; height: 5cqw; display: block; overflow: hidden; color: transparent; background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg fill='none' stroke='%23f2f2f2' stroke-width='1.8' stroke-linejoin='round'%3E%3Cpath d='M5 10 16 4l11 6v13l-11 6-11-6Z'/%3E%3Cpath d='m5 10 11 6 11-6M16 16v13M5 23l11-7 11 7'/%3E%3C/g%3E%3C/svg%3E"); }
+.device-browser-grid .amp-mode > svg { position: absolute; left: 0; top: .875cqw; width: 2.875cqw; height: 2.875cqw; color: #aaaeaa; }
+.device-browser-grid .amp-mode > span { position: absolute; left: 4.5cqw; top: .75cqw; color: #808880; font: 700 3cqw/1 var(--qc-font-device-plain); }
 
 }

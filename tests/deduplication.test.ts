@@ -17,19 +17,26 @@ test("nonempty repository files have unique bytes unless their generated or arch
     "packages/python/qc-gateway-client/src/qc_gateway_client/generated_domain.py",
     "services/device-gateway/src/qc_device_gateway/domain.py"
   );
+  allowPair(
+    "legal/COMMUNITY-PROTOCOL-LICENSE.txt",
+    "packages/rust/qc-protocol/PYQUADCORTEX-LICENSE.txt"
+  );
   const corpusRoot = "references/qc-ui-corpus/coros-4.1.0";
-  const corpus = JSON.parse(source(`${corpusRoot}/manifest.json`));
-  const captures = new Map(corpus.captures.map((capture: { id: string }) => [capture.id, capture]));
-  for (const capture of corpus.captures) {
-    if (capture.identicalImageOf) {
-      const owner = captures.get(capture.identicalImageOf) as { image: string } | undefined;
-      assert.ok(owner, `${capture.id}: identicalImageOf target must exist`);
-      allowPair(`${corpusRoot}/${capture.image}`, `${corpusRoot}/${owner.image}`);
-    }
-    if (capture.identicalGraphicsTreeOf) {
-      const owner = captures.get(capture.identicalGraphicsTreeOf) as { graphicsTree: string } | undefined;
-      assert.ok(owner, `${capture.id}: identicalGraphicsTreeOf target must exist`);
-      allowPair(`${corpusRoot}/${capture.graphicsTree}`, `${corpusRoot}/${owner.graphicsTree}`);
+  const corpusManifest = `${corpusRoot}/manifest.json`;
+  if (existsSync(corpusManifest)) {
+    const corpus = JSON.parse(source(corpusManifest));
+    const captures = new Map(corpus.captures.map((capture: { id: string }) => [capture.id, capture]));
+    for (const capture of corpus.captures) {
+      if (capture.identicalImageOf) {
+        const owner = captures.get(capture.identicalImageOf) as { image: string } | undefined;
+        assert.ok(owner, `${capture.id}: identicalImageOf target must exist`);
+        allowPair(`${corpusRoot}/${capture.image}`, `${corpusRoot}/${owner.image}`);
+      }
+      if (capture.identicalGraphicsTreeOf) {
+        const owner = captures.get(capture.identicalGraphicsTreeOf) as { graphicsTree: string } | undefined;
+        assert.ok(owner, `${capture.id}: identicalGraphicsTreeOf target must exist`);
+        allowPair(`${corpusRoot}/${capture.graphicsTree}`, `${corpusRoot}/${owner.graphicsTree}`);
+      }
     }
   }
 
@@ -70,12 +77,14 @@ test("the installed Windows runtime has no Python gateway or backup sidecar", ()
   const bundle = source("apps/windows/src-tauri/tauri.conf.json");
   const installer = source("scripts/build-windows-installer.ps1");
   const worker = source("services/device-broker/src/worker.rs");
+  const sharedBackup = source("packages/rust/qc-device-runtime/src/backup.rs");
   assert.doesNotMatch(tauri, /QC_GATEWAY_RUNTIME|qc-device-gateway|\.venv|python\.exe/i);
   assert.doesNotMatch(`${bundle}\n${installer}`, /qc-backup-helper|PyInstaller|backup_helper\.py/i);
   // The broker requests and assembles the document itself, on its own device
   // loop, with no helper process and no nested read loop.
   assert.match(worker, /commands::create_local_backup\(\)/);
-  assert.match(worker, /BackupAssembler/);
+  assert.match(worker, /BackupRuntime/);
+  assert.match(sharedBackup, /pub struct BackupRuntime/);
   assert.doesNotMatch(source("services/device-broker/src/usb.rs"), /fn create_backup/);
 });
 
@@ -157,25 +166,20 @@ test("both native shells route Grid menus and footswitches through shared policy
   assert.doesNotMatch(android, /const pressFootswitch = async/);
 });
 
-test("Windows and Android resolve visual fixture state through one shared owner", () => {
+test("Windows and Android gate the exact visual fixtures behind development mode", () => {
   const windows = source("apps/windows/src/App.tsx");
   const android = source("apps/android/src/App.tsx");
-  const shared = source("packages/typescript/qc-ui/src/coros-screen-fixture-data.ts");
-  assert.match(shared, /export function corosFixtureConfiguration/);
   for (const app of [windows, android]) {
     assert.match(app, /corosFixtureConfiguration\(import\.meta\.env\.DEV \? window\.location\.search : "", demoSnapshot\)/);
   }
-  assert.doesNotMatch(windows, /new URLSearchParams/);
-  assert.doesNotMatch(android, /new URLSearchParams/);
 });
 
-test("reference-only CorOS screens are lazy-loaded outside the production startup bundle", () => {
+test("the device surface uses the shared device-faithful screen implementation", () => {
   const surface = source("packages/typescript/qc-ui/src/quad-cortex-surface.tsx");
   const barrel = source("packages/typescript/qc-ui/src/index.ts");
   assert.match(surface, /lazy\(\(\) => import\("\.\/coros-screen-fixtures"\)/);
-  assert.doesNotMatch(surface, /import \{ CorOsScreenFixture/);
-  assert.match(barrel, /coros410FixtureSnapshot.*coros-screen-fixture-data/);
-  assert.doesNotMatch(barrel, /coros410FixtureSnapshot.*coros-screen-fixtures/);
+  assert.match(surface, /<CorOsScreenFixture/);
+  assert.match(barrel, /coros410FixtureSnapshot, corosFixtureConfiguration/);
 });
 
 test("one shared controller owns parameter editor details, drafts, and paging", () => {
@@ -260,12 +264,14 @@ test("one generated profile owns USB and performance MIDI policy across native h
   // Version READ is answered, so the link looks alive, but it does not keep the
   // session serving: the device stops pushing state and stops answering File
   // READs after about a minute, which left the preset library permanently empty.
-  assert.match(source("services/device-broker/src/worker.rs"), /keepalive_due\(now_ms\)[\s\S]{0,600}commands::keepalive\(\)/);
-  assert.doesNotMatch(source("services/device-broker/src/worker.rs"), /keepalive_due\(now_ms\)[\s\S]{0,600}read\(qc_protocol::profile::MESSAGE_TYPE_VERSION\)/);
-  // Android still keeps the QC alive with a Version READ outside a backup, and
-  // needs the same treatment; its Version read additionally serves an Android
-  // USB-host purpose, so it cannot simply be swapped without hardware testing.
-  assert.match(source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java"), /readCommand\(QcUsbProfile\.MESSAGE_TYPE_VERSION\)/);
+  const transportRuntime = source("packages/rust/qc-device-runtime/src/transport.rs");
+  assert.match(transportRuntime, /take_keepalive[\s\S]{0,400}commands::keepalive\(\)/);
+  assert.match(source("services/device-broker/src/worker.rs"), /session\.take_keepalive\(now_ms\)/);
+  assert.doesNotMatch(source("services/device-broker/src/worker.rs"), /take_keepalive\(now_ms\)[\s\S]{0,600}MESSAGE_TYPE_VERSION/);
+  // Both hosts use the dedicated shared KeepAlive policy. Startup reads are
+  // planned by the shared Rust startup runtime, including Android's Version read.
+  assert.match(source("packages/rust/qc-device-runtime/src/initialization.rs"), /commands::initialization/);
+  assert.doesNotMatch(source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java"), /readCommand\(QcUsbProfile\.MESSAGE_TYPE_VERSION\)/);
   assert.match(source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java"), /keepaliveCommand\(\)/);
   assert.match(source("packages/rust/qc-windows-midi/src/lib.rs"), /profile::MIDI_CONTROL_CHANGE_STATUS/);
   assert.match(source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java"), /QcUsbProfile\.MIDI_(?:USB_EVENT_PACKET_HEADER|CONTROL_CHANGE_STATUS)/);
@@ -287,6 +293,7 @@ test("one generated domain contract owns Grid, scene, tempo, route, and IPC cons
     assert.match(output, new RegExp(String(contract.limits.gridRows)));
     assert.match(output, new RegExp(String(contract.limits.gridColumns)));
     assert.match(output, new RegExp(String(contract.limits.maximumTempoBpm)));
+    assert.match(output, new RegExp(String(contract.limits.storedPresetNameCharacters)));
     assert.match(output, new RegExp(String(contract.limits.stateEventDefaultLimit)));
     assert.match(output, new RegExp(String(contract.limits.stateEventMaximumLimit)));
   }
@@ -296,6 +303,7 @@ test("one generated domain contract owns Grid, scene, tempo, route, and IPC cons
   assert.match(source("services/device-broker/src/worker.rs"), /STATE_EVENT_MAXIMUM_LIMIT/);
   assert.match(source("services/device-broker/src/rpc.rs"), /STATE_EVENT_DEFAULT_LIMIT/);
   assert.match(source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java"), /QcDomain\.STATE_EVENT_(?:DEFAULT|MAXIMUM)_LIMIT/);
+  assert.match(source("packages/rust/qc-device-runtime/src/request.rs"), /domain::STORED_PRESET_NAME_CHARACTERS/);
 });
 
 test("one generated gateway manifest owns dispatch and both native bindings", () => {
@@ -390,7 +398,8 @@ test("one shared action registry drives model tools and MCP safety classes", () 
     assert.ok(actions.some((action: { name: string }) => action.name === name), name);
   }
   assert.match(chat, /SHARED_QC_ASSISTANT_TOOLS/);
-  assert.match(assistantTools, /SHARED_QC_ACTIONS\.map/);
+  assert.match(assistantTools, /SHARED_QC_ACTIONS[\s\S]*\.map/);
+  assert.match(assistantTools, /MODEL_PRIVATE_QC_ACTIONS = \["get_device_identity"\]/);
   assert.match(assistantTools, /action\.classification === "read"/);
   assert.match(mcp, /for name, action in SHARED_QC_ACTIONS\.items\(\)/);
   assert.match(mcp, /annotations\[action\["classification"\]\]/);
@@ -414,18 +423,22 @@ test("one shared action registry drives model tools and MCP safety classes", () 
 
 test("both USB readers defer ModelRepo work away from realtime I/O", () => {
   const rust = source("services/device-broker/src/usb.rs");
+  const initializationRuntime = source("packages/rust/qc-device-runtime/src/initialization.rs");
   const python = source("services/device-gateway/src/qc_device_gateway/native_transport.py");
   const android = source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java");
   assert.match(rust, /message_type != profile::MESSAGE_TYPE_MODEL_REPO && payload\.starts_with/);
-  assert.match(rust, /fn collect_until_preset[\s\S]*if is_preset \{[\s\S]*return Ok\(true\)/, "Windows must release startup to the live reader as soon as the preset arrives");
+  assert.match(rust, /post_boot_initialization/);
+  assert.match(initializationRuntime, /InitializationPhase::InitialPreset if self\.synchronized/);
+  assert.doesNotMatch(rust, /parse_model_repo/);
   assert.match(python, /payload\.startswith\(b"\\x1f\\x8b"\)[\s\S]*_gunzip_bounded/);
   assert.match(android, /type == QcUsbProfile\.MESSAGE_TYPE_MODEL_REPO[\s\S]*scheduleModelCatalogDecode/);
   assert.match(android, /metadataIo\.execute/);
   assert.match(source("services/device-broker/src/worker.rs"), /qc-native-metadata/);
 });
 
-test("one Rust state engine normalizes Windows and Android device frames", () => {
+test("one shared Rust state runtime normalizes Windows and Android device frames", () => {
   const engine = source("packages/rust/qc-protocol/src/state.rs");
+  const runtime = source("packages/rust/qc-device-runtime/src/state_runtime.rs");
   const broker = source("services/device-broker/src/worker.rs");
   const androidJni = source("packages/rust/qc-android/src/lib.rs");
   const androidPlugin = source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java");
@@ -435,8 +448,12 @@ test("one Rust state engine normalizes Windows and Android device frames", () =>
   const nativeFrame = source("packages/typescript/qc-ui/src/qc-native-state-frame.ts");
   assert.match(engine, /pub struct StateDecoder/);
   assert.match(engine, /fn decode_grid/);
-  assert.match(broker, /StateDecoder::new\(\)/);
-  assert.match(androidJni, /qc_protocol::state::\{parse_model_repo, StateDecoder\}/);
+  assert.match(runtime, /pub struct DeviceStateRuntime/);
+  assert.match(runtime, /decoder: StateDecoder/);
+  assert.match(runtime, /pub fn ingest/);
+  assert.match(broker, /DeviceStateRuntime::new\(\)/);
+  assert.match(androidJni, /state_runtime::DeviceStateRuntime/);
+  assert.doesNotMatch(`${broker}\n${androidJni}`, /StateDecoder::new\(\)/);
   assert.match(androidPlugin, /stateDecoder\.decode\(type, payload\)/);
   assert.doesNotMatch(androidPlugin, /decodeGridUpdates|decodeQcState|decodeModelRepo/);
   assert.match(windows, /useWindowsDeviceFrames\(/);
@@ -549,17 +566,29 @@ test("routing labels, grouping, and row constraints live in shared core", () => 
 
 test("one Rust command and framing engine owns both native USB hosts", () => {
   const commands = source("packages/rust/qc-protocol/src/commands.rs");
+  const initializationRuntime = source("packages/rust/qc-device-runtime/src/initialization.rs");
+  const transportRuntime = source("packages/rust/qc-device-runtime/src/transport.rs");
   const windowsUsb = source("services/device-broker/src/usb.rs");
   const windowsWorker = source("services/device-broker/src/worker.rs");
+  const sharedBackup = source("packages/rust/qc-device-runtime/src/backup.rs");
   const androidJni = source("packages/rust/qc-android/src/lib.rs");
   const androidPlugin = source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java");
   const androidBuild = source("apps/android/android/app/build.gradle");
   const windowsAdapter = source("services/device-gateway/src/qc_device_gateway/native_transport.py");
   assert.match(commands, /pub fn initialization/);
+  assert.match(commands, /pub fn sync_system_time/);
   assert.match(commands, /pub fn set_parameter_numeric/);
   assert.match(commands, /pub enum DeviceCommand/);
-  assert.match(windowsUsb, /commands::initialization/);
-  assert.match(windowsUsb, /FrameAssembler/);
+  assert.match(initializationRuntime, /commands::initialization/);
+  assert.match(windowsUsb, /post_boot_initialization/);
+  assert.match(windowsUsb, /commands::sync_system_time\(unix_time_ms\(\)\)/);
+  assert.match(androidPlugin, /stateDecoder\.systemTimeCommand\(System\.currentTimeMillis\(\)\)/);
+  assert.match(transportRuntime, /pub struct TransportRuntime/);
+  assert.match(transportRuntime, /FrameAssembler/);
+  assert.match(transportRuntime, /framing::encode/);
+  assert.match(transportRuntime, /normalize_inbound_report/);
+  assert.match(windowsUsb, /TransportRuntime::encode_reports/);
+  assert.match(windowsUsb, /session\.push_report/);
   assert.match(windowsWorker, /DeviceCommand::SelectScene/);
   assert.match(source("services/device-broker/src/rpc.rs"), /runtime_request::plan_gateway_write/);
   assert.match(source("packages/rust/qc-device-runtime/src/request.rs"), /DeviceCommand::SetBypass/);
@@ -567,12 +596,22 @@ test("one Rust command and framing engine owns both native USB hosts", () => {
   assert.match(windowsAdapter, /device\.command\.parameter/);
   assert.match(androidJni, /PlannedWrite::HidCommand/);
   assert.match(androidJni, /PlannedWrite::MidiControlChange/);
-  assert.match(androidJni, /FrameAssembler/);
-  assert.match(androidJni, /framing::encode/);
-  assert.match(androidPlugin, /stateDecoder\.initializationCommands/);
+  assert.match(androidJni, /TransportRuntime::encode_reports/);
+  assert.match(androidJni, /\.push_report\(&report\)/);
+  assert.match(androidPlugin, /stateDecoder\.handshakeAttempt/);
+  assert.doesNotMatch(androidPlugin, /stateDecoder\.nextHandshakeAttempt/);
+  assert.match(androidPlugin, /stateDecoder\.startupObserved/);
+  assert.match(androidPlugin, /stateDecoder\.startupBeginBuilding/);
+  assert.match(androidPlugin, /stateDecoder\.postBootInitializationStarted/);
+  assert.match(androidPlugin, /stateDecoder\.initializationAdvance/);
   assert.match(androidPlugin, /stateDecoder\.encodeFrame/);
   assert.match(androidPlugin, /stateDecoder\.pushReport/);
   assert.match(androidBuild, /packages\/rust\/qc-device-runtime/, "shared runtime changes must invalidate Android's native library");
+  assert.match(androidJni, /fn messages_json/);
+  assert.doesNotMatch(androidJni, /fn message_envelope/);
+  assert.doesNotMatch(source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcNativeStateDecoder.java"), /littleEndian(?:Int|Long)|decodeCommandEnvelope|DecodedEnvelope/);
+  assert.doesNotMatch(`${windowsUsb}\n${androidJni}`, /FrameAssembler::new|framing::encode\(/);
+  assert.doesNotMatch(androidPlugin, /normalizeInputReport/);
   assert.doesNotMatch(androidPlugin, /frameReports|FLAG_FIRST|FLAG_LAST/);
   assert.doesNotMatch(androidPlugin, /fieldVarint|fieldMessage|QcUsbFraming|QcProtobufWire/);
 });
@@ -598,6 +637,7 @@ test("shared routing drafts and command journal keep the Windows composition roo
 test("Windows and Android request block details from the same native ModelRepo projection", () => {
   const engine = source("packages/rust/qc-protocol/src/state.rs");
   const payloads = source("packages/rust/qc-protocol/src/generated_payloads.rs");
+  const runtime = source("packages/rust/qc-device-runtime/src/state_runtime.rs");
   const broker = source("services/device-broker/src/worker.rs");
   const python = source("services/device-gateway/src/qc_device_gateway/device.py");
   const android = source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcNativeStateDecoder.java");
@@ -605,23 +645,32 @@ test("Windows and Android request block details from the same native ModelRepo p
   assert.match(payloads, /pub struct BlockDetails/);
   assert.match(payloads, /scale_points: Vec<ScalePoint>/);
   assert.match(engine, /fn parameter_enabled/);
-  assert.match(broker, /StateDecoderCommand::BlockDetails/);
+  assert.match(runtime, /pub fn block_details/);
+  assert.match(runtime, /self\.decoder\.block_details/);
+  assert.match(broker, /device_state\.lock_recover\(\)\.block_details/);
   assert.match(python, /native_reader\(row, column, expected_preset_name\)/);
   assert.match(android, /nativeBlockDetails/);
 });
 
-test("one shared Rust session machine owns reconnect, handshake, keepalive, and read-error policy", () => {
-  const session = source("packages/rust/qc-protocol/src/session.rs");
+test("one shared Rust transport runtime owns reconnect, handshake, keepalive, framing, and read-error policy", () => {
+  const transport = source("packages/rust/qc-device-runtime/src/transport.rs");
   const brokerUsb = source("services/device-broker/src/usb.rs");
   const brokerWorker = source("services/device-broker/src/worker.rs");
   const androidJni = source("packages/rust/qc-android/src/lib.rs");
   const androidPlugin = source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java");
-  for (const policy of ["reconnect_due", "next_handshake_attempt", "keepalive_due", "read_failed", "outbound"]) assert.match(session, new RegExp(policy));
-  assert.match(brokerUsb, /SessionMachine/);
-  assert.match(brokerUsb, /awaiting_handshake_reply/);
-  assert.match(brokerWorker, /session\.keepalive_due/);
-  assert.match(androidJni, /next_handshake_attempt/);
+  for (const policy of ["schedule_reconnect", "reconnect_due", "reconnect_attempted", "next_handshake_attempt", "keepalive_due", "read_failed", "outbound"]) assert.match(transport, new RegExp(policy));
+  for (const policy of ["next_handshake_write", "awaiting_handshake_reply", "take_keepalive", "push_report", "encode_reports"]) assert.match(transport, new RegExp(policy));
+  assert.match(brokerUsb, /TransportRuntime/);
+  assert.match(brokerUsb, /session\.awaiting_handshake_reply/);
+  assert.match(brokerWorker, /session\.take_keepalive/);
+  assert.match(androidJni, /TransportRuntime/);
+  assert.match(androidJni, /next_handshake_write/);
   assert.match(androidPlugin, /stateDecoder\.sessionShouldKeepalive/);
+  assert.match(androidPlugin, /stateDecoder\.sessionKeepaliveSent/);
+  assert.match(androidPlugin, /stateDecoder\.sessionScheduleReconnect/);
+  assert.match(androidPlugin, /stateDecoder\.sessionReconnectDue/);
+  assert.match(androidPlugin, /stateDecoder\.sessionReconnectAttempted/);
+  assert.doesNotMatch(`${brokerUsb}\n${brokerWorker}\n${androidJni}`, /qc_protocol::session::SessionMachine/);
   assert.doesNotMatch(androidPlugin, /lastUsbWriteAt|consecutiveReadErrors/);
 });
 
@@ -654,12 +703,13 @@ test("one shared Rust gateway runtime owns verified reads and persistent preset 
 
   assert.match(broker, /runtime_request::plan_gateway_read/);
   assert.match(broker, /plan\.projection\.decode/);
-  assert.match(broker, /GatewayTransaction::new/);
+  assert.match(broker, /GatewayVerificationRuntime::new/);
   assert.match(brokerWorker, /runtime_request::plan_preset_mutation/);
   assert.match(androidJni, /plan_gateway_read/);
   assert.match(androidJni, /projection\.decode/);
   assert.match(androidJni, /plan_preset_mutation/);
   assert.match(androidJni, /GatewayTransaction::new/);
+  assert.match(androidJni, /GatewayVerificationRuntime::new/);
   assert.match(androidJni, /merge_expected_state/);
   assert.match(androidJava, /stateDecoder\.recordSavedPreset\(workflow\)/);
   assert.match(androidJava, /resolvePendingGatewayTransactions/);
@@ -713,18 +763,18 @@ test("one generated profile owns native backup limits across both hosts", () => 
   const windowsWorker = source("services/device-broker/src/worker.rs");
   const windowsRpc = source("services/device-broker/src/rpc.rs");
   const responses = source("packages/rust/qc-protocol/src/responses.rs");
+  const sharedBackup = source("packages/rust/qc-device-runtime/src/backup.rs");
   for (const value of [contract.backupTotalTimeoutMs, contract.backupFirstChunkTimeoutMs, contract.backupStreamStallTimeoutMs, contract.backupMaximumAttempts, contract.backupMaximumDocumentBytes]) {
     assert.match(javaProfile, new RegExp(`= ${value}(?:L)?;`));
     assert.match(rustProfile, new RegExp(`= ${value};`));
   }
   assert.match(android, /QcUsbProfile\.BACKUP_TOTAL_TIMEOUT_MS/);
-  assert.match(android, /QcUsbProfile\.BACKUP_FIRST_CHUNK_TIMEOUT_MS/);
-  assert.match(android, /QcUsbProfile\.BACKUP_STREAM_STALL_TIMEOUT_MS/);
-  assert.match(android, /QcUsbProfile\.BACKUP_MAXIMUM_ATTEMPTS/);
   assert.match(android, /QcUsbProfile\.BACKUP_MAXIMUM_DOCUMENT_BYTES/);
-  assert.match(windowsWorker, /profile::BACKUP_FIRST_CHUNK_TIMEOUT_MS/);
-  assert.match(windowsWorker, /profile::BACKUP_STREAM_STALL_TIMEOUT_MS/);
-  assert.match(windowsWorker, /profile::BACKUP_MAXIMUM_ATTEMPTS/);
+  assert.match(android, /stateDecoder\.backupAdvance/);
+  assert.match(windowsWorker, /BackupRuntime/);
+  assert.match(sharedBackup, /profile::BACKUP_FIRST_CHUNK_TIMEOUT_MS/);
+  assert.match(sharedBackup, /profile::BACKUP_STREAM_STALL_TIMEOUT_MS/);
+  assert.match(sharedBackup, /profile::BACKUP_MAXIMUM_ATTEMPTS/);
   assert.match(windowsRpc, /profile::BACKUP_TOTAL_TIMEOUT_MS/);
   assert.match(responses, /profile::BACKUP_MAXIMUM_DOCUMENT_BYTES/);
 });
@@ -805,25 +855,108 @@ test("one generated profile owns preset synchronization timeout across both host
   const contract = JSON.parse(source("contracts/qc-usb-profile.v1.json"));
   const javaProfile = source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbProfile.java");
   const rustProfile = source("packages/rust/qc-protocol/src/profile.rs");
+  const initializationRuntime = source("packages/rust/qc-device-runtime/src/initialization.rs");
   const android = source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java");
   const windowsUsb = source("services/device-broker/src/usb.rs");
   assert.match(javaProfile, new RegExp(`PRESET_SYNC_TIMEOUT_MS = ${contract.presetSyncTimeoutMs}L;`));
   assert.match(rustProfile, new RegExp(`PRESET_SYNC_TIMEOUT_MS: u64 = ${contract.presetSyncTimeoutMs};`));
+  assert.match(javaProfile, new RegExp(`POST_INITIALIZATION_WRITE_DELAY_MS = ${contract.postInitializationWriteDelayMs}L;`));
+  assert.match(rustProfile, new RegExp(`POST_INITIALIZATION_WRITE_DELAY_MS: u64 = ${contract.postInitializationWriteDelayMs};`));
+  assert.match(initializationRuntime, /profile::PRESET_SYNC_TIMEOUT_MS/);
+  assert.match(initializationRuntime, /self\.synchronized && self\.seed_complete\(\)/);
   assert.match(android, /pendingOperations\.timeout\(pending, QcUsbProfile\.PRESET_SYNC_TIMEOUT_MS/);
-  assert.match(windowsUsb, /profile::PRESET_SYNC_TIMEOUT_MS/);
+  assert.match(android, /stateDecoder\.initializationAdvance/);
+  assert.match(android, /QcUsbProfile\.POST_INITIALIZATION_WRITE_DELAY_MS/);
+  assert.match(windowsUsb, /post_boot_initialization/);
+  assert.match(source("services/device-broker/src/worker.rs"), /profile::POST_INITIALIZATION_WRITE_DELAY_MS/);
   assert.doesNotMatch(android, /pendingOperations\.timeout\(pending, 25_000/);
 });
 
-test("Android confirmation deadlines come from the shared native USB profile", () => {
+test("Windows bounds native command and decoder queues under device stalls", () => {
+  const worker = source("services/device-broker/src/worker.rs");
+  assert.match(worker, /mpsc::sync_channel\(STATE_DECODER_QUEUE_CAPACITY\)/);
+  assert.match(worker, /mpsc::sync_channel\(DEVICE_COMMAND_QUEUE_CAPACITY\)/);
+  assert.match(worker, /try_send\(Command::SendRealtime/);
+  assert.match(worker, /TrySendError::Full/);
+});
+
+test("one generated profile owns preset-library refresh and verification policy", () => {
+  const contract = JSON.parse(source("contracts/qc-usb-profile.v1.json"));
+  const javaProfile = source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbProfile.java");
+  const rustProfile = source("packages/rust/qc-protocol/src/profile.rs");
+  const catalogRuntime = source("packages/rust/qc-device-runtime/src/catalog.rs");
   const android = source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java");
-  assert.match(android, /case "PLANNED_WRITE":[\s\S]{0,320}QcUsbProfile\.COMMAND_CONFIRMATION_TIMEOUT_MS/);
-  assert.match(android, /relayHistoryWrite[\s\S]{0,1200}QcUsbProfile\.HISTORY_STATE_REFRESH_DELAY_MS/);
-  assert.match(android, /case "PRESET_WRITE":[\s\S]{0,160}QcUsbProfile\.PRESET_SYNC_TIMEOUT_MS/);
-  assert.match(android, /"device\.setDeviceName", params, QcUsbProfile\.COMMAND_CONFIRMATION_TIMEOUT_MS/);
-  assert.match(android, /relayCapturedScreenGesture\("device\.tapScreen", params\)/);
-  assert.match(android, /relayCapturedScreenGesture\("device\.swipeScreen", params\)/);
-  assert.match(android, /relayPlannedGatewayWrite\(\s*method, params, QcUsbProfile\.COMMAND_CONFIRMATION_TIMEOUT_MS/);
-  assert.doesNotMatch(android, /relayPlannedGatewayWrite\([^\n]+,\s*(?:2500|10000|15000)\)/);
+  const windows = source("services/device-broker/src/worker.rs");
+  for (const [constant, field] of [
+    ["PRESET_LIBRARY_REFRESH_COALESCE_MS", "presetLibraryRefreshCoalesceMs"],
+    ["PRESET_LIBRARY_VERIFICATION_TIMEOUT_MS", "presetLibraryVerificationTimeoutMs"],
+    ["PRESET_LIBRARY_VERIFICATION_RETRY_MS", "presetLibraryVerificationRetryMs"],
+  ]) {
+    assert.match(javaProfile, new RegExp(`${constant} = ${contract[field]}L;`));
+    assert.match(rustProfile, new RegExp(`${constant}: u64 = ${contract[field]};`));
+  }
+  assert.match(android, /stateDecoder\.catalogVerificationStarted/);
+  assert.match(android, /stateDecoder\.catalogVerificationAdvance/);
+  assert.match(catalogRuntime, /profile::PRESET_LIBRARY_VERIFICATION_TIMEOUT_MS/);
+  assert.match(catalogRuntime, /profile::PRESET_LIBRARY_VERIFICATION_RETRY_MS/);
+  assert.match(catalogRuntime, /profile::PRESET_LIBRARY_REFRESH_COALESCE_MS/);
+  assert.match(catalogRuntime, /pub struct CatalogRefreshGate/);
+  assert.match(catalogRuntime, /pub struct CatalogVerificationRuntime/);
+  assert.match(windows, /CatalogVerificationRuntime::new\(/);
+  assert.match(windows, /CatalogRefreshGate::default\(\)/);
+  assert.doesNotMatch(android, /nextRetryDelayMs/);
+  assert.doesNotMatch(windows, /next_preset_library_verify_retry/);
+});
+
+test("one shared Rust rule verifies CorOS preset collision names for both native hosts", () => {
+  const runtime = source("packages/rust/qc-device-runtime/src/request.rs");
+  const windows = source("services/device-broker/src/rpc.rs");
+  const androidRust = source("packages/rust/qc-android/src/lib.rs");
+  const androidJava = source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java");
+  assert.match(runtime, /pub fn stored_preset_name_matches/);
+  assert.match(windows, /runtime_request::stored_preset_name_matches/);
+  assert.match(androidRust, /stored_preset_name_matches\(&requested, &stored\)/);
+  assert.match(androidJava, /stateDecoder\.storedPresetNameMatches/);
+  assert.doesNotMatch(androidJava, /private boolean storedPresetNameMatches/);
+});
+
+test("both native hosts consume one shared write verification policy", () => {
+  const android = source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java");
+  const androidBridge = source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcNativeStateDecoder.java");
+  const androidRust = source("packages/rust/qc-android/src/lib.rs");
+  const runtime = source("packages/rust/qc-device-runtime/src/request.rs");
+  const windows = source("services/device-broker/src/rpc.rs");
+  assert.match(runtime, /pub struct GatewayWriteVerificationPolicy/);
+  assert.match(runtime, /pub fn gateway_write_verification_policy/);
+  assert.match(runtime, /pub struct GatewayVerificationRuntime/);
+  assert.match(runtime, /pub enum GatewayVerificationAction/);
+  assert.match(runtime, /fn gateway_verification_refresh_delays/);
+  assert.match(runtime, /pub fn gateway_correlated_readback_delay/);
+  assert.match(runtime, /pub fn gateway_read_followup_method/);
+  assert.match(androidRust, /gateway_write_verification_policy\(&method\)/);
+  assert.match(androidBridge, /final long confirmationTimeoutMs/);
+  assert.match(androidBridge, /final String postWriteRefreshMethod/);
+  assert.match(androidBridge, /final long postWriteRefreshDelayMs/);
+  assert.match(androidBridge, /final String followupMethod/);
+  assert.match(android, /stateDecoder\.gatewayVerificationStarted\(/);
+  assert.match(android, /stateDecoder\.gatewayVerificationAdvance\(/);
+  assert.match(android, /stateDecoder\.gatewayReadbackRetryDelay\(method, attempt\)/);
+  assert.doesNotMatch(android, /for \(long refreshDelay : plan\.refreshDelaysMs\)/);
+  assert.doesNotMatch(androidBridge, /readbackRetryIntervalsMs|verificationRefreshMethod/);
+  assert.match(windows, /gateway_write_verification_policy\(method\)/);
+  assert.match(windows, /verify_gateway_write_on_schedule/);
+  assert.match(windows, /gateway_correlated_readback_delay\(method, attempt\)/);
+  assert.match(windows, /GatewayVerificationAction::Refresh \{ method \}/);
+  assert.match(windows, /policy\.post_write_refresh_method/);
+  assert.doesNotMatch(android, /writeMessage\(message, !includeReportId\)/);
+  assert.match(android, /relayHistoryWrite[\s\S]{0,1200}plan\.postWriteRefreshDelayMs/);
+  assert.match(android, /dispatchGatewayRefresh\(action\.getString\("method"\)\)/);
+  assert.match(android, /plan\.followupMethod[\s\S]{0,700}composeGlobalTempoSettings\(primary, followup\)/);
+  assert.match(windows, /gateway_read_followup_method\(method\)/);
+  assert.match(runtime, /"device\.tapScreen" \| "device\.swipeScreen" => Some\("device\.captureScreen"\)/);
+  assert.match(android, /relayScreenGesture[\s\S]{0,300}relayPlannedGatewayWriteWithReadback\(method, params\)/);
+  assert.match(windows, /gateway_screen_gesture[\s\S]{0,300}gateway_operation\(controller, params, method\)/);
+  assert.doesNotMatch(android, /relayCapturedScreenGesture|relayTapScreen|relaySwipeScreen/);
   assert.doesNotMatch(android, /includeReportId \? 129 : 128/);
 });
 

@@ -29,7 +29,7 @@ def serve() -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="QC Voice Control device gateway")
+    parser = argparse.ArgumentParser(description="QC Remote device gateway")
     parser.add_argument("--stdio", action="store_true", help="serve framed JSON-RPC on stdin/stdout")
     args = parser.parse_args(argv)
     if not args.stdio:

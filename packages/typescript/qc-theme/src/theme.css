@@ -1,7 +1,5 @@
 @import "@fontsource-variable/arimo";
 @import "@fontsource-variable/arimo/wght-italic.css";
-@import "@fontsource-variable/roboto";
-@import "@fontsource-variable/roboto/wght-italic.css";
 
 :root {
   --qc-transparent: transparent;
@@ -101,7 +99,6 @@
   --qc-font-mono: "DM Mono", "Cascadia Mono", Consolas, monospace;
   --qc-screen-aspect: 1.6666667;
   --qc-chassis-aspect: 1.4871795;
-
   /* Exact legacy surface shades. Kept here to preserve the captured rendering while
      ensuring application styles consume one shared visual contract. */
   --qc-palette-8d8d8f: #8d8d8f;

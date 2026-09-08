@@ -54,7 +54,7 @@ fn relay_allowlist_matches_the_shared_action_contract() {
 }
 
 #[test]
-fn full_control_contract_covers_every_gateway_method() {
+fn public_control_contract_covers_every_non_private_gateway_method() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
     let actions: Contract = serde_json::from_str(
         &fs::read_to_string(root.join("contracts/qc-actions.v1.json")).unwrap(),
@@ -73,8 +73,7 @@ fn full_control_contract_covers_every_gateway_method() {
         .map(|method| method.rpc.as_str())
         .filter(|rpc| !covered.contains(rpc))
         .collect::<Vec<_>>();
-    assert!(
-        missing.is_empty(),
-        "gateway RPCs missing from MCP action contract: {missing:?}"
-    );
+    // Persistent hardware identity is deliberately local-only. Any additional
+    // omission must be reviewed here instead of silently widening the remote API.
+    assert_eq!(missing, vec!["device.identity"]);
 }

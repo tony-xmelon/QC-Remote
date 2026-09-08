@@ -37,23 +37,26 @@ pub struct FlightRecorder {
 
 impl FlightRecorder {
     pub fn open_default() -> Self {
-        let path = std::env::var_os("QC_FLIGHT_RECORDER_PATH")
-            .map(PathBuf::from)
-            .or_else(|| {
-                std::env::var_os("LOCALAPPDATA").map(|root| {
-                    PathBuf::from(root)
-                        // Preserve the legacy data directory so upgrades retain local state.
-                        .join("QC Control")
-                        .join("device-flight-recorder.json")
-                })
-            });
-        Self::open(path)
+        if let Some(path) = std::env::var_os("QC_FLIGHT_RECORDER_PATH").map(PathBuf::from) {
+            return Self::open(Some(path));
+        }
+        let Some(root) = std::env::var_os("LOCALAPPDATA").map(PathBuf::from) else {
+            return Self::open(None);
+        };
+        let path = root.join("QC Remote").join("device-flight-recorder.json");
+        let legacy_path = root.join("QC Control").join("device-flight-recorder.json");
+        Self::open_with_fallback(Some(path), Some(legacy_path))
     }
 
     fn open(path: Option<PathBuf>) -> Self {
+        Self::open_with_fallback(path, None)
+    }
+
+    fn open_with_fallback(path: Option<PathBuf>, fallback: Option<PathBuf>) -> Self {
         let document = path
             .as_deref()
             .and_then(|path| fs::read(path).ok())
+            .or_else(|| fallback.as_deref().and_then(|path| fs::read(path).ok()))
             .and_then(|bytes| serde_json::from_slice::<FlightDocument>(&bytes).ok())
             .unwrap_or_else(|| FlightDocument {
                 version: 1,
@@ -255,9 +258,7 @@ mod tests {
             .document
             .entries
             .iter()
-            .filter(|entry| {
-                entry.message_type == Some(qc_protocol::profile::MESSAGE_TYPE_VERSION)
-            })
+            .filter(|entry| entry.message_type == Some(qc_protocol::profile::MESSAGE_TYPE_VERSION))
             .count();
         assert_eq!(
             version_entries, 0,

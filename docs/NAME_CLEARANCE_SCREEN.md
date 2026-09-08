@@ -1,6 +1,6 @@
 # Preliminary name screen: QC Remote
 
-Screened 2026-09-13. This is an engineering issue-spotting record, not a
+Screened 2026-09-07. This is an engineering issue-spotting record, not a
 trademark clearance opinion, legal advice, or a substitute for a jurisdiction-
 specific search by a qualified trademark professional.
 
@@ -19,6 +19,9 @@ There is also a separate market collision: KLIPPEL already uses **QC Remote
 Configuration Software** for software used with audio quality-control systems.
 Even if the companies' precise goods and customers differ, that use makes the
 proposed name less distinctive and creates search, store, and support confusion.
+The collision is current, not merely historical: KLIPPEL's live product page
+still labels the offering **QC Remote Configuration**, and its July 2026 QC 7.11
+release announcement describes expanded **QC Remote API** functionality.
 
 If professional clearance is not available, the materially safer engineering
 choice is a distinctive coined name that does not begin with `QC`, with `for
@@ -29,7 +32,7 @@ Quad Cortex` used only as a subordinate compatibility statement where lawful.
 ### United States — USPTO Trademark Search
 
 Interactive searches were performed in the official USPTO Trademark Search on
-2026-09-13:
+2026-09-07:
 
 - `CM:"QC REMOTE"` — no results.
 - `CM:(QC AND REMOT*)` — no results.
@@ -46,7 +49,7 @@ that the proposed name is available.
 ### European Union — EUIPO eSearch plus
 
 Interactive searches were performed in the official EUIPO eSearch plus system
-on 2026-09-13:
+on 2026-09-07:
 
 - `QC Remote` — zero trade marks returned by the basic search.
 - `Quad Cortex` — three EU trade marks owned by Neural DSP Technologies Oy:
@@ -78,10 +81,41 @@ class heading.
 Before setting `nameClearanceCompleted` to `true` in
 `legal/public-release.json`, retain a dated search report covering all launch
 markets and proposed goods/services, resolve the Neural DSP and KLIPPEL risks,
-and document the publisher's decision. Also search and reserve the final app
+and populate the structured decision, reviewed-market, reviewed-class,
+known-collision, and report-digest fields. A self-screen decision that keeps the
+name also requires an explicit Freevia risk-acceptance record; it must not be
+misrepresented as professional clearance. Also search and reserve the final app
 store names, domains, social handles, support identities, and replacement
 application identifiers. A registry filing or approval is not by itself a
 guarantee against third-party claims.
+
+## Separate publisher/developer-name screen: Freevia
+
+The publisher's Bulgarian company identity and the public-facing
+publisher/developer name are separate questions. Registration of a legal entity
+does not itself clear `Freevia` for trademark or trade-name use in app stores,
+software, support, or online services. Do not set
+`publisherNameClearanceCompleted` merely because Google or the Bulgarian trade
+register accepts the organization identity.
+
+A follow-up open-web screen found several unrelated businesses using
+`FREEVIA` and a third-party database entry that purports to identify EUTM
+application 019325741 for `FREEVIA`, including Class 009 goods. That candidate
+record has **not** been independently confirmed in an official EUIPO or TMview
+result and must not be treated as an established right, owner, status, or scope.
+Before release, search the exact and similar publisher name in EUIPO eSearch,
+TMview, the Bulgarian Patent Office, WIPO, and every other launch territory;
+retain exports or screenshots showing the query, date, results, status, owner,
+and complete goods/services. Compare actual software and service activities,
+not class numbers alone. Unrelated French, Korean, Spanish, or other `Freevia`
+businesses must not be mistaken for the Bulgarian publisher.
+
+The lower-risk structure is to use Freevia's exact verified registered name in
+mandatory trader and copyright disclosures, and—if clearance supports it—use a
+separately distinctive developer brand for store-facing origin. If `Freevia`
+itself remains the public developer mark, record a dated, evidence-backed
+clearance decision and review all known collisions. The release gate requires
+that decision independently from the `QC Remote` product-name decision.
 
 ## Sources
 
@@ -91,10 +125,15 @@ guarantee against third-party claims.
 - USPTO likelihood-of-confusion guidance:
   <https://www.uspto.gov/trademarks/search/likelihood-confusion>
 - EUIPO eSearch plus: <https://euipo.europa.eu/eSearch/>
+- EUIPO search tools (including eSearch plus and TMview):
+  <https://www.euipo.europa.eu/en/search-ip>
 - WIPO Nice Classification, 13th edition, version 2026, Classes 009, 015, and
   042: <https://nclpub.wipo.int/>
 - KLIPPEL QC Remote Setup documentation:
   <https://www.klippel.de/fileadmin/klippel/Bilder/Our_Products/QC_System/PDF/S14_QC_Remote_Setup.pdf>
+- KLIPPEL current QC Remote Configuration product page:
+  <https://www.klippel.de/products/qc-system/qc-versions/qc-remote-configuration.html>
+- KLIPPEL QC 7.11 release announcement (23 July 2026):
+  <https://www.klippel.de/service/news/newsdetails/article/whats-new-in-db-lab-212813-qc-711.html>
 - KLIPPEL QC System price list:
   <https://www.klippel.de/fileadmin/klippel/Bilder/Our_Products/QC_System/PDF/QC_System_Price-List.pdf>
-

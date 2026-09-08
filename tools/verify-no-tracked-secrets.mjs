@@ -28,6 +28,17 @@ export function trackedSecretErrors(entries, rootIgnore = "") {
     if (serviceAccountType.test(source) || privateKeyField.test(source) || clientSecretField.test(source)) {
       errors.push(`${path} contains a service credential or client secret field`);
     }
+    const highConfidenceTokens = [
+      [/(?:^|[^A-Za-z0-9])sk-(?:proj-|svcacct-|ant-)?[A-Za-z0-9_-]{20,}/, "model-provider API token"],
+      [/(?:^|[^A-Za-z0-9])(?:gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{40,})/, "GitHub token"],
+      [/(?:^|[^A-Z0-9])(?:AKIA|ASIA)[A-Z0-9]{16}/, "AWS access-key identifier"],
+      [/(?:^|[^A-Za-z0-9])xox[baprs]-[A-Za-z0-9-]{20,}/, "Slack token"],
+      [/(?:^|[^A-Za-z0-9])sk_live_[A-Za-z0-9]{16,}/, "live payment-provider key"],
+    ];
+    for (const [pattern, label] of highConfidenceTokens) if (pattern.test(source)) errors.push(`${path} contains a ${label}`);
+    if (!path.endsWith("google-services.json") && /(?:^|[^A-Za-z0-9])AIza[A-Za-z0-9_-]{30,}/.test(source)) {
+      errors.push(`${path} contains a Google API key outside Firebase client configuration`);
+    }
   }
   for (const pattern of ["*.jks", "*.keystore", "*.p12", "*.pfx", "*.pem", "*.key", "*service-account*.json", "*service_account*.json"]) {
     if (!rootIgnore.split(/\r?\n/).some((line) => line.trim() === pattern)) errors.push(`.gitignore does not exclude ${pattern}`);

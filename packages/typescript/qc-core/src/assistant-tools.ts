@@ -8,6 +8,19 @@ const accessLevel = Object.fromEntries(
   SHARED_QC_ACCESS_MODES.map((mode, index) => [mode, index])
 ) as Record<AssistantAccessMode, number>;
 
+/**
+ * Local/MCP actions that are intentionally unavailable to third-party model
+ * providers. The device identity response includes a persistent hardware serial
+ * number and custom device name; neither is necessary to edit or inspect a
+ * preset through chat.
+ */
+export const MODEL_PRIVATE_QC_ACTIONS = ["get_device_identity"] as const;
+
+export function assistantProviderPermitsTool(mode: AssistantAccessMode, name: string): boolean {
+  return !(MODEL_PRIVATE_QC_ACTIONS as readonly string[]).includes(name)
+    && assistantAccessPermitsTool(mode, name);
+}
+
 export function parseAssistantAccessMode(value: unknown, fallback: AssistantAccessMode = "full"): AssistantAccessMode {
   return typeof value === "string" && (SHARED_QC_ACCESS_MODES as readonly string[]).includes(value)
     ? value as AssistantAccessMode
@@ -15,13 +28,13 @@ export function parseAssistantAccessMode(value: unknown, fallback: AssistantAcce
 }
 
 /** Provider-neutral tool declarations generated from the shared QC action contract. */
-export const SHARED_QC_ASSISTANT_TOOLS: readonly AssistantToolDefinition[] = SHARED_QC_ACTIONS.map(
-  ({ name, description, inputSchema }) => ({
+export const SHARED_QC_ASSISTANT_TOOLS: readonly AssistantToolDefinition[] = SHARED_QC_ACTIONS
+  .filter(({ name }) => assistantProviderPermitsTool("full", name))
+  .map(({ name, description, inputSchema }) => ({
     name,
     description,
     inputSchema: inputSchema as Record<string, unknown>
-  })
-);
+  }));
 
 export function isSharedQcAssistantTool(name: string): name is SharedQcActionName {
   return SHARED_QC_ACTIONS.some((action) => action.name === name);
@@ -48,7 +61,7 @@ export function assistantToolCatalog(names: readonly SharedQcActionName[]): stri
 /** Compact schema catalog for prompt-only providers that do not expose native function calling. */
 export function assistantCompactToolCatalog(mode: AssistantAccessMode): string {
   return SHARED_QC_ACTIONS
-    .filter((action) => assistantAccessPermitsTool(mode, action.name))
+    .filter((action) => assistantProviderPermitsTool(mode, action.name))
     .map((action) => {
       const argumentsList = Object.entries(action.properties)
         .map(([name, type]) => `${name}:${type}${action.required.includes(name as never) ? "" : "?"}`)
@@ -110,7 +123,7 @@ export function validateAssistantToolCalls(reply: unknown, mode: AssistantAccess
   for (const candidate of (reply as { actions: unknown[] }).actions.slice(0, limit)) {
     if (!candidate || typeof candidate !== "object") continue;
     const { name, args } = candidate as { name?: unknown; args?: unknown };
-    if (typeof name !== "string" || !isSharedQcAssistantTool(name) || !assistantAccessPermitsTool(mode, name)) continue;
+    if (typeof name !== "string" || !isSharedQcAssistantTool(name) || !assistantProviderPermitsTool(mode, name)) continue;
     const definition = SHARED_QC_ACTIONS.find((action) => action.name === name);
     if (!definition || !args || typeof args !== "object" || Array.isArray(args)) continue;
     const values = args as Record<string, unknown>;

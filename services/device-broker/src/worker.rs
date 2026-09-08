@@ -1,26 +1,25 @@
 use crate::usb::{ConnectedQc, IncomingMessage, QcUsb, UsbError};
-use qc_device_runtime::request::{self as runtime_request, PresetMutationPlan};
-use qc_device_runtime::{
-    GatewaySnapshot, PresetEntry, PresetFolder, PresetLibrary, PresetList, PresetSlotList,
+use qc_device_runtime::backup::{BackupAction, BackupRuntime};
+use qc_device_runtime::catalog::{
+    CatalogRefreshGate, CatalogVerificationAction, CatalogVerificationRuntime,
 };
+use qc_device_runtime::correlation::ResponseExpectation;
+use qc_device_runtime::request::{self as runtime_request, PresetMutationPlan};
+use qc_device_runtime::state_runtime::DeviceStateRuntime;
+use qc_device_runtime::transport::TransportRuntime;
+use qc_device_runtime::{GatewaySnapshot, PresetEntry, PresetFolder, PresetList, PresetSlotList};
 use qc_protocol::commands::{self, DeviceCommand, DeviceOperation, OutboundMessage};
 use qc_protocol::domain::STATE_EVENT_MAXIMUM_LIMIT;
-use qc_protocol::responses::{decode_tempo_clock, BackupAssembler, TempoClock as TempoClockFrame};
-use qc_protocol::session::SessionMachine;
+use qc_protocol::responses::TempoClock as TempoClockFrame;
 use qc_protocol::state::{
     decode_preset_folder, parse_model_repo, BlockDetails, ModelCatalog, ModelList,
-    PresetFolderListing, StateDecoder, StateUpdate,
+    PresetFolderListing, StateUpdate,
 };
 use serde::Serialize;
 use std::collections::{HashMap, VecDeque};
 use std::sync::{mpsc, Arc, Mutex, MutexGuard};
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-
-// A complete IR library can publish more than a thousand frames at once. State
-// queries remain ordered behind those frames so they observe a coherent
-// decoder, but must allow enough time for that finite burst to drain.
-const STATE_DECODER_QUERY_TIMEOUT: Duration = Duration::from_secs(10);
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -119,17 +118,18 @@ struct RawEventBus {
 // history above is the catch-up source, so a stalled UI/client must not retain
 // an unbounded clone of every device frame.
 const SUBSCRIBER_QUEUE_CAPACITY: usize = qc_protocol::domain::STATE_EVENT_DEFAULT_LIMIT;
-// A File READ is an asynchronous broadcast request, and CorOS occasionally
-// omits a complete preset-library push for one request. Keep ordinary UI calls
-// coalesced, but allow another request soon enough to recover within the normal
-// 45-second authoritative verification window.
-const PRESET_LIBRARY_REFRESH_COALESCE: Duration = Duration::from_secs(8);
+// Bound both internal producer/consumer seams. Realtime commands acknowledge
+// queue admission rather than physical completion, so an unbounded channel
+// would let a stalled USB device turn concurrent remote calls into unbounded
+// process memory. The decoder queue is larger because one legitimate catalog
+// burst can contain more than a thousand frames.
+const DEVICE_COMMAND_QUEUE_CAPACITY: usize = qc_protocol::domain::STATE_EVENT_DEFAULT_LIMIT;
+const STATE_DECODER_QUEUE_CAPACITY: usize = qc_protocol::domain::STATE_EVENT_MAXIMUM_LIMIT;
 // The USB reader itself blocks on a permanent native RX thread. This short
 // broker-side receive poll only multiplexes completed reports with outbound
 // commands; keeping the old 50 ms wait added a full UI frame (and sometimes
 // more) before realtime HID commands could even be submitted.
 const CONNECTED_IO_POLL_MS: i32 = 5;
-const PRESET_LIBRARY_VERIFY_TIMEOUT: Duration = Duration::from_secs(45);
 
 trait RecoverPoison<T> {
     fn lock_recover(&self) -> MutexGuard<'_, T>;
@@ -151,11 +151,10 @@ pub struct DeviceController {
     raw_events: Arc<RawEventBus>,
     state_event_log: Arc<Mutex<VecDeque<DecodedStateFrame>>>,
     state_subscribers: Arc<Mutex<Vec<mpsc::SyncSender<DecodedStateFrame>>>>,
-    gateway_snapshot: Arc<Mutex<GatewaySnapshot>>,
-    preset_library: Arc<Mutex<PresetLibrary>>,
-    preset_library_refresh: Mutex<Option<(Option<u128>, Instant)>>,
-    state_commands: mpsc::Sender<StateDecoderCommand>,
-    commands: mpsc::Sender<Command>,
+    device_state: Arc<Mutex<DeviceStateRuntime>>,
+    catalog_clock: Instant,
+    preset_library_refresh: Mutex<CatalogRefreshGate>,
+    commands: mpsc::SyncSender<Command>,
 }
 
 impl DeviceController {
@@ -179,31 +178,28 @@ impl DeviceController {
         let raw_events = Arc::new(RawEventBus::default());
         let state_event_log = Arc::new(Mutex::new(VecDeque::new()));
         let state_subscribers = Arc::new(Mutex::new(Vec::new()));
-        let gateway_snapshot = Arc::new(Mutex::new(GatewaySnapshot::default()));
-        let preset_library = Arc::new(Mutex::new(PresetLibrary::default()));
-        let (state_messages, state_receiver) = mpsc::channel();
+        let device_state = Arc::new(Mutex::new(DeviceStateRuntime::new()));
+        let (state_messages, state_receiver) = mpsc::sync_channel(STATE_DECODER_QUEUE_CAPACITY);
         let state_catalogs = state_messages.clone();
-        let state_commands = state_messages.clone();
         let decoded_events = Arc::clone(&state_event_log);
-        let decoded_snapshot = Arc::clone(&gateway_snapshot);
+        let decoded_state = Arc::clone(&device_state);
         let decoded_subscribers = Arc::clone(&state_subscribers);
         thread::Builder::new()
             .name("qc-native-state".into())
             .spawn(move || {
                 run_state_decoder(
                     decoded_events,
-                    decoded_snapshot,
+                    decoded_state,
                     decoded_subscribers,
                     state_catalogs,
                     state_receiver,
                 )
             })
             .expect("native QC state decoder starts");
-        let (commands, receiver) = mpsc::channel();
+        let (commands, receiver) = mpsc::sync_channel(DEVICE_COMMAND_QUEUE_CAPACITY);
         let worker_state = Arc::clone(&state);
         let worker_messages = Arc::clone(&latest_messages);
         let worker_raw_events = Arc::clone(&raw_events);
-        let worker_library = Arc::clone(&preset_library);
         thread::Builder::new()
             .name("qc-native-usb".into())
             .spawn(move || {
@@ -211,7 +207,6 @@ impl DeviceController {
                     worker_state,
                     worker_messages,
                     worker_raw_events,
-                    worker_library,
                     state_messages,
                     receiver,
                     auto_connect,
@@ -224,10 +219,9 @@ impl DeviceController {
             raw_events,
             state_event_log,
             state_subscribers,
-            gateway_snapshot,
-            preset_library,
-            preset_library_refresh: Mutex::new(None),
-            state_commands,
+            device_state,
+            catalog_clock: Instant::now(),
+            preset_library_refresh: Mutex::new(CatalogRefreshGate::default()),
             commands,
         }
     }
@@ -322,13 +316,7 @@ impl DeviceController {
         if row > 3 || column > 9 {
             return Err("Block coordinates must address rows 0-3 and columns 0-9".into());
         }
-        let (sender, receiver) = mpsc::channel();
-        self.state_commands
-            .send(StateDecoderCommand::BlockDetails(row, column, sender))
-            .map_err(|error| error.to_string())?;
-        receiver
-            .recv_timeout(STATE_DECODER_QUERY_TIMEOUT)
-            .map_err(|error| error.to_string())
+        Ok(self.device_state.lock_recover().block_details(row, column))
     }
 
     pub fn lane_control_details(
@@ -339,21 +327,14 @@ impl DeviceController {
         if row > 3 || !matches!(control, "inputGate" | "laneOutput") {
             return Err("Lane control must be inputGate or laneOutput on rows 0-3".into());
         }
-        let (sender, receiver) = mpsc::channel();
-        self.state_commands
-            .send(StateDecoderCommand::LaneControlDetails(
-                row,
-                control.to_string(),
-                sender,
-            ))
-            .map_err(|error| error.to_string())?;
-        receiver
-            .recv_timeout(STATE_DECODER_QUERY_TIMEOUT)
-            .map_err(|error| error.to_string())
+        Ok(self
+            .device_state
+            .lock_recover()
+            .lane_control_details(row, control))
     }
 
     pub fn gateway_snapshot(&self) -> Option<GatewaySnapshot> {
-        let snapshot = self.gateway_snapshot.lock_recover().clone();
+        let snapshot = self.device_state.lock_recover().snapshot().clone();
         snapshot.has_preset.then_some(snapshot)
     }
 
@@ -384,30 +365,25 @@ impl DeviceController {
     }
 
     pub fn list_models(&self) -> Result<ModelList, String> {
-        let (sender, receiver) = mpsc::channel();
-        self.state_commands
-            .send(StateDecoderCommand::ListModels(sender))
-            .map_err(|error| error.to_string())?;
-        receiver
-            .recv_timeout(STATE_DECODER_QUERY_TIMEOUT)
-            .map_err(|error| error.to_string())
+        Ok(self.device_state.lock_recover().model_list())
     }
 
     pub fn refresh_preset_library(&self) -> Result<(), String> {
-        let connection_id = self.state.lock_recover().connected_at_unix_ms;
-        let now = Instant::now();
+        let connection_id = self
+            .state
+            .lock_recover()
+            .connected_at_unix_ms
+            .and_then(|value| u64::try_from(value).ok())
+            .unwrap_or(0);
+        let now_ms = self.catalog_clock.elapsed().as_millis() as u64;
         {
             let mut refresh = self.preset_library_refresh.lock_recover();
-            if refresh.is_some_and(|(id, started)| {
-                id == connection_id
-                    && now.saturating_duration_since(started) < PRESET_LIBRARY_REFRESH_COALESCE
-            }) {
+            if !refresh.reserve(connection_id, now_ms) {
                 return Ok(());
             }
-            *refresh = Some((connection_id, now));
         }
         if let Err(error) = self.send_operation(DeviceOperation::ListPresetFolders) {
-            *self.preset_library_refresh.lock_recover() = None;
+            self.preset_library_refresh.lock_recover().clear();
             return Err(error);
         }
         Ok(())
@@ -417,7 +393,9 @@ impl DeviceController {
     /// requested setlist. The in-memory catalog is intentionally not used as
     /// proof: it may contain an optimistic save/move overlay or a listing from
     /// before an eventually-consistent device mutation. Missed File pushes are
-    /// retried on the same cadence used by the public refresh coalescer.
+    /// retried with bounded exponential backoff. A File request publishes the
+    /// complete directory one frame per folder, so a fixed 500 ms retry can
+    /// amplify one eventually-consistent save into hundreds of USB frames.
     pub fn wait_for_fresh_preset_listing(
         &self,
         key: &str,
@@ -425,36 +403,41 @@ impl DeviceController {
     ) -> Result<PresetFolderListing, String> {
         let expected_key = key.trim_end_matches('/');
         let events = self.subscribe_raw_events();
-        let deadline = Instant::now() + PRESET_LIBRARY_VERIFY_TIMEOUT;
-        let mut next_request = Instant::now();
-        let mut matching_listings = 0_u32;
+        let clock = Instant::now();
+        let mut verification = CatalogVerificationRuntime::new(0);
 
         loop {
-            let now = Instant::now();
-            if now >= deadline {
-                return Err(if matching_listings == 0 {
-                    format!(
-                        "The QC did not publish a fresh preset listing for {expected_key:?} within 45 seconds"
-                    )
-                } else {
-                    format!(
-                        "The QC published {matching_listings} fresh listing(s) for {expected_key:?}, but none confirmed the requested change within 45 seconds"
-                    )
-                });
+            let now_ms = clock.elapsed().as_millis() as u64;
+            let wait_ms = match verification.take_action(now_ms) {
+                CatalogVerificationAction::Request => {
+                    // Verification owns its shared retry cadence and therefore
+                    // deliberately bypasses the ordinary refresh coalescer.
+                    self.send_operation(DeviceOperation::ListPresetFolders)?;
+                    let connection_id = self
+                        .state
+                        .lock_recover()
+                        .connected_at_unix_ms
+                        .and_then(|value| u64::try_from(value).ok())
+                        .unwrap_or(0);
+                    self.preset_library_refresh.lock_recover().reserve(
+                        connection_id,
+                        self.catalog_clock.elapsed().as_millis() as u64,
+                    );
+                    0
+                }
+                CatalogVerificationAction::Wait { delay_ms } => delay_ms,
+                CatalogVerificationAction::Complete => {
+                    unreachable!("a matching listing returns immediately")
+                }
+                CatalogVerificationAction::Failed { .. } => {
+                    return Err(verification
+                        .failure_message(&format!("preset listing for {expected_key:?}")));
+                }
+            };
+            if wait_ms == 0 {
+                continue;
             }
-
-            if now >= next_request {
-                // Verification requests deliberately bypass the coalescer: this
-                // loop owns its retry cadence and must recover from a missed
-                // device push even if another UI refresh just ran.
-                self.send_operation(DeviceOperation::ListPresetFolders)?;
-                *self.preset_library_refresh.lock_recover() =
-                    Some((self.state.lock_recover().connected_at_unix_ms, now));
-                next_request = now + PRESET_LIBRARY_REFRESH_COALESCE;
-            }
-
-            let wake_at = std::cmp::min(deadline, next_request);
-            match events.recv_timeout(wake_at.saturating_duration_since(Instant::now())) {
+            match events.recv_timeout(Duration::from_millis(wait_ms)) {
                 Ok(message) if message.message_type == qc_protocol::profile::MESSAGE_TYPE_FILE => {
                     let Ok(Some(listing)) = decode_preset_folder(&message.payload) else {
                         continue;
@@ -462,13 +445,17 @@ impl DeviceController {
                     if listing.key.trim_end_matches('/') != expected_key {
                         continue;
                     }
-                    matching_listings = matching_listings.saturating_add(1);
-                    if predicate(&listing) {
+                    let matches = predicate(&listing);
+                    verification.listing_observed(clock.elapsed().as_millis() as u64, matches);
+                    if matches {
                         // Raw subscribers are notified before the USB worker's
                         // normal cache ingestion. Ingest synchronously here so
                         // the caller can safely plan its next operation without
                         // racing that worker step.
-                        self.preset_library.lock_recover().ingest(listing.clone());
+                        self.device_state
+                            .lock_recover()
+                            .preset_library_mut()
+                            .ingest(listing.clone());
                         return Ok(listing);
                     }
                 }
@@ -483,33 +470,34 @@ impl DeviceController {
     }
 
     pub fn preset_folders(&self) -> Vec<PresetFolder> {
-        self.preset_library.lock_recover().folders()
+        self.device_state.lock_recover().preset_folders()
     }
 
     pub fn preset_list(&self, key: &str) -> Option<PresetList> {
-        let snapshot = self.gateway_snapshot()?;
-        self.preset_library.lock_recover().list(key, &snapshot)
+        self.device_state.lock_recover().preset_list(key)
     }
 
     pub fn preset_slots(&self) -> Result<Option<PresetSlotList>, String> {
-        let Some(snapshot) = self.gateway_snapshot() else {
-            return Ok(None);
-        };
-        self.preset_library.lock_recover().writable_slots(&snapshot)
+        self.device_state.lock_recover().preset_slots()
     }
 
     pub fn preset_entry(&self, key: &str, position: u32) -> Option<PresetEntry> {
-        self.preset_library.lock_recover().entry(key, position)
+        self.device_state.lock_recover().preset_entry(key, position)
     }
 
     pub fn record_saved_preset(&self, key: &str, position: u32, name: &str, instrument: i32) {
-        self.preset_library
-            .lock_recover()
+        let mut state = self.device_state.lock_recover();
+        state
+            .preset_library_mut()
             .record_saved(key, position, name, instrument);
+        runtime_request::reconcile_saved_preset_snapshot(state.snapshot_mut(), key, position, name);
     }
 
     pub fn ensure_preset_setlist(&self, key: &str) {
-        self.preset_library.lock_recover().ensure_setlist(key);
+        self.device_state
+            .lock_recover()
+            .preset_library_mut()
+            .ensure_setlist(key);
     }
 
     pub fn record_library_mutation(&self, method: &str, params: &serde_json::Value) {
@@ -527,7 +515,8 @@ impl DeviceController {
         ) {
             return;
         }
-        let mut library = self.preset_library.lock_recover();
+        let mut state = self.device_state.lock_recover();
+        let library = state.preset_library_mut();
         match method {
             "createSetlist" | "create_setlist" => {
                 if let Some(name) = params.get("name").and_then(serde_json::Value::as_str) {
@@ -568,9 +557,13 @@ impl DeviceController {
         method: &str,
         params: &serde_json::Value,
     ) -> Result<PresetMutationPlan, String> {
-        let snapshot = self.gateway_snapshot.lock_recover();
-        let library = self.preset_library.lock_recover();
-        runtime_request::plan_preset_mutation(method, params, Some(&snapshot), &library)
+        let state = self.device_state.lock_recover();
+        runtime_request::plan_preset_mutation(
+            method,
+            params,
+            Some(state.snapshot()),
+            state.preset_library(),
+        )
     }
 
     pub fn wait_for_preset_folders(&self, timeout: Duration) -> Vec<PresetFolder> {
@@ -628,9 +621,18 @@ impl DeviceController {
         if !self.state.lock_recover().connected {
             return Err("Quad Cortex is not connected".into());
         }
-        self.commands
-            .send(Command::SendRealtime(message.message_type, message.payload))
-            .map_err(|error| error.to_string())
+        match self
+            .commands
+            .try_send(Command::SendRealtime(message.message_type, message.payload))
+        {
+            Ok(()) => Ok(()),
+            Err(mpsc::TrySendError::Full(_)) => {
+                Err("Native QC command queue is busy; retry the realtime control".into())
+            }
+            Err(mpsc::TrySendError::Disconnected(_)) => {
+                Err("Native QC worker is not available".into())
+            }
+        }
     }
 
     pub fn send_sequence(
@@ -640,6 +642,7 @@ impl DeviceController {
         interval: Duration,
     ) -> Result<(), String> {
         let (sender, receiver) = mpsc::channel();
+        let message_count = u32::try_from(messages.len()).unwrap_or(u32::MAX);
         self.commands
             .send(Command::SendSequence {
                 messages,
@@ -649,15 +652,20 @@ impl DeviceController {
             })
             .map_err(|error| error.to_string())?;
         receiver
-            .recv_timeout(delay + interval.saturating_mul(16) + Duration::from_secs(2))
+            .recv_timeout(delay + interval.saturating_mul(message_count) + Duration::from_secs(2))
             .map_err(|error| error.to_string())?
     }
 
     pub fn send_operation(&self, operation: DeviceOperation) -> Result<(), String> {
-        let sequenced_touch = operation_requires_paced_sequence(&operation);
+        let interval_ms =
+            qc_device_runtime::request::operation_inter_message_interval_ms(&operation);
         let messages = operation.try_encode().map_err(|error| error.to_string())?;
-        if sequenced_touch {
-            return self.send_sequence(messages, Duration::ZERO, Duration::from_millis(20));
+        if interval_ms > 0 {
+            return self.send_sequence(
+                messages,
+                Duration::ZERO,
+                Duration::from_millis(interval_ms),
+            );
         }
         for message in messages {
             self.send_command(message)?;
@@ -706,32 +714,9 @@ impl DeviceController {
                 status.detail
             ));
         }
-        let state_events = self.subscribe_state_events();
-        let message = commands::read(qc_protocol::profile::MESSAGE_TYPE_MASTER_VOLUME);
-        self.request(
-            message.message_type,
-            message.payload,
-            17,
-            None,
-            Duration::from_secs(10),
-        )?;
-        let state_deadline = Instant::now() + Duration::from_secs(2);
-        while Instant::now() < state_deadline {
-            let remaining = state_deadline.saturating_duration_since(Instant::now());
-            match state_events.recv_timeout(remaining) {
-                Ok(frame)
-                    if frame
-                        .states
-                        .iter()
-                        .any(|state| state.master_volume.is_some()) =>
-                {
-                    return Ok(document);
-                }
-                Ok(_) => {}
-                Err(_) => break,
-            }
-        }
-        Err("The backup completed, but Master Volume state did not resynchronize".into())
+        // The shared initialization runtime's ready state already requires
+        // Master Volume and the complete authoritative control seed.
+        Ok(document)
     }
 
     pub fn switch_scene(&self, scene: u32) -> Result<(), String> {
@@ -779,13 +764,6 @@ impl DeviceController {
     }
 }
 
-fn operation_requires_paced_sequence(operation: &DeviceOperation) -> bool {
-    matches!(
-        operation,
-        DeviceOperation::ScreenTap { .. } | DeviceOperation::ScreenDrag { .. }
-    )
-}
-
 impl Drop for DeviceController {
     fn drop(&mut self) {
         let _ = self.commands.send(Command::Stop);
@@ -793,9 +771,7 @@ impl Drop for DeviceController {
 }
 
 struct PendingRequest {
-    expected_type: u16,
-    request_id: Option<u64>,
-    deadline: Instant,
+    expectation: ResponseExpectation,
     reply: mpsc::Sender<Result<IncomingMessage, String>>,
 }
 
@@ -807,148 +783,41 @@ struct PendingRequest {
 /// live state, keepalive and every other command for that whole time, and
 /// forced pending requests to be failed before it started.
 struct BackupInProgress {
-    assembler: BackupAssembler,
-    deadline: Instant,
-    first_chunk_deadline: Instant,
-    progress_deadline: Instant,
-    /// Unconditional keepalive clock, deliberately independent of the session's
-    /// idle keepalive.
-    ///
-    /// The QC pushes tempo state roughly twice a second while it prepares the
-    /// document, and every inbound message defers the session's *idle* keepalive
-    /// by another interval — so that keepalive never comes due, the device waits
-    /// about ten seconds for one, then drops the transfer without sending a
-    /// single chunk. This clock is reset only by its own firing.
-    next_keepalive: Instant,
-    attempts: usize,
+    runtime: BackupRuntime,
     reply: mpsc::Sender<Result<String, String>>,
 }
 
-fn backup_window(from: Instant, timeout_ms: u64, deadline: Instant) -> Instant {
-    (from + Duration::from_millis(timeout_ms)).min(deadline)
-}
-
 impl BackupInProgress {
-    fn start(timeout: Duration, reply: mpsc::Sender<Result<String, String>>) -> Self {
-        let now = Instant::now();
-        let deadline = now + timeout;
+    fn start(now_ms: u64, timeout: Duration, reply: mpsc::Sender<Result<String, String>>) -> Self {
         Self {
-            assembler: BackupAssembler::default(),
-            deadline,
-            first_chunk_deadline: backup_window(
-                now,
-                qc_protocol::profile::BACKUP_FIRST_CHUNK_TIMEOUT_MS,
-                deadline,
+            runtime: BackupRuntime::start(
+                now_ms,
+                timeout.as_millis().min(u128::from(u64::MAX)) as u64,
             ),
-            progress_deadline: deadline,
-            next_keepalive: now
-                + Duration::from_millis(qc_protocol::profile::KEEPALIVE_INTERVAL_MS),
-            attempts: 1,
             reply,
         }
     }
 
-    /// Feed one LocalBackup chunk. `Some` is the terminal outcome.
-    fn absorb(&mut self, payload: &[u8]) -> Option<Result<String, String>> {
-        let was_started = self.assembler.started();
-        let previous_chunks = self.assembler.chunks();
-        let previous_ignored = self.assembler.ignored_prefix_chunks();
-        match self.assembler.push(payload) {
-            Ok(Some(document)) => Some(Ok(document)),
-            Err(error) => Some(Err(error.to_string())),
-            Ok(None) => {
-                let now = Instant::now();
-                if self.assembler.chunks() > previous_chunks {
-                    self.progress_deadline = backup_window(
-                        now,
-                        qc_protocol::profile::BACKUP_STREAM_STALL_TIMEOUT_MS,
-                        self.deadline,
-                    );
-                } else if !was_started && self.assembler.ignored_prefix_chunks() > previous_ignored
-                {
-                    // Traffic from an earlier uncorrelated transfer is still
-                    // draining. Do not inject a duplicate CREATE request into it.
-                    self.first_chunk_deadline = backup_window(
-                        now,
-                        qc_protocol::profile::BACKUP_FIRST_CHUNK_TIMEOUT_MS,
-                        self.deadline,
-                    );
-                }
-                None
-            }
+    fn absorb(&mut self, now_ms: u64, payload: &[u8]) -> Option<Result<String, String>> {
+        match self.runtime.absorb(now_ms, payload) {
+            Ok(progress) => progress.document.map(Ok),
+            Err(error) => Some(Err(error)),
         }
     }
-
-    /// Check the transfer's deadlines. The caller performs any re-request, so
-    /// this stays a pure decision that is testable without a device.
-    fn advance(&mut self, now: Instant) -> BackupStep {
-        if now >= self.deadline {
-            return BackupStep::Finished(Err(format!(
-                "QC backup timed out: overall deadline reached after {} request(s), {} complete document chunk(s), and {} ignored prefix chunk(s)",
-                self.attempts,
-                self.assembler.chunks(),
-                self.assembler.ignored_prefix_chunks()
-            )));
-        }
-        if self.assembler.started() {
-            // Once a document starts, a stall is terminal: two attempts are
-            // never spliced into one backup.
-            if now >= self.progress_deadline {
-                return BackupStep::Finished(Err(format!(
-                    "QC backup timed out: stream stalled after {} chunk(s); the partial document was discarded and was not combined with a retry",
-                    self.assembler.chunks()
-                )));
-            }
-        } else if now >= self.first_chunk_deadline {
-            if self.attempts >= qc_protocol::profile::BACKUP_MAXIMUM_ATTEMPTS {
-                return BackupStep::Finished(Err(format!(
-                    "QC backup timed out: no JSON document start arrived after {} request(s); ignored {} stale chunk(s) and {} stale terminator(s)",
-                    self.attempts,
-                    self.assembler.ignored_prefix_chunks(),
-                    self.assembler.ignored_prefix_terminators()
-                )));
-            }
-            self.attempts += 1;
-            self.first_chunk_deadline = backup_window(
-                now,
-                qc_protocol::profile::BACKUP_FIRST_CHUNK_TIMEOUT_MS,
-                self.deadline,
-            );
-            return BackupStep::Rerequest;
-        }
-        if now >= self.next_keepalive {
-            self.next_keepalive =
-                now + Duration::from_millis(qc_protocol::profile::KEEPALIVE_INTERVAL_MS);
-            return BackupStep::Keepalive;
-        }
-        BackupStep::Wait
-    }
-}
-
-enum BackupStep {
-    Wait,
-    /// The transfer needs its dedicated KeepAlive now, whether or not the device
-    /// has been sending state in the meantime.
-    Keepalive,
-    Rerequest,
-    Finished(Result<String, String>),
 }
 
 enum StateDecoderCommand {
     Reset(u64),
     Message(u64, IncomingMessage),
     Catalog(u64, ModelCatalog),
-    BlockDetails(u32, u32, mpsc::Sender<Option<BlockDetails>>),
-    LaneControlDetails(u32, String, mpsc::Sender<Option<BlockDetails>>),
-    ListModels(mpsc::Sender<ModelList>),
     Stop,
 }
 
 fn run_state_decoder(
     event_log: Arc<Mutex<VecDeque<DecodedStateFrame>>>,
-    gateway_snapshot: Arc<Mutex<GatewaySnapshot>>,
+    device_state: Arc<Mutex<DeviceStateRuntime>>,
     subscribers: Arc<Mutex<Vec<mpsc::SyncSender<DecodedStateFrame>>>>,
-    sender: mpsc::Sender<StateDecoderCommand>,
+    sender: mpsc::SyncSender<StateDecoderCommand>,
     messages: mpsc::Receiver<StateDecoderCommand>,
 ) {
     let (metadata_tx, metadata_rx) = mpsc::sync_channel::<(u64, Vec<u8>)>(1);
@@ -968,16 +837,14 @@ fn run_state_decoder(
             }
         })
         .ok();
-    let mut decoder = StateDecoder::new();
     let mut generation = 0;
     let mut next_sequence = 1_u64;
     while let Ok(message) = messages.recv() {
         match message {
             StateDecoderCommand::Reset(next_generation) => {
                 generation = next_generation;
-                decoder.reset();
+                device_state.lock_recover().reset();
                 event_log.lock_recover().clear();
-                *gateway_snapshot.lock_recover() = GatewaySnapshot::default();
             }
             StateDecoderCommand::Message(message_generation, message)
                 if message_generation == generation =>
@@ -989,32 +856,22 @@ fn run_state_decoder(
                         // create unbounded decompression threads or retained payloads.
                         let _ = metadata_tx.try_send((message_generation, message.payload));
                     } else if let Ok(catalog) = parse_model_repo(&message.payload) {
-                        let states = decoder.install_catalog(catalog);
-                        if !states.is_empty() {
-                            let mut snapshot = gateway_snapshot.lock_recover();
-                            for state in &states {
-                                snapshot.apply(state);
-                            }
-                        }
+                        let _ = device_state.lock_recover().install_model_catalog(catalog);
                     }
                     continue;
                 }
-                if let Ok(states) = decoder.decode(message.message_type, &message.payload) {
-                    let tempo_clock = message_tempo_clock(&message);
-                    if states.is_empty() && tempo_clock.is_none() {
+                if let Ok(observation) = device_state
+                    .lock_recover()
+                    .ingest(message.message_type, &message.payload)
+                {
+                    if observation.states.is_empty() && observation.tempo_clock.is_none() {
                         continue;
-                    }
-                    {
-                        let mut snapshot = gateway_snapshot.lock_recover();
-                        for state in &states {
-                            snapshot.apply(state);
-                        }
                     }
                     let frame = DecodedStateFrame {
                         sequence: next_sequence,
                         observed_at: message.received_at_unix_ms,
-                        states,
-                        tempo_clock,
+                        states: observation.states,
+                        tempo_clock: observation.tempo_clock,
                     };
                     publish_state_frame(&event_log, &subscribers, frame);
                     next_sequence = next_sequence.saturating_add(1);
@@ -1023,15 +880,9 @@ fn run_state_decoder(
             StateDecoderCommand::Catalog(catalog_generation, catalog)
                 if catalog_generation == generation =>
             {
-                let states = decoder.install_catalog(catalog);
+                let states = device_state.lock_recover().install_model_catalog(catalog);
                 if states.is_empty() {
                     continue;
-                }
-                {
-                    let mut snapshot = gateway_snapshot.lock_recover();
-                    for state in &states {
-                        snapshot.apply(state);
-                    }
                 }
                 let frame = DecodedStateFrame {
                     sequence: next_sequence,
@@ -1045,28 +896,10 @@ fn run_state_decoder(
                 publish_state_frame(&event_log, &subscribers, frame);
                 next_sequence = next_sequence.saturating_add(1);
             }
-            StateDecoderCommand::BlockDetails(row, column, reply) => {
-                let _ = reply.send(decoder.block_details(row, column));
-            }
-            StateDecoderCommand::LaneControlDetails(row, control, reply) => {
-                let _ = reply.send(decoder.lane_control_details(row, &control));
-            }
-            StateDecoderCommand::ListModels(reply) => {
-                let _ = reply.send(decoder.model_list());
-            }
             StateDecoderCommand::Message(_, _) | StateDecoderCommand::Catalog(_, _) => {}
             StateDecoderCommand::Stop => return,
         }
     }
-}
-
-fn message_tempo_clock(message: &IncomingMessage) -> Option<TempoClockFrame> {
-    if message.message_type != qc_protocol::profile::MESSAGE_TYPE_GLOBAL_TEMPO {
-        return None;
-    }
-    decode_tempo_clock(message.payload.as_slice())
-        .ok()
-        .flatten()
 }
 
 fn publish_state_frame(
@@ -1095,8 +928,7 @@ fn ingest_incoming(
     connected: &mut ConnectedQc,
     latest_messages: &Arc<Mutex<HashMap<u16, IncomingMessage>>>,
     raw_events: &Arc<RawEventBus>,
-    preset_library: &Arc<Mutex<PresetLibrary>>,
-    state_messages: &mpsc::Sender<StateDecoderCommand>,
+    state_messages: &mpsc::SyncSender<StateDecoderCommand>,
     state_generation: u64,
     pending_requests: &mut Vec<PendingRequest>,
     message: IncomingMessage,
@@ -1122,11 +954,6 @@ fn ingest_incoming(
         state_generation,
         message.clone(),
     ));
-    if message.message_type == qc_protocol::profile::MESSAGE_TYPE_FILE {
-        if let Ok(Some(listing)) = decode_preset_folder(&message.payload) {
-            preset_library.lock_recover().ingest(listing);
-        }
-    }
     deliver_pending(pending_requests, &message);
 }
 
@@ -1134,13 +961,12 @@ fn run(
     state: Arc<Mutex<BrokerStatus>>,
     latest_messages: Arc<Mutex<HashMap<u16, IncomingMessage>>>,
     raw_events: Arc<RawEventBus>,
-    preset_library: Arc<Mutex<PresetLibrary>>,
-    state_messages: mpsc::Sender<StateDecoderCommand>,
+    state_messages: mpsc::SyncSender<StateDecoderCommand>,
     commands: mpsc::Receiver<Command>,
     initial_auto_connect: bool,
 ) {
     let session_clock = Instant::now();
-    let mut session = SessionMachine::new(0);
+    let mut session = TransportRuntime::new(0);
     let mut connection: Option<ConnectedQc> = None;
     let mut auto_connect = initial_auto_connect;
     let mut pending_requests: Vec<PendingRequest> = Vec::new();
@@ -1169,7 +995,6 @@ fn run(
                     fail_backup(&mut backup, "Device session restarted");
                     latest_messages.lock_recover().clear();
                     raw_events.log.lock_recover().clear();
-                    preset_library.lock_recover().clear();
                     state_generation = state_generation.saturating_add(1);
                     let _ = state_messages.send(StateDecoderCommand::Reset(state_generation));
                     auto_connect = true;
@@ -1183,7 +1008,6 @@ fn run(
                     fail_backup(&mut backup, "Device session closed");
                     latest_messages.lock_recover().clear();
                     raw_events.log.lock_recover().clear();
-                    preset_library.lock_recover().clear();
                     state_generation = state_generation.saturating_add(1);
                     let _ = state_messages.send(StateDecoderCommand::Reset(state_generation));
                     auto_connect = false;
@@ -1247,9 +1071,12 @@ fn run(
                 } => {
                     if let Some(connected) = connection.as_mut() {
                         pending_requests.push(PendingRequest {
-                            expected_type,
-                            request_id,
-                            deadline: Instant::now() + timeout,
+                            expectation: ResponseExpectation::new(
+                                expected_type,
+                                request_id,
+                                session_clock.elapsed().as_millis() as u64,
+                                timeout.as_millis().min(u128::from(u64::MAX)) as u64,
+                            ),
                             reply,
                         });
                         connected.usb.send(message_type, payload);
@@ -1271,7 +1098,11 @@ fn run(
                         // go quiet, and a probe left armed both tears the session
                         // down and blocks the KeepAlive the transfer needs.
                         session.suspend_liveness_probe(session_clock.elapsed().as_millis() as u64);
-                        backup = Some(BackupInProgress::start(timeout, reply));
+                        backup = Some(BackupInProgress::start(
+                            session_clock.elapsed().as_millis() as u64,
+                            timeout,
+                            reply,
+                        ));
                         set_phase(
                             &state,
                             "syncing",
@@ -1329,18 +1160,11 @@ fn run(
                         // push, and a preset-folder listing is one message per
                         // folder.
                         //
-                        // The history lock is taken last and never wraps the
-                        // preset-library lock: ingest_incoming releases the
-                        // history lock before touching the library, so nesting
-                        // them the other way round here would invert the order
-                        // and deadlock the device loop against an RPC thread.
+                        // The state runtime consumes this same ordered burst on
+                        // its bounded decoder lane; the USB host does not
+                        // maintain a second preset-library cache.
                         let initial = connected.initial_messages.clone();
                         for message in &initial {
-                            if message.message_type == qc_protocol::profile::MESSAGE_TYPE_FILE {
-                                if let Ok(Some(listing)) = decode_preset_folder(&message.payload) {
-                                    preset_library.lock_recover().ingest(listing);
-                                }
-                            }
                             let _ = state_messages.send(StateDecoderCommand::Message(
                                 state_generation,
                                 message.clone(),
@@ -1354,7 +1178,10 @@ fn run(
                     // is always ready to accept the first host mutation. Hold
                     // only that first post-handshake write briefly; subsequent
                     // commands remain on the zero-debounce realtime lane.
-                    command_not_before = Instant::now() + Duration::from_millis(250);
+                    command_not_before = Instant::now()
+                        + Duration::from_millis(
+                            qc_protocol::profile::POST_INITIALIZATION_WRITE_DELAY_MS,
+                        );
                     connection = Some(connected);
                 }
                 Err(UsbError::NotAvailable) => {
@@ -1375,7 +1202,10 @@ fn run(
         }
 
         if let Some(connected) = connection.as_mut() {
-            match connected.usb.read_message(CONNECTED_IO_POLL_MS) {
+            match connected
+                .usb
+                .read_message(&mut session, CONNECTED_IO_POLL_MS)
+            {
                 Ok(Some(message)) => {
                     session.read_succeeded();
                     session.state_observed(
@@ -1385,9 +1215,12 @@ fn run(
                     if message.message_type == qc_protocol::profile::MESSAGE_TYPE_LOCAL_BACKUP
                         && backup.is_some()
                     {
-                        let outcome = backup
-                            .as_mut()
-                            .and_then(|active| active.absorb(&message.payload));
+                        let outcome = backup.as_mut().and_then(|active| {
+                            active.absorb(
+                                session_clock.elapsed().as_millis() as u64,
+                                &message.payload,
+                            )
+                        });
                         if let Some(outcome) = outcome {
                             finish_backup(&mut backup, &state, connected, outcome);
                         }
@@ -1397,7 +1230,6 @@ fn run(
                             connected,
                             &latest_messages,
                             &raw_events,
-                            &preset_library,
                             &state_messages,
                             state_generation,
                             &mut pending_requests,
@@ -1424,21 +1256,26 @@ fn run(
                     continue;
                 }
             }
-            match backup.as_mut().map(|active| active.advance(Instant::now())) {
-                Some(BackupStep::Keepalive) => {
+            let backup_action = backup.as_mut().map(|active| {
+                active
+                    .runtime
+                    .advance(session_clock.elapsed().as_millis() as u64)
+            });
+            match backup_action {
+                Some(BackupAction::Keepalive) => {
                     connected.usb.send_command(commands::keepalive());
                     update_usb_telemetry(&state, connected);
                     session.suspend_liveness_probe(session_clock.elapsed().as_millis() as u64);
                 }
-                Some(BackupStep::Rerequest) => {
+                Some(BackupAction::Rerequest) => {
                     connected.usb.send_command(commands::create_local_backup());
                     update_usb_telemetry(&state, connected);
                     session.suspend_liveness_probe(session_clock.elapsed().as_millis() as u64);
                 }
-                Some(BackupStep::Finished(outcome)) => {
-                    finish_backup(&mut backup, &state, connected, outcome);
+                Some(BackupAction::Failed(error)) => {
+                    finish_backup(&mut backup, &state, connected, Err(error));
                 }
-                Some(BackupStep::Wait) | None => {}
+                Some(BackupAction::Wait) | None => {}
             }
             let now_ms = session_clock.elapsed().as_millis() as u64;
             // Device loss is detected by read errors, as in the reference
@@ -1448,22 +1285,24 @@ fn run(
             // dedicated KeepAlive below rather than proven by a correlated read.
             // A running backup owns the keepalive on its own unconditional clock,
             // so the idle probe stands down for the whole transfer.
-            if backup.is_none() && session.keepalive_due(now_ms) {
-                // The QC needs its dedicated KeepAlive on a fixed cadence, the
-                // same message Cortex Control and the reference client send
-                // every five seconds. A Version READ is answered, so the link
-                // looks alive, but it does not hold the session open: the
-                // device stops pushing state and stops answering File READs
-                // after about a minute, which is why the preset library never
-                // populated once a session had been running for a while.
-                connected.usb.send_command(commands::keepalive());
-                update_usb_telemetry(&state, connected);
-                session.keepalive_sent(now_ms);
+            if backup.is_none() {
+                if let Some(keepalive) = session.take_keepalive(now_ms) {
+                    // The QC needs its dedicated KeepAlive on a fixed cadence,
+                    // the same message Cortex Control and the reference client
+                    // send every five seconds. A Version READ is answered, so
+                    // the link looks alive, but it does not hold the session
+                    // open.
+                    connected.usb.send_command(keepalive);
+                    update_usb_telemetry(&state, connected);
+                }
             }
         } else {
             thread::sleep(Duration::from_millis(100));
         }
-        expire_pending(&mut pending_requests);
+        expire_pending(
+            &mut pending_requests,
+            session_clock.elapsed().as_millis() as u64,
+        );
     }
 }
 
@@ -1508,28 +1347,24 @@ fn reconnect_is_satisfied(force: bool, connected: bool, phase: &str) -> bool {
 }
 
 fn deliver_pending(pending: &mut Vec<PendingRequest>, message: &IncomingMessage) {
-    let request_id = qc_protocol::wire::request_id(message.message_type, &message.payload);
     if let Some(index) = pending.iter().position(|request| {
-        request.expected_type == message.message_type
-            && (request_id.is_none()
-                || request.request_id.is_none()
-                || request_id == request.request_id)
+        request
+            .expectation
+            .matches(message.message_type, &message.payload)
     }) {
         let request = pending.remove(index);
         let _ = request.reply.send(Ok(message.clone()));
     }
 }
 
-fn expire_pending(pending: &mut Vec<PendingRequest>) {
-    let now = Instant::now();
+fn expire_pending(pending: &mut Vec<PendingRequest>, now_ms: u64) {
     let mut index = 0;
     while index < pending.len() {
-        if pending[index].deadline <= now {
+        if pending[index].expectation.expired(now_ms) {
             let request = pending.remove(index);
-            let _ = request.reply.send(Err(format!(
-                "No QC message type {} response before timeout",
-                request.expected_type
-            )));
+            let _ = request
+                .reply
+                .send(Err(request.expectation.timeout_message()));
         } else {
             index += 1;
         }
@@ -1684,34 +1519,43 @@ mod tests {
         timeout: Duration,
     ) -> (BackupInProgress, mpsc::Receiver<Result<String, String>>) {
         let (reply, receiver) = mpsc::channel();
-        (BackupInProgress::start(timeout, reply), receiver)
+        (BackupInProgress::start(0, timeout, reply), receiver)
     }
 
     #[test]
     fn every_remote_touch_gesture_uses_the_paced_sequence_lane() {
-        assert!(operation_requires_paced_sequence(
-            &DeviceOperation::ScreenTap { x: 10.0, y: 20.0 }
-        ));
-        assert!(operation_requires_paced_sequence(
-            &DeviceOperation::ScreenDrag {
-                x: 10.0,
-                y: 20.0,
-                to_x: 30.0,
-                to_y: 40.0,
-            }
-        ));
-        assert!(!operation_requires_paced_sequence(&DeviceOperation::Undo));
+        assert_eq!(
+            qc_device_runtime::request::operation_inter_message_interval_ms(
+                &DeviceOperation::ScreenTap { x: 10.0, y: 20.0 }
+            ),
+            qc_protocol::profile::REMOTE_GESTURE_INTERVAL_MS
+        );
+        assert_eq!(
+            qc_device_runtime::request::operation_inter_message_interval_ms(
+                &DeviceOperation::ScreenDrag {
+                    x: 10.0,
+                    y: 20.0,
+                    to_x: 30.0,
+                    to_y: 40.0,
+                }
+            ),
+            qc_protocol::profile::REMOTE_GESTURE_INTERVAL_MS
+        );
+        assert_eq!(
+            qc_device_runtime::request::operation_inter_message_interval_ms(&DeviceOperation::Undo),
+            0
+        );
     }
 
     #[test]
     fn backup_streams_on_the_device_loop_without_a_nested_read_loop() {
         let (mut backup, _receiver) = started_backup(Duration::from_secs(60));
         assert!(backup
-            .absorb(&backup_chunk("{\"type\":\"backup\",", false))
+            .absorb(1, &backup_chunk("{\"type\":\"backup\",", false))
             .is_none());
         // A partial document keeps the transfer alive rather than blocking.
-        assert!(matches!(backup.advance(Instant::now()), BackupStep::Wait));
-        let outcome = backup.absorb(&backup_chunk("\"creator\":\"quad\"}", true));
+        assert!(matches!(backup.runtime.advance(2), BackupAction::Wait));
+        let outcome = backup.absorb(3, &backup_chunk("\"creator\":\"quad\"}", true));
         assert_eq!(
             outcome.expect("terminal outcome").expect("document"),
             "{\"type\":\"backup\",\"creator\":\"quad\"}"
@@ -1719,90 +1563,8 @@ mod tests {
     }
 
     #[test]
-    fn a_silent_device_is_re_requested_then_reported_without_splicing_attempts() {
-        let (mut backup, _receiver) = started_backup(Duration::from_secs(600));
-        let overdue = Instant::now()
-            + Duration::from_millis(qc_protocol::profile::BACKUP_FIRST_CHUNK_TIMEOUT_MS + 1);
-        // Nothing has started, so the request may safely be repeated.
-        assert!(matches!(backup.advance(overdue), BackupStep::Rerequest));
-        assert_eq!(backup.attempts, 2);
-
-        let later = overdue
-            + Duration::from_millis(qc_protocol::profile::BACKUP_FIRST_CHUNK_TIMEOUT_MS + 1);
-        match backup.advance(later) {
-            BackupStep::Finished(Err(detail)) => {
-                assert!(detail.contains("no JSON document start"), "{detail}");
-            }
-            _ => panic!("an exhausted backup must report a timeout"),
-        }
-    }
-
-    #[test]
-    fn a_stalled_document_is_terminal_and_is_never_retried() {
-        let (mut backup, _receiver) = started_backup(Duration::from_secs(600));
-        assert!(backup
-            .absorb(&backup_chunk("{\"type\":\"backup\",", false))
-            .is_none());
-        let stalled = Instant::now()
-            + Duration::from_millis(qc_protocol::profile::BACKUP_STREAM_STALL_TIMEOUT_MS + 1);
-        match backup.advance(stalled) {
-            BackupStep::Finished(Err(detail)) => {
-                assert!(detail.contains("stream stalled"), "{detail}");
-                assert!(detail.contains("not combined with a retry"), "{detail}");
-            }
-            _ => panic!("a started-then-stalled document must be terminal"),
-        }
-    }
-
-    #[test]
-    fn a_backup_keepalive_fires_on_time_even_while_the_device_pushes_state() {
-        // Regression, measured on hardware: the QC pushes tempo state about
-        // twice a second while it prepares the document. Every inbound message
-        // defers the session's *idle* keepalive, so it never came due, the
-        // device waited ~10s for a KeepAlive, then dropped the transfer without
-        // sending one chunk. This clock must be independent of inbound traffic.
-        let interval = qc_protocol::profile::KEEPALIVE_INTERVAL_MS;
-        let (mut backup, _receiver) = started_backup(Duration::from_secs(600));
-        let start = Instant::now();
-        assert!(matches!(
-            backup.advance(start + Duration::from_millis(interval - 10)),
-            BackupStep::Wait
-        ));
-        assert!(matches!(
-            backup.advance(start + Duration::from_millis(interval)),
-            BackupStep::Keepalive
-        ));
-        // It rearms rather than firing on every loop iteration...
-        assert!(matches!(
-            backup.advance(start + Duration::from_millis(interval + 10)),
-            BackupStep::Wait
-        ));
-        // ...and keeps firing for the life of the transfer.
-        assert!(matches!(
-            backup.advance(start + Duration::from_millis(interval * 2 + 10)),
-            BackupStep::Keepalive
-        ));
-        // The device requires the dedicated KeepAlive, not a Version READ.
-        assert_eq!(commands::keepalive().message_type, 32);
-    }
-
-    #[test]
-    fn a_streaming_backup_is_still_kept_alive() {
-        let interval = qc_protocol::profile::KEEPALIVE_INTERVAL_MS;
-        let (mut backup, _receiver) = started_backup(Duration::from_secs(600));
-        let start = Instant::now();
-        assert!(backup
-            .absorb(&backup_chunk("{\"type\":\"backup\",", false))
-            .is_none());
-        assert!(matches!(
-            backup.advance(start + Duration::from_millis(interval)),
-            BackupStep::Keepalive
-        ));
-    }
-
-    #[test]
     fn a_backup_stands_the_idle_probe_down_instead_of_tearing_the_session_down() {
-        let mut session = SessionMachine::new(0);
+        let mut session = TransportRuntime::new(0);
         session.transport_opened(0);
         session.handshake_completed(1, true);
         session.liveness_probe_sent(1);
@@ -1863,16 +1625,20 @@ mod tests {
     }
 
     #[test]
-    fn duplicate_library_refreshes_are_coalesced_while_the_device_stream_is_active() {
+    fn authoritative_saved_catalog_entry_updates_the_active_snapshot_name() {
         let controller = DeviceController::start_disconnected();
-        *controller.preset_library_refresh.lock_recover() = Some((None, Instant::now()));
-        assert!(controller.refresh_preset_library().is_ok());
-
-        *controller.preset_library_refresh.lock_recover() = Some((
-            None,
-            Instant::now() - PRESET_LIBRARY_REFRESH_COALESCE - Duration::from_millis(1),
-        ));
-        assert!(controller.refresh_preset_library().is_err());
+        *controller.device_state.lock_recover().snapshot_mut() = GatewaySnapshot {
+            has_preset: true,
+            setlist_key: "/media/p4/Presets/My Presets".into(),
+            preset_position: 15,
+            preset_name: "Old".into(),
+            ..GatewaySnapshot::default()
+        };
+        controller.record_saved_preset("/media/p4/Presets/My Presets", 15, "Renamed", 0);
+        assert_eq!(
+            controller.gateway_snapshot().unwrap().preset_name,
+            "Renamed"
+        );
     }
 
     #[test]

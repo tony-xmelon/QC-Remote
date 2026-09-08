@@ -12,6 +12,7 @@ final class GeneratedRelayProfile {
     static final int MAX_RESULT_FRAME_BYTES = 16777216;
     static final int COMPLETED_REQUEST_CACHE_SIZE = 512;
     static final long READINESS_INTERVAL_MS = 1000L;
+    static final long READINESS_GRACE_MS = 1500L;
     static final long PING_INTERVAL_MS = 25000L;
     static final int MAXIMUM_FAILURE_COUNT = 10;
     static final int MAXIMUM_BACKOFF_EXPONENT = 6;

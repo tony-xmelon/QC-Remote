@@ -62,7 +62,7 @@ if (platform === "android") {
 
   const cargoManifest = await readFile(cargoManifestPath, "utf8");
   const nextCargoManifest = cargoManifest.replace(
-    /^(\[package\]\r?\nname = "qc-voice-control"\r?\nversion = ")[^"]+"/m,
+    /^(\[package\]\r?\nname = "qc-remote"\r?\nversion = ")[^"]+"/m,
     `$1${version}"`
   );
   if (!new RegExp(`^version = "${version.replaceAll(".", "\\.")}"$`, "m").test(nextCargoManifest)) throw new Error("Could not update the Rust package version");
@@ -70,10 +70,10 @@ if (platform === "android") {
 
   const cargoLock = await readFile(cargoLockPath, "utf8");
   const nextCargoLock = cargoLock.replace(
-    /^(\[\[package\]\]\r?\nname = "qc-voice-control"\r?\nversion = ")[^"]+"/m,
+    /^(\[\[package\]\]\r?\nname = "qc-remote"\r?\nversion = ")[^"]+"/m,
     `$1${version}"`
   );
-  if (!new RegExp(`name = "qc-voice-control"\\r?\\nversion = "${version.replaceAll(".", "\\.")}"`).test(nextCargoLock)) throw new Error("Could not update the Rust lockfile version");
+  if (!new RegExp(`name = "qc-remote"\\r?\\nversion = "${version.replaceAll(".", "\\.")}"`).test(nextCargoLock)) throw new Error("Could not update the Rust lockfile version");
   if (nextCargoLock !== cargoLock) await writeFile(cargoLockPath, nextCargoLock);
 }
 

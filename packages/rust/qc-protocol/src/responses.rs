@@ -108,6 +108,89 @@ pub struct PngImage {
     pub height: u32,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DspDiagnostics {
+    pub status1: u32,
+    pub status2: u32,
+    pub status3: u32,
+    pub status4: u32,
+    pub process_cpu: f32,
+    pub process_cpu_max: f32,
+    pub internal_heap_usage: f32,
+    pub external_heap_usage: f32,
+    pub internal_pm_heap_usage: f32,
+    pub external_dma_usage: f32,
+    pub error_flags: u32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UsbDiagnostics {
+    pub connected: u32,
+    pub input_read_index: u32,
+    pub input_write_index: u32,
+    pub output_read_index: u32,
+    pub output_write_index: u32,
+    pub audio_rx_frames: u64,
+    pub audio_tx_frames: u64,
+    pub audio_tx_frames_skipped: u32,
+    pub audio_tx_frames_aborted: u32,
+    pub audio_output_distance_average: u32,
+    pub audio_min_samples: u32,
+    pub audio_max_samples: u32,
+    pub audio_plus_one_sample_count: u32,
+    pub audio_minus_one_sample_count: u32,
+    pub audio_feedback_state: u32,
+    pub audio_streaming_endpoint_enabled: u32,
+    pub audio_streaming_endpoint_disabled: u32,
+    pub midi_out_count: u64,
+    pub midi_in_count: u64,
+    pub hid_in_count: u64,
+    pub hid_out_count: u64,
+    pub hid_in_dropped_count: u32,
+    pub hid_out_dropped_count: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeviceDiagnostics {
+    pub request_id: Option<u64>,
+    pub soc1_core1: Option<DspDiagnostics>,
+    pub soc1_core2: Option<DspDiagnostics>,
+    pub soc2_core1: Option<DspDiagnostics>,
+    pub soc2_core2: Option<DspDiagnostics>,
+    pub soc2_arm: Option<UsbDiagnostics>,
+    pub soc1_to_soc2_dropped_count: Option<u64>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
+#[serde(tag = "type", rename_all = "camelCase")]
+pub enum RemoteMouseUpdate {
+    Press {
+        x: f32,
+        y: f32,
+    },
+    Release {
+        x: f32,
+        y: f32,
+    },
+    Move {
+        x: f32,
+        y: f32,
+    },
+    Tap {
+        x: f32,
+        y: f32,
+    },
+    Drag {
+        x: f32,
+        y: f32,
+        to_x: f32,
+        to_y: f32,
+    },
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TempoClock {
@@ -1006,6 +1089,130 @@ pub fn decode_captured_screen(payload: &[u8]) -> Result<PngImage, ResponseDecode
     png_image(bytes)
 }
 
+pub fn decode_remote_mouse(payload: &[u8]) -> Result<RemoteMouseUpdate, ResponseDecodeError> {
+    let message: pa::RemoteControlMessage = decode_reply(payload)?;
+    if message.action != pa::message_action::Enum::Update as i32 {
+        return Err(ResponseDecodeError::Mismatch(
+            "remote mouse action is not UPDATE",
+        ));
+    }
+    let mouse = message
+        .mouse
+        .ok_or(ResponseDecodeError::Incomplete("remote mouse payload"))?;
+    match pa::remote_control_mouse::Type::try_from(mouse.r#type) {
+        Ok(pa::remote_control_mouse::Type::Press) => Ok(RemoteMouseUpdate::Press {
+            x: mouse.x,
+            y: mouse.y,
+        }),
+        Ok(pa::remote_control_mouse::Type::Release) => Ok(RemoteMouseUpdate::Release {
+            x: mouse.x,
+            y: mouse.y,
+        }),
+        Ok(pa::remote_control_mouse::Type::Move) => Ok(RemoteMouseUpdate::Move {
+            x: mouse.x,
+            y: mouse.y,
+        }),
+        Ok(pa::remote_control_mouse::Type::Tap) => Ok(RemoteMouseUpdate::Tap {
+            x: mouse.x,
+            y: mouse.y,
+        }),
+        Ok(pa::remote_control_mouse::Type::Drag) => Ok(RemoteMouseUpdate::Drag {
+            x: mouse.x,
+            y: mouse.y,
+            to_x: mouse.to_x,
+            to_y: mouse.to_y,
+        }),
+        Err(_) => Err(ResponseDecodeError::Mismatch(
+            "unknown remote mouse event type",
+        )),
+    }
+}
+
+fn dsp_diagnostics(value: pa::DspCommsDiagnosticsMessage) -> DspDiagnostics {
+    DspDiagnostics {
+        status1: value.status1,
+        status2: value.status2,
+        status3: value.status3,
+        status4: value.status4,
+        process_cpu: value.process_cpu,
+        process_cpu_max: value.process_cpu_max,
+        internal_heap_usage: value.internal_heap_usage,
+        external_heap_usage: value.external_heap_usage,
+        internal_pm_heap_usage: value.internal_pm_heap_usage,
+        external_dma_usage: value.ext_dma_usage,
+        error_flags: value.error_flags,
+    }
+}
+
+fn usb_diagnostics(value: pa::Soc2armCommsDiagnosticsMessage) -> UsbDiagnostics {
+    UsbDiagnostics {
+        connected: value.usb_connected,
+        input_read_index: value.in_read_idx,
+        input_write_index: value.in_write_idx,
+        output_read_index: value.out_read_idx,
+        output_write_index: value.out_write_idx,
+        audio_rx_frames: value.usb_audio_rx_frame,
+        audio_tx_frames: value.usb_audio_tx_frame,
+        audio_tx_frames_skipped: value.usb_audio_tx_frame_skipped,
+        audio_tx_frames_aborted: value.usb_audio_tx_frame_aborted,
+        audio_output_distance_average: value.usb_audio_out_rd_wr_distance_average,
+        audio_min_samples: value.usb_audio_rd_wr_min_num_samples,
+        audio_max_samples: value.usb_audio_rd_wr_max_num_samples,
+        audio_plus_one_sample_count: value.usb_audio_plus_one_sample_count,
+        audio_minus_one_sample_count: value.usb_audio_minus_one_sample_count,
+        audio_feedback_state: value.usb_audio_feedback_state,
+        audio_streaming_endpoint_enabled: value.usb_audio_streaming_ep_enabled,
+        audio_streaming_endpoint_disabled: value.usb_audio_streaming_ep_disabled,
+        midi_out_count: value.usb_midi_out_count,
+        midi_in_count: value.usb_midi_in_count,
+        hid_in_count: value.usbhid_in_count,
+        hid_out_count: value.usbhid_out_count,
+        hid_in_dropped_count: value.usbhid_in_dropped_count,
+        hid_out_dropped_count: value.usbhid_out_dropped_count,
+    }
+}
+
+/// Decode message 7 without enabling any production-automation facilities.
+pub fn decode_diagnostics(
+    payload: &[u8],
+    expected_request_id: Option<u64>,
+) -> Result<DeviceDiagnostics, ResponseDecodeError> {
+    use pa::diagnostics_message as dm;
+    let message: pa::DiagnosticsMessage = decode_reply(payload)?;
+    if message.action != pa::message_action::Enum::Update as i32 {
+        return Err(ResponseDecodeError::Mismatch(
+            "diagnostics action is not UPDATE",
+        ));
+    }
+    let request_id = message
+        .request_id
+        .map(|dm::RequestId::RequestId(value)| value);
+    if expected_request_id.is_some() && request_id != expected_request_id {
+        return Err(ResponseDecodeError::Mismatch("diagnostics request id"));
+    }
+    Ok(DeviceDiagnostics {
+        request_id,
+        soc1_core1: message
+            .soc1_core1_diagnostics
+            .map(|dm::Soc1Core1Diagnostics::Soc1Core1Diagnostics(value)| dsp_diagnostics(value)),
+        soc1_core2: message
+            .soc1_core2_diagnostics
+            .map(|dm::Soc1Core2Diagnostics::Soc1Core2Diagnostics(value)| dsp_diagnostics(value)),
+        soc2_core1: message
+            .soc2_core1_diagnostics
+            .map(|dm::Soc2Core1Diagnostics::Soc2Core1Diagnostics(value)| dsp_diagnostics(value)),
+        soc2_core2: message
+            .soc2_core2_diagnostics
+            .map(|dm::Soc2Core2Diagnostics::Soc2Core2Diagnostics(value)| dsp_diagnostics(value)),
+        soc2_arm: message.soc2arm_core_diagnostics.map(
+            |dm::Soc2armCoreDiagnostics::Soc2armCoreDiagnostics(value)| usb_diagnostics(value),
+        ),
+        soc1_to_soc2_dropped_count: message
+            .soc1_to_soc2_dropped_count
+            .map(|dm::Soc1ToSoc2DroppedCount::Soc1ToSoc2DroppedCount(value)| value),
+    })
+}
+
 /// Decode the device's live `zenUI` widget tree; see [`commands::read_graphics_tree`].
 ///
 /// The payload is indented text, not a structured message, so it is returned
@@ -1055,6 +1262,83 @@ mod tests {
         assert!(matches!(
             decode_graphics_tree(&screenshot),
             Err(ResponseDecodeError::Incomplete("graphics tree payload"))
+        ));
+    }
+
+    #[test]
+    fn remote_mouse_decodes_every_recovered_event_type() {
+        let expected = [
+            RemoteMouseUpdate::Press { x: 1.0, y: 2.0 },
+            RemoteMouseUpdate::Release { x: 1.0, y: 2.0 },
+            RemoteMouseUpdate::Move { x: 1.0, y: 2.0 },
+            RemoteMouseUpdate::Tap { x: 1.0, y: 2.0 },
+            RemoteMouseUpdate::Drag {
+                x: 1.0,
+                y: 2.0,
+                to_x: 3.0,
+                to_y: 4.0,
+            },
+        ];
+        for (wire_type, expected) in (0..=4).zip(expected) {
+            let payload = pa::RemoteControlMessage {
+                action: pa::message_action::Enum::Update as i32,
+                mouse: Some(pa::RemoteControlMouse {
+                    x: 1.0,
+                    y: 2.0,
+                    r#type: wire_type,
+                    to_x: 3.0,
+                    to_y: 4.0,
+                }),
+                ..Default::default()
+            }
+            .encode_to_vec();
+            assert_eq!(decode_remote_mouse(&payload).unwrap(), expected);
+        }
+    }
+
+    #[test]
+    fn diagnostics_preserve_dsp_and_usb_transport_counters() {
+        use pa::diagnostics_message as dm;
+        let dsp = pa::DspCommsDiagnosticsMessage {
+            process_cpu: 0.42,
+            process_cpu_max: 0.75,
+            internal_heap_usage: 0.2,
+            external_heap_usage: 0.3,
+            internal_pm_heap_usage: 0.4,
+            ext_dma_usage: 0.5,
+            error_flags: 0x40,
+            ..Default::default()
+        };
+        let usb = pa::Soc2armCommsDiagnosticsMessage {
+            usb_connected: 1,
+            usb_audio_rx_frame: 101,
+            usb_audio_tx_frame: 102,
+            usb_audio_tx_frame_skipped: 3,
+            usb_audio_tx_frame_aborted: 4,
+            usb_midi_out_count: 201,
+            usb_midi_in_count: 202,
+            usbhid_in_count: 301,
+            usbhid_out_count: 302,
+            usbhid_in_dropped_count: 5,
+            usbhid_out_dropped_count: 6,
+            ..Default::default()
+        };
+        let payload = pa::DiagnosticsMessage {
+            action: pa::message_action::Enum::Update as i32,
+            request_id: Some(dm::RequestId::RequestId(77)),
+            soc1_core1_diagnostics: Some(dm::Soc1Core1Diagnostics::Soc1Core1Diagnostics(dsp)),
+            soc2arm_core_diagnostics: Some(dm::Soc2armCoreDiagnostics::Soc2armCoreDiagnostics(usb)),
+            soc1_to_soc2_dropped_count: Some(dm::Soc1ToSoc2DroppedCount::Soc1ToSoc2DroppedCount(9)),
+            ..Default::default()
+        }
+        .encode_to_vec();
+        let decoded = decode_diagnostics(&payload, Some(77)).unwrap();
+        assert_eq!(decoded.soc1_core1.unwrap().error_flags, 0x40);
+        assert_eq!(decoded.soc2_arm.unwrap().hid_out_dropped_count, 6);
+        assert_eq!(decoded.soc1_to_soc2_dropped_count, Some(9));
+        assert!(matches!(
+            decode_diagnostics(&payload, Some(78)),
+            Err(ResponseDecodeError::Mismatch("diagnostics request id"))
         ));
     }
 

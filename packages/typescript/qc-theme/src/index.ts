@@ -4,7 +4,6 @@ import visualAssets from "./assets.json" with { type: "json" };
 import brand from "./brand.json" with { type: "json" };
 
 export { QC_LEGAL } from "./legal.ts";
-
 /**
  * Shared visual contract for the Windows and Android QC Remote apps.
  *
@@ -30,7 +29,17 @@ export const QC_GEOMETRY = {
   footswitches: { performance: 8, navigation: 2, tempo: 1 }
 } as const;
 
-export const QC_VISUAL_ASSETS = visualAssets;
+export const QC_VISUAL_ASSETS = {
+  ...visualAssets,
+  chassisVector: {
+    ...visualAssets.chassisVector,
+    url: new URL("../assets/qc-chassis-neutral.svg", import.meta.url).href
+  },
+  appIcon: {
+    ...visualAssets.appIcon,
+    url: new URL("../assets/app-icon.svg", import.meta.url).href
+  }
+} as const;
 
 export const QC_NATIVE_THEME = nativeTheme;
 export const QC_BRAND = brand;

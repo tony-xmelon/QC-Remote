@@ -19,6 +19,7 @@ pub const MAX_REQUEST_FRAME_BYTES: usize = ${profile.maxRequestFrameBytes};
 pub const MAX_RESULT_FRAME_BYTES: usize = ${profile.maxResultFrameBytes};
 pub const COMPLETED_REQUEST_CACHE_SIZE: usize = ${profile.completedRequestCacheSize};
 pub const READINESS_INTERVAL_MS: u64 = ${profile.readinessIntervalMs};
+pub const READINESS_GRACE_MS: u64 = ${profile.readinessGraceMs};
 pub const MAXIMUM_FAILURE_COUNT: u32 = ${profile.maximumFailureCount};
 pub const MAXIMUM_BACKOFF_EXPONENT: u32 = ${profile.maximumBackoffExponent};
 pub const MAXIMUM_BACKOFF_SECONDS: u64 = ${profile.maximumBackoffSeconds};
@@ -39,6 +40,7 @@ final class GeneratedRelayProfile {
     static final int MAX_RESULT_FRAME_BYTES = ${profile.maxResultFrameBytes};
     static final int COMPLETED_REQUEST_CACHE_SIZE = ${profile.completedRequestCacheSize};
     static final long READINESS_INTERVAL_MS = ${profile.readinessIntervalMs}L;
+    static final long READINESS_GRACE_MS = ${profile.readinessGraceMs}L;
     static final long PING_INTERVAL_MS = ${profile.androidPingIntervalMs}L;
     static final int MAXIMUM_FAILURE_COUNT = ${profile.maximumFailureCount};
     static final int MAXIMUM_BACKOFF_EXPONENT = ${profile.maximumBackoffExponent};

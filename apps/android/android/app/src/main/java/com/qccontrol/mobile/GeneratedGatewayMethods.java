@@ -4,11 +4,12 @@ package com.qccontrol.mobile;
 final class GeneratedGatewayMethods {
     private GeneratedGatewayMethods() {}
 
-    static final int API_VERSION = 19;
+    static final int API_VERSION = 20;
     static final String[] CAPABILITIES = {
         "modelRepoParameterMetadata",
         "nativeStateEvents",
         "nativeDeviceIdentity",
+        "nativeDiagnostics",
         "nativeRemoteScreen",
         "nativeGraphicsTree",
         "nativeScreenGestures",
@@ -94,6 +95,7 @@ final class GeneratedGatewayMethods {
         "device.setGlobalBypass",
         "device.presetScreenshot",
         "device.captureScreen",
+        "device.diagnostics",
         "device.graphicsTree",
         "device.tapScreen",
         "device.swipeScreen",
@@ -210,6 +212,7 @@ final class GeneratedGatewayMethods {
             case "device.setGlobalBypass": return "PLANNED_WRITE";
             case "device.presetScreenshot": return "CORRELATED_READ";
             case "device.captureScreen": return "CORRELATED_READ";
+            case "device.diagnostics": return "CORRELATED_READ";
             case "device.graphicsTree": return "CORRELATED_READ";
             case "device.tapScreen": return "TAP_SCREEN";
             case "device.swipeScreen": return "TAP_SCREEN";
@@ -323,6 +326,7 @@ final class GeneratedGatewayMethods {
             case "device.setGlobalBypass": return "DeviceActionResult";
             case "device.presetScreenshot": return "Object";
             case "device.captureScreen": return "Object";
+            case "device.diagnostics": return "Object";
             case "device.graphicsTree": return "Object";
             case "device.tapScreen": return "DeviceActionResult";
             case "device.swipeScreen": return "DeviceActionResult";
@@ -458,6 +462,7 @@ final class GeneratedGatewayMethods {
             case "device.setGlobalBypass": allowed = new String[] { "cab", "ir" }; required = new String[] { "cab", "ir" }; break;
             case "device.presetScreenshot": allowed = new String[] { "folderName", "position", "isFactory" }; required = new String[] { "folderName", "position" }; break;
             case "device.captureScreen": allowed = new String[] {  }; required = new String[] {  }; break;
+            case "device.diagnostics": allowed = new String[] {  }; required = new String[] {  }; break;
             case "device.graphicsTree": allowed = new String[] {  }; required = new String[] {  }; break;
             case "device.tapScreen": allowed = new String[] { "x", "y" }; required = new String[] { "x", "y" }; break;
             case "device.swipeScreen": allowed = new String[] { "x", "y", "toX", "toY" }; required = new String[] { "x", "y", "toX", "toY" }; break;
@@ -579,6 +584,7 @@ final class GeneratedGatewayMethods {
             case "device.setGlobalBypass": kinds = new String[][] { { "cab", "array" }, { "ir", "array" } }; break;
             case "device.presetScreenshot": kinds = new String[][] { { "folderName", "string" }, { "position", "integer" }, { "isFactory", "boolean" } }; break;
             case "device.captureScreen": kinds = new String[][] {  }; break;
+            case "device.diagnostics": kinds = new String[][] {  }; break;
             case "device.graphicsTree": kinds = new String[][] {  }; break;
             case "device.tapScreen": kinds = new String[][] { { "x", "integer" }, { "y", "integer" } }; break;
             case "device.swipeScreen": kinds = new String[][] { { "x", "integer" }, { "y", "integer" }, { "toX", "integer" }, { "toY", "integer" } }; break;

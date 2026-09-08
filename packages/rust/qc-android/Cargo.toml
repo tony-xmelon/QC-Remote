@@ -3,7 +3,6 @@ name = "qc-android"
 version = "0.1.0"
 publish = false
 edition = "2021"
-license = "MIT"
 description = "JNI binding for the shared QC native state engine"
 
 [lib]

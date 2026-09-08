@@ -479,7 +479,7 @@ fn runtime_health_path() -> PathBuf {
     std::env::var_os("LOCALAPPDATA")
         .map(PathBuf::from)
         .unwrap_or_else(std::env::temp_dir)
-        .join("QC Voice Control")
+        .join("QC Remote")
         .join("runtime-health.json")
 }
 
@@ -1161,7 +1161,7 @@ fn redacted_diagnostics(report: &Value) -> Value {
         .collect();
 
     json!({
-        "format": "qc-voice-control-diagnostics-v1",
+        "format": "qc-remote-diagnostics-v1",
         "generatedAt": report.get("generatedAt").and_then(Value::as_str).unwrap_or(""),
         "appVersion": report.get("appVersion").and_then(Value::as_str).unwrap_or("unknown"),
         "runtime": {

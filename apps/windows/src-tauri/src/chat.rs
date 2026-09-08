@@ -23,6 +23,20 @@ const DEFAULT_BASE_URL: &str = "https://api.openai.com/v1";
 const DEFAULT_MODEL: &str = "gpt-5-mini";
 const DEFAULT_PROVIDER: &str = "openai-responses";
 const GEMINI_PROVIDER: &str = "gemini-openai";
+
+fn direct_gemini_enabled() -> bool {
+    !matches!(option_env!("QC_PUBLIC_RELEASE"), Some(value) if value == "1")
+}
+
+fn require_direct_gemini() -> Result<(), ChatError> {
+    direct_gemini_enabled().then_some(()).ok_or_else(|| {
+        ChatError::new(
+            "provider_disabled",
+            "Direct Gemini API access is not included in this public build.",
+            false,
+        )
+    })
+}
 const ANTIGRAVITY_PROVIDER: &str = "antigravity-cli";
 const ANTHROPIC_PROVIDER: &str = "anthropic-messages";
 const LOCAL_PROVIDER: &str = "local-responses";
@@ -35,7 +49,8 @@ const MAX_INPUT_BYTES: usize = 140 * 1024 * 1024;
 const MAX_CHAT_ATTACHMENTS: usize = 3;
 const MAX_CHAT_ATTACHMENT_BYTES: usize = 4 * 1024 * 1024;
 const MAX_CHAT_MEDIA_ATTACHMENT_BYTES: usize = 32 * 1024 * 1024;
-const CREDENTIAL_SERVICE: &str = "com.tonyxmelon.qc-control.model-provider";
+const CREDENTIAL_SERVICE: &str = "QC Remote model provider";
+const LEGACY_CREDENTIAL_SERVICE: &str = "com.tonyxmelon.qc-control.model-provider";
 const GOOGLE_OAUTH_APP_ACCOUNT: &str = "google-oauth-app-config";
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -132,7 +147,7 @@ fn provider_spec(provider: &str) -> Option<ProviderSpec> {
             protocol: ProviderProtocol::Responses,
             required_host: None,
         }),
-        GEMINI_PROVIDER => Some(ProviderSpec {
+        GEMINI_PROVIDER if direct_gemini_enabled() => Some(ProviderSpec {
             name: "Google Gemini",
             protocol: ProviderProtocol::ChatCompletions,
             required_host: Some("generativelanguage.googleapis.com"),
@@ -351,15 +366,30 @@ impl Default for ChatBridge {
 }
 
 fn settings_path() -> PathBuf {
+    app_data_directory().join("chat-settings.json")
+}
+
+fn legacy_settings_path() -> PathBuf {
+    legacy_app_data_directory().join("chat-settings.json")
+}
+
+fn app_data_directory() -> PathBuf {
+    std::env::var_os("LOCALAPPDATA")
+        .map(PathBuf::from)
+        .unwrap_or_else(std::env::temp_dir)
+        .join("QC Remote")
+}
+
+fn legacy_app_data_directory() -> PathBuf {
     std::env::var_os("LOCALAPPDATA")
         .map(PathBuf::from)
         .unwrap_or_else(std::env::temp_dir)
         .join("QC Voice Control")
-        .join("chat-settings.json")
 }
 
 fn load_settings() -> ChatSettings {
     let from_disk = fs::read(settings_path())
+        .or_else(|_| fs::read(legacy_settings_path()))
         .ok()
         .and_then(|bytes| serde_json::from_slice::<ChatSettings>(&bytes).ok());
     let mut settings = from_disk.unwrap_or(ChatSettings {
@@ -580,15 +610,11 @@ pub async fn antigravity_models() -> Result<Vec<AntigravityModel>, ChatError> {
 }
 
 fn antigravity_workspace() -> Result<PathBuf, ChatError> {
-    let workspace = std::env::var_os("LOCALAPPDATA")
-        .map(PathBuf::from)
-        .unwrap_or_else(std::env::temp_dir)
-        .join("QC Voice Control")
-        .join("antigravity-workspace");
+    let workspace = app_data_directory().join("antigravity-workspace");
     fs::create_dir_all(&workspace).map_err(|_| {
         ChatError::new(
             "settings",
-            "Could not prepare the isolated Antigravity workspace.",
+            "Could not prepare the dedicated Antigravity working directory.",
             false,
         )
     })?;
@@ -599,12 +625,19 @@ fn cleanup_stale_antigravity_attachments() {
     let Ok(workspace) = antigravity_workspace() else {
         return;
     };
-    let attachment_directory = workspace.join("chat-attachments");
-    cleanup_attachment_directory(&attachment_directory);
+    cleanup_attachment_directory(&workspace.join("chat-attachments"));
+    // Releases predating the public name staged attachments under the old
+    // application directory. Remove crash remnants there as well, without
+    // creating or otherwise retaining that legacy directory.
+    cleanup_attachment_directory(
+        &legacy_app_data_directory()
+            .join("antigravity-workspace")
+            .join("chat-attachments"),
+    );
 }
 
 fn cleanup_attachment_directory(attachment_directory: &PathBuf) {
-    let Ok(entries) = fs::read_dir(&attachment_directory) else {
+    let Ok(entries) = fs::read_dir(attachment_directory) else {
         return;
     };
     for entry in entries.flatten() {
@@ -1164,6 +1197,16 @@ fn google_oauth_app_entry() -> Result<keyring::Entry, ChatError> {
     })
 }
 
+fn legacy_google_oauth_app_entry() -> Result<keyring::Entry, ChatError> {
+    keyring::Entry::new(LEGACY_CREDENTIAL_SERVICE, GOOGLE_OAUTH_APP_ACCOUNT).map_err(|_| {
+        ChatError::new(
+            "credential_store",
+            "Windows Credential Manager is unavailable.",
+            true,
+        )
+    })
+}
+
 fn local_google_oauth_config() -> Result<Option<GoogleOAuthConfig>, ChatError> {
     match google_oauth_app_entry()?.get_password() {
         Ok(value) => serde_json::from_str(&value).map(Some).map_err(|_| {
@@ -1173,7 +1216,21 @@ fn local_google_oauth_config() -> Result<Option<GoogleOAuthConfig>, ChatError> {
                 false,
             )
         }),
-        Err(keyring::Error::NoEntry) => Ok(None),
+        Err(keyring::Error::NoEntry) => match legacy_google_oauth_app_entry()?.get_password() {
+            Ok(value) => serde_json::from_str(&value).map(Some).map_err(|_| {
+                ChatError::new(
+                    "credential_store",
+                    "The saved Google OAuth application configuration is unreadable.",
+                    false,
+                )
+            }),
+            Err(keyring::Error::NoEntry) => Ok(None),
+            Err(_) => Err(ChatError::new(
+                "credential_store",
+                "Could not read the Google OAuth application configuration from Windows Credential Manager.",
+                true,
+            )),
+        },
         Err(_) => Err(ChatError::new(
             "credential_store",
             "Could not read the Google OAuth application configuration from Windows Credential Manager.",
@@ -1221,6 +1278,7 @@ pub fn configure_google_oauth_app(
     client_id: String,
     client_secret: String,
 ) -> Result<ChatSettingsView, ChatError> {
+    require_direct_gemini()?;
     let config = normalize_google_oauth_app_config(client_id, client_secret)?;
     let encoded = serde_json::to_string(&config).map_err(|_| {
         ChatError::new(
@@ -1257,6 +1315,20 @@ fn google_oauth_entry(config: &GoogleOAuthConfig) -> Result<keyring::Entry, Chat
     })
 }
 
+fn legacy_google_oauth_entry(config: &GoogleOAuthConfig) -> Result<keyring::Entry, ChatError> {
+    keyring::Entry::new(
+        LEGACY_CREDENTIAL_SERVICE,
+        &format!("google-oauth:{}", config.client_id),
+    )
+    .map_err(|_| {
+        ChatError::new(
+            "credential_store",
+            "Windows Credential Manager is unavailable.",
+            true,
+        )
+    })
+}
+
 fn load_google_oauth_credential() -> Result<Option<GoogleOAuthCredential>, ChatError> {
     let Some(config) = google_oauth_config() else {
         return Ok(None);
@@ -1269,7 +1341,21 @@ fn load_google_oauth_credential() -> Result<Option<GoogleOAuthCredential>, ChatE
                 false,
             )
         }),
-        Err(keyring::Error::NoEntry) => Ok(None),
+        Err(keyring::Error::NoEntry) => match legacy_google_oauth_entry(&config)?.get_password() {
+            Ok(value) => serde_json::from_str(&value).map(Some).map_err(|_| {
+                ChatError::new(
+                    "credential_store",
+                    "The saved Google authorization is unreadable. Sign in again.",
+                    false,
+                )
+            }),
+            Err(keyring::Error::NoEntry) => Ok(None),
+            Err(_) => Err(ChatError::new(
+                "credential_store",
+                "Could not read Google authorization from Windows Credential Manager.",
+                true,
+            )),
+        },
         Err(_) => Err(ChatError::new(
             "credential_store",
             "Could not read Google authorization from Windows Credential Manager.",
@@ -1339,8 +1425,29 @@ fn credential_entry(settings: &ChatSettings, url: &Url) -> Result<keyring::Entry
     })
 }
 
+fn legacy_service_credential_entry(
+    settings: &ChatSettings,
+    url: &Url,
+) -> Result<keyring::Entry, ChatError> {
+    keyring::Entry::new(
+        LEGACY_CREDENTIAL_SERVICE,
+        &credential_account(settings, url),
+    )
+    .map_err(|_| {
+        ChatError::new(
+            "credential_store",
+            "Windows Credential Manager is unavailable.",
+            true,
+        )
+    })
+}
+
 fn legacy_credential_entry(url: &Url) -> Result<keyring::Entry, ChatError> {
-    keyring::Entry::new(CREDENTIAL_SERVICE, url.as_str().trim_end_matches('/')).map_err(|_| {
+    keyring::Entry::new(
+        LEGACY_CREDENTIAL_SERVICE,
+        url.as_str().trim_end_matches('/'),
+    )
+    .map_err(|_| {
         ChatError::new(
             "credential_store",
             "Windows Credential Manager is unavailable.",
@@ -1364,12 +1471,24 @@ fn stored_api_key(
     match credential_entry(settings, url)?.get_password() {
         Ok(value) if !value.trim().is_empty() => Ok(Some(value)),
         Ok(_) => Ok(None),
-        Err(keyring::Error::NoEntry) if settings.provider == DEFAULT_PROVIDER => {
-            // Preserve credentials written by releases before provider IDs were
-            // added to the credential account name.
-            match legacy_credential_entry(url)?.get_password() {
+        Err(keyring::Error::NoEntry) => {
+            match legacy_service_credential_entry(settings, url)?.get_password() {
                 Ok(value) if !value.trim().is_empty() => Ok(Some(value)),
-                Ok(_) | Err(keyring::Error::NoEntry) => Ok(None),
+                Ok(_) => Ok(None),
+                Err(keyring::Error::NoEntry) if settings.provider == DEFAULT_PROVIDER => {
+                    // Preserve credentials written by releases before provider IDs were
+                    // added to the credential account name.
+                    match legacy_credential_entry(url)?.get_password() {
+                        Ok(value) if !value.trim().is_empty() => Ok(Some(value)),
+                        Ok(_) | Err(keyring::Error::NoEntry) => Ok(None),
+                        Err(_) => Err(ChatError::new(
+                            "credential_store",
+                            "Could not read the model credential from Windows Credential Manager.",
+                            true,
+                        )),
+                    }
+                }
+                Err(keyring::Error::NoEntry) => Ok(None),
                 Err(_) => Err(ChatError::new(
                     "credential_store",
                     "Could not read the model credential from Windows Credential Manager.",
@@ -1377,7 +1496,6 @@ fn stored_api_key(
                 )),
             }
         }
-        Err(keyring::Error::NoEntry) => Ok(None),
         Err(_) => Err(ChatError::new(
             "credential_store",
             "Could not read the model credential from Windows Credential Manager.",
@@ -1439,6 +1557,16 @@ pub fn clear_api_key(bridge: &ChatBridge) -> Result<ChatSettingsView, ChatError>
                 return Err(ChatError::new(
                     "credential_store",
                     "Could not clear the model credential from Windows Credential Manager.",
+                    true,
+                ));
+            }
+        }
+        match legacy_service_credential_entry(current, url)?.delete_credential() {
+            Ok(()) | Err(keyring::Error::NoEntry) => {}
+            Err(_) => {
+                return Err(ChatError::new(
+                    "credential_store",
+                    "Could not clear the legacy model credential from Windows Credential Manager.",
                     true,
                 ));
             }
@@ -2360,6 +2488,7 @@ async fn list_google_projects(
 }
 
 pub async fn connect_google_oauth(bridge: &ChatBridge) -> Result<GoogleOAuthResult, ChatError> {
+    require_direct_gemini()?;
     let config = google_oauth_config().ok_or_else(|| {
         ChatError::new(
             "oauth_unavailable",
@@ -2527,6 +2656,7 @@ pub async fn connect_google_oauth(bridge: &ChatBridge) -> Result<GoogleOAuthResu
 }
 
 pub fn select_google_project(project_id: String) -> Result<(), ChatError> {
+    require_direct_gemini()?;
     if project_id.trim().is_empty()
         || project_id.len() > 200
         || project_id.chars().any(char::is_control)
@@ -2548,10 +2678,20 @@ pub fn disconnect_google_oauth() -> Result<(), ChatError> {
         return Ok(());
     };
     match google_oauth_entry(&config)?.delete_credential() {
+        Ok(()) | Err(keyring::Error::NoEntry) => {}
+        Err(_) => {
+            return Err(ChatError::new(
+                "credential_store",
+                "Could not remove Google authorization from Windows Credential Manager.",
+                true,
+            ));
+        }
+    }
+    match legacy_google_oauth_entry(&config)?.delete_credential() {
         Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
         Err(_) => Err(ChatError::new(
             "credential_store",
-            "Could not remove Google authorization from Windows Credential Manager.",
+            "Could not remove legacy Google authorization from Windows Credential Manager.",
             true,
         )),
     }
