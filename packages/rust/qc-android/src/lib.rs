@@ -159,20 +159,6 @@ fn initialization_envelope(action: InitializationAction) -> Result<String, Strin
     .map_err(|error| error.to_string())
 }
 
-fn startup_phase_name(phase: DeviceStartupPhase) -> &'static str {
-    match phase {
-        DeviceStartupPhase::SessionValidating => "sessionValidating",
-        DeviceStartupPhase::VersionValidating => "versionValidating",
-        DeviceStartupPhase::Disconnected => "disconnected",
-        DeviceStartupPhase::Building => "building",
-        DeviceStartupPhase::Initializing => "initializing",
-        DeviceStartupPhase::Booting => "booting",
-        DeviceStartupPhase::Connected => "connected",
-        DeviceStartupPhase::Invalid => "invalid",
-        DeviceStartupPhase::Failed => "failed",
-    }
-}
-
 fn startup_envelope(
     phase: DeviceStartupPhase,
     action: DeviceStartupAction,
@@ -184,12 +170,12 @@ fn startup_envelope(
             (1, None, messages)
         }
         DeviceStartupAction::Connected => (2, None, Vec::new()),
-        DeviceStartupAction::Invalid(error) => (3, Some(format!("{error:?}")), Vec::new()),
-        DeviceStartupAction::Failed(error) => (4, Some(format!("{error:?}")), Vec::new()),
+        DeviceStartupAction::Invalid(error) => (3, Some(error.as_str()), Vec::new()),
+        DeviceStartupAction::Failed(error) => (4, Some(error.as_str()), Vec::new()),
     };
     serde_json::to_string(&serde_json::json!({
         "kind": kind,
-        "phase": startup_phase_name(phase),
+        "phase": phase.as_str(),
         "beginBuilding": begin_building,
         "error": error,
         "messages": messages_json(messages),
@@ -1396,7 +1382,7 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativePost
             .as_mut()
             .ok_or_else(|| "no native QC startup is active".to_string())?
             .post_boot_initialization(now_ms.max(0) as u64)
-            .map_err(|error| format!("post-boot initialization rejected: {error:?}"))?;
+            .map_err(|error| format!("post-boot initialization rejected: {}", error.as_str()))?;
         *native
             .initialization
             .lock()

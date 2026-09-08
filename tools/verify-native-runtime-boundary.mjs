@@ -119,7 +119,9 @@ assert(initializationRuntime.includes("self.synchronized && self.seed_complete()
 assert(initializationRuntime.includes("deadline_ms: now_ms.saturating_add(profile::READY_WAIT_TIMEOUT_MS)")
   && initializationRuntime.includes("pub fn timed_out")
   && initializationRuntime.includes("pub fn is_active")
-  && initializationRuntime.includes("pub fn is_connected"),
+  && initializationRuntime.includes("pub fn is_connected")
+  && initializationRuntime.includes("impl DeviceStartupPhase")
+  && initializationRuntime.includes("impl DeviceStartupError"),
   "The shared staged startup runtime must own the generated readiness deadline.");
 const correlationRuntime = await text("packages/rust/qc-device-runtime/src/correlation.rs");
 for (const symbol of ["ResponseExpectation", "matches", "expired", "timeout_message"]) {
@@ -221,7 +223,9 @@ assert(androidNativeFacade.includes("startupActive()")
   && !/private volatile boolean startupActive/.test(androidUsbHost),
   "Android must query the shared startup controller instead of mirroring its active epoch in Java.");
 assert(androidJni.includes("DeviceStartupRuntime::is_connected")
-  && !androidJni.includes("startup_phase_is_connected"),
+  && androidJni.includes('"phase": phase.as_str()')
+  && !androidJni.includes("startup_phase_is_connected")
+  && !androidJni.includes("fn startup_phase_name"),
   "Android must use the shared startup-connected projection without an adapter phase table.");
 assert(androidNativeFacade.includes("sessionConnected()")
   && androidNativeFacade.includes("sessionSynchronized()")
@@ -303,6 +307,8 @@ assert(windowsUsb.includes("post_boot_initialization"),
   "Windows must seed readiness from the shared staged-startup observations.");
 assert(windowsUsb.includes("startup.timed_out(session_clock.elapsed().as_millis() as u64)"),
   "Windows must enforce staged startup timeout through the shared Rust runtime.");
+assert(windowsUsb.includes("error.as_str()"),
+  "Windows must render startup errors through the same shared vocabulary as Android.");
 assert(windowsUsb.includes("pub fn observe_lifecycle"),
   "Windows must retain the shared startup controller for connected-state protocol events.");
 assert(windowsUsb.includes("self.startup.observe(message.message_type"),

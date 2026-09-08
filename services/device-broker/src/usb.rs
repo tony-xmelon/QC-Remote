@@ -134,7 +134,8 @@ impl ConnectedQc {
                             .post_boot_initialization(now_ms)
                             .map_err(|error| {
                                 UsbError::Initialization(format!(
-                                    "could not restart state seed: {error:?}"
+                                    "could not restart state seed: {}",
+                                    error.as_str()
                                 ))
                             })?,
                     );
@@ -142,12 +143,14 @@ impl ConnectedQc {
                 }
                 DeviceStartupAction::Invalid(error) => {
                     return Err(UsbError::Initialization(format!(
-                        "device rejected active session: {error:?}"
+                        "device rejected active session: {}",
+                        error.as_str()
                     )))
                 }
                 DeviceStartupAction::Failed(error) => {
                     return Err(UsbError::Initialization(format!(
-                        "active session protocol error: {error:?}"
+                        "active session protocol error: {}",
+                        error.as_str()
                     )))
                 }
             };
@@ -501,12 +504,14 @@ impl QcUsb {
                 DeviceStartupAction::Connected => break,
                 DeviceStartupAction::Invalid(error) => {
                     return Err(UsbError::Initialization(format!(
-                        "device rejected startup: {error:?}"
+                        "device rejected startup: {}",
+                        error.as_str()
                     )))
                 }
                 DeviceStartupAction::Failed(error) => {
                     return Err(UsbError::Initialization(format!(
-                        "protocol startup error: {error:?}"
+                        "protocol startup error: {}",
+                        error.as_str()
                     )))
                 }
             };
@@ -538,7 +543,7 @@ impl QcUsb {
         // during staged boot. This cannot replay Version/ModelRepo/subscriptions.
         let now_ms = initialization_clock.elapsed().as_millis() as u64;
         let mut initialization = startup.post_boot_initialization(now_ms).map_err(|error| {
-            UsbError::Initialization(format!("could not start state seed: {error:?}"))
+            UsbError::Initialization(format!("could not start state seed: {}", error.as_str()))
         })?;
         let synchronized = loop {
             let now_ms = initialization_clock.elapsed().as_millis() as u64;

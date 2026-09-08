@@ -55,7 +55,8 @@ An incomplete initial seed remains retained on both hosts until late state
 completes it; a synchronized seed is released immediately.
 The staged Version/ModelRepo/ModuleStats/Updater sequence also owns its total
 readiness deadline in Rust; both hosts only supply a monotonic clock and react
-to the same timeout decision.
+to the same timeout decision. Its phase and error names are stable shared enum
+projections rather than adapter-specific strings.
 Their bounded flight recorders likewise treat only the dedicated KeepAlive as
 routine transport noise, preserving Version frames as startup evidence.
 
