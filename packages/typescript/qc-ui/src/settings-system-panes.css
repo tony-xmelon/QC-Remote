@@ -37,4 +37,13 @@
   .update-news { position: absolute; left: 2cqw; right: 2cqw; top: 34.75cqw; }
   .update-news h2 { margin: 0 0 .75cqw; font-size: 2.5cqw; font-weight: 400; }
   .update-news p { margin: 0; font-size: 2.25cqw; line-height: 1.45; }
+  /* Factory Reset: two blocks of copy, each over a black button 219 x 41 at
+     x 288, tops at y 205 and 389 on the frame. */
+  .settings-system-reset .captured-settings-detail > h1 { margin: 0; font-size: 2.5cqw; line-height: 1.15; }
+  .reset-lead { position: absolute; left: 2cqw; right: 1.75cqw; top: 7.25cqw; margin: 0; font-size: 2.25cqw; line-height: 1.44; }
+  .reset-factory-lead { position: absolute; left: 2cqw; right: 1.75cqw; top: 33.25cqw; margin: 0; font-size: 2.25cqw; line-height: 1.44; }
+  .reset-lead strong,.reset-factory-lead strong { font-weight: 700; }
+  .reset-settings,.reset-factory { position: absolute; left: 2cqw; width: 27.375cqw; height: 5.125cqw; border: 0; border-radius: .75cqw; background: #000; color: #f4f4f4; font-size: 2.25cqw; letter-spacing: .05cqw; }
+  .reset-settings { top: 18.125cqw; }
+  .reset-factory { top: 41.125cqw; }
 }

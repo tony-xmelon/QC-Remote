@@ -295,7 +295,7 @@ function CorOsOfficialSettings({ view }: { view: "settings-account" | "settings-
 }
 
 type CapturedSettingsView = "settings-support" | "settings-wifi" | "settings-storage" | "settings-info" | "settings-diagnostics"
-  | "settings-system-power" | "settings-system-volume" | "settings-update-idle";
+  | "settings-system-power" | "settings-system-volume" | "settings-update-idle" | "settings-system-reset";
 
 function CapturedSettingsIcon({ kind }: { kind: string }) {
   if (kind === "headphones") return <QcHeadphonesGlyph />;
@@ -308,13 +308,13 @@ function CorOsCapturedSettings({ view }: { view: CapturedSettingsView }) {
   // The category selector is drawn on some panes and not others. Every frame
   // that reaches these three shows the dialog without it, and the menu below
   // does not move when it goes, so only the header changes.
-  const selector = !["settings-system-power", "settings-system-volume", "settings-update-idle"].includes(view);
+  const selector = !["settings-system-power", "settings-system-volume", "settings-update-idle", "settings-system-reset"].includes(view);
   const rows = support
     ? [["about", "About and Contact"], ["info", "Device Information"], ["report", "Send Report"], ["diagnostics", "Diagnostics"], ["licenses", "3rd Party Licenses"]]
     : [["wifi", "Connection"], ["updates", "Updates"], ["brightness", "Brightness"], ["power", "Power Functions"], ["volume", "Master Volume Knob"], ["storage", "Device Storage"], ["factory", "Factory Reset"]];
   const active = ({
     "settings-support": 0, "settings-info": 1, "settings-diagnostics": 3, "settings-wifi": 0,
-    "settings-update-idle": 1, "settings-system-power": 3, "settings-system-volume": 4, "settings-storage": 5
+    "settings-update-idle": 1, "settings-system-power": 3, "settings-system-volume": 4, "settings-storage": 5, "settings-system-reset": 6
   } as Record<string, number>)[view] ?? 5;
   return <section className={`qc-screen coros-settings-official coros-settings-captured ${view}`} aria-label={view.replaceAll("-", " ")}>
     <header>{selector && <button className="settings-section"><b><CapturedSettingsIcon kind={support ? "support" : "system"} /></b>{support ? "Support" : "System"}<i /></button>}{view === "settings-info" && <button className="settings-edit" aria-label="Edit device name"><QcScreenGlyph kind="edit" /></button>}<button className="settings-done"><QcUiIcon kind="check" /></button></header>
@@ -326,6 +326,13 @@ function CorOsCapturedSettings({ view }: { view: CapturedSettingsView }) {
         {view === "settings-info" && <><h1>Device information</h1><div className="information-table"><span><b>Serial number:</b><i /></span><span><b>Device name:</b><i>Neural DSP Quad Cortex</i></span><span><b>MAC address:</b><i /></span></div><hr /><h1>Software information</h1><div className="information-table"><span><b>CorOS:</b><i>4.1.0</i></span><span><b>Linux kernel:</b><i>Linux buildroot 4.0.0-ADI-1.3.0 #1 PREEMPT Tue<br />Aug 18 01:26:58 EEST 2026 armv7l (none)</i></span><span><b>U-Boot:</b><i>U-Boot 2015.01 ADI-1.3.0 (Sep 30 2021 -<br />01:01:44)</i></span><span><b>Zeniack FW app:</b><i>d14e</i></span></div></>}
         {view === "settings-system-power" && <><h1>Power Functions</h1><h2>Power Button Sensitivity</h2><p>Configure the sensitivity below. Tap the power button above the volume knob to verify the response.</p><div className="power-scale">{["Off", "Low", "Medium", "High"].map((label, index) => <span key={label} className={index === 3 ? "is-active" : ""}>{label}</span>)}</div><div className="power-bar">{[0, 1, 2, 3].map((index) => <i key={index} />)}</div><button className="power-restart">RESTART</button></>}
         {view === "settings-system-volume" && <><h1>Master Volume Knob Assignment</h1><p className="volume-lead">Master Volume can control different outputs</p><hr /><div className="volume-assignments">{["OUT 1/2", "OUT 3/4", "SEND 1/2", ""].map((label, index) => <span key={index}>{label ? <em>{label}</em> : <CapturedSettingsIcon kind="headphones" />}<i><QcUiIcon kind="check" /></i></span>)}</div></>}
+        {view === "settings-system-reset" && <>
+          <h1>Choose a Recovery option</h1>
+          <p className="reset-lead"><strong>Reset Settings</strong> restores device settings to their defaults without removing user presets, captures, or impulse responses.</p>
+          <button className="reset-settings">RESET SETTINGS</button>
+          <p className="reset-factory-lead"><strong>Factory Reset</strong> restores defaults and removes user data stored on the device.</p>
+          <button className="reset-factory">FACTORY RESET</button>
+        </>}
         {view === "settings-update-idle" && <><h1>Device Updates</h1><p className="update-version">Your Quad Cortex is currently running<br /><strong>CorOS: 4.1.0</strong></p><hr /><button className="update-check">CHECK FOR UPDATES</button><div className="update-news"><h2>Updates</h2><p>Use the connected device's official update service to check for current firmware.</p></div></>}
         {view === "settings-wifi" && <><header className="wifi-header"><h1>Internet Connected</h1><button>Domain Settings</button><button>Internet Check</button></header><div className="wifi-network"><span><QcScreenGlyph kind="wifi" /></span><b /><em>Weak connection</em><i><QcScreenGlyph kind="status" /></i><strong /></div><div className="wifi-secondary"><span><QcScreenGlyph kind="wifi" /></span><strong /></div><button className="wifi-reset">RESET WI-FI SETTINGS</button></>}
       </section>
