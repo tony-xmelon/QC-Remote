@@ -67,7 +67,7 @@ test("tempo synchronizes in both directions over the native USB bridge", () => {
 
 test("USB attachment requires an explicit connect and reports synchronization separately", () => {
   assert.match(servicesSource, /connected: boolean; synchronized: boolean/);
-  assert.match(javaSource, /isReady\(\) && stateSynchronized && currentSetlist != null/);
+  assert.match(javaSource, /isReady\(\) && stateDecoder\.sessionSynchronized\(\) && currentSetlist != null/);
   assert.doesNotMatch(appSource, /if \(state === "available"\)[\s\S]{0,120}attemptUsbConnection\(\)/);
   assert.match(appSource, /if \(!devices\.length\)[\s\S]{0,120}transitionConnection\("available"\)/);
   assert.match(appSource, /state\.kind === "preset"[\s\S]*usbSessionReady\.current[\s\S]*transitionConnection\("connected"\)/);
@@ -146,7 +146,7 @@ test("large model metadata never blocks the permanent USB reader", () => {
   assert.match(javaSource, /stateDecoder\.postBootInitializationStarted\(/);
   assert.match(javaSource, /stateDecoder\.systemTimeCommand\(System\.currentTimeMillis\(\)\)/);
   assert.match(javaSource, /stateDecoder\.initializationAdvance\(/);
-  assert.match(javaSource, /initializationComplete && stateSynchronized/);
+  assert.match(javaSource, /initializationComplete && stateDecoder\.sessionSynchronized\(\)/);
   assert.match(javaSource, /QcUsbProfile\.POST_INITIALIZATION_WRITE_DELAY_MS/);
   assert.match(rustInitializationSource, /self\.synchronized && self\.seed_complete\(\)/);
   assert.match(rustCommandsSource, /profile::LIVE_SUBSCRIPTIONS/);
@@ -496,14 +496,14 @@ test("Android requires explicit attachment connect but recovers an unexpected re
   assert.match(javaSource, /ACTION_USB_DEVICE_ATTACHED/);
   assert.doesNotMatch(javaSource, /scheduleAutomaticReconnect\("Quad Cortex USB reattached"\)/);
   assert.match(javaSource, /boolean recoverReader = readerIsActive\(activeConnection, generation\)/);
-  assert.match(javaSource, /handshakeComplete = false;[\s\S]*sessionTerminalReadFailed\(\)[\s\S]*scheduleAutomaticReconnect\("QC HID reader recovered after interruption"\)/);
+  assert.match(javaSource, /sessionTerminalReadFailed\(\)[\s\S]*scheduleAutomaticReconnect\("QC HID reader recovered after interruption"\)/);
   assert.match(javaSource, /catch \(Exception error\)[\s\S]{0,700}recoverUnexpectedReaderExit\(activeConnection, generation\)/);
   assert.match(javaSource, /sessionScheduleReconnect\(monotonicMillis\(\)\)/);
   assert.match(javaSource, /sessionReconnectDue\(now\)/);
   assert.match(javaSource, /sessionReconnectAttempted\(now\)/);
   assert.match(javaSource, /stateDecoder\.nextRequestId\(\)/);
   assert.doesNotMatch(javaSource, /AtomicLong requestIds/);
-  assert.match(javaSource, /if \(!stateSynchronized\) \{\s*stateDecoder\.initializationObserved\(decoded\.messageType, decoded\.payload\)/);
+  assert.match(javaSource, /if \(!stateDecoder\.sessionSynchronized\(\)\) \{\s*stateDecoder\.initializationObserved\(decoded\.messageType, decoded\.payload\)/);
   assert.match(javaSource, /synchronizationChanged[\s\S]*sessionStateObserved\([\s\S]*decision\.synchronizedState/);
   assert.match(javaSource, /decision\.beginBuilding[\s\S]*sessionStateObserved\(monotonicMillis\(\), false\)/);
   assert.doesNotMatch(javaSource, /scheduleAutomaticReconnect[\s\S]{0,800},\s*250,\s*TimeUnit\.MILLISECONDS/);
@@ -574,7 +574,8 @@ test("Android's USB maintenance uses the same dedicated shared KeepAlive as Wind
   assert.doesNotMatch(maintenance, /readCommand\(QcUsbProfile\.MESSAGE_TYPE_VERSION\)/);
   assert.match(javaSource, /MAINTENANCE_POLL_MS = 1000/);
   assert.match(javaSource, /MAINTENANCE_POLL_MS, MAINTENANCE_POLL_MS, TimeUnit\.MILLISECONDS/);
-  assert.match(javaSource, /handshakeComplete = true;/);
+  assert.match(javaSource, /return connection != null && stateDecoder\.sessionConnected\(\)/);
+  assert.doesNotMatch(javaSource, /handshakeComplete|stateSynchronized/);
   assert.match(rustInitializationSource, /SessionValidating[\s\S]*commands::read_version\(\)/);
   assert.doesNotMatch(javaSource, /keepalive\.schedule\([\s\S]{0,500}readCommand\(QcUsbProfile\.MESSAGE_TYPE_VERSION\)/);
 });

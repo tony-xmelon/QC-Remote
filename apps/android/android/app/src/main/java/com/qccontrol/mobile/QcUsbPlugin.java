@@ -93,9 +93,7 @@ public class QcUsbPlugin extends Plugin {
     private volatile int selectedInputEndpointAddress = -1;
     private volatile int selectedInputMaxPacketSize;
     private volatile boolean includeReportId = true;
-    private volatile boolean handshakeComplete;
     private volatile boolean startupActive;
-    private volatile boolean stateSynchronized;
     private volatile boolean initializationComplete;
     private volatile long commandNotBeforeMs;
     private volatile boolean connecting;
@@ -216,7 +214,7 @@ public class QcUsbPlugin extends Plugin {
     static boolean relaySessionAvailable() {
         QcUsbPlugin session = relaySession;
         return session != null && session.isReady() && session.initializationComplete
-            && session.stateSynchronized;
+            && session.stateDecoder.sessionSynchronized();
     }
 
     static boolean relayForegroundServiceEligible() {
@@ -374,7 +372,7 @@ public class QcUsbPlugin extends Plugin {
     private void resolvePendingReady() {
         QcPendingOperations.Entry<PendingReady> pending = pendingReady;
         if (pending == null || !isReady() || !initializationComplete
-            || !stateSynchronized || currentSetlist == null) return;
+            || !stateDecoder.sessionSynchronized() || currentSetlist == null) return;
         if (pendingReady == pending) {
             pendingReady = null;
             if (pendingOperations.remove(pending)) {
@@ -386,7 +384,7 @@ public class QcUsbPlugin extends Plugin {
     private org.json.JSONObject connectionState(String detail) {
         JSObject state = new JSObject();
         state.put("phase", connection == null ? "disconnected"
-            : initializationComplete && stateSynchronized && currentSetlist != null ? "ready" : "syncing");
+            : initializationComplete && stateDecoder.sessionSynchronized() && currentSetlist != null ? "ready" : "syncing");
         state.put("detail", detail);
         state.put("lastSync", connectedAt == 0 ? org.json.JSONObject.NULL : connectedAt);
         state.put("demo", false);
@@ -545,7 +543,7 @@ public class QcUsbPlugin extends Plugin {
                     .put("capabilities", GeneratedGatewayMethods.CAPABILITIES)
                     .put("message", "Shared Rust QC engine active")
                     .put("connected", isReady()).put("synchronized",
-                        initializationComplete && stateSynchronized && currentSetlist != null)
+                        initializationComplete && stateDecoder.sessionSynchronized() && currentSetlist != null)
                     .put("transport", "android-usb-relay")
                     .put("usbDiagnostics", usbDiagnostics()));
             }
@@ -565,7 +563,7 @@ public class QcUsbPlugin extends Plugin {
                 }
                 return failedRelay("NOT_CONNECTED", "Quad Cortex USB is not connected.");
             }
-            if (!initializationComplete || !stateSynchronized) {
+            if (!initializationComplete || !stateDecoder.sessionSynchronized()) {
                 return failedRelay("STATE_UNAVAILABLE", "Quad Cortex USB is still synchronizing its authoritative state.");
             }
             switch (dispatch) {
@@ -1193,7 +1191,7 @@ public class QcUsbPlugin extends Plugin {
 
     private org.json.JSONObject relaySnapshot() throws Exception {
         org.json.JSONObject snapshot = stateDecoder.snapshot();
-        snapshot.put("connected", isReady()).put("synchronized", stateSynchronized)
+        snapshot.put("connected", isReady()).put("synchronized", stateDecoder.sessionSynchronized())
             .put("position", snapshot.optInt("presetPosition", currentPosition))
             .put("observedAt", lastStateAt);
         if (currentMasterVolume < 0) snapshot.put("masterVolume", org.json.JSONObject.NULL);
@@ -1226,7 +1224,7 @@ public class QcUsbPlugin extends Plugin {
         JSObject result = new JSObject();
         result.put("devices", found);
         result.put("connected", isReady());
-        result.put("synchronized", isReady() && stateSynchronized && currentSetlist != null);
+        result.put("synchronized", isReady() && stateDecoder.sessionSynchronized() && currentSetlist != null);
         if (flight != null) flight.event(found.length() == 0 ? "scan-absent" : "scan-available");
         call.resolve(result);
     }
@@ -1485,14 +1483,14 @@ public class QcUsbPlugin extends Plugin {
     private void resolveConnected(PluginCall call, UsbDevice candidate) {
         JSObject result = new JSObject();
         result.put("connected", isReady());
-        result.put("synchronized", initializationComplete && stateSynchronized && currentSetlist != null);
+        result.put("synchronized", initializationComplete && stateDecoder.sessionSynchronized() && currentSetlist != null);
         result.put("name", candidate.getProductName() == null ? getContext().getString(R.string.device_name) : candidate.getProductName());
         result.put("deviceId", candidate.getDeviceId());
         call.resolve(result);
     }
 
     private boolean isReady() {
-        return connection != null && handshakeComplete && stateDecoder.startupConnected();
+        return connection != null && stateDecoder.sessionConnected();
     }
 
     private void performHandshake() {
@@ -1540,7 +1538,6 @@ public class QcUsbPlugin extends Plugin {
             throw new IllegalStateException("The Quad Cortex did not answer after " + attempts + " USB handshake attempts.");
         }
         if (flight != null) flight.event("handshake-reply");
-        handshakeComplete = true;
         if (flight != null) flight.event("session-validated");
     }
 
@@ -1551,7 +1548,6 @@ public class QcUsbPlugin extends Plugin {
         if (decision.kind == QcNativeStateDecoder.StartupDecision.INVALID
             || decision.kind == QcNativeStateDecoder.StartupDecision.FAILED) {
             startupActive = false;
-            handshakeComplete = false;
             lastError = "QC startup " + decision.phase + ": "
                 + (decision.error == null ? "unknown protocol error" : decision.error);
             if (flight != null) flight.event("startup-" + decision.phase);
@@ -1565,7 +1561,6 @@ public class QcUsbPlugin extends Plugin {
                 try {
                     writeMessage(stateDecoder.systemTimeCommand(System.currentTimeMillis()));
                     initializationComplete = false;
-                    stateSynchronized = false;
                     stateDecoder.postBootInitializationStarted(monotonicMillis());
                     if (flight != null) flight.event("post-boot-seed-started");
                     advanceInitialization();
@@ -1594,7 +1589,6 @@ public class QcUsbPlugin extends Plugin {
                 // transition. Downgrade readiness until a fresh seed proves
                 // the rebuilt state is coherent.
                 initializationComplete = false;
-                stateSynchronized = false;
                 stateDecoder.sessionStateObserved(monotonicMillis(), false);
                 QcNativeStateDecoder.StartupDecision building =
                     stateDecoder.startupBeginBuilding();
@@ -1605,14 +1599,13 @@ public class QcUsbPlugin extends Plugin {
                 }
             }
         } catch (Exception error) {
-            handshakeComplete = false;
             lastError = "Could not write QC startup command: " + error.getMessage();
             scheduleAutomaticReconnect(lastError);
         }
     }
 
     private void advanceInitialization() {
-        if (!isReady()) return;
+        if (connection == null || !stateDecoder.startupConnected()) return;
         final QcNativeStateDecoder.InitializationDecision decision;
         try {
             decision = stateDecoder.initializationAdvance(monotonicMillis());
@@ -1622,7 +1615,8 @@ public class QcUsbPlugin extends Plugin {
         }
         if (decision.kind == QcNativeStateDecoder.InitializationDecision.COMPLETE) {
             boolean firstCompletion = !initializationComplete;
-            boolean synchronizationChanged = stateSynchronized != decision.synchronizedState;
+            boolean synchronizationChanged =
+                stateDecoder.sessionSynchronized() != decision.synchronizedState;
             if (firstCompletion) {
                 stateDecoder.sessionHandshakeComplete(
                     monotonicMillis(), decision.synchronizedState);
@@ -1631,7 +1625,6 @@ public class QcUsbPlugin extends Plugin {
                     monotonicMillis(), decision.synchronizedState);
             }
             initializationComplete = true;
-            stateSynchronized = decision.synchronizedState;
             if (firstCompletion || synchronizationChanged) {
                 commandNotBeforeMs = monotonicMillis() + QcUsbProfile.POST_INITIALIZATION_WRITE_DELAY_MS;
                 resolvePendingReady();
@@ -1826,7 +1819,6 @@ public class QcUsbPlugin extends Plugin {
     ) {
         if (!readerIsActive(activeConnection, generation)) return;
         if (flight != null) flight.event("reader-exited-unexpectedly");
-        handshakeComplete = false;
         if (stateDecoder.sessionTerminalReadFailed()) {
             scheduleAutomaticReconnect("QC HID reader recovered after interruption");
         }
@@ -1872,7 +1864,7 @@ public class QcUsbPlugin extends Plugin {
                 lastError = "Could not advance QC startup: " + error.getMessage();
             }
         }
-        if (!stateSynchronized) {
+        if (!stateDecoder.sessionSynchronized()) {
             stateDecoder.initializationObserved(decoded.messageType, decoded.payload);
         }
         advanceInitialization();
@@ -2225,12 +2217,10 @@ public class QcUsbPlugin extends Plugin {
     }
 
     private synchronized void closeConnection(QcPendingOperations.Entry<?> preservedOperation) {
-        boolean hadSession = connection != null || reading || handshakeComplete;
+        boolean hadSession = connection != null || reading;
         if (flight != null && hadSession) flight.event("transport-closing");
         reading = false;
-        handshakeComplete = false;
         startupActive = false;
-        stateSynchronized = false;
         initializationComplete = false;
         commandNotBeforeMs = 0;
         connectionGeneration.incrementAndGet();

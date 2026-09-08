@@ -611,6 +611,9 @@ test("one Rust command and framing engine owns both native USB hosts", () => {
   assert.match(androidPlugin, /stateDecoder\.startupBeginBuilding/);
   assert.match(androidPlugin, /stateDecoder\.postBootInitializationStarted/);
   assert.match(androidPlugin, /stateDecoder\.initializationAdvance/);
+  assert.match(androidPlugin, /stateDecoder\.sessionConnected\(\)/);
+  assert.match(androidPlugin, /stateDecoder\.sessionSynchronized\(\)/);
+  assert.doesNotMatch(androidPlugin, /handshakeComplete|stateSynchronized/);
   assert.match(androidPlugin, /stateDecoder\.encodeReports/);
   assert.match(androidPlugin, /stateDecoder\.pushReport/);
   assert.match(androidBuild, /packages\/rust\/qc-device-runtime/, "shared runtime changes must invalidate Android's native library");

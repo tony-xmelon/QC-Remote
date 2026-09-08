@@ -1594,6 +1594,24 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeSess
 }
 
 #[no_mangle]
+pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeSessionConnected(
+    _env: JNIEnv,
+    _class: JClass,
+    value: jlong,
+) -> jint {
+    with_transport(value, |transport| transport.is_connected() as jint)
+}
+
+#[no_mangle]
+pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeSessionSynchronized(
+    _env: JNIEnv,
+    _class: JClass,
+    value: jlong,
+) -> jint {
+    with_transport(value, |transport| transport.synchronized() as jint)
+}
+
+#[no_mangle]
 pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeSessionShouldKeepalive(
     _env: JNIEnv,
     _class: JClass,

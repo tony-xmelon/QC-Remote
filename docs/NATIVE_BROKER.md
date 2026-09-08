@@ -43,6 +43,8 @@ cross JNI as named JSON fields; only actual HID reports and QC payload bytes use
 binary arrays. Rust also applies the selected report-ID layout before those
 arrays cross JNI, exactly as it does before Windows HID writes. Verification cadence stays inside Rust rather than crossing JNI,
 so Java does not duplicate either a private plan codec or protocol timer loop.
+Android also queries the shared transport's connected and synchronized
+projections directly instead of maintaining Java readiness mirrors.
 An ordinary preset push is not allowed to promote Android to Ready by itself;
 both native hosts publish synchronization only from the shared semantic-seed
 decision, including recovery when missing seed fields arrive late.

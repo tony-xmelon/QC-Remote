@@ -177,14 +177,14 @@ for (const symbol of ["handshakeAttempt", "startupObserved", "startupBeginBuildi
 }
 assert(androidUsbHost.includes("initializationObserved(decoded.messageType, decoded.payload)"),
   "Android must feed payload-validated semantic seed evidence into the shared readiness runtime.");
-assert(/if \(!stateSynchronized\) \{\s*stateDecoder\.initializationObserved/.test(androidUsbHost)
+assert(/if \(!stateDecoder\.sessionSynchronized\(\)\) \{\s*stateDecoder\.initializationObserved/.test(androidUsbHost)
   && androidJni.includes("*initialization = None"),
   "Android must retain an incomplete seed for late recovery, then release it at Ready and avoid steady-state JNI payload replay.");
 assert(/synchronizationChanged[\s\S]{0,500}sessionStateObserved\([\s\S]{0,100}decision\.synchronizedState/.test(androidUsbHost),
   "Android must advance the shared transport from Syncing to Ready when a late authoritative seed completes.");
-assert(!/"preset"\.equals\(kind\)[\s\S]{0,100}stateSynchronized\s*=\s*true/.test(androidUsbHost),
+assert(!/"preset"\.equals\(kind\)[\s\S]{0,100}(?:state|preset)Synchronized\s*=\s*true/.test(androidUsbHost),
   "Android must not promote a preset observation to full authoritative synchronization.");
-assert(!/publishStateBatch\([\s\S]*?sessionStateObserved\(monotonicMillis\(\),\s*stateSynchronized\)/.test(androidUsbHost),
+assert(!/publishStateBatch\([\s\S]*?sessionStateObserved\(monotonicMillis\(\),\s*(?:state|preset)Synchronized\)/.test(androidUsbHost),
   "Android must not bypass the shared semantic-seed decision when publishing an ordinary state batch.");
 assert(/advance_lifecycle\(now_ms\)[\s\S]{0,700}session\.state_observed\(now_ms, connected\.synchronized\)/.test(windowsWorker),
   "Windows must advance the shared transport after lifecycle completion, including late seed recovery.");
@@ -204,6 +204,10 @@ assert(/InitializationDecision\.COMPLETE[\s\S]{0,260}sessionHandshakeComplete\([
   "Android must advance shared transport readiness at the same post-seed boundary as Windows.");
 assert(androidUsbHost.includes("postBootInitializationStarted(monotonicMillis())"),
   "Android must let the shared startup runtime allocate post-boot request IDs.");
+assert(androidNativeFacade.includes("sessionConnected()")
+  && androidNativeFacade.includes("sessionSynchronized()")
+  && !/(?:handshakeComplete|stateSynchronized)/.test(androidUsbHost),
+  "Android connection and synchronization projections must come from the shared transport runtime.");
 assert(androidUsbHost.includes("stateDecoder.nextRequestId()") && !androidUsbHost.includes("AtomicLong requestIds"),
   "Android must reserve every correlation id from the retained shared session runtime.");
 assert(windowsUsbHost.includes("pub fn reserve_request_id") && windowsUsbHost.includes("self.startup.reserve_request_id()"),
