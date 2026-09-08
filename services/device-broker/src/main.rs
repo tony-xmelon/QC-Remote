@@ -27,7 +27,7 @@ fn probe() -> ProbeResult {
             observed_message_counts: connection.message_counts.into_iter().collect(),
             active_preset_name: connection
                 .latest_messages
-                .get(&15)
+                .get(&qc_protocol::profile::MESSAGE_TYPE_RECALL_PRESET)
                 .and_then(|message| usb::preset_name(&message.payload)),
             detail: if connection.synchronized {
                 "Active preset received"
