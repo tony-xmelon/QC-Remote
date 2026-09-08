@@ -247,10 +247,13 @@ for (const method of ["nativeEncodeCommand", "nativePlanGatewayWrite", "nativePl
 }
 assert(androidNativeFacade.includes("native void nativePostBootInitializationStarted"),
   "Post-boot state seeding must have a distinct staged-startup JNI boundary.");
-assert(androidNativeFacade.includes("native byte[] nativeEncodeFrame"),
+assert(androidNativeFacade.includes("native byte[] nativeEncodeReports"),
   "Raw QC HID frame encoding must remain a byte-array JNI boundary.");
-assert(/nativeEncodeFrame[\s\S]*?->\s*jbyteArray/.test(androidJni),
+assert(/nativeEncodeReports[\s\S]*?->\s*jbyteArray/.test(androidJni),
   "The Rust JNI frame encoder must match Java's byte-array declaration.");
+assert(androidJni.includes("TransportRuntime::encode_reports(&message, layout)")
+  && !/Arrays\.copyOfRange\(framedReport,\s*1,\s*framedReport\.length\)/.test(androidUsbHost),
+  "Android report-ID shaping must stay in the shared Rust transport runtime.");
 assert(androidJni.includes("fn messages_json"), "Android JNI must serialize native plan messages through one semantic helper.");
 assert(!androidJni.includes("fn message_envelope"), "Android JNI must not maintain a private positional message envelope.");
 assert(windowsRpc.includes("gateway_write_verification_policy"), "Windows must consume shared write verification policy.");
@@ -282,6 +285,14 @@ assert((await text("services/device-broker/src/worker.rs")).includes("connected.
   "Windows must feed the shared transport runtime the authoritative lifecycle synchronization state.");
 assert(windowsUsb.includes("commands::sync_system_time(unix_time_ms())"),
   "Windows must send the same shared device-facing system-time command after staged startup.");
+assert(windowsUsb.includes("HidReadEvent::Idle")
+  && windowsUsb.includes("read_message_poll")
+  && !windowsUsb.includes("consecutive_errors"),
+  "Windows must report native read activity while leaving error tolerance to the shared transport runtime.");
+assert(/read_message_poll[\s\S]{0,500}session\.read_succeeded\(\)[\s\S]{0,500}session\.read_failed\(\)/.test(windowsUsb),
+  "Every Windows handshake, seed, and connected-state read must use the shared read-error policy.");
+assert(!/session\.(?:read_succeeded|read_failed)\(\)/.test(windowsWorker),
+  "The Windows worker must not reimplement read-error policy around the native adapter.");
 await rejectPatterns(
   [
     "packages/rust/qc-android/src/lib.rs",

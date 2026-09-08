@@ -237,7 +237,7 @@ test("one generated profile owns USB and performance MIDI policy across native h
     assert.match(java, new RegExp(`MESSAGE_TYPE_${constant} = ${value};`));
     assert.match(rust, new RegExp(`MESSAGE_TYPE_${constant}: u16 = ${value};`));
   }
-  assert.match(protocol, /Version = 10;/, "Version is the side-effect-free liveness response");
+  assert.match(protocol, /Version = 10;/, "Version owns startup compatibility negotiation");
   assert.match(protocol, /ResetCommsBuffers = 52;/, "ResetCommsBuffers owns the handshake echo");
   assert.equal(contract.messageTypes, undefined, "the USB profile must not duplicate protobuf message IDs");
   assert.equal(contract.livenessReplyTimeoutMs, undefined, "removed Version probes must not leave dead liveness policy in the generated profile");
@@ -592,6 +592,10 @@ test("one Rust command and framing engine owns both native USB hosts", () => {
   assert.match(transportRuntime, /normalize_inbound_report/);
   assert.match(windowsUsb, /TransportRuntime::encode_reports/);
   assert.match(windowsUsb, /session\.push_report/);
+  assert.match(windowsUsb, /HidReadEvent::Idle/);
+  assert.doesNotMatch(windowsUsb, /consecutive_errors/);
+  assert.match(windowsUsb, /read_message_poll[\s\S]{0,500}session\.read_succeeded\(\)[\s\S]{0,500}session\.read_failed\(\)/);
+  assert.doesNotMatch(windowsWorker, /session\.(?:read_succeeded|read_failed)\(\)/);
   assert.match(windowsWorker, /DeviceCommand::SelectScene/);
   assert.match(source("services/device-broker/src/rpc.rs"), /runtime_request::plan_gateway_write/);
   assert.match(source("packages/rust/qc-device-runtime/src/request.rs"), /DeviceCommand::SetBypass/);
@@ -607,7 +611,7 @@ test("one Rust command and framing engine owns both native USB hosts", () => {
   assert.match(androidPlugin, /stateDecoder\.startupBeginBuilding/);
   assert.match(androidPlugin, /stateDecoder\.postBootInitializationStarted/);
   assert.match(androidPlugin, /stateDecoder\.initializationAdvance/);
-  assert.match(androidPlugin, /stateDecoder\.encodeFrame/);
+  assert.match(androidPlugin, /stateDecoder\.encodeReports/);
   assert.match(androidPlugin, /stateDecoder\.pushReport/);
   assert.match(androidBuild, /packages\/rust\/qc-device-runtime/, "shared runtime changes must invalidate Android's native library");
   assert.match(androidJni, /fn messages_json/);

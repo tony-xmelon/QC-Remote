@@ -490,14 +490,16 @@ final class QcNativeStateDecoder implements AutoCloseable {
             plan.projectionJson, plan.responseType, messageType, payload) == 1;
     }
 
-    List<byte[]> encodeFrame(EncodedMessage message) {
-        byte[] encoded = nativeEncodeFrame(message.messageType, message.payload);
-        if (encoded.length == 0 || encoded.length % REPORT_SIZE != 0) {
+    List<byte[]> encodeReports(EncodedMessage message, boolean includeReportId) {
+        int reportSize = includeReportId ? REPORT_SIZE : REPORT_SIZE - 1;
+        byte[] encoded = nativeEncodeReports(
+            message.messageType, message.payload, includeReportId ? 1 : 0);
+        if (encoded.length == 0 || encoded.length % reportSize != 0) {
             throw new IllegalStateException("Native QC framing returned an invalid report sequence.");
         }
-        List<byte[]> reports = new ArrayList<>(encoded.length / REPORT_SIZE);
-        for (int offset = 0; offset < encoded.length; offset += REPORT_SIZE) {
-            reports.add(Arrays.copyOfRange(encoded, offset, offset + REPORT_SIZE));
+        List<byte[]> reports = new ArrayList<>(encoded.length / reportSize);
+        for (int offset = 0; offset < encoded.length; offset += reportSize) {
+            reports.add(Arrays.copyOfRange(encoded, offset, offset + reportSize));
         }
         return reports;
     }
@@ -630,7 +632,8 @@ final class QcNativeStateDecoder implements AutoCloseable {
     private static native String nativeComposeGlobalTempoSettings(String globalJson, String presetJson);
     private static native int nativeGatewayWritePreflightMatches(
         String method, String paramsJson, String responseJson);
-    private static native byte[] nativeEncodeFrame(int messageType, byte[] payload);
+    private static native byte[] nativeEncodeReports(
+        int messageType, byte[] payload, int includeReportId);
     private static native byte[] nativePushReport(long handle, byte[] report);
     private static native void nativeReset(long handle);
     private static native void nativeDestroy(long handle);

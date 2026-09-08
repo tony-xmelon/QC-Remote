@@ -18,6 +18,11 @@ verification timing, reply type/request-id correlation and deadlines, the
 complete snapshot reducer, and preset-library projection. The Windows broker supplies Windows HID I/O,
 background workers and framed `gateway.v1` IPC. Android supplies USB permission,
 endpoint and application lifecycle around the same Rust runtime through JNI.
+The Windows HID adapter reports actual native report, idle, and error outcomes;
+an empty broker queue poll is not a successful device read, and only the shared
+transport runtime owns the consecutive-error threshold. The same adapter path
+applies that policy during reset handshake, staged startup, seed collection,
+and the established session.
 
 Gateway state-verification semantics live in the shared runtime. Reply
 correlation, encoded-write pacing, mutation confirmation deadlines/readback
@@ -35,7 +40,8 @@ required scene, mode, Master Volume, dirty-state, and setlist-position seed are
 all present. Both hosts also consume the same generated first-command
 stabilization window. Android's semantic plans and initialization decisions
 cross JNI as named JSON fields; only actual HID reports and QC payload bytes use
-binary arrays. Verification cadence stays inside Rust rather than crossing JNI,
+binary arrays. Rust also applies the selected report-ID layout before those
+arrays cross JNI, exactly as it does before Windows HID writes. Verification cadence stays inside Rust rather than crossing JNI,
 so Java does not duplicate either a private plan codec or protocol timer loop.
 An ordinary preset push is not allowed to promote Android to Ready by itself;
 both native hosts publish synchronization only from the shared semantic-seed

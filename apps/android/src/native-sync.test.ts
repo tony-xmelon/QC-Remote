@@ -155,7 +155,8 @@ test("large model metadata never blocks the permanent USB reader", () => {
 test("the Capacitor bridge delegates commands, framing, and state to shared Rust", () => {
   assert.match(javaSource, /stateDecoder\.pushReport\(report\)/);
   assert.doesNotMatch(javaSource, /reportFlags|MAX_FRAME_REPORTS|List<byte\[]> reports/);
-  assert.match(javaSource, /stateDecoder\.encodeFrame\(message\)/);
+  assert.match(javaSource, /stateDecoder\.encodeReports\(message, withReportId\)/);
+  assert.doesNotMatch(javaSource, /Arrays\.copyOfRange\(framedReport, 1, framedReport\.length\)/);
   assert.match(javaSource, /stateDecoder\.gatewayPlan\(method, JSObject\.fromJSONObject\(params\)\)/);
   assert.match(rustRuntimeRequestSource, /pub fn gateway_write_verification_policy/);
   assert.match(rustRuntimeRequestSource, /pub struct GatewayVerificationRuntime/);
@@ -176,7 +177,7 @@ test("the Capacitor bridge delegates commands, framing, and state to shared Rust
   assert.doesNotMatch(nativeDecoderSource, /littleEndian(?:Int|Long)|decodeCommandEnvelope|DecodedEnvelope/);
   assert.match(rustAndroidSource, /fn messages_json/);
   assert.doesNotMatch(rustAndroidSource, /fn message_envelope/);
-  assert.match(nativeDecoderSource, /nativeEncodeFrame/);
+  assert.match(nativeDecoderSource, /nativeEncodeReports/);
   assert.match(nativeDecoderSource, /nativePushReport/);
   assert.match(rustAndroidSource, /qc_protocol::state/);
   assert.match(rustAndroidSource, /qc_protocol::commands/);
