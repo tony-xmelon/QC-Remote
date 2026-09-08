@@ -250,6 +250,10 @@ function SettingsPowerIcon() {
   return <QcScreenGlyph kind="power" />;
 }
 
+function SettingsDeviceSectionIcon() {
+  return <QcScreenGlyph kind="device" />;
+}
+
 function SettingsDeviceIcon({ label }: { label: string }) {
   const kind: QcScreenGlyphName = label === "Global Bypass" ? "global-bypass" : label === "Scene Bypass Behavior" ? "power" : label === "Stomp Mode Bypass" ? "stomp-bypass" : label === "Swap Tempo and Tuner" ? "swap" : label === "Gig View Access" ? "gig-view" : "volume";
   return <QcScreenGlyph kind={kind} />;
@@ -271,17 +275,17 @@ function SettingsDeviceModelIcon({ kind }: { kind: string }) {
 
 function CorOsOfficialSettings({ view }: { view: "settings-account" | "settings-system" | "settings-device" | "settings-midi" }) {
   const data = view === "settings-midi"
-    ? { title: "Device", active: 5, rows: ["Global Bypass", "Scene Bypass Behavior", "Stomp Mode Bypass", "Swap Tempo and Tuner", "Latency Compensation", "MIDI"] }
+    ? { title: "Device", active: 6, rows: ["Scene Bypass Behavior", "Stomp Mode Bypass", "Hold Timing", "Swap Tempo and Tuner", "Gig View Access", "Latency Compensation", "MIDI"] }
     : view === "settings-account"
-    ? { title: "Account", active: 1, rows: ["My Account", "Backups"] }
+    ? { title: "Account", active: 0, rows: ["My Account", "Backups"] }
     : view === "settings-system"
       ? { title: "System", active: 2, rows: ["Connection", "Updates", "Brightness", "Power Functions", "Master Volume Knob", "Device Storage", "Factory Reset"] }
       : { title: "Device", active: 0, rows: ["Global Bypass", "Scene Bypass Behavior", "Stomp Mode Bypass", "Hold Timing", "Swap Tempo and Tuner", "Gig View Access", "Latency Compensation"] };
   return <section className={`qc-screen coros-settings-official ${view}`} aria-label={`${data.title} Settings`}>
     <header><button className="settings-section"><b><SettingsSectionGlyph view={view} /></b>{data.title}<i /></button><button className="settings-done"><QcUiIcon kind="check" /></button></header>
     <main><nav>{data.rows.map((label, index) => <button key={label} className={index === data.active ? "is-active" : ""}><b><SettingsSectionGlyph view={view} label={label} /></b>{label}</button>)}</nav>
-      {view === "settings-account" ? <section className="settings-account-detail"><header><strong>Cloud Backups　<span>3/5</span></strong><small>All timestamps are UTC</small></header>{[["My Rig 001", "August 29th, 2025, 17:06", "August 29th, 2025, 17:11"], ["My Backup", "November 15th, 2024, 19:22", ""], ["Tour 2025", "August 16th, 2023, 15:38", ""]].map(([name, first, second]) => <div key={name}><strong>{name}</strong><small><QcScreenGlyph kind="cloud" />{first}</small>{second && <small><QcDirectoryIcon kind="download" />{second}</small>}<b><QcUiIcon kind="more" /></b></div>)}<button>NEW CLOUD BACKUP</button></section>
-        : view === "settings-system" ? <section className="settings-system-detail"><h1>Brightness</h1><p>Turn the UP, DOWN, and TEMPO footswitches to adjust the<br />brightness. Tap the Modes at the bottom to toggle dimmed<br />LED lights for each one individually.</p>{[["Screen", "16", 16], ["LEDs", "16", 16], ["Dimmed LEDs", "2", 2]].map(([label, value, bars]) => <div key={String(label)}><span>{label}</span><strong>{value}</strong><i>{Array.from({ length: 32 }, (_, index) => <b key={index} className={index < Number(bars) ? "is-on" : ""} />)}</i></div>)}<footer><QcModeGlyph mode="PRESET" /><QcModeGlyph mode="SCENE" /><QcModeGlyph mode="STOMP" /></footer></section>
+      {view === "settings-account" ? <section className="settings-account-detail is-my-account"><h1>Device linked to</h1><p>You are ready to send &amp; receive Presets &amp; Neural Captures and use Cloud backups.</p><button>UNLINK DEVICE</button></section>
+        : view === "settings-system" ? <section className="settings-system-detail"><h1>Brightness</h1><p>Turn the UP, DOWN, and TEMPO footswitches to adjust the<br />brightness. Tap the Modes at the bottom to toggle dimmed<br />LED lights for each one individually.</p>{[["Screen", "16", 16], ["LEDs", "32", 32], ["Dimmed LEDs", "2", 2]].map(([label, value, bars]) => <div key={String(label)}><span>{label}</span><strong>{value}</strong><i>{Array.from({ length: 32 }, (_, index) => <b key={index} className={index < Number(bars) ? "is-on" : ""} />)}</i></div>)}<footer><QcModeGlyph mode="PRESET" /><QcModeGlyph mode="SCENE" /><QcModeGlyph mode="STOMP" /></footer></section>
           : view === "settings-midi" ? <section className="settings-midi-detail"><h1>MIDI Settings</h1>{[["MIDI Channel", "select", "1"], ["MIDI Thru", "toggle", "Off"], ["MIDI Over USB", "toggle", "On"], ["Ignore Duplicate PC", "toggle", "Off"], ["MIDI Clock Out", "select", "OFF"], ["MIDI Clock In", "toggle", "Off"]].map(([label, kind, value]) => <div key={label}><b>i</b><span>{label}</span>{kind === "select" ? <button>{value}<i><QcUiIcon kind="down" /></i></button> : <label><small>On</small><small>Off</small><i className={value === "On" ? "is-on" : ""} /></label>}</div>)}</section>
           : <section className="settings-device-detail"><h1>Global Bypass</h1><p>Globally bypass Cabs, IR Loaders, or Neural Captures of<br />cabs* on any row. Globally bypassed devices will have a<br />bypass icon <span className="inline-settings-power"><SettingsPowerIcon /></span> but will not appear bypassed on The Grid.</p><small>*Neural Captures need to have the Capture Type set to "Cab" to be<br />bypassed.</small>{["cab", "ir"].map((key) => <div key={key}><b><SettingsDeviceModelIcon kind={key} /></b>{[1,2,3,4].map(row => <label key={row}><span>ROW {row}</span><i><SettingsPowerIcon /></i></label>)}</div>)}</section>}
     </main>
