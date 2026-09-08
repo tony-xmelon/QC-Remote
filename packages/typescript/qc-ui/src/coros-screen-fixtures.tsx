@@ -1487,12 +1487,17 @@ function SettingsPowerIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v9M7.2 5.7a8 8 0 1 0 9.6 0" /></svg>;
 }
 
+function SettingsDeviceSectionIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2" /><rect x="7" y="5" width="10" height="5" /><path d="M8 14h1m3 0h1m3 0h1M8 18h1m3 0h1m3 0h1" /></svg>;
+}
+
 function SettingsDeviceIcon({ label }: { label: string }) {
   if (label === "Global Bypass") return <span className="settings-device-icon-raster"><QcEditorIcon kind="bypass" /></span>;
   if (label === "Scene Bypass Behavior") return <SettingsPowerIcon />;
   if (label === "Stomp Mode Bypass") return <span className="settings-device-icon-raster"><QcEditorIcon kind="footswitch" /></span>;
   if (label === "Swap Tempo and Tuner") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h16m0 0-3.5-3.5M19 8l-3.5 3.5M21 16H5m0 0 3.5-3.5M5 16l3.5 3.5" /></svg>;
   if (label === "Gig View Access") return <span className="settings-device-icon-raster"><QcModeGlyph mode="SCENE" /></span>;
+  if (label === "MIDI") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 0 0 0 18h1.5a2 2 0 0 0 0-4H12a1.5 1.5 0 0 1 0-3h3a6 6 0 0 0 0-11h-3Z" /><circle cx="7.5" cy="10" r="1" /><circle cx="9.5" cy="6.5" r="1" /><circle cx="14" cy="6" r="1" /><circle cx="17.5" cy="9" r="1" /></svg>;
   return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 4v8l6 3" /></svg>;
 }
 
@@ -1515,12 +1520,13 @@ function CorOsOfficialSettings({
       ? {
           title: "Device",
           icon: "▣",
-          active: 5,
+          active: 6,
           rows: [
-            ["◉", "Global Bypass"],
             ["◴", "Scene Bypass Behavior"],
             ["♞", "Stomp Mode Bypass"],
+            ["◴", "Hold Timing"],
             ["⇄", "Swap Tempo and Tuner"],
+            ["▦", "Gig View Access"],
             ["◷", "Latency Compensation"],
             ["◉", "MIDI"],
           ],
@@ -1577,12 +1583,8 @@ function CorOsOfficialSettings({
           <b>
             {view === "settings-account" ? (
               <SettingsAccountGlyph kind="cloud" />
-            ) : view === "settings-device" ? (
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <rect x="4" y="2" width="16" height="20" rx="2" />
-                <rect x="7" y="5" width="10" height="5" />
-                <path d="M8 14h1m3 0h1m3 0h1M8 18h1m3 0h1m3 0h1" />
-              </svg>
+            ) : view === "settings-device" || view === "settings-midi" ? (
+              <SettingsDeviceSectionIcon />
             ) : view === "settings-system" ? (
               <CapturedSettingsIcon kind="system" />
             ) : (
@@ -1608,7 +1610,7 @@ function CorOsOfficialSettings({
                   <SettingsAccountGlyph
                     kind={index === 0 ? "user" : "backup"}
                   />
-                ) : view === "settings-device" ? (
+                ) : view === "settings-device" || view === "settings-midi" ? (
                   <SettingsDeviceIcon label={label} />
                 ) : view === "settings-system" ? (
                   <QcSettingsIcon kind={icon as QcSettingsIconName} />
@@ -1622,7 +1624,7 @@ function CorOsOfficialSettings({
         </nav>
         {view === "settings-account" ? (
           <section className="settings-account-detail is-my-account">
-            <h1>Device linked to [redacted]</h1>
+            <h1>Device linked to</h1>
             <p>
               {
                 "You are ready to send & receive Presets & Neural Captures and use Cloud backups."

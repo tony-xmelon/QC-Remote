@@ -10,9 +10,13 @@
 .settings-midi-detail > div > label > i::after { content: ""; position: absolute; left: .25cqw; bottom: .25cqw; width: 2.25cqw; height: 2.25cqw; border: .375cqw solid #2df36a; border-radius: 50%; }
 .settings-midi-detail > div > label > i.is-on::after { top: .25cqw; bottom: auto; }
 .settings-midi-detail > div:first-of-type { height: 6.75cqw; }
+.coros-settings-official.settings-midi .settings-section b > svg,
+.coros-settings-official.settings-midi > main > nav button b > svg { width: 3cqw; height: 3cqw; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .coros-settings-official.settings-account,
 .coros-settings-official.settings-account * { font-family: "Segoe UI", sans-serif; }
 .coros-settings-official.settings-account b > svg { width: 3cqw; height: 3cqw; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.coros-settings-official.settings-account > main > nav button b { color: #eef0ee; }
+.coros-settings-official.settings-account .settings-account-detail > * { transform: translateY(-.5cqw); }
 .coros-settings-official.settings-account .settings-account-detail > header { height: 4.875cqw; }
 .coros-midi-out > header > span { transform: translateY(-1px); }
 .coros-midi-out > header .midi-trash { width: 8.25cqw; transform: translateX(-.375cqw); background: #081008; }

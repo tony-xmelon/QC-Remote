@@ -234,6 +234,16 @@ test("official MIDI Out retains the measured disabled header action", () => {
   assert.match(fixtureCss, /\.coros-midi-out \.midi-expression label div>i\{[^}]*left:\.75cqw;right:\.75cqw;[^}]*clip-path:polygon/);
 });
 
+test("official Account and MIDI settings retain the captured navigation content", () => {
+  const fixture = readFileSync("packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", "utf8");
+  assert.match(fixture, /<h1>Device linked to<\/h1>/);
+  assert.doesNotMatch(fixture, /Device linked to \[redacted\]/);
+  assert.match(
+    fixture,
+    /view === "settings-midi"[\s\S]*?active: 6,[\s\S]*?"Hold Timing"[\s\S]*?"Swap Tempo and Tuner"[\s\S]*?"Gig View Access"[\s\S]*?"Latency Compensation"[\s\S]*?"MIDI"/,
+  );
+});
+
 test("official System brightness values keep the alignment the device uses", () => {
   const css = readFileSync("packages/typescript/qc-ui/src/official-settings-device.css", "utf8");
   const fixture = readFileSync("packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", "utf8");
