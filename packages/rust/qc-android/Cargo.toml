@@ -10,7 +10,7 @@ name = "qc_android"
 crate-type = ["cdylib"]
 
 [dependencies]
-jni = "0.21"
+jni = "0.22"
 qc-device-runtime = { path = "../qc-device-runtime" }
 qc-protocol = { path = "../qc-protocol" }
 serde_json = "1"
