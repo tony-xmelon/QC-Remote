@@ -592,6 +592,10 @@ test("one Rust command and framing engine owns both native USB hosts", () => {
   assert.match(transportRuntime, /normalize_inbound_report/);
   assert.match(windowsUsb, /TransportRuntime::encode_reports/);
   assert.match(windowsUsb, /session\.push_report/);
+  assert.match(windowsUsb, /HidReadEvent::Idle/);
+  assert.doesNotMatch(windowsUsb, /consecutive_errors/);
+  assert.match(windowsWorker, /read_message_poll/);
+  assert.match(windowsWorker, /Ok\(\(None, false\)\) => \{\}/);
   assert.match(windowsWorker, /DeviceCommand::SelectScene/);
   assert.match(source("services/device-broker/src/rpc.rs"), /runtime_request::plan_gateway_write/);
   assert.match(source("packages/rust/qc-device-runtime/src/request.rs"), /DeviceCommand::SetBypass/);

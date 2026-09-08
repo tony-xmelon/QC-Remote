@@ -18,6 +18,9 @@ verification timing, reply type/request-id correlation and deadlines, the
 complete snapshot reducer, and preset-library projection. The Windows broker supplies Windows HID I/O,
 background workers and framed `gateway.v1` IPC. Android supplies USB permission,
 endpoint and application lifecycle around the same Rust runtime through JNI.
+The Windows HID adapter reports actual native report, idle, and error outcomes;
+an empty broker queue poll is not a successful device read, and only the shared
+transport runtime owns the consecutive-error threshold.
 
 Gateway state-verification semantics live in the shared runtime. Reply
 correlation, encoded-write pacing, mutation confirmation deadlines/readback

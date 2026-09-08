@@ -285,6 +285,12 @@ assert((await text("services/device-broker/src/worker.rs")).includes("connected.
   "Windows must feed the shared transport runtime the authoritative lifecycle synchronization state.");
 assert(windowsUsb.includes("commands::sync_system_time(unix_time_ms())"),
   "Windows must send the same shared device-facing system-time command after staged startup.");
+assert(windowsUsb.includes("HidReadEvent::Idle")
+  && windowsUsb.includes("read_message_poll")
+  && !windowsUsb.includes("consecutive_errors"),
+  "Windows must report native read activity while leaving error tolerance to the shared transport runtime.");
+assert(/Ok\(\(None, true\)\) => session\.read_succeeded\(\)[\s\S]{0,80}Ok\(\(None, false\)\) => \{\}/.test(windowsWorker),
+  "Windows must not reset shared read-error state for an empty broker queue poll.");
 await rejectPatterns(
   [
     "packages/rust/qc-android/src/lib.rs",

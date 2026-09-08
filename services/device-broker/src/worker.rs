@@ -1225,9 +1225,9 @@ fn run(
         if let Some(connected) = connection.as_mut() {
             match connected
                 .usb
-                .read_message(&mut session, CONNECTED_IO_POLL_MS)
+                .read_message_poll(&mut session, CONNECTED_IO_POLL_MS)
             {
-                Ok(Some(message)) => {
+                Ok((Some(message), _)) => {
                     session.read_succeeded();
                     let was_synchronized = connected.synchronized;
                     if let Err(error) = connected.observe_lifecycle(&message, now_ms) {
@@ -1269,7 +1269,8 @@ fn run(
                         );
                     }
                 }
-                Ok(None) => session.read_succeeded(),
+                Ok((None, true)) => session.read_succeeded(),
+                Ok((None, false)) => {}
                 Err(error) => {
                     if !session.read_failed() {
                         continue;

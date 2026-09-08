@@ -204,6 +204,7 @@ impl UsbTelemetry {
 
 enum HidReadEvent {
     Report(Vec<u8>),
+    Idle,
     Error(String),
 }
 
@@ -260,13 +261,14 @@ impl HidIo {
         let reader = thread::Builder::new()
             .name("qc-native-hid-rx".into())
             .spawn(move || {
-                let mut consecutive_errors = 0_u8;
                 while !reader_stopping.load(Ordering::Acquire) {
                     let mut report = [0_u8; 1024];
                     match reader_device.read_timeout(&mut report, 200) {
-                        Ok(0) => consecutive_errors = 0,
+                        Ok(0) => match sender.try_send(HidReadEvent::Idle) {
+                            Ok(()) | Err(mpsc::TrySendError::Full(_)) => {}
+                            Err(mpsc::TrySendError::Disconnected(_)) => break,
+                        },
                         Ok(read) => {
-                            consecutive_errors = 0;
                             match sender.try_send(HidReadEvent::Report(report[..read].to_vec())) {
                                 Ok(()) => {}
                                 Err(mpsc::TrySendError::Full(_)) => {
@@ -278,19 +280,13 @@ impl HidIo {
                                 Err(mpsc::TrySendError::Disconnected(_)) => break,
                             }
                         }
-                        Err(error) => {
-                            consecutive_errors = consecutive_errors.saturating_add(1);
-                            match sender.try_send(HidReadEvent::Error(error)) {
-                                Ok(()) => {}
-                                Err(mpsc::TrySendError::Full(_)) => {
-                                    reader_overflowed.store(true, Ordering::Release);
-                                }
-                                Err(mpsc::TrySendError::Disconnected(_)) => break,
+                        Err(error) => match sender.try_send(HidReadEvent::Error(error)) {
+                            Ok(()) => {}
+                            Err(mpsc::TrySendError::Full(_)) => {
+                                reader_overflowed.store(true, Ordering::Release);
                             }
-                            if consecutive_errors >= 2 {
-                                break;
-                            }
-                        }
+                            Err(mpsc::TrySendError::Disconnected(_)) => break,
+                        },
                     }
                 }
             })
@@ -355,7 +351,7 @@ impl HidIo {
             .clone()
     }
 
-    fn read(&self, timeout_ms: i32) -> Result<Option<Vec<u8>>, UsbError> {
+    fn read(&self, timeout_ms: i32) -> Result<(Option<Vec<u8>>, bool), UsbError> {
         if self.overflowed.swap(false, Ordering::AcqRel) {
             return Err(UsbError::Read(
                 "native HID receive queue overflowed; reconnecting to restore frame alignment"
@@ -368,9 +364,10 @@ impl HidIo {
             Duration::from_millis(timeout_ms as u64)
         };
         match self.receiver.recv_timeout(timeout) {
-            Ok(HidReadEvent::Report(report)) => Ok(Some(report)),
+            Ok(HidReadEvent::Report(report)) => Ok((Some(report), true)),
+            Ok(HidReadEvent::Idle) => Ok((None, true)),
             Ok(HidReadEvent::Error(error)) => Err(UsbError::Read(error)),
-            Err(mpsc::RecvTimeoutError::Timeout) => Ok(None),
+            Err(mpsc::RecvTimeoutError::Timeout) => Ok((None, false)),
             Err(mpsc::RecvTimeoutError::Disconnected) => {
                 Err(UsbError::Read("native HID reader stopped".into()))
             }
@@ -610,11 +607,24 @@ impl QcUsb {
         session: &mut TransportRuntime,
         timeout_ms: i32,
     ) -> Result<Option<IncomingMessage>, UsbError> {
-        let Some(report) = self.io.read(timeout_ms)? else {
-            return Ok(None);
+        self.read_message_poll(session, timeout_ms)
+            .map(|(message, _native_read_succeeded)| message)
+    }
+
+    /// Poll one Windows HID event without confusing an empty broker queue with
+    /// a successful native read. The shared transport resets its error streak
+    /// only for an actual OS idle/report completion.
+    pub fn read_message_poll(
+        &mut self,
+        session: &mut TransportRuntime,
+        timeout_ms: i32,
+    ) -> Result<(Option<IncomingMessage>, bool), UsbError> {
+        let (report, native_read_succeeded) = self.io.read(timeout_ms)?;
+        let Some(report) = report else {
+            return Ok((None, native_read_succeeded));
         };
         let Some(frame) = session.push_report(&report)? else {
-            return Ok(None);
+            return Ok((None, true));
         };
         let message_type = frame.message_type;
         let payload = frame.payload;
@@ -624,15 +634,18 @@ impl QcUsb {
         // the HID/report boundary.
         let sequence = self.next_sequence;
         self.next_sequence = self.next_sequence.saturating_add(1);
-        Ok(Some(IncomingMessage {
-            sequence,
-            message_type,
-            payload,
-            received_at_unix_ms: SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_millis(),
-        }))
+        Ok((
+            Some(IncomingMessage {
+                sequence,
+                message_type,
+                payload,
+                received_at_unix_ms: SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_millis(),
+            }),
+            true,
+        ))
     }
 
     pub fn disconnect(&mut self) {
