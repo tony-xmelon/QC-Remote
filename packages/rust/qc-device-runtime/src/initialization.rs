@@ -66,6 +66,7 @@ pub struct DeviceStartupRuntime {
     phase: DeviceStartupPhase,
     session_id: String,
     next_request_id: u64,
+    deadline_ms: u64,
     options: DeviceStartupOptions,
     error: Option<DeviceStartupError>,
     seed_evidence: SeedEvidence,
@@ -73,12 +74,34 @@ pub struct DeviceStartupRuntime {
 
 impl DeviceStartupRuntime {
     pub fn start(request_id: u64, session_id: impl Into<String>) -> (Self, Vec<OutboundMessage>) {
-        Self::start_with_options(request_id, session_id, DeviceStartupOptions::default())
+        Self::start_at(request_id, session_id, 0)
+    }
+
+    pub fn start_at(
+        request_id: u64,
+        session_id: impl Into<String>,
+        now_ms: u64,
+    ) -> (Self, Vec<OutboundMessage>) {
+        Self::start_with_options_at(
+            request_id,
+            session_id,
+            now_ms,
+            DeviceStartupOptions::default(),
+        )
     }
 
     pub fn start_with_options(
         request_id: u64,
         session_id: impl Into<String>,
+        options: DeviceStartupOptions,
+    ) -> (Self, Vec<OutboundMessage>) {
+        Self::start_with_options_at(request_id, session_id, 0, options)
+    }
+
+    pub fn start_with_options_at(
+        request_id: u64,
+        session_id: impl Into<String>,
+        now_ms: u64,
         options: DeviceStartupOptions,
     ) -> (Self, Vec<OutboundMessage>) {
         let session_id = session_id.into();
@@ -87,6 +110,7 @@ impl DeviceStartupRuntime {
                 phase: DeviceStartupPhase::SessionValidating,
                 session_id: session_id.clone(),
                 next_request_id: request_id.saturating_add(1),
+                deadline_ms: now_ms.saturating_add(profile::READY_WAIT_TIMEOUT_MS),
                 options,
                 error: None,
                 seed_evidence: SeedEvidence::default(),
@@ -101,6 +125,20 @@ impl DeviceStartupRuntime {
 
     pub fn error(&self) -> Option<DeviceStartupError> {
         self.error
+    }
+
+    /// Whether staged protocol startup exceeded the one generated readiness
+    /// budget. Connected and terminal states no longer own a startup timer.
+    pub fn timed_out(&self, now_ms: u64) -> bool {
+        matches!(
+            self.phase,
+            DeviceStartupPhase::SessionValidating
+                | DeviceStartupPhase::VersionValidating
+                | DeviceStartupPhase::Disconnected
+                | DeviceStartupPhase::Building
+                | DeviceStartupPhase::Initializing
+                | DeviceStartupPhase::Booting
+        ) && now_ms >= self.deadline_ms
     }
 
     /// Reserve the next correlation id from the same sequence used by staged
@@ -697,6 +735,7 @@ mod tests {
             DeviceStartupAction::Connected
         );
         assert_eq!(runtime.phase(), DeviceStartupPhase::Connected);
+        assert!(!runtime.timed_out(u64::MAX));
 
         let mut seed = runtime
             .post_boot_initialization(100)
@@ -712,6 +751,23 @@ mod tests {
             .iter()
             .all(|message| message.message_type != profile::MESSAGE_TYPE_RECALL_PRESET));
         assert_eq!(runtime.reserve_request_id(), 11);
+    }
+
+    #[test]
+    fn staged_startup_timeout_uses_the_shared_ready_budget() {
+        let started_at = 1_000;
+        let (mut runtime, _) = DeviceStartupRuntime::start_at(7, "session", started_at);
+        assert!(!runtime.timed_out(started_at + profile::READY_WAIT_TIMEOUT_MS - 1));
+        assert!(runtime.timed_out(started_at + profile::READY_WAIT_TIMEOUT_MS));
+
+        assert!(matches!(
+            runtime.observe(
+                profile::MESSAGE_TYPE_RESET_COMMS_BUFFERS,
+                &reset_reply(7, "other")
+            ),
+            DeviceStartupAction::Invalid(DeviceStartupError::SessionMismatch)
+        ));
+        assert!(!runtime.timed_out(u64::MAX));
     }
 
     #[test]

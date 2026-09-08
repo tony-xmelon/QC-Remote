@@ -446,10 +446,14 @@ impl QcUsb {
                         }
                         usb.flight.event("handshake-reply");
                         usb.report_layout = attempt.layout;
-                        let (mut startup, _) =
-                            DeviceStartupRuntime::start(attempt.request_id(), attempt.session_id());
+                        let (mut startup, _) = DeviceStartupRuntime::start_at(
+                            attempt.request_id(),
+                            attempt.session_id(),
+                            session_clock.elapsed().as_millis() as u64,
+                        );
                         let first_action = startup.observe(message.message_type, &message.payload);
-                        let connected = usb.finish_hello(startup, first_action, session)?;
+                        let connected =
+                            usb.finish_hello(startup, first_action, session, session_clock)?;
                         session.handshake_completed(
                             session_clock.elapsed().as_millis() as u64,
                             connected.synchronized,
@@ -469,6 +473,7 @@ impl QcUsb {
         mut startup: DeviceStartupRuntime,
         mut startup_action: DeviceStartupAction,
         session: &mut TransportRuntime,
+        session_clock: &Instant,
     ) -> Result<ConnectedQc, UsbError> {
         // Cortex Control stages startup. Each decoded response opens exactly
         // one following state; message-type arrival alone is not a gate.
@@ -508,7 +513,7 @@ impl QcUsb {
             if !matches!(startup_action, DeviceStartupAction::Wait) {
                 continue;
             }
-            if initialization_clock.elapsed().as_millis() as u64 >= profile::READY_WAIT_TIMEOUT_MS {
+            if startup.timed_out(session_clock.elapsed().as_millis() as u64) {
                 return Err(UsbError::Initialization(format!(
                     "timed out in {:?}",
                     startup.phase()

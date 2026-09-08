@@ -116,6 +116,9 @@ for (const symbol of [
 }
 assert(initializationRuntime.includes("self.synchronized && self.seed_complete()"),
   "Shared initialization readiness must require the full authoritative seed.");
+assert(initializationRuntime.includes("deadline_ms: now_ms.saturating_add(profile::READY_WAIT_TIMEOUT_MS)")
+  && initializationRuntime.includes("pub fn timed_out"),
+  "The shared staged startup runtime must own the generated readiness deadline.");
 const correlationRuntime = await text("packages/rust/qc-device-runtime/src/correlation.rs");
 for (const symbol of ["ResponseExpectation", "matches", "expired", "timeout_message"]) {
   assert(correlationRuntime.includes(symbol), `The shared native response-correlation runtime is missing ${symbol}.`);
@@ -208,6 +211,9 @@ assert(/InitializationDecision\.SEND[\s\S]{0,300}connection == null \|\| !stateD
   "Android must allow shared post-boot seed writes before public transport readiness.");
 assert(androidUsbHost.includes("postBootInitializationStarted(monotonicMillis())"),
   "Android must let the shared startup runtime allocate post-boot request IDs.");
+assert(androidNativeFacade.includes("startupTimedOut(long nowMs)")
+  && androidUsbHost.includes("startupActive && stateDecoder.startupTimedOut(now)"),
+  "Android must enforce staged startup timeout through the shared Rust runtime.");
 assert(androidNativeFacade.includes("sessionConnected()")
   && androidNativeFacade.includes("sessionSynchronized()")
   && !/(?:handshakeComplete|stateSynchronized|initializationComplete)/.test(androidUsbHost),
@@ -286,6 +292,8 @@ assert(windowsUsb.includes("usb.report_layout = attempt.layout")
   "Windows must retain the handshake-selected HID report layout for the full session like Android.");
 assert(windowsUsb.includes("post_boot_initialization"),
   "Windows must seed readiness from the shared staged-startup observations.");
+assert(windowsUsb.includes("startup.timed_out(session_clock.elapsed().as_millis() as u64)"),
+  "Windows must enforce staged startup timeout through the shared Rust runtime.");
 assert(windowsUsb.includes("pub fn observe_lifecycle"),
   "Windows must retain the shared startup controller for connected-state protocol events.");
 assert(windowsUsb.includes("self.startup.observe(message.message_type"),

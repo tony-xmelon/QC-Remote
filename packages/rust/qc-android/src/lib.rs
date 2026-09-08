@@ -1227,7 +1227,7 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeHand
                 .map_err(|error| error.to_string());
         };
         let request_id = write.request_id();
-        let (runtime, _) = DeviceStartupRuntime::start(request_id, write.session_id());
+        let (runtime, _) = DeviceStartupRuntime::start_at(request_id, write.session_id(), now_ms);
         let phase = runtime.phase();
         *native
             .startup
@@ -1319,6 +1319,25 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeStar
                 .and_then(|startup| startup.as_ref().map(|runtime| runtime.phase()))
         })
         .is_some_and(startup_phase_is_connected) as jint
+}
+
+#[no_mangle]
+pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeStartupTimedOut(
+    _env: JNIEnv,
+    _class: JClass,
+    value: jlong,
+    now_ms: jlong,
+) -> jint {
+    handle(value)
+        .ok()
+        .and_then(|native| {
+            native.startup.lock().ok().and_then(|startup| {
+                startup
+                    .as_ref()
+                    .map(|runtime| runtime.timed_out(now_ms.max(0) as u64))
+            })
+        })
+        .unwrap_or(false) as jint
 }
 
 #[no_mangle]

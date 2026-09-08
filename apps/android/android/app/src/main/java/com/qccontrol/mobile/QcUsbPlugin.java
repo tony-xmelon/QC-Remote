@@ -188,6 +188,14 @@ public class QcUsbPlugin extends Plugin {
             getContext(), deviceReceiver, deviceFilter, ContextCompat.RECEIVER_EXPORTED
         );
         keepalive.scheduleWithFixedDelay(() -> {
+            long now = monotonicMillis();
+            if (startupActive && stateDecoder.startupTimedOut(now)) {
+                startupActive = false;
+                lastError = "QC staged startup exceeded the shared readiness timeout.";
+                if (flight != null) flight.event("startup-timed-out");
+                scheduleAutomaticReconnect(lastError);
+                return;
+            }
             advanceInitialization();
             boolean backupActive = pendingBackup != null;
             if (!isReady() || backupActive || !pendingOperations.isEmpty()
