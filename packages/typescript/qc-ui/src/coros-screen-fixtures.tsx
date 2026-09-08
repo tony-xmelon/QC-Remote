@@ -2114,7 +2114,7 @@ function CorOsIoSettings({
         <div className="io-editor is-usb">
           <section>
             <span>USB LEVEL</span>
-            <IoDial value="0.0 dB" />
+            <IoDial value="0.0 dB" angle={45} />
           </section>
           <section>
             <span>HP SOURCE</span>
@@ -2183,13 +2183,13 @@ function CorOsIoSettings({
                     ? "RETURN 1 LEVEL"
                     : "HP LEVEL"}
             </span>
-            <IoDial value="0.0 dB" />
+            <IoDial value="0.0 dB" angle={view === "input" ? 180 : undefined} />
           </section>
           {view === "input" && (
             <>
               <section>
                 <span>IMPEDANCE</span>
-                <IoDial value="1M Ω" />
+                <IoDial value="1M Ω" angle={45} />
               </section>
               <section className="io-switch">
                 <span>TYPE</span>
