@@ -41,11 +41,21 @@ all present. Both hosts also consume the same generated first-command
 stabilization window. Android's semantic plans and initialization decisions
 cross JNI as named JSON fields; only actual HID reports and QC payload bytes use
 binary arrays. Rust also applies the selected report-ID layout before those
-arrays cross JNI, exactly as it does before Windows HID writes. Verification cadence stays inside Rust rather than crossing JNI,
+arrays cross JNI, exactly as it does before Windows HID writes. Both hosts keep
+the handshake-selected layout for every later write in that USB session.
+Verification cadence stays inside Rust rather than crossing JNI,
 so Java does not duplicate either a private plan codec or protocol timer loop.
+Android also queries the shared transport's connected and synchronized
+projections directly instead of maintaining Java handshake, initialization,
+or synchronization readiness mirrors.
 An ordinary preset push is not allowed to promote Android to Ready by itself;
 both native hosts publish synchronization only from the shared semantic-seed
 decision, including recovery when missing seed fields arrive late.
+An incomplete initial seed remains retained on both hosts until late state
+completes it; a synchronized seed is released immediately.
+The staged Version/ModelRepo/ModuleStats/Updater sequence also owns its total
+readiness deadline in Rust; both hosts only supply a monotonic clock and react
+to the same timeout decision.
 Their bounded flight recorders likewise treat only the dedicated KeepAlive as
 routine transport noise, preserving Version frames as startup evidence.
 

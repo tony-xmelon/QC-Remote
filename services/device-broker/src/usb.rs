@@ -394,6 +394,7 @@ pub struct QcUsb {
     io: HidIo,
     _api: HidApi,
     next_sequence: u64,
+    report_layout: ReportLayout,
     flight: FlightRecorder,
 }
 
@@ -410,6 +411,7 @@ impl QcUsb {
             io,
             _api: api,
             next_sequence: 1,
+            report_layout: ReportLayout::ReportIdPrefixed,
             flight,
         })
     }
@@ -443,10 +445,15 @@ impl QcUsb {
                             continue;
                         }
                         usb.flight.event("handshake-reply");
-                        let (mut startup, _) =
-                            DeviceStartupRuntime::start(attempt.request_id(), attempt.session_id());
+                        usb.report_layout = attempt.layout;
+                        let (mut startup, _) = DeviceStartupRuntime::start_at(
+                            attempt.request_id(),
+                            attempt.session_id(),
+                            session_clock.elapsed().as_millis() as u64,
+                        );
                         let first_action = startup.observe(message.message_type, &message.payload);
-                        let connected = usb.finish_hello(startup, first_action, session)?;
+                        let connected =
+                            usb.finish_hello(startup, first_action, session, session_clock)?;
                         session.handshake_completed(
                             session_clock.elapsed().as_millis() as u64,
                             connected.synchronized,
@@ -466,6 +473,7 @@ impl QcUsb {
         mut startup: DeviceStartupRuntime,
         mut startup_action: DeviceStartupAction,
         session: &mut TransportRuntime,
+        session_clock: &Instant,
     ) -> Result<ConnectedQc, UsbError> {
         // Cortex Control stages startup. Each decoded response opens exactly
         // one following state; message-type arrival alone is not a gate.
@@ -505,7 +513,7 @@ impl QcUsb {
             if !matches!(startup_action, DeviceStartupAction::Wait) {
                 continue;
             }
-            if initialization_clock.elapsed().as_millis() as u64 >= profile::READY_WAIT_TIMEOUT_MS {
+            if startup.timed_out(session_clock.elapsed().as_millis() as u64) {
                 return Err(UsbError::Initialization(format!(
                     "timed out in {:?}",
                     startup.phase()
@@ -561,6 +569,10 @@ impl QcUsb {
         } else {
             "initialization-incomplete"
         });
+        // Keep an incomplete semantic seed alive after connect. Late QC state
+        // frames can then promote the shared transport from Syncing to Ready,
+        // exactly as they do on Android and during an in-session rebuild.
+        let initialization = (!synchronized).then_some(initialization);
         Ok(ConnectedQc {
             usb: self,
             synchronized,
@@ -568,7 +580,7 @@ impl QcUsb {
             latest_messages,
             initial_messages,
             startup,
-            initialization: None,
+            initialization,
         })
     }
 
@@ -580,7 +592,7 @@ impl QcUsb {
     }
 
     pub fn send_command(&mut self, message: OutboundMessage) {
-        self.send_command_with_layout(message, ReportLayout::ReportIdPrefixed);
+        self.send_command_with_layout(message, self.report_layout);
     }
 
     fn send_command_with_layout(&mut self, message: OutboundMessage, layout: ReportLayout) {

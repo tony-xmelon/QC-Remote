@@ -1,10 +1,11 @@
 import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { createHash } from "node:crypto";
 
 const root = process.cwd();
+const referenceRoot = process.env.QC_ICONOGRAPHY_REFERENCE_ROOT ? resolve(process.env.QC_ICONOGRAPHY_REFERENCE_ROOT) : root;
 const manifest = JSON.parse(readFileSync(join(root, "contracts/qc-iconography.v1.json"), "utf8"));
-const privateManifestPath = join(root, "references/qc-ui-iconography/coros-4.1.0/manifest.json");
+const privateManifestPath = join(referenceRoot, "references/qc-ui-iconography/coros-4.1.0/manifest.json");
 const requireCompleteCoverage = process.argv.includes("--require-complete-coverage");
 const usePrivateCorpus = requireCompleteCoverage || process.argv.includes("--with-reference-corpus");
 const privateManifest = usePrivateCorpus && existsSync(privateManifestPath) ? JSON.parse(readFileSync(privateManifestPath, "utf8")) : null;
@@ -13,7 +14,7 @@ const iconsSource = readFileSync(join(root, "packages/typescript/qc-ui/src/theme
 const deviceGlyphSource = readFileSync(join(root, "packages/typescript/qc-ui/src/device-glyph.tsx"), "utf8");
 const fixtureSource = readFileSync(join(root, "packages/typescript/qc-ui/src/coros-screen-fixtures.tsx"), "utf8");
 const colors = JSON.parse(readFileSync(join(root, "packages/typescript/qc-theme/src/colors.json"), "utf8"));
-const appGoldenRoot = join(root, "references/qc-ui-app-golden/v1");
+const appGoldenRoot = join(referenceRoot, "references/qc-ui-app-golden/v1");
 const appGoldenManifestPath = join(appGoldenRoot, "manifest.json");
 const appGolden = existsSync(appGoldenManifestPath) ? JSON.parse(readFileSync(appGoldenManifestPath, "utf8")) : null;
 
