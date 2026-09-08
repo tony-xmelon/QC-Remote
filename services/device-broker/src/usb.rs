@@ -394,6 +394,7 @@ pub struct QcUsb {
     io: HidIo,
     _api: HidApi,
     next_sequence: u64,
+    report_layout: ReportLayout,
     flight: FlightRecorder,
 }
 
@@ -410,6 +411,7 @@ impl QcUsb {
             io,
             _api: api,
             next_sequence: 1,
+            report_layout: ReportLayout::ReportIdPrefixed,
             flight,
         })
     }
@@ -443,6 +445,7 @@ impl QcUsb {
                             continue;
                         }
                         usb.flight.event("handshake-reply");
+                        usb.report_layout = attempt.layout;
                         let (mut startup, _) =
                             DeviceStartupRuntime::start(attempt.request_id(), attempt.session_id());
                         let first_action = startup.observe(message.message_type, &message.payload);
@@ -584,7 +587,7 @@ impl QcUsb {
     }
 
     pub fn send_command(&mut self, message: OutboundMessage) {
-        self.send_command_with_layout(message, ReportLayout::ReportIdPrefixed);
+        self.send_command_with_layout(message, self.report_layout);
     }
 
     fn send_command_with_layout(&mut self, message: OutboundMessage, layout: ReportLayout) {

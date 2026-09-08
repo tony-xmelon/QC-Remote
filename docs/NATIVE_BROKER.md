@@ -41,7 +41,9 @@ all present. Both hosts also consume the same generated first-command
 stabilization window. Android's semantic plans and initialization decisions
 cross JNI as named JSON fields; only actual HID reports and QC payload bytes use
 binary arrays. Rust also applies the selected report-ID layout before those
-arrays cross JNI, exactly as it does before Windows HID writes. Verification cadence stays inside Rust rather than crossing JNI,
+arrays cross JNI, exactly as it does before Windows HID writes. Both hosts keep
+the handshake-selected layout for every later write in that USB session.
+Verification cadence stays inside Rust rather than crossing JNI,
 so Java does not duplicate either a private plan codec or protocol timer loop.
 Android also queries the shared transport's connected and synchronized
 projections directly instead of maintaining Java handshake, initialization,

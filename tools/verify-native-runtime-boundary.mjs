@@ -281,6 +281,9 @@ assert(!/wait_for_preset_list\([\s\S]{0,120}Duration::from_secs\(25\)/.test(wind
 const windowsUsb = await text("services/device-broker/src/usb.rs");
 assert(windowsUsb.includes("next_handshake_write"), "Windows must obtain its reset command and HID layout from the shared transport runtime.");
 assert(windowsUsb.includes("attempt.matches_reply"), "Windows must use shared opaque-session handshake correlation.");
+assert(windowsUsb.includes("usb.report_layout = attempt.layout")
+  && windowsUsb.includes("send_command_with_layout(message, self.report_layout)"),
+  "Windows must retain the handshake-selected HID report layout for the full session like Android.");
 assert(windowsUsb.includes("post_boot_initialization"),
   "Windows must seed readiness from the shared staged-startup observations.");
 assert(windowsUsb.includes("pub fn observe_lifecycle"),
