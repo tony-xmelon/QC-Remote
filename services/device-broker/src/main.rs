@@ -19,23 +19,26 @@ fn probe() -> ProbeResult {
     let started = Instant::now();
     let mut session = qc_device_runtime::transport::TransportRuntime::new(0);
     match usb::QcUsb::connect(&mut session, &started, |_, _| {}) {
-        Ok(connection) => ProbeResult {
-            present: true,
-            connected: true,
-            synchronized: connection.synchronized,
-            handshake_ms: Some(started.elapsed().as_millis()),
-            observed_message_counts: connection.message_counts.into_iter().collect(),
-            active_preset_name: connection
-                .latest_messages
-                .get(&qc_protocol::profile::MESSAGE_TYPE_RECALL_PRESET)
-                .and_then(|message| usb::preset_name(&message.payload)),
-            detail: if connection.synchronized {
-                "Active preset received"
-            } else {
-                "Handshake complete; active preset still pending"
+        Ok(connection) => {
+            let synchronized = session.synchronized();
+            ProbeResult {
+                present: true,
+                connected: true,
+                synchronized,
+                handshake_ms: Some(started.elapsed().as_millis()),
+                observed_message_counts: connection.message_counts.into_iter().collect(),
+                active_preset_name: connection
+                    .latest_messages
+                    .get(&qc_protocol::profile::MESSAGE_TYPE_RECALL_PRESET)
+                    .and_then(|message| usb::preset_name(&message.payload)),
+                detail: if synchronized {
+                    "Active preset received"
+                } else {
+                    "Handshake complete; active preset still pending"
+                }
+                .into(),
             }
-            .into(),
-        },
+        }
         Err(usb::UsbError::NotAvailable) => ProbeResult {
             present: false,
             connected: false,

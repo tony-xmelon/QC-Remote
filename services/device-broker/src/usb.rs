@@ -49,7 +49,6 @@ pub struct IncomingMessage {
 
 pub struct ConnectedQc {
     pub usb: QcUsb,
-    pub synchronized: bool,
     pub message_counts: HashMap<u16, usize>,
     pub latest_messages: HashMap<u16, IncomingMessage>,
     /// Every initialization message, in arrival order.
@@ -74,7 +73,7 @@ impl ConnectedQc {
         &mut self,
         message: &IncomingMessage,
         now_ms: u64,
-    ) -> Result<(), UsbError> {
+    ) -> Result<Option<bool>, UsbError> {
         if let Some(initialization) = self.initialization.as_mut() {
             initialization.observe_message(message.message_type, &message.payload);
         }
@@ -82,43 +81,45 @@ impl ConnectedQc {
         self.apply_startup_action(action, now_ms)
     }
 
-    pub fn advance_lifecycle(&mut self, now_ms: u64) -> Result<(), UsbError> {
+    pub fn advance_lifecycle(&mut self, now_ms: u64) -> Result<Option<bool>, UsbError> {
         let Some(initialization) = self.initialization.as_mut() else {
-            return Ok(());
+            return Ok(None);
         };
-        match initialization.advance(now_ms) {
-            InitializationAction::Wait => {}
+        let synchronization = match initialization.advance(now_ms) {
+            InitializationAction::Wait => None,
             InitializationAction::Send(messages) => {
                 for message in messages {
                     self.usb.send_command(message);
                 }
+                None
             }
             InitializationAction::Complete { synchronized } => {
-                self.synchronized = synchronized;
                 if synchronized {
                     self.initialization = None;
                 }
+                Some(synchronized)
             }
-        }
-        Ok(())
+        };
+        Ok(synchronization)
     }
 
     fn apply_startup_action(
         &mut self,
         mut action: DeviceStartupAction,
         now_ms: u64,
-    ) -> Result<(), UsbError> {
+    ) -> Result<Option<bool>, UsbError> {
+        let mut synchronization = None;
         loop {
             action = match action {
-                DeviceStartupAction::Wait => return Ok(()),
+                DeviceStartupAction::Wait => return Ok(synchronization),
                 DeviceStartupAction::Send(messages) => {
                     for message in messages {
                         self.usb.send_command(message);
                     }
-                    return Ok(());
+                    return Ok(synchronization);
                 }
                 DeviceStartupAction::SendThenBuild(messages) => {
-                    self.synchronized = false;
+                    synchronization = Some(false);
                     self.initialization = None;
                     for message in messages {
                         self.usb.send_command(message);
@@ -126,7 +127,7 @@ impl ConnectedQc {
                     self.startup.begin_building()
                 }
                 DeviceStartupAction::Connected => {
-                    self.synchronized = false;
+                    synchronization = Some(false);
                     self.usb
                         .send_command(commands::sync_system_time(unix_time_ms()));
                     self.initialization = Some(
@@ -139,7 +140,7 @@ impl ConnectedQc {
                                 ))
                             })?,
                     );
-                    return self.advance_lifecycle(now_ms);
+                    return Ok(self.advance_lifecycle(now_ms)?.or(synchronization));
                 }
                 DeviceStartupAction::Invalid(error) => {
                     return Err(UsbError::Initialization(format!(
@@ -455,11 +456,11 @@ impl QcUsb {
                             session_clock.elapsed().as_millis() as u64,
                         );
                         let first_action = startup.observe(message.message_type, &message.payload);
-                        let connected =
+                        let (connected, synchronized) =
                             usb.finish_hello(startup, first_action, session, session_clock)?;
                         session.synchronization_completed(
                             session_clock.elapsed().as_millis() as u64,
-                            connected.synchronized,
+                            synchronized,
                         );
                         return Ok(connected);
                     }
@@ -477,7 +478,7 @@ impl QcUsb {
         mut startup_action: DeviceStartupAction,
         session: &mut TransportRuntime,
         session_clock: &Instant,
-    ) -> Result<ConnectedQc, UsbError> {
+    ) -> Result<(ConnectedQc, bool), UsbError> {
         // Cortex Control stages startup. Each decoded response opens exactly
         // one following state; message-type arrival alone is not a gate.
         self.flight.event("initialization-started");
@@ -578,15 +579,17 @@ impl QcUsb {
         // frames can then promote the shared transport from Syncing to Ready,
         // exactly as they do on Android and during an in-session rebuild.
         let initialization = (!synchronized).then_some(initialization);
-        Ok(ConnectedQc {
-            usb: self,
+        Ok((
+            ConnectedQc {
+                usb: self,
+                message_counts,
+                latest_messages,
+                initial_messages,
+                startup,
+                initialization,
+            },
             synchronized,
-            message_counts,
-            latest_messages,
-            initial_messages,
-            startup,
-            initialization,
-        })
+        ))
     }
 
     pub fn send(&mut self, message_type: u16, payload: Vec<u8>) {

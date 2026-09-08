@@ -1129,7 +1129,7 @@ fn run(
                             "syncing",
                             "Creating device backup",
                             true,
-                            connected.synchronized,
+                            session.synchronized(),
                         );
                     } else {
                         let _ = reply.send(Err("Quad Cortex is not connected".into()));
@@ -1173,7 +1173,12 @@ fn run(
                     let handshake_ms = started.elapsed().as_millis();
                     state_generation = state_generation.saturating_add(1);
                     let _ = state_messages.send(StateDecoderCommand::Reset(state_generation));
-                    install_connection_status(&state, &connected, handshake_ms);
+                    install_connection_status(
+                        &state,
+                        &connected,
+                        session.synchronized(),
+                        handshake_ms,
+                    );
                     *latest_messages.lock_recover() = connected.latest_messages.clone();
                     {
                         // Replay the burst as it arrived. Replaying only the
@@ -1228,21 +1233,23 @@ fn run(
                 .read_message(&mut session, CONNECTED_IO_POLL_MS)
             {
                 Ok(Some(message)) => {
-                    let was_synchronized = connected.synchronized;
-                    if let Err(error) = connected.observe_lifecycle(&message, now_ms) {
-                        let detail = format!("QC session lifecycle failed: {error}");
-                        set_phase(&state, "searching", &detail, false, false);
-                        fail_pending(&mut pending_requests, &detail);
-                        fail_backup(&mut backup, &detail);
-                        session.disconnect(now_ms, true);
-                        connection = None;
-                        continue;
+                    let was_synchronized = session.synchronized();
+                    match connected.observe_lifecycle(&message, now_ms) {
+                        Ok(Some(synchronized)) => {
+                            session.synchronization_completed(now_ms, synchronized);
+                        }
+                        Ok(None) => {}
+                        Err(error) => {
+                            let detail = format!("QC session lifecycle failed: {error}");
+                            set_phase(&state, "searching", &detail, false, false);
+                            fail_pending(&mut pending_requests, &detail);
+                            fail_backup(&mut backup, &detail);
+                            session.disconnect(now_ms, true);
+                            connection = None;
+                            continue;
+                        }
                     }
-                    update_lifecycle_status(&state, connected, was_synchronized);
-                    session.synchronization_completed(
-                        session_clock.elapsed().as_millis() as u64,
-                        connected.synchronized,
-                    );
+                    update_lifecycle_status(&state, was_synchronized, session.synchronized());
                     if message.message_type == qc_protocol::profile::MESSAGE_TYPE_LOCAL_BACKUP
                         && backup.is_some()
                     {
@@ -1253,7 +1260,7 @@ fn run(
                             )
                         });
                         if let Some(outcome) = outcome {
-                            finish_backup(&mut backup, &state, connected, outcome);
+                            finish_backup(&mut backup, &state, session.synchronized(), outcome);
                         }
                     } else {
                         ingest_incoming(
@@ -1301,23 +1308,28 @@ fn run(
                     session.defer_keepalive(session_clock.elapsed().as_millis() as u64);
                 }
                 Some(BackupAction::Failed(error)) => {
-                    finish_backup(&mut backup, &state, connected, Err(error));
+                    finish_backup(&mut backup, &state, session.synchronized(), Err(error));
                 }
                 Some(BackupAction::Wait) | None => {}
             }
             let now_ms = session_clock.elapsed().as_millis() as u64;
-            let was_synchronized = connected.synchronized;
-            if let Err(error) = connected.advance_lifecycle(now_ms) {
-                let detail = format!("QC session lifecycle failed: {error}");
-                set_phase(&state, "searching", &detail, false, false);
-                fail_pending(&mut pending_requests, &detail);
-                fail_backup(&mut backup, &detail);
-                session.disconnect(now_ms, true);
-                connection = None;
-                continue;
+            let was_synchronized = session.synchronized();
+            match connected.advance_lifecycle(now_ms) {
+                Ok(Some(synchronized)) => {
+                    session.synchronization_completed(now_ms, synchronized);
+                }
+                Ok(None) => {}
+                Err(error) => {
+                    let detail = format!("QC session lifecycle failed: {error}");
+                    set_phase(&state, "searching", &detail, false, false);
+                    fail_pending(&mut pending_requests, &detail);
+                    fail_backup(&mut backup, &detail);
+                    session.disconnect(now_ms, true);
+                    connection = None;
+                    continue;
+                }
             }
-            update_lifecycle_status(&state, connected, was_synchronized);
-            session.synchronization_completed(now_ms, connected.synchronized);
+            update_lifecycle_status(&state, was_synchronized, session.synchronized());
             // Device loss is detected by read errors, as in the reference
             // client: a write carries no information because every QC write
             // stalls its status stage. The old Version-probe teardown is gone
@@ -1348,26 +1360,22 @@ fn run(
 
 fn update_lifecycle_status(
     state: &Arc<Mutex<BrokerStatus>>,
-    connected: &ConnectedQc,
     was_synchronized: bool,
+    synchronized: bool,
 ) {
-    if connected.synchronized == was_synchronized {
+    if synchronized == was_synchronized {
         return;
     }
     set_phase(
         state,
-        if connected.synchronized {
-            "ready"
-        } else {
-            "syncing"
-        },
-        if connected.synchronized {
+        if synchronized { "ready" } else { "syncing" },
+        if synchronized {
             "Active preset synchronized"
         } else {
             "QC requested an in-session state rebuild"
         },
         true,
-        connected.synchronized,
+        synchronized,
     );
 }
 
@@ -1375,7 +1383,7 @@ fn update_lifecycle_status(
 fn finish_backup(
     backup: &mut Option<BackupInProgress>,
     state: &Arc<Mutex<BrokerStatus>>,
-    connected: &ConnectedQc,
+    synchronized: bool,
     outcome: Result<String, String>,
 ) {
     let Some(active) = backup.take() else {
@@ -1385,18 +1393,14 @@ fn finish_backup(
     let _ = active.reply.send(outcome);
     set_phase(
         state,
-        if connected.synchronized {
-            "ready"
-        } else {
-            "syncing"
-        },
+        if synchronized { "ready" } else { "syncing" },
         if succeeded {
             "Device backup complete"
         } else {
             "Device backup failed; USB session remains open"
         },
         true,
-        connected.synchronized,
+        synchronized,
     );
 }
 
@@ -1464,23 +1468,19 @@ fn set_phase(
 fn install_connection_status(
     state: &Arc<Mutex<BrokerStatus>>,
     connection: &ConnectedQc,
+    synchronized: bool,
     handshake_ms: u128,
 ) {
     let mut status = state.lock_recover();
-    status.phase = if connection.synchronized {
-        "ready"
-    } else {
-        "syncing"
-    }
-    .into();
-    status.detail = if connection.synchronized {
+    status.phase = if synchronized { "ready" } else { "syncing" }.into();
+    status.detail = if synchronized {
         "Active preset synchronized"
     } else {
         "Handshake complete; waiting for active preset"
     }
     .into();
     status.connected = true;
-    status.synchronized = connection.synchronized;
+    status.synchronized = synchronized;
     status.active_preset_name = connection
         .latest_messages
         .get(&qc_protocol::profile::MESSAGE_TYPE_RECALL_PRESET)

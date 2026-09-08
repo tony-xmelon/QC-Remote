@@ -193,8 +193,8 @@ assert(!/"preset"\.equals\(kind\)[\s\S]{0,100}(?:state|preset)Synchronized\s*=\s
   "Android must not promote a preset observation to full authoritative synchronization.");
 assert(!/publishStateBatch\([\s\S]*?sessionStateObserved\(monotonicMillis\(\),\s*(?:state|preset)Synchronized\)/.test(androidUsbHost),
   "Android must not bypass the shared semantic-seed decision when publishing an ordinary state batch.");
-assert(/advance_lifecycle\(now_ms\)[\s\S]{0,700}session\.synchronization_completed\(now_ms, connected\.synchronized\)/.test(windowsWorker),
-  "Windows must advance the shared transport after lifecycle completion, including late seed recovery.");
+assert(/advance_lifecycle\(now_ms\)[\s\S]{0,700}Ok\(Some\(synchronized\)\)[\s\S]{0,200}session\.synchronization_completed\(now_ms, synchronized\)/.test(windowsWorker),
+  "Windows must apply shared lifecycle synchronization decisions to the canonical transport runtime.");
 assert(/let initialization = \(!synchronized\)\.then_some\(initialization\);[\s\S]{0,300}initialization,/.test(windowsUsbHost),
   "Windows must retain an incomplete initial seed for the same late recovery supported on Android.");
 assert(androidUsbHost.includes("decision.beginBuilding"),
@@ -318,8 +318,10 @@ assert(windowsUsb.includes("self.startup.observe(message.message_type"),
   "Windows connected-state Version and Connection events must use the shared lifecycle runtime.");
 assert(windowsUsb.includes("initialization.observe_message(message.message_type, &message.payload)"),
   "Windows must feed payload-validated semantic seed evidence into the shared readiness runtime.");
-assert((await text("services/device-broker/src/worker.rs")).includes("connected.synchronized"),
-  "Windows must feed the shared transport runtime the authoritative lifecycle synchronization state.");
+assert(!windowsUsb.includes("pub synchronized: bool")
+  && !windowsWorker.includes("connected.synchronized")
+  && !windowsMain.includes("connection.synchronized"),
+  "Windows must not mirror shared transport synchronization state in its native USB adapter.");
 assert(windowsUsb.includes("commands::sync_system_time(unix_time_ms())"),
   "Windows must send the same shared device-facing system-time command after staged startup.");
 assert(windowsUsb.includes("HidReadEvent::Idle")
