@@ -139,6 +139,11 @@
 .capture-official-progress > main > nav div:last-child b { color: #eee; }
 .capture-official-progress .capture-official-progress-bar b { width: 31.25%; }
 .capture-official-progress:not(.capture-official-error) .capture-official-progress-bar b { width: 88.75%; }
+.capture-official-progress.is-manual-progress .capture-official-progress-bar b { width: 31.25%; }
+.capture-official-progress.is-manual-progress > main > nav div { height: 6.25cqw; gap: 1cqw; padding-inline: 1cqw; }
+.capture-official-progress.is-manual-progress > main > nav b,
+.capture-official-progress.is-manual-progress > main > nav b svg { width: 2.5cqw; height: 2.5cqw; }
+.capture-official-progress.is-manual-progress h1 { margin-bottom: 2.5cqw; }
 .capture-official-progress .capture-official-progress-bar { top: 24.875cqw; height: 3cqw; }
 .capture-official-progress section > em { right: 2cqw; top: 19.125cqw; width: 2.75cqw; height: 2.75cqw; border: .375cqw solid #505450; border-top-color: #eee; border-right-color: #eee; border-radius: 50%; color: transparent; font-size: 0; transform: rotate(-17deg); }
 .capture-kinds button > svg { width: 6cqw; height: 6cqw; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }

@@ -1217,6 +1217,7 @@ const SETTINGS_CLOUD_PATH = "M8 25h16a6 6 0 0 0 1-11.9A9 9 0 0 0 8 11a7 7 0 0 0 
 
 function CorOsOfficialCapture({
   view,
+  manualProgress = false,
 }: {
   view:
     | "capture-calibration"
@@ -1224,6 +1225,7 @@ function CorOsOfficialCapture({
     | "capture-sanity-error"
     | "capture-result"
     | "capture-save";
+  manualProgress?: boolean;
 }) {
   if (view === "capture-sanity-error")
     return (
@@ -1267,7 +1269,7 @@ function CorOsOfficialCapture({
     );
   if (view === "capture-progress")
     return (
-      <section className="qc-screen capture-official capture-official-progress">
+      <section className={`qc-screen capture-official capture-official-progress${manualProgress ? " is-manual-progress" : ""}`}>
         <header>
           <span>Neural Capture</span>
           <button>×</button>
@@ -1293,7 +1295,7 @@ function CorOsOfficialCapture({
               <br />
               emulate the sound of your favorite device.
             </p>
-            <strong>88 %</strong>
+            <strong>{manualProgress ? "30%" : "88 %"}</strong>
             <i className="capture-official-progress-bar">
               <b />
             </i>
@@ -2970,6 +2972,7 @@ export function CorOsScreenFixture({ view, snapshot, gigPresetList, onClose = ()
   if (view === "tuner-live-enabled") return <CorOsTuner liveTuner onClose={onClose} />;
   if ((view as string) === "gig-official-hybrid-manual") return <CorOsOfficialGig mode="hybrid" manualHybrid />;
   if ((view as string) === "settings-account-official") return <CorOsOfficialSettings view="settings-account" manualAccount />;
+  if ((view as string) === "capture-progress-official") return <CorOsOfficialCapture view="capture-progress" manualProgress />;
   if (view.startsWith("gig-official-")) return <CorOsOfficialGig mode={view.replace("gig-official-", "") as OfficialGigMode} />;
   if (view === "device-presets-official") return <CorOsDevicePresetScreen view="official-factory" />;
   if (view === "gig" || view === "gig-live-tuner") return <CorOsGigView snapshot={snapshot} presetList={gigPresetList} liveTuner={view === "gig-live-tuner"} onClose={onClose} />;

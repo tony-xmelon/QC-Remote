@@ -302,6 +302,16 @@ test("official Account manual fixture opens Backups without changing the physica
   assert.match(manifest, /"id": "official-settings-account"[\s\S]*?"screen": "settings-account-official"/);
 });
 
+test("official Capture process preserves the manual progress state separately", () => {
+  const fixture = readFileSync("packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", "utf8");
+  const css = readFileSync("packages/typescript/qc-ui/src/official-looper-eq.css", "utf8");
+  const manifest = readFileSync("references/qc-ui-official-manual/coros-4.1.0/manifest.json", "utf8");
+  assert.match(fixture, /capture-progress-official[\s\S]*?<CorOsOfficialCapture view="capture-progress" manualProgress/);
+  assert.match(fixture, /manualProgress \? "30%" : "88 %"/);
+  assert.match(css, /\.capture-official-progress\.is-manual-progress \.capture-official-progress-bar b \{ width: 31\.25%; \}/);
+  assert.match(manifest, /"id": "official-capture-process"[\s\S]*?"screen": "capture-progress-official"/);
+});
+
 // Every rule above pins a number that is supposed to have come off a device
 // frame, but a test that reads our own stylesheet cannot tell a measurement from
 // an invention - that is how the item menu kept a four-entry height and the

@@ -386,7 +386,7 @@
       "height": 480,
       "deviceVariant": "quad-cortex",
       "renderer": {
-        "screen": "capture-progress"
+        "screen": "capture-progress-official"
       }
     },
     {
