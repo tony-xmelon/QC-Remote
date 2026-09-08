@@ -964,11 +964,12 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeGate
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeEncodeFrame(
+pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeEncodeReports(
     mut env: JNIEnv,
     _class: JClass,
     message_type: jint,
     payload: JByteArray,
+    include_report_id: jint,
 ) -> jbyteArray {
     let result = (|| {
         let message_type =
@@ -980,12 +981,15 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeEnco
             message_type,
             payload,
         };
-        Ok(
-            TransportRuntime::encode_reports(&message, ReportLayout::ReportIdPrefixed)
-                .into_iter()
-                .flatten()
-                .collect(),
-        )
+        let layout = if include_report_id != 0 {
+            ReportLayout::ReportIdPrefixed
+        } else {
+            ReportLayout::BodyOnly
+        };
+        Ok(TransportRuntime::encode_reports(&message, layout)
+            .into_iter()
+            .flatten()
+            .collect())
     })();
     bytes_result(&mut env, result)
 }

@@ -1688,12 +1688,9 @@ public class QcUsbPlugin extends Plugin {
             }
         }
         commandNotBeforeMs = 0;
-        List<byte[]> framedReports = stateDecoder.encodeFrame(message);
+        List<byte[]> framedReports = stateDecoder.encodeReports(message, withReportId);
         if (flight != null) flight.outbound(message.messageType, framedReports.size());
-        for (byte[] framedReport : framedReports) {
-            byte[] report = withReportId
-                ? framedReport
-                : Arrays.copyOfRange(framedReport, 1, framedReport.length);
+        for (byte[] report : framedReports) {
             if (connection == null || hidInterface == null) throw new IllegalStateException("Quad Cortex USB disconnected during write.");
             long writeStartedAt = monotonicMillis();
             int written = connection.controlTransfer(0x21, 0x09, (2 << 8) | QcNativeStateDecoder.OUT_REPORT_ID, hidInterface.getId(), report, report.length, HID_WRITE_TIMEOUT_MS);

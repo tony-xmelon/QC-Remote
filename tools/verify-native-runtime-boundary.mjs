@@ -247,10 +247,13 @@ for (const method of ["nativeEncodeCommand", "nativePlanGatewayWrite", "nativePl
 }
 assert(androidNativeFacade.includes("native void nativePostBootInitializationStarted"),
   "Post-boot state seeding must have a distinct staged-startup JNI boundary.");
-assert(androidNativeFacade.includes("native byte[] nativeEncodeFrame"),
+assert(androidNativeFacade.includes("native byte[] nativeEncodeReports"),
   "Raw QC HID frame encoding must remain a byte-array JNI boundary.");
-assert(/nativeEncodeFrame[\s\S]*?->\s*jbyteArray/.test(androidJni),
+assert(/nativeEncodeReports[\s\S]*?->\s*jbyteArray/.test(androidJni),
   "The Rust JNI frame encoder must match Java's byte-array declaration.");
+assert(androidJni.includes("TransportRuntime::encode_reports(&message, layout)")
+  && !/Arrays\.copyOfRange\(framedReport,\s*1,\s*framedReport\.length\)/.test(androidUsbHost),
+  "Android report-ID shaping must stay in the shared Rust transport runtime.");
 assert(androidJni.includes("fn messages_json"), "Android JNI must serialize native plan messages through one semantic helper.");
 assert(!androidJni.includes("fn message_envelope"), "Android JNI must not maintain a private positional message envelope.");
 assert(windowsRpc.includes("gateway_write_verification_policy"), "Windows must consume shared write verification policy.");

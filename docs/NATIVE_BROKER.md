@@ -35,7 +35,8 @@ required scene, mode, Master Volume, dirty-state, and setlist-position seed are
 all present. Both hosts also consume the same generated first-command
 stabilization window. Android's semantic plans and initialization decisions
 cross JNI as named JSON fields; only actual HID reports and QC payload bytes use
-binary arrays. Verification cadence stays inside Rust rather than crossing JNI,
+binary arrays. Rust also applies the selected report-ID layout before those
+arrays cross JNI, exactly as it does before Windows HID writes. Verification cadence stays inside Rust rather than crossing JNI,
 so Java does not duplicate either a private plan codec or protocol timer loop.
 An ordinary preset push is not allowed to promote Android to Ready by itself;
 both native hosts publish synchronization only from the shared semantic-seed
