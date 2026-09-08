@@ -23,6 +23,13 @@ const vectorNode = /<(?:svg|path|circle|ellipse|line|polygon|polyline|rect)\b|\b
 const mediaUrl = /https?:\/\/[^\s"')>]+\.(?:avif|gif|ico|jpe?g|otf|png|svg|ttf|webp|woff2?)(?:[?#][^\s"')>]*)?/gi;
 const staticDataMedia = /data:(?:image|audio|video)\/[a-z0-9.+-]+(?:;[^,]*)?,/gi;
 
+function generatedVisualBytes(path) {
+  const bytes = readFileSync(resolve(root, path));
+  return /\.(?:svg|xml)$/i.test(path)
+    ? Buffer.from(bytes.toString("utf8").replaceAll("\r\n", "\n"))
+    : bytes;
+}
+
 function gitFiles(...arguments_) {
   return splitZ(execFileSync("git", ["ls-files", "-z", ...arguments_], { cwd: root, encoding: "utf8" }));
 }
@@ -68,7 +75,7 @@ export function auditRepositoryAssets() {
     if (!tracked.includes(path)) errors.push(`declared generated visual is not tracked: ${path}`);
     else if (!visualFiles.includes(path)) errors.push(`declared generated visual is not recognized as visual media: ${path}`);
     else {
-      const bytes = readFileSync(resolve(root, path));
+      const bytes = generatedVisualBytes(path);
       if (bytes.length !== entry.bytes) errors.push(`generated visual byte count differs: ${path}`);
       if (sha256(bytes) !== entry.sha256) errors.push(`generated visual fingerprint differs: ${path}`);
       if (!prefixes.some((prefix) => path.startsWith(prefix))) errors.push(`generated visual is outside a canonical asset's derived prefixes: ${path}`);
@@ -87,7 +94,7 @@ export function auditRepositoryAssets() {
 
   const duplicateOwners = new Map();
   for (const path of visualFiles.filter((entry) => tracked.includes(entry) && !entry.startsWith("references/"))) {
-    const digest = sha256(readFileSync(resolve(root, path)));
+    const digest = sha256(generatedVisualBytes(path));
     const earlier = duplicateOwners.get(digest);
     if (earlier) errors.push(`byte-identical visual assets: ${earlier} and ${path}`);
     else duplicateOwners.set(digest, path);
