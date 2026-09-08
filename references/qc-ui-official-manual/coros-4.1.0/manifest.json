@@ -246,7 +246,7 @@
       "height": 480,
       "deviceVariant": "quad-cortex",
       "renderer": {
-        "screen": "looper-editor"
+        "screen": "looper-editor-official"
       }
     },
     {

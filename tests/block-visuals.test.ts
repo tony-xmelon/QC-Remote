@@ -322,6 +322,15 @@ test("official Expression bypass keeps the manual amp parameter set separate", (
   assert.match(manifest, /"id": "official-expression-bypass"[\s\S]*?"screen": "expression-bypass-official"/);
 });
 
+test("official Looper keeps the manual all-actions state separate", () => {
+  const fixture = readFileSync("packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", "utf8");
+  const manifest = readFileSync("references/qc-ui-official-manual/coros-4.1.0/manifest.json", "utf8");
+  assert.match(fixture, /looper-editor-official[\s\S]*?<CorOsLooperEditor manualReference/);
+  assert.match(fixture, /AVAILABLE \{manualReference \? "4:38" : "4:43"\}/);
+  assert.match(fixture, /!manualReference && index !== 2 && index !== 4 \? "is-dim"/);
+  assert.match(manifest, /"id": "official-looper"[\s\S]*?"screen": "looper-editor-official"/);
+});
+
 // Every rule above pins a number that is supposed to have come off a device
 // frame, but a test that reads our own stylesheet cannot tell a measurement from
 // an invention - that is how the item menu kept a four-entry height and the
