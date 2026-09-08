@@ -845,8 +845,8 @@
 .qc-screen.coros-block-context > aside button span { display: grid; place-items: center; color: #f0f0f0; text-align: center; }
 .qc-screen.coros-block-context > aside button span svg { width: 24px; height: 24px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .qc-screen.coros-block-context > aside .qc-editor-icon-copy,
-.qc-screen.coros-block-context > aside .qc-editor-icon-paste { transform: translateY(2px); }
-.qc-screen.coros-block-context > aside .qc-editor-icon-reset { transform: translateY(-2px); }
+.qc-screen.coros-block-context > aside .qc-editor-icon-paste { transform: translateX(-2px); }
+.qc-screen.coros-block-context > aside .qc-editor-icon-reset { transform: translateX(-1px); }
 .qc-screen.coros-block-context > aside button.is-disabled { color: #18201a; }
 .qc-screen.coros-block-context > aside button.is-disabled span { color: var(--qc-editor-disabled); } 
 
