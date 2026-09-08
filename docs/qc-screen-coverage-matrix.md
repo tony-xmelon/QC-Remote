@@ -298,6 +298,17 @@ the fixture draws.
   new version available / new version downloaded / no new version, and
   `UpdaterState` is idle, requesting, downloading, updating, reboot, failed.
   The fixture draws one of those, *up to date*; the capture plan needs the rest.
+
+  The idle screen was then **seen on the unit** in the 2026-09-08 session, by
+  opening Settings and selecting System > Updates, which displays but checks
+  nothing. It is a `zenUI::UpdaterSettings` pane headed **Device Updates**,
+  reading *Your Quad Cortex is currently running* over **CorOS: 4.1.0**, with a
+  blue **CHECK FOR UPDATES** button and a *News* block pointing at
+  neuraldsp.com/news beside a QR code. The `settings-update` fixture draws none
+  of that - it has a CURRENT VERSION label, an *up to date* line and a
+  four-tab ACCOUNT/SYSTEM/DEVICE/SUPPORT nav the screen does not have. **The
+  fixture is wrong**, and is left alone rather than rebuilt against a screenshot
+  that is not in this repository: the frame itself has to be captured first.
 - **ED-14** - `IOMeterMessage` reports no input clipping. It reports limiter
   activity on the outputs: `xlr_1_limiter`, `xlr_2_limiter`, `out_3_limiter`,
   `out_4_limiter`, `hp_limiter_active`. The fixture's *INPUT CLIPPING - reduce
@@ -309,6 +320,45 @@ the fixture draws.
   CorOS shows when a block will not fit, this message is not it.
 
 RC-02 has no counterpart in the schema - recovery runs before CorOS does.
+
+### Settings detail panes seen on the unit but not yet captured
+
+Settings is a master-detail dialog: the left menu selects a pane on the right,
+and only two of those panes are in the corpus - Device > Global Bypass (as
+`settings-device`) and System > Brightness (as `settings-system`). The 2026-09-08
+session drove the unit through the rest and confirmed by screenshot that each
+one is the `GeneralSettingsMessage` field the schema said it was:
+
+| pane | what it offers | schema field |
+| --- | --- | --- |
+| Device > Scene Bypass Behavior | three radio rows: *Always overwrite bypass state (default)*, do not overwrite when changing via footswitches in Stomp Mode or MIDI, do not overwrite by any method | `scene_block_bypass`, and its three `SceneBlockBypass` values |
+| Device > Stomp Mode Bypass | AUTO-ASSIGN: Enabled / Disabled (Factory Default) | `stomp_mode_auto_assign` |
+| Device > Hold Timing | a six-step bar, 500ms to 1000ms, 800ms selected | `hold_timing` |
+| Device > Swap Tempo and Tuner | Yes / No (Factory Default) | `swap_tempo_tuner_access` |
+| Device > Gig View Access | On / Off (Factory Default) | `gig_view_stomp_access_enabled` |
+| Device > Latency Compensation | Enabled (Factory Default) / Disabled | `enable_dynamic_delay_compensation` |
+| System > Power Functions | Power Button Sensitivity Off / Low / Medium / High, and a RESTART button | `power_button_sensitivity`, `PowerOptions.REBOOT` |
+| System > Master Volume Knob | four checkboxes: OUT 1/2, OUT 3/4, SEND 1/2, headphones | `MasterVolumeAssignmentOptions` field for field |
+
+None of them entered the corpus. Two things stopped it, both now fixed or
+recorded rather than remembered:
+
+- Six panes were written under Device names while the dialog was showing the
+  System category, because `capture` did not require a verified screen the way a
+  gesture does. They were reverted, and `qc_screen_driver.py` now refuses a
+  capture without a fresh `expect`, which it proved immediately by refusing six.
+- The Settings dialog **has no category selector while the System category is
+  showing** - the header row is absent from the frame and from the graphics
+  tree, and the panes sit five pixels higher. Once the dialog is on System there
+  is no way back to Device through it, and reopening returns to System.
+
+The recipe for the next session, with the unit on the Grid: `tap 764 24` opens
+the main menu; scroll it with `drag 740 170 740 430` on the popup's scrollbar,
+never a swipe over the rows; `tap 600 406` opens Settings; `tap 140 30` opens
+the category selector *when one is drawn*, whose rows are Account 90, System
+150, Device 210, Support 270; the detail rows are then at x 140 on a 60px pitch
+from y 90. Gate every capture on the pane's own words - `expect Global Bypass`
+distinguishes the two categories where the widget class cannot.
 
 ## Score source files
 

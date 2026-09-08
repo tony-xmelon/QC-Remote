@@ -17,10 +17,22 @@ next therefore act on *different screens*: the tap lands wherever the reset left
 things. Every gesture and every capture in a run share one connection, so a
 screen observed here is the screen acted on here.
 
-**3. No gesture without a verified screen.** `expect` must succeed immediately
-before any tap, hold, swipe or drag. A gesture with no fresh verification is
-refused, because a tap aimed at a dialog that had already closed once landed on
-the Grid and silently edited a preset that was not the scratch one.
+**3. No gesture or capture without a verified screen.** `expect` must succeed
+immediately before any tap, hold, swipe, drag or capture. A gesture with no
+fresh verification is refused, because a tap aimed at a dialog that had already
+closed once landed on the Grid and silently edited a preset that was not the
+scratch one; a capture is refused for the same reason, because naming a frame
+asserts what it shows, and six settings panes were once written into the corpus
+under names for a menu the dialog was not showing. `expect` matches any text in
+the tree, so verify content - `expect Global Bypass` - not just the widget
+class, which cannot tell two categories of the same dialog apart.
+
+**4. Scroll by dragging the scrollbar, never by swiping the list.** The atomic
+DRAG gesture, and a stepped drag that releases over a row, are both taken as a
+tap on the row under the release often enough to matter: swiping the main menu
+opened the Tempo editor three times in one session, and the Tempo editor's
+animation then stops the framebuffer stream altogether. `drag 740 170 740 430`
+moves the popup's scrollbar instead, and has never activated a row.
 
 Commands are read from stdin, one per line:
 
@@ -75,6 +87,11 @@ _spec.loader.exec_module(_classify)
 
 CORPUS = REPOSITORY_ROOT / "references" / "qc-ui-corpus" / "coros-4.1.0"
 GESTURES = {"tap", "hold", "swipe", "drag"}
+# A capture writes a frame into the corpus under a name. Naming a frame is
+# an assertion about what it shows, so it needs the same fresh verification
+# a gesture does - six Device settings panes were once written under names
+# that described a menu the dialog was not even showing.
+VERIFIED = GESTURES | {"capture", "capture!"}
 
 
 def write_capture(slug: str, label: str, png: bytes, tree: str,
@@ -110,14 +127,16 @@ def write_capture(slug: str, label: str, png: bytes, tree: str,
 
 
 class Driver:
-    def __init__(self) -> None:
+    def __init__(self, framebuffer: bool = True) -> None:
         install_remote_control_compat()
         self.qc = pyquadcortex.connect()
         self.message = install_remote_control_compat()
         self.verified: str | None = None
         self.actions: list[dict[str, object]] = []
         self.failures = 0
-        self.revive()
+        self.framebuffer = framebuffer
+        if framebuffer:
+            self.revive()
 
     # -- stream ----------------------------------------------------------
     def revive(self, timeout: float = 3.0) -> bytes:
@@ -209,8 +228,14 @@ class Driver:
 
 
 def main() -> int:
-    driver = Driver()
-    print("connected", flush=True)
+    # An animated screen - the metronome editor is the one that keeps doing it -
+    # can leave the framebuffer stream dormant in a way MOVE will not wake. The
+    # graphics tree keeps answering, so --no-framebuffer connects on the tree
+    # alone: enough to see where the unit is and navigate off the animation,
+    # which is the only recovery that does not toggle Gig View.
+    framebuffer = "--no-framebuffer" not in sys.argv[1:]
+    driver = Driver(framebuffer=framebuffer)
+    print("connected" if framebuffer else "connected (tree only)", flush=True)
 
     for raw in sys.stdin:
         line = raw.strip()
@@ -220,7 +245,7 @@ def main() -> int:
         verb, values = parts[0], parts[1:]
         print(f"> {line}", flush=True)
         try:
-            if verb in GESTURES and not driver.require_verified(verb):
+            if verb in VERIFIED and not driver.require_verified(verb):
                 driver.failures += 1
                 driver.verified = None
                 continue
@@ -235,6 +260,9 @@ def main() -> int:
                 parsed = qc_screen_tree.parse(text)
                 print(f"  family={_classify.classify_tree(text)}", flush=True)
                 print(f"  text: {qc_screen_tree.visible_text(parsed)[:24]}", flush=True)
+            elif verb in ("shot", "capture", "capture!") and not driver.framebuffer:
+                print("  REFUSED: --no-framebuffer has no pixels to write", flush=True)
+                driver.failures += 1
             elif verb == "shot":
                 Path(values[0]).write_bytes(capture_settled_screen(driver.qc))
                 print(f"  wrote {values[0]}", flush=True)

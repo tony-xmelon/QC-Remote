@@ -1207,6 +1207,40 @@ Master Volume Knob assigns Out 1/2, Out 3/4, Send 1/2 and headphones, and Device
 Storage divides into presets, Neural Captures and impulse responses. None of
 those pages is captured yet; the list to capture is now exact.
 
+**The unit was then asked, and agreed with the schema.** Settings is a
+master-detail dialog and the corpus holds two of its panes; the session drove
+the unit through eight more and screenshotted each. Scene Bypass Behavior offers
+exactly the three `SceneBlockBypass` values, in that order, with *Always
+overwrite bypass state (default)* selected. Master Volume Knob is four
+checkboxes - OUT 1/2, OUT 3/4, SEND 1/2, headphones - which is
+`MasterVolumeAssignmentOptions` field for field. Hold Timing is a six-step bar
+from 500ms to 1000ms, Stomp Mode Bypass and Swap Tempo and Tuner and Gig View
+Access and Latency Compensation are each the two-state field the schema names,
+and Power Functions is `power_button_sensitivity` over Off/Low/Medium/High with
+a RESTART button - the one `PowerOptions` value the device exposes to its own
+touchscreen.
+
+None of the eight entered the corpus, and the coverage matrix records why and
+how to finish it. Two things went wrong and both are now enforced rather than
+remembered. Six panes were written under Device names while the dialog was
+showing the System category, because `capture` did not require a verified screen
+the way a gesture does - they were reverted, and the driver now refuses a
+capture without a fresh `expect`, which it demonstrated by refusing six on the
+next attempt. And scrolling a popup by swiping over its rows is read as a tap on
+the row under the release often enough to matter: it opened the Tempo editor
+three times, whose animation stops the framebuffer stream, and the stream is not
+recoverable without the Gig View toggle this project does not use. Dragging the
+popup's own scrollbar has never done it. Both rules now live in the driver.
+
+**ST-06 is the one that was seen and could not be kept.** The real Device
+Updates page reads *Your Quad Cortex is currently running* over **CorOS: 4.1.0**,
+with a blue CHECK FOR UPDATES button and a News block beside a QR code. Our
+`settings-update` fixture draws a CURRENT VERSION label, an *up to date* line
+and a four-tab nav the screen does not have. It is left alone rather than
+rebuilt from a screenshot that is not in this repository - reconstructing
+against evidence nobody else can check is the error this report already
+documents twice.
+
 **What `Preset.proto` says a preset carries that our snapshot does not.**
 `stomp_labels`, `single_stomp_labels` and `stomp_is_momentary` are per-preset
 maps, so a footswitch caption is not always its block's name;
