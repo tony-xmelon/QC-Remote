@@ -484,7 +484,7 @@
       "height": 480,
       "deviceVariant": "quad-cortex",
       "renderer": {
-        "screen": "settings-account"
+        "screen": "settings-account-official"
       }
     },
     {

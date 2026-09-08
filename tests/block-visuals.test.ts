@@ -292,6 +292,16 @@ test("official System brightness values keep the alignment the device uses", () 
   assert.match(fixture, /\["LEDs", "32", 32\]/);
 });
 
+test("official Account manual fixture opens Backups without changing the physical My Account capture", () => {
+  const fixture = readFileSync("packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", "utf8");
+  const manifest = readFileSync("references/qc-ui-official-manual/coros-4.1.0/manifest.json", "utf8");
+  assert.match(fixture, /settings-account-official[\s\S]*?<CorOsOfficialSettings view="settings-account" manualAccount/);
+  assert.match(fixture, /manualAccount \? 1 : 0/);
+  assert.match(fixture, /Cloud Backups[^<]*<span>3\/5<\/span>/);
+  assert.match(fixture, /NEW CLOUD BACKUP/);
+  assert.match(manifest, /"id": "official-settings-account"[\s\S]*?"screen": "settings-account-official"/);
+});
+
 // Every rule above pins a number that is supposed to have come off a device
 // frame, but a test that reads our own stylesheet cannot tell a measurement from
 // an invention - that is how the item menu kept a four-entry height and the

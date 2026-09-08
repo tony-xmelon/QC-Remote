@@ -17,7 +17,12 @@
 .coros-settings-official.settings-account b > svg { width: 3cqw; height: 3cqw; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .coros-settings-official.settings-account > main > nav button b { color: #eef0ee; }
 .coros-settings-official.settings-account .settings-account-detail > * { transform: translateY(-.5cqw); }
-.coros-settings-official.settings-account .settings-account-detail > header { height: 4.875cqw; }
+.coros-settings-official.settings-account .settings-account-detail > header { height: 5.5cqw; }
+.coros-settings-official.settings-account .settings-account-detail > header small { font-size: 1.75cqw; }
+.coros-settings-official.settings-account .settings-account-detail small svg { width: 2cqw; height: 2cqw; display: inline-block; margin-right: .625cqw; vertical-align: -.5cqw; }
+.coros-settings-official.settings-account .settings-account-transfer { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: square; stroke-linejoin: miter; }
+.coros-settings-official.settings-account .settings-account-transfer .cloud { fill: currentColor; stroke: none; }
+.coros-settings-official.settings-account .settings-account-transfer .arrow { fill: none; stroke: #292c29; stroke-width: 2.5; }
 .coros-midi-out > header > span { transform: translateY(-1px); }
 .coros-midi-out > header .midi-trash { width: 8.25cqw; transform: translateX(-.375cqw); background: #081008; }
 

@@ -1488,6 +1488,11 @@ function SettingsPowerIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v9M7.2 5.7a8 8 0 1 0 9.6 0" /></svg>;
 }
 
+function SettingsAccountTransferGlyph({ kind }: { kind: "upload" | "download" }) {
+  if (kind === "download") return <svg className="settings-account-transfer" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 4v15m-5-5 5 5 5-5M7 18v7h18v-7M5 25h22v3H5Z" /></svg>;
+  return <svg className="settings-account-transfer" viewBox="0 0 32 32" aria-hidden="true"><path className="cloud" d="M8 25h16a6 6 0 0 0 1-11.9A9 9 0 0 0 8.4 10 7.5 7.5 0 0 0 8 25Z" /><path className="arrow" d="M16 23V13m-4 4 4-4 4 4" /></svg>;
+}
+
 function SettingsDeviceSectionIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2" /><rect x="7" y="5" width="10" height="5" /><path d="M8 14h1m3 0h1m3 0h1M8 18h1m3 0h1m3 0h1" /></svg>;
 }
@@ -1509,12 +1514,14 @@ function SettingsDeviceModelIcon({ kind }: { kind: string }) {
 
 function CorOsOfficialSettings({
   view,
+  manualAccount = false,
 }: {
   view:
     | "settings-account"
     | "settings-system"
     | "settings-device"
     | "settings-midi";
+  manualAccount?: boolean;
 }) {
   const data =
     view === "settings-midi"
@@ -1539,7 +1546,7 @@ function CorOsOfficialSettings({
           {
             title: "Account",
             icon: "♧",
-            active: 0,
+            active: manualAccount ? 1 : 0,
             rows: [
               ["♙", "My Account"],
               ["♻", "Backups"],
@@ -1623,7 +1630,31 @@ function CorOsOfficialSettings({
             </button>
           ))}
         </nav>
-        {view === "settings-account" ? (
+        {view === "settings-account" && manualAccount ? (
+          <section className="settings-account-detail is-backups">
+            <header>
+              <strong>Cloud Backups&nbsp; <span>3/5</span></strong>
+              <small>All timestamps are UTC</small>
+            </header>
+            <div>
+              <strong>My Rig 001</strong>
+              <small><SettingsAccountTransferGlyph kind="upload" /> August 29th, 2025, 17:06</small>
+              <small><SettingsAccountTransferGlyph kind="download" /> August 29th, 2025, 17:11</small>
+              <b>⋮</b>
+            </div>
+            <div>
+              <strong>My Backup</strong>
+              <small><SettingsAccountTransferGlyph kind="upload" /> November 15th, 2024, 19:22</small>
+              <b>⋮</b>
+            </div>
+            <div>
+              <strong>Tour 2025</strong>
+              <small><SettingsAccountTransferGlyph kind="upload" /> August 16th, 2023, 15:38</small>
+              <b>⋮</b>
+            </div>
+            <button>NEW CLOUD BACKUP</button>
+          </section>
+        ) : view === "settings-account" ? (
           <section className="settings-account-detail is-my-account">
             <h1>Device linked to</h1>
             <p>
@@ -2938,6 +2969,7 @@ export function CorOsScreenFixture({ view, snapshot, gigPresetList, onClose = ()
   if (view.startsWith("recovery-") || view.startsWith("overlay-")) return <CorOsSystemFixture view={view as SystemFixtureView} />;
   if (view === "tuner-live-enabled") return <CorOsTuner liveTuner onClose={onClose} />;
   if ((view as string) === "gig-official-hybrid-manual") return <CorOsOfficialGig mode="hybrid" manualHybrid />;
+  if ((view as string) === "settings-account-official") return <CorOsOfficialSettings view="settings-account" manualAccount />;
   if (view.startsWith("gig-official-")) return <CorOsOfficialGig mode={view.replace("gig-official-", "") as OfficialGigMode} />;
   if (view === "device-presets-official") return <CorOsDevicePresetScreen view="official-factory" />;
   if (view === "gig" || view === "gig-live-tuner") return <CorOsGigView snapshot={snapshot} presetList={gigPresetList} liveTuner={view === "gig-live-tuner"} onClose={onClose} />;
