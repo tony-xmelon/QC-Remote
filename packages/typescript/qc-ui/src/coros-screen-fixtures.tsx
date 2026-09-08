@@ -21,6 +21,7 @@ import "./official-gig.css";
 import "./official-modes.css";
 import "./official-settings-device.css";
 import "./official-tuner.css";
+import "./settings-system-panes.css";
 import "./qc-device-typography.css";
 
 type OfficialGigMode = "preset" | "scene" | "stomp" | "hybrid";
@@ -319,7 +320,8 @@ function CorOsCaptureFixture({ view }: { view: CaptureFixtureView }) {
   return <CorOsOfficialCapture view={view} />;
 }
 
-type SettingsFixtureView = "settings-account" | "settings-system" | "settings-device" | "settings-support" | "settings-wifi" | "settings-update" | "settings-storage" | "settings-midi" | "settings-info" | "settings-diagnostics";
+type SettingsFixtureView = "settings-account" | "settings-system" | "settings-device" | "settings-support" | "settings-wifi" | "settings-storage" | "settings-midi" | "settings-info" | "settings-diagnostics"
+  | "settings-system-power" | "settings-system-volume" | "settings-update-idle";
 
 function SettingsAccountGlyph({ kind }: { kind: "cloud" | "user" | "backup" }) {
   if (kind === "user") return <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="9" r="5" /><path d="M7 29v-7a9 9 0 0 1 18 0v7" /></svg>;
@@ -367,14 +369,33 @@ function CorOsOfficialSettings({ view }: { view: "settings-account" | "settings-
   </section>;
 }
 
-type CapturedSettingsView = "settings-support" | "settings-wifi" | "settings-storage" | "settings-info" | "settings-diagnostics";
+type CapturedSettingsView = "settings-support" | "settings-wifi" | "settings-storage" | "settings-info" | "settings-diagnostics"
+  | "settings-system-power" | "settings-system-volume" | "settings-update-idle";
 
 const SUPPORT_QR = [
   "11111111011111001101011111111", "10000001011001011100010000001", "10111101001100011111010111101", "10111101000101111111010111101", "10111101000001111101010111101", "10111101011001111100010111101", "10000001011110110001010000001", "11111111011010101101011111111", "00000000011100001110000000000", "11110011011101100110111110011", "11110111011101110111111111011", "01110100000000110111011011011", "00000001111110100111011011101", "00011000100011101101101111000", "00011011011110100111011000001", "01011100001110010111111000011", "11011101101101010111010011101", "11111111111111011111111111101", "00110010011011001101101111000", "11110101100011001101111110010", "00000000011101110001000110001", "11111111000011000001010110001", "10000001011101101111000110001", "10111101000011000111111110010", "10111101000111110111111110110", "10111101001111110110100110110", "10111101011011000111001111011", "10000001011010100001001110000", "11111111011001100001100011001"
 ];
 
+/** Read off `settings-update-idle.png`: 25 modules inside a 2-module quiet zone. */
+const UPDATE_QR = [
+  "00000000000000000000000000000", "00000000000000000000000000000", "00111111101111001010111111100",
+  "00100000101001011000100000100", "00101110100100011110101110100", "00101110100001111010101110100",
+  "00101110101001111000101110100", "00100000101110110010100000100", "00111111101010101010111111100",
+  "00000000001100001100000000000", "00111001101101100101111001100", "00011010000000110110110101100",
+  "00000000111110100110110110100", "00000100010011101011011100000", "00000101101110100110110000100",
+  "00010110000110010111110001100", "00110110110101010110100110100", "00001001001011001011011100000",
+  "00111010110011001011111001000", "00000000001101110010001000100", "00111111100011000010101000100",
+  "00100000101101101110001000100", "00101110100011000111111001000", "00101110100111110101001011000",
+  "00101110101011000110011101100", "00100000101010100010011000000", "00111111101001100011000100100",
+  "00000000000000000000000000000", "00000000000000000000000000000"
+];
+
+function QrGrid({ grid, className }: { grid: string[]; className: string }) {
+  return <b className={className} aria-hidden="true">{grid.flatMap((row, y) => [...row].map((cell, x) => <i key={`${x}-${y}`} className={cell === "1" ? "is-dark" : ""} />))}</b>;
+}
+
 function SupportQr() {
-  return <b className="support-qr" aria-hidden="true">{SUPPORT_QR.flatMap((row, y) => [...row].map((cell, x) => <i key={`${x}-${y}`} className={cell === "1" ? "is-dark" : ""} />))}</b>;
+  return <QrGrid grid={SUPPORT_QR} className="support-qr" />;
 }
 
 function CapturedSettingsIcon({ kind }: { kind: string }) {
@@ -386,6 +407,7 @@ function CapturedSettingsIcon({ kind }: { kind: string }) {
   if (kind === "diagnostics") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3h4v18h-4zM3 10h18v4H3z" fill="currentColor" stroke="none" /></svg>;
   if (kind === "licenses") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 2h9l5 5v15H5zM8 12h8M8 16h8M8 8h3" /></svg>;
   if (kind === "wifi") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8a14 14 0 0 1 18 0M6 12a9 9 0 0 1 12 0m-9 4a4 4 0 0 1 6 0" /><circle cx="12" cy="20" r="1" fill="currentColor" /></svg>;
+  if (kind === "headphones") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16v-4a8 8 0 0 1 16 0v4" /><rect x="2" y="14" width="5" height="7" rx="2" /><rect x="17" y="14" width="5" height="7" rx="2" /></svg>;
   if (kind === "updates") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 7V2l-3 3a8 8 0 1 0 4 13M6 17v5l3-3" /></svg>;
   if (kind === "brightness") return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 1v3m0 16v3M1 12h3m16 0h3M4 4l2 2m12 12 2 2M20 4l-2 2M6 18l-2 2" /></svg>;
   if (kind === "power") return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="3" fill="currentColor" stroke="none" /><path d="m13 4-6 10h5l-1 6 6-10h-5z" stroke="#282c28" /></svg>;
@@ -396,18 +418,46 @@ function CapturedSettingsIcon({ kind }: { kind: string }) {
 
 function CorOsCapturedSettings({ view }: { view: CapturedSettingsView }) {
   const support = view === "settings-support" || view === "settings-info" || view === "settings-diagnostics";
+  // The category selector is drawn on some panes and not others. Every frame
+  // that reaches these three shows the dialog without it, and the menu below
+  // does not move when it goes, so only the header changes.
+  const selector = !["settings-system-power", "settings-system-volume", "settings-update-idle"].includes(view);
   const rows = support
     ? [["about", "About and Contact"], ["info", "Device Information"], ["report", "Send Report"], ["diagnostics", "Diagnostics"], ["licenses", "3rd Party Licenses"]]
     : [["wifi", "Connection"], ["updates", "Updates"], ["brightness", "Brightness"], ["power", "Power Functions"], ["volume", "Master Volume Knob"], ["storage", "Device Storage"], ["factory", "Factory Reset"]];
-  const active = view === "settings-support" ? 0 : view === "settings-info" ? 1 : view === "settings-diagnostics" ? 3 : view === "settings-wifi" ? 0 : 5;
+  const active = ({
+    "settings-support": 0, "settings-info": 1, "settings-diagnostics": 3, "settings-wifi": 0,
+    "settings-update-idle": 1, "settings-system-power": 3, "settings-system-volume": 4, "settings-storage": 5
+  } as Record<string, number>)[view] ?? 5;
   return <section className={`qc-screen coros-settings-official coros-settings-captured ${view}`} aria-label={view.replaceAll("-", " ")}>
-    <header><button className="settings-section"><b><CapturedSettingsIcon kind={support ? "support" : "system"} /></b>{support ? "Support" : "System"}<i /></button>{view === "settings-info" && <button className="settings-edit" aria-label="Edit device name"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5v15h15v-8M11 14 20 5l-3-3-9 9-1 4 4-1Z" /></svg></button>}<button className="settings-done"><QcUiIcon kind="check" /></button></header>
+    <header>{selector && <button className="settings-section"><b><CapturedSettingsIcon kind={support ? "support" : "system"} /></b>{support ? "Support" : "System"}<i /></button>}{view === "settings-info" && <button className="settings-edit" aria-label="Edit device name"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5v15h15v-8M11 14 20 5l-3-3-9 9-1 4 4-1Z" /></svg></button>}<button className="settings-done"><QcUiIcon kind="check" /></button></header>
     <main><nav>{rows.map(([icon, label], index) => <button key={label} className={index === active ? "is-active" : ""}><b><CapturedSettingsIcon kind={icon} /></b>{label}</button>)}</nav>
       <section className="captured-settings-detail">
         {view === "settings-support" && <><h1>About Us</h1><div className="support-company"><span><strong>Neural DSP Technologies LLC</strong><br />Elimäenkatu 20A<br />00510 Helsinki<br />Finland</span><b><i>ϟ</i> Neural</b></div><hr /><div className="support-contact"><span>If you need support, you can contact<br />support@neuraldsp.com.<br /><br />Also be sure to check out our user forums at<br />unity.neuraldsp.com.</span><SupportQr /></div></>}
         {view === "settings-diagnostics" && <div className="captured-list">{["DSP Diagnostics", "Footswitch Statistics", "USB Statistics"].map(label => <button key={label}>{label}<span>›</span></button>)}</div>}
         {view === "settings-storage" && <><h1>Device Storage</h1><div className="storage-captured">{[["presets", "My Presets", "270/3072", 9], ["captures", "My Captures", "65/2048", 3], ["irs", "My Impulse Responses", "0/2048", 0]].map(([kind, label, value, amount]) => <div key={String(label)}><span><CapturedSettingsIcon kind={String(kind)} /><strong>{label}</strong><i>›</i><em>{value}</em></span><b><i style={{ width: `${amount}%` }} /></b></div>)}</div></>}
         {view === "settings-info" && <><h1>Device information</h1><div className="information-table"><span><b>Serial number:</b><i /></span><span><b>Device name:</b><i>Neural DSP Quad Cortex</i></span><span><b>MAC address:</b><i /></span></div><hr /><h1>Software information</h1><div className="information-table"><span><b>CorOS:</b><i>4.1.0</i></span><span><b>Linux kernel:</b><i>Linux buildroot 4.0.0-ADI-1.3.0 #1 PREEMPT Tue<br />Aug 18 01:26:58 EEST 2026 armv7l (none)</i></span><span><b>U-Boot:</b><i>U-Boot 2015.01 ADI-1.3.0 (Sep 30 2021 -<br />01:01:44)</i></span><span><b>Zenjack FW app:</b><i>d14e</i></span><span><b>Zenjack FW bootloader:</b><i>b113</i></span><span><b>Zencoder FW app:</b><i>d111</i></span><span><b>Zencoder FW bootloader:</b><i>b103</i></span><span><b>Zenwireless FW:</b><i>cf9daede4300aaae664fc527cede12ae</i></span></div></>}
+        {view === "settings-system-power" && <>
+          <h1>Power Functions</h1>
+          <h2>Power Button Sensitivity</h2>
+          <p>Configure the sensitivity below. Tap the power button (above the volume knob) to see if it&apos;s responding as expected. If your touch is detected, all LEDs will illuminate.</p>
+          <div className="power-scale">{["Off", "Low", "Medium", "High"].map((label, index) => <span key={label} className={index === 3 ? "is-active" : ""}>{label}</span>)}</div>
+          <div className="power-bar">{[0, 1, 2, 3].map((index) => <i key={index} />)}</div>
+          <button className="power-restart">RESTART</button>
+        </>}
+        {view === "settings-system-volume" && <>
+          <h1>Master Volume Knob Assignment</h1>
+          <p className="volume-lead">Master Volume can control different outputs</p>
+          <hr />
+          <div className="volume-assignments">{["OUT 1/2", "OUT 3/4", "SEND 1/2", ""].map((label, index) => <span key={index}>{label ? <em>{label}</em> : <CapturedSettingsIcon kind="headphones" />}<i><QcUiIcon kind="check" /></i></span>)}</div>
+        </>}
+        {view === "settings-update-idle" && <>
+          <h1>Device Updates</h1>
+          <p className="update-version">Your Quad Cortex is currently running<br /><strong>CorOS: 4.1.0</strong></p>
+          <hr />
+          <button className="update-check">CHECK FOR UPDATES</button>
+          <div className="update-news"><h2>News</h2><p>Visit our blog and check out the latest news<br />at neuraldsp.com/news<br />or scan the QR code.</p><QrGrid grid={UPDATE_QR} className="update-qr" /></div>
+        </>}
         {view === "settings-wifi" && <><header className="wifi-header"><h1>Internet Connected</h1><button>Domain Settings</button><button>Internet Check</button></header><div className="wifi-network"><span>▣</span><b /><em>Weak connection</em><i>▥</i><strong>▮</strong></div><div className="wifi-secondary"><span>▣</span><strong>▮</strong></div><button className="wifi-reset">RESET WI-FI SETTINGS</button></>}
       </section>
     </main>
@@ -416,8 +466,7 @@ function CorOsCapturedSettings({ view }: { view: CapturedSettingsView }) {
 
 function CorOsSettingsFixture({ view }: { view: SettingsFixtureView }) {
   if (view === "settings-account" || view === "settings-system" || view === "settings-device" || view === "settings-midi") return <CorOsOfficialSettings view={view} />;
-  if (view === "settings-support" || view === "settings-wifi" || view === "settings-storage" || view === "settings-info" || view === "settings-diagnostics") return <CorOsCapturedSettings view={view} />;
-  return <section className="qc-screen coros-settings-fixture" aria-label="Device Updates"><header><button>‹</button><strong>Device Updates</strong><button>✓</button></header><main><nav>{[["ACCOUNT", "♙"], ["SYSTEM", "⚙"], ["DEVICE", "▣"], ["SUPPORT", "?"]].map(([label, icon]) => <button key={label} className={label === "SYSTEM" ? "is-active" : ""}><b>{icon}</b><span>{label}</span></button>)}</nav><section className="settings-content"><div className="settings-update"><span>CURRENT VERSION</span><strong>CorOS 4.1.0</strong><i><b /></i><small>Your Quad Cortex is up to date</small><button>CHECK FOR UPDATES</button></div></section></main></section>;
+  return <CorOsCapturedSettings view={view} />;
 }
 
 function SceneTileTools() {

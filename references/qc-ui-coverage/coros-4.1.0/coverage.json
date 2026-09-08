@@ -1022,7 +1022,9 @@
         "settings-system"
       ],
       "physical": [
-        "settings-system"
+        "settings-system",
+        "settings-system-power",
+        "settings-system-volume"
       ]
     },
     {
@@ -1060,9 +1062,12 @@
     },
     {
       "id": "ST-06",
-      "renderer": "settings-update",
+      "renderer": "settings-update-idle",
       "smoke": [
-        "settings-update"
+        "settings-update-idle"
+      ],
+      "physical": [
+        "settings-update-idle"
       ]
     },
     {

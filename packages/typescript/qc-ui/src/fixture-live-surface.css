@@ -989,5 +989,5 @@
 .qc-screen.coros-block-context.is-bottom .assignment-parameters > section > .assignment-knob { left: 80px; top: 38px; width: 60px; height: 60px; border-color: #16dfcc #212821 #16dfcc #16dfcc; }
 .qc-screen.coros-block-context.is-bottom .assignment-parameters > section > .assignment-knob b { height: 22px; background: #f2f2f2; }
 .qc-screen.coros-block-context.is-bottom .assignment-parameters > section > span { color: #e7e3e7; }
-.qc-screen.coros-block-context.is-bottom .assignment-parameters > section > strong { bottom: 15px; color: #e7e3e7; }
-
+.qc-screen.coros-block-context.is-bottom .assignment-parameters > section > strong { bottom: 15px; color: #e7e3e7; 
+}

@@ -1,0 +1,136 @@
+{
+  "device": "Quad Cortex, CorOS 4.1.0",
+  "note": "Settings is a master-detail dialog: the corpus held only two of its panes because the rest are reached by selecting a row, and a straight-line script rarely survives long enough to select one. A pane's heading is drawn without a text node, so the marker is the pane's own widget class - zenUI::PowerButtonSensitivitySettings is only ever Power Functions - and a capture cannot be written under the name of a pane the dialog is not showing.",
+  "captures": [
+    {
+      "slug": "settings-system-power",
+      "label": "Settings > System > Power Functions",
+      "route": [
+        "settings"
+      ],
+      "rows": [
+        [
+          140,
+          270
+        ]
+      ],
+      "marker": "zenUI::PowerButtonSensitivitySettings"
+    },
+    {
+      "slug": "settings-system-volume",
+      "label": "Settings > System > Master Volume Knob",
+      "route": [
+        "settings"
+      ],
+      "rows": [
+        [
+          140,
+          330
+        ]
+      ],
+      "marker": "zenUI::MasterVolumeSettings"
+    },
+    {
+      "slug": "settings-update-idle",
+      "label": "Settings > System > Device Updates, idle",
+      "route": [
+        "settings"
+      ],
+      "rows": [
+        [
+          140,
+          150
+        ]
+      ],
+      "marker": "zenUI::UpdaterSettings"
+    },
+    {
+      "slug": "settings-device-scene-bypass",
+      "label": "Settings > Device > Scene Bypass Behavior",
+      "route": [
+        "device"
+      ],
+      "rows": [
+        [
+          140,
+          150
+        ]
+      ],
+      "marker": "Scene Bypass State Behavior"
+    },
+    {
+      "slug": "settings-device-stomp-bypass",
+      "label": "Settings > Device > Stomp Mode Bypass Assignment",
+      "route": [
+        "device"
+      ],
+      "rows": [
+        [
+          140,
+          210
+        ]
+      ],
+      "marker": "Stomp Mode Bypass Assignment"
+    },
+    {
+      "slug": "settings-device-hold-timing",
+      "label": "Settings > Device > Hold Timing",
+      "route": [
+        "device"
+      ],
+      "rows": [
+        [
+          140,
+          270
+        ]
+      ],
+      "marker": "Sets how long a footswitch"
+    },
+    {
+      "slug": "settings-device-swap-tempo-tuner",
+      "label": "Settings > Device > Swap Tempo and Tuner Access",
+      "route": [
+        "device"
+      ],
+      "rows": [
+        [
+          140,
+          330
+        ]
+      ],
+      "marker": "Swap Tempo and Tuner Access"
+    },
+    {
+      "slug": "settings-device-gig-view",
+      "label": "Settings > Device > Gig View Footswitch Access",
+      "route": [
+        "device"
+      ],
+      "rows": [
+        [
+          140,
+          390
+        ]
+      ],
+      "marker": "Gig View Footswitch Access"
+    },
+    {
+      "slug": "settings-device-latency",
+      "label": "Settings > Device > Dynamic Latency Compensation",
+      "route": [
+        "device"
+      ],
+      "rows": [
+        [
+          140,
+          450
+        ]
+      ],
+      "marker": "Dynamic Latency Compensation"
+    }
+  ],
+  "deliberately-not-captured": {
+    "System > Connection": "the pane lists the owner's Wi-Fi networks, their BSSIDs and the unit's IP address; settings-wifi already covers the layout with those values redacted",
+    "System > Factory Reset": "selecting the row is harmless, but the pane it opens carries FACTORY RESET, and no screen is worth putting that under a stray tap"
+  }
+}

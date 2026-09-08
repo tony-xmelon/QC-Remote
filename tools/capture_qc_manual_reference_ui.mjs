@@ -32,7 +32,7 @@ const defaultViews = [
   "fixture-delete", "fixture-input-gate", "fixture-editor-pages", "fixture-editor-cab",
   "fixture-editor-eq", "fixture-editor-capture", "fixture-warning-clip", "fixture-warning-dsp",
   "settings-account", "settings-system", "settings-device", "settings-support", "settings-wifi",
-  "settings-update", "settings-storage", "settings-midi", "settings-info", "settings-diagnostics"
+  "settings-update-idle", "settings-system-power", "settings-system-volume", "settings-storage", "settings-midi", "settings-info", "settings-diagnostics"
 ];
 const views = process.env.QC_CAPTURE_VIEWS?.split(",").map((view) => view.trim()).filter(Boolean) ?? defaultViews;
 const windowsCss = `

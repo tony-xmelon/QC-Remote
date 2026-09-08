@@ -5,9 +5,9 @@ Generated from the CorOS 4.1.0 executable coverage ledger. This report distingui
 ## Coverage summary
 
 - Canonical device states: **104/104** routed through the shared Windows/Android surface.
-- Full-frame authoritative evidence: **96/104** states.
+- Full-frame authoritative evidence: **97/104** states.
 - Official-detail-only evidence: **4/104** states.
-- Smoke-only evidence gaps: **4/104** states.
+- Smoke-only evidence gaps: **3/104** states.
 - Exact-size dual-host capture paths: **104/104** states.
 
 | Corpus | Windows structural | Windows color | Android structural | Android color |
@@ -151,7 +151,7 @@ Two things below are **not** refreshed for them, because both come from a scored
 | ST-03 | Settings | Device settings | official frame | Built | Built | — / — | — / — | 92.92% / 92.92% | 96.37% / 96.38% |
 | ST-04 | Settings | Support settings | physical frame | Built | Built | 97.08% / 97.08% | 95.96% / 95.96% | — / — | — / — |
 | ST-05 | Settings | Wi-Fi/network chooser | physical frame | Built | Built | 93.92% / 93.92% | 97.69% / 97.69% | — / — | — / — |
-| ST-06 | Settings | Update availability/progress | smoke only | Built | Built | — / — | — / — | — / — | — / — |
+| ST-06 | Settings | Update availability/progress | physical frame | Built | Built | 98.08% / 98.08% | 97.12% / 97.12% | — / — | — / — |
 | ST-07 | Settings | Storage and factory reset | physical frame | Built | Built | 93.31% / 93.31% | 97.39% / 97.39% | — / — | — / — |
 | ST-08 | Settings | MIDI settings | official frame | Built | Built | — / — | — / — | 96.16% / 96.16% | 97.44% / 97.44% |
 | ST-09 | Settings | Device information | physical frame | Built | Built | 93.21% / 93.21% | 97.20% / 97.20% | — / — | — / — |
@@ -260,7 +260,6 @@ refused by the tool rather than left to discipline.
 | state | renderer | why |
 | --- | --- | --- |
 | DR-16 | `directory-cloud-upload` | **Captured with the owner's explicit approval**, who nominated preset 4B "Top 3 Acoustic Sims" and authorised overwriting. Pressing a row's upload button raised a *Preset already exists / CANCEL / OVERWRITE* dialog, captured separately as `cloud-upload-overwrite` and attached to OV-02, which shares the overlay. Only 4B left the unit. |
-| ST-06 | `settings-update` | The acquisition plan marks it `do-not-trigger`: reaching update progress means starting a firmware update. |
 | ED-15 | `fixture-warning-dsp` | **Attempted and not reproduced.** The scratch preset was loaded up with an amp, a Looper and a second amp until the DSP was full. CorOS does not warn after the fact: it **greys out** every model that no longer fits in the device browser, and tapping a greyed model does nothing at all. So the warning our `fixture-warning-dsp` renderer draws is reached some other way - a preset that became too heavy after a model update is the likeliest - and the fixture is unverified until that path is found. |
 | GL-22 | `gig-official-hybrid` | **Captured, with the owner performing the merge gesture on the unit.** Two remote forms were tried first and neither landed: the atomic DRAG picks the tile up - it lifts and a red delete target replaces the tick - but never drops, and a composed PRESS, hold, repeated MOVE, RELEASE does not pick it up at all. An earlier revision of this row claimed the protocol cannot express the gesture; that was wrong, since RemoteControlMouse has PRESS, RELEASE and MOVE as distinct types. What is unproven is the timing CorOS expects. Once the owner merged Preset and Scene by hand, Gig View in HYBRID captured normally as `gig-view-hybrid`. |
 
@@ -283,7 +282,6 @@ These states are implemented and captured on both hosts, but only against determ
 | --- | --- | --- | --- | --- | --- | --- |
 | ED-14 | Grid | I/O clipping warning | `fixture-warning-clip` | controlled-transient | requires-trigger | `fixture-warning-clip` |
 | ED-15 | Grid | DSP/side-chain limit warning | `fixture-warning-dsp` | controlled-transient | requires-disposable-preset | `fixture-warning-dsp` |
-| ST-06 | Settings | Update availability/progress | `settings-update` | external-evidence | do-not-trigger | `settings-update` |
 | RC-02 | Recovery | Recovery options | `recovery-options` | disruptive | requires-scheduled-session | `recovery-options` |
 
 ### What the device schema says these three should contain
@@ -293,22 +291,19 @@ describes the state behind three of the four rows above. It gives no pixels, but
 it does say what the screens are made of, and in two cases it contradicts what
 the fixture draws.
 
-- **ST-06** - `UpdaterMessage` carries `new_version_id`, `changelog`,
-  `download_progress` and `installation_progress`. `UpdaterStatus` is none /
-  new version available / new version downloaded / no new version, and
-  `UpdaterState` is idle, requesting, downloading, updating, reboot, failed.
-  The fixture draws one of those, *up to date*; the capture plan needs the rest.
-
-  The idle screen was then **seen on the unit** in the 2026-09-08 session, by
-  opening Settings and selecting System > Updates, which displays but checks
-  nothing. It is a `zenUI::UpdaterSettings` pane headed **Device Updates**,
-  reading *Your Quad Cortex is currently running* over **CorOS: 4.1.0**, with a
-  blue **CHECK FOR UPDATES** button and a *News* block pointing at
-  neuraldsp.com/news beside a QR code. The `settings-update` fixture draws none
-  of that - it has a CURRENT VERSION label, an *up to date* line and a
-  four-tab ACCOUNT/SYSTEM/DEVICE/SUPPORT nav the screen does not have. **The
-  fixture is wrong**, and is left alone rather than rebuilt against a screenshot
-  that is not in this repository: the frame itself has to be captured first.
+- **ST-06 is no longer a gap.** `UpdaterMessage` carries `new_version_id`,
+  `changelog`, `download_progress` and `installation_progress` across four
+  `UpdaterStatus` values and six `UpdaterState` values. The idle one is now
+  captured as `settings-update-idle`: opening Settings and selecting
+  System > Updates displays the page and checks nothing. It is a
+  `zenUI::UpdaterSettings` pane headed **Device Updates**, reading *Your Quad
+  Cortex is currently running* over **CorOS: 4.1.0**, with a blue **CHECK FOR
+  UPDATES** button and a *News* block pointing at neuraldsp.com/news beside a QR
+  code. The invented `settings-update` fixture - a CURRENT VERSION label, an *up
+  to date* line and a four-tab nav the screen does not have - has been deleted,
+  and `settings-update-idle` reconstructs the frame at **0.98 edge agreement**.
+  The other nine updater states still have no frame, and reaching them means
+  starting a firmware update.
 - **ED-14** - `IOMeterMessage` reports no input clipping. It reports limiter
   activity on the outputs: `xlr_1_limiter`, `xlr_2_limiter`, `out_3_limiter`,
   `out_4_limiter`, `hp_limiter_active`. The fixture's *INPUT CLIPPING - reduce

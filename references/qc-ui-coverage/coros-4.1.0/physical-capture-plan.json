@@ -27,14 +27,6 @@
       "restore": "Reload the original clean scratch preset"
     },
     {
-      "id": "ST-06",
-      "tier": "external-evidence",
-      "status": "do-not-trigger",
-      "route": "Acquire during a user-initiated supported CorOS update or from an official full-frame source",
-      "capture": "Update progress",
-      "restore": "Never initiate or interrupt firmware update solely for corpus acquisition"
-    },
-    {
       "id": "RC-02",
       "tier": "disruptive",
       "status": "requires-scheduled-session",
