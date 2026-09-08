@@ -125,7 +125,7 @@ test("shared glyph registry covers hardware, routing, directory, editing, and co
   assert.match(fixtures, /return <QcModeGlyph mode=\{mode\} \/>/, "fixture modes must delegate to the shared glyph registry");
   assert.match(fixtures, /return <QcDirectoryIcon kind=\{kind\} number=\{number\} \/>/, "fixture Directory icons must delegate to the shared glyph registry");
   const manifest = JSON.parse(read("references/qc-ui-iconography/coros-4.1.0/manifest.json"));
-  for (const icon of ["mode.preset", "mode.scene", "mode.stomp", "mode.hybrid", "block.capture-wave", "interface.check", "settings.connection", "settings.updates", "settings.brightness", "settings.power", "settings.volume", "settings.storage", "settings.factory-reset", "eq.high-pass"]) {
+  for (const icon of ["mode.preset", "mode.scene", "mode.stomp", "mode.hybrid", "block.capture-wave", "interface.check", "settings.connection", "settings.updates", "settings.brightness", "settings.power", "settings.volume", "settings.storage", "settings.factory-reset", "eq.high-pass", "editor.band-power", "editor.footswitch", "editor.momentary", "library.capture-library", "library.impulse-response"]) {
     assert.ok(manifest.canonicalRasterIcons.includes(icon), `${icon} must be generated from its canonical device crop`);
   }
   assert.match(icons, /const icon = `mode\.\$\{mode\.toLowerCase\(\)\}`/);
@@ -150,6 +150,12 @@ test("shared glyph registry covers hardware, routing, directory, editing, and co
   const captureFilter = icons.slice(icons.indexOf("export function QcCaptureFilterIcon"), icons.indexOf("export function QcEditorIcon"));
   assert.match(captureFilter, /return <QcReferenceRaster icon=\{icons\[kind\]\}/, "capture filters must render from their authoritative corpus crops");
   assert.doesNotMatch(captureFilter, /<rect|<circle|<path/, "capture filters must not maintain alternate hand-drawn geometry");
+  const editorMap = icons.slice(icons.indexOf("function editorReferenceIcon"), icons.indexOf("export function QcIoIcon"));
+  for (const icon of ["band-power", "footswitch", "momentary"]) {
+    assert.match(editorMap, new RegExp(`${icon.replace("-", "\\-")}[^\\n]+editor\\.${icon.replace("-", "\\-")}`), `${icon} must resolve through the shared raster registry`);
+  }
+  const editorComponent = icons.slice(icons.indexOf("export function QcEditorIcon"));
+  assert.doesNotMatch(editorComponent, /kind === "(?:band-power|footswitch|momentary)"/, "editor controls must not keep duplicate hand-drawn artwork");
 });
 
 test("production and comparison screens cannot select alternate icon artwork", () => {

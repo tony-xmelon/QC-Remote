@@ -288,7 +288,7 @@
       "height": 480,
       "deviceVariant": "quad-cortex",
       "renderer": {
-        "screen": "directory-captures"
+        "screen": "directory-captures-official"
       }
     },
     {
@@ -302,7 +302,7 @@
       "height": 480,
       "deviceVariant": "quad-cortex",
       "renderer": {
-        "screen": "directory-irs"
+        "screen": "directory-irs-official"
       }
     },
     {

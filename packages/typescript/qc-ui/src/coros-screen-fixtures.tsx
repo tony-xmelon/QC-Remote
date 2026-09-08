@@ -35,7 +35,7 @@ function GigStompGlyph({ index }: { index: number }) {
 }
 
 function OfficialGigModeIcon({ mode }: { mode: OfficialGigMode }) {
-  if (mode === "hybrid") return <span className="gig-mode-hybrid"><svg viewBox="0 0 24 24" aria-hidden="true"><QcModeGlyph mode="SCENE" /></svg><b>+</b><svg viewBox="0 0 24 24" aria-hidden="true"><QcModeGlyph mode="STOMP" /></svg></span>;
+  if (mode === "hybrid") return <span className="gig-mode-hybrid-raster"><QcModeGlyph mode="HYBRID" /></span>;
   return <svg className={`gig-mode-icon gig-mode-icon-${mode}`} viewBox="0 0 24 24" aria-hidden="true"><QcModeGlyph mode={mode.toUpperCase() as PresetSnapshot["mode"]} /></svg>;
 }
 
@@ -84,9 +84,11 @@ const CAPTURE_FILTERS = ["Default", "Amp", "Combo Amp", "Amp + Cab", "Cab", "Ove
 function CorOsOfficialDirectory({
   view,
   filter = false,
+  manualReference = false,
 }: {
   view: OfficialDirectoryView;
   filter?: boolean;
+  manualReference?: boolean;
 }) {
   if (view === "directory-presets") {
     const rows = [
@@ -387,7 +389,9 @@ function CorOsOfficialDirectory({
           "4-Comp Custom 6",
           "4-Comp Custom 7",
         ]
-      : [];
+      : irs && manualReference
+        ? ["IR21", "IR20", "IR19", "IR18", "IR17", "IR16", "IR15"]
+        : [];
   const nav = favorite
     ? [
         ["▦", "Presets", "active"],
@@ -414,6 +418,13 @@ function CorOsOfficialDirectory({
           ["□", "My Captures", "child"],
           ["□", "New Folder", "child muted"],
         ]
+      : irs && manualReference
+        ? [
+            ["☁", "Cloud IRs", "active"],
+            ["≋", "IRs Library", "counted"],
+            ["□", "My IRs", "child"],
+            ["□", "New Folder", "child muted"],
+          ]
       : irs
         ? [
             ["☁", "Cloud IRs", ""],
@@ -432,7 +443,7 @@ function CorOsOfficialDirectory({
           ];
   return (
     <section
-      className={`qc-screen directory-official${view === "directory-plugins" ? " is-plugins" : ""}${favorite ? " directory-favorites-official" : ""}${captures ? " directory-captures-official" : ""}${filteredCaptures ? " directory-filter-official" : ""}${irs ? " directory-irs-official" : ""}`}
+      className={`qc-screen directory-official${view === "directory-plugins" ? " is-plugins" : ""}${favorite ? " directory-favorites-official" : ""}${captures ? " directory-captures-official" : ""}${filteredCaptures ? " directory-filter-official" : ""}${irs ? " directory-irs-official" : ""}${manualReference ? " is-manual-reference" : ""}`}
     >
       <header>
         {filteredCaptures && <button className="directory-filter-back"><QcUiIcon kind="previous" /></button>}
@@ -526,6 +537,11 @@ function CorOsOfficialDirectory({
           </>
         ) : irs ? (
           <>
+            {manualReference && (
+              <button className="directory-primary-action">
+                <GridToolbarIcon kind="refresh" />
+              </button>
+            )}
             <span />
             <button>
               <DirectoryIcon kind="sort" />
@@ -586,7 +602,7 @@ function CorOsOfficialDirectory({
               </b>
               <span>{label}{filteredCaptures && label === "Captures Library" && <small>Fuzz</small>}</span>
               {className?.includes("counted") && <em>3</em>}
-              {captures && !filteredCaptures && label === "Captures Library" && <em>2127</em>}
+              {captures && !filteredCaptures && label === "Captures Library" && <em>{manualReference ? 2062 : 2127}</em>}
             </button>
           ))}
         </nav>
@@ -596,7 +612,7 @@ function CorOsOfficialDirectory({
               kind="neural-mark"
               className="plugin-directory-logo"
             />
-          ) : irs ? (
+          ) : irs && !manualReference ? (
             <svg
               className="ir-directory-logo"
               viewBox="0 0 120 140"
@@ -2942,6 +2958,8 @@ export function CorOsScreenFixture({ view, snapshot, gigPresetList, onClose = ()
   if (view === "block-context") return <CorOsBlockContext />;
   if (view === "directory-new-folder") return <CorOsDirectoryNameScreen />;
   if (view === "directory-filter") return <CorOsOfficialDirectory view="directory-captures" filter />;
+  if (view === "directory-captures-official") return <CorOsOfficialDirectory view="directory-captures" manualReference />;
+  if (view === "directory-irs-official") return <CorOsOfficialDirectory view="directory-irs" manualReference />;
   if (view.startsWith("directory-")) return (["directory-presets", "directory-captures", "directory-irs", "directory-plugins", "directory-favorites", "directory-search-results", "directory-nested", "directory-cloud-upload"] as string[]).includes(view) ? <CorOsOfficialDirectory view={view as OfficialDirectoryView} /> : <CorOsDirectoryFixture view={view as DirectoryFixtureView} />;
   if (view.startsWith("capture-")) return <CorOsCaptureFixture view={view as CaptureFixtureView} />;
   if (view.startsWith("settings-")) return <CorOsSettingsFixture view={view as SettingsFixtureView} />;
