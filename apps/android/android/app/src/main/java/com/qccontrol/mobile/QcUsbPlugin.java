@@ -1615,17 +1615,12 @@ public class QcUsbPlugin extends Plugin {
             return;
         }
         if (decision.kind == QcNativeStateDecoder.InitializationDecision.COMPLETE) {
-            boolean firstCompletion = !stateDecoder.sessionConnected();
+            boolean connectionChanged = !stateDecoder.sessionConnected();
             boolean synchronizationChanged =
                 stateDecoder.sessionSynchronized() != decision.synchronizedState;
-            if (firstCompletion) {
-                stateDecoder.sessionHandshakeComplete(
-                    monotonicMillis(), decision.synchronizedState);
-            } else if (synchronizationChanged) {
-                stateDecoder.sessionStateObserved(
-                    monotonicMillis(), decision.synchronizedState);
-            }
-            if (firstCompletion || synchronizationChanged) {
+            stateDecoder.sessionSynchronizationCompleted(
+                monotonicMillis(), decision.synchronizedState);
+            if (connectionChanged || synchronizationChanged) {
                 commandNotBeforeMs = monotonicMillis() + QcUsbProfile.POST_INITIALIZATION_WRITE_DELAY_MS;
                 resolvePendingReady();
             }

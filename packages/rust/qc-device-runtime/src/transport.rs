@@ -340,6 +340,19 @@ impl TransportRuntime {
         self.session.handshake_completed(now_ms, synchronized);
     }
 
+    /// Apply an authoritative initialization result without asking adapters to
+    /// interpret the current transport phase. The first result completes the
+    /// handshake; late or rebuilt results update an established session.
+    pub fn synchronization_completed(&mut self, now_ms: u64, synchronized: bool) {
+        match self.phase() {
+            SessionPhase::Handshaking => self.handshake_completed(now_ms, synchronized),
+            SessionPhase::Syncing | SessionPhase::Ready => {
+                self.state_observed(now_ms, synchronized)
+            }
+            SessionPhase::Disconnected | SessionPhase::Searching => {}
+        }
+    }
+
     pub fn state_observed(&mut self, now_ms: u64, preset_synchronized: bool) {
         self.session.state_observed(now_ms, preset_synchronized);
     }
@@ -661,5 +674,17 @@ mod tests {
         runtime.state_observed(3, true);
         assert_eq!(runtime.phase(), SessionPhase::Ready);
         assert!(runtime.synchronized());
+    }
+
+    #[test]
+    fn synchronization_completion_interprets_transport_phase_once() {
+        let mut runtime = TransportRuntime::new(0);
+        runtime.transport_opened(0);
+        runtime.synchronization_completed(1, false);
+        assert_eq!(runtime.phase(), SessionPhase::Syncing);
+        runtime.synchronization_completed(2, true);
+        assert_eq!(runtime.phase(), SessionPhase::Ready);
+        runtime.synchronization_completed(3, false);
+        assert_eq!(runtime.phase(), SessionPhase::Syncing);
     }
 }

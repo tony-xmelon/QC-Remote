@@ -165,8 +165,8 @@ final class QcNativeStateDecoder implements AutoCloseable {
     int modelCount() { return nativeModelCount(requireHandle()); }
 
     void sessionOpened(long nowMs) { nativeSessionOpened(requireHandle(), nowMs); }
-    void sessionHandshakeComplete(long nowMs, boolean synchronizedState) {
-        nativeSessionHandshakeComplete(
+    void sessionSynchronizationCompleted(long nowMs, boolean synchronizedState) {
+        nativeSessionSynchronizationCompleted(
             requireHandle(), nowMs, synchronizedState ? 1 : 0);
     }
     void sessionStateObserved(long nowMs, boolean presetSynchronized) {
@@ -658,7 +658,7 @@ final class QcNativeStateDecoder implements AutoCloseable {
     private static native String nativePresetList(long handle, String setlistKey);
     private static native String nativePresetSlots(long handle);
     private static native void nativeSessionOpened(long handle, long nowMs);
-    private static native void nativeSessionHandshakeComplete(
+    private static native void nativeSessionSynchronizationCompleted(
         long handle, long nowMs, int synchronizedState);
     private static native void nativeSessionStateObserved(long handle, long nowMs, int presetSynchronized);
     private static native int nativeSessionConnected(long handle);

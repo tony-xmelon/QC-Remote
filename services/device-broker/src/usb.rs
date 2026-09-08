@@ -457,7 +457,7 @@ impl QcUsb {
                         let first_action = startup.observe(message.message_type, &message.payload);
                         let connected =
                             usb.finish_hello(startup, first_action, session, session_clock)?;
-                        session.handshake_completed(
+                        session.synchronization_completed(
                             session_clock.elapsed().as_millis() as u64,
                             connected.synchronized,
                         );

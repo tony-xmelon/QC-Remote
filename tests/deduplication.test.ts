@@ -613,6 +613,7 @@ test("one Rust command and framing engine owns both native USB hosts", () => {
   assert.match(androidPlugin, /stateDecoder\.initializationAdvance/);
   assert.match(androidPlugin, /stateDecoder\.sessionConnected\(\)/);
   assert.match(androidPlugin, /stateDecoder\.sessionSynchronized\(\)/);
+  assert.match(androidPlugin, /stateDecoder\.sessionSynchronizationCompleted\(/);
   assert.doesNotMatch(androidPlugin, /handshakeComplete|stateSynchronized|initializationComplete/);
   assert.match(androidPlugin, /stateDecoder\.encodeReports/);
   assert.match(androidPlugin, /stateDecoder\.pushReport/);

@@ -53,6 +53,9 @@ both native hosts publish synchronization only from the shared semantic-seed
 decision, including recovery when missing seed fields arrive late.
 An incomplete initial seed remains retained on both hosts until late state
 completes it; a synchronized seed is released immediately.
+The transport runtime itself interprets each completed seed against its phase,
+so adapters do not choose between first-handshake and established-session
+readiness transitions.
 The staged Version/ModelRepo/ModuleStats/Updater sequence also owns its total
 readiness deadline in Rust; both hosts only supply a monotonic clock and react
 to the same timeout decision. Its phase and error names are stable shared enum

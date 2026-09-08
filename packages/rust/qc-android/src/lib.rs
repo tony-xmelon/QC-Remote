@@ -1585,7 +1585,7 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeSess
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeSessionHandshakeComplete(
+pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeSessionSynchronizationCompleted(
     _env: JNIEnv,
     _class: JClass,
     value: jlong,
@@ -1593,7 +1593,7 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeSess
     synchronized_state: jint,
 ) {
     let _ = with_transport(value, |transport| {
-        transport.handshake_completed(now_ms.max(0) as u64, synchronized_state != 0);
+        transport.synchronization_completed(now_ms.max(0) as u64, synchronized_state != 0);
         0
     });
 }

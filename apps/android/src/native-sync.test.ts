@@ -509,7 +509,7 @@ test("Android requires explicit attachment connect but recovers an unexpected re
   assert.match(javaSource, /stateDecoder\.nextRequestId\(\)/);
   assert.doesNotMatch(javaSource, /AtomicLong requestIds/);
   assert.match(javaSource, /if \(!stateDecoder\.sessionSynchronized\(\)\) \{\s*stateDecoder\.initializationObserved\(decoded\.messageType, decoded\.payload\)/);
-  assert.match(javaSource, /synchronizationChanged[\s\S]*sessionStateObserved\([\s\S]*decision\.synchronizedState/);
+  assert.match(javaSource, /synchronizationChanged[\s\S]*sessionSynchronizationCompleted\([\s\S]*decision\.synchronizedState/);
   assert.match(javaSource, /decision\.beginBuilding[\s\S]*sessionStateObserved\(monotonicMillis\(\), false\)/);
   assert.doesNotMatch(javaSource, /scheduleAutomaticReconnect[\s\S]{0,800},\s*250,\s*TimeUnit\.MILLISECONDS/);
 });
