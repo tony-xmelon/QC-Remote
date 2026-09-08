@@ -1323,7 +1323,6 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativePost
     _class: JClass,
     value: jlong,
     now_ms: jlong,
-    request_id: jlong,
 ) {
     let result = (|| {
         let native = handle(value)?;
@@ -1331,13 +1330,9 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativePost
             .startup
             .lock()
             .map_err(|_| "native QC startup lock was poisoned".to_string())?
-            .as_ref()
+            .as_mut()
             .ok_or_else(|| "no native QC startup is active".to_string())?
-            .post_boot_initialization(
-                now_ms.max(0) as u64,
-                u64::try_from(request_id)
-                    .map_err(|_| "initialization request id must be non-negative".to_string())?,
-            )
+            .post_boot_initialization(now_ms.max(0) as u64)
             .map_err(|error| format!("post-boot initialization rejected: {error:?}"))?;
         *native
             .initialization

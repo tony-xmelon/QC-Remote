@@ -1281,12 +1281,20 @@ async function main() {
       );
       verified("show_gig_view", { width: gigScreen.width, height: gigScreen.height, sha256: screenDigest(gigScreen) });
       await transport.call("show_gig_view", { shown: false });
-      await waitForPhysicalObservation(
+      const waitForGigViewDismissal = () => waitForPhysicalObservation(
         () => transport.call("capture_screen", {}),
         (value) => pngSignatureIsValid(value, 800, 480)
           && screenDigest(value) !== screenDigest(gigScreen),
         { timeoutMs: 5000, intervalMs: 150, label: "QC framebuffer restoration after show_gig_view" }
       );
+      try {
+        await waitForGigViewDismissal();
+      } catch {
+        // The retail UI can consume the first idempotent dismissal while a
+        // framebuffer capture is completing. Replay it once, then fail closed.
+        await transport.call("show_gig_view", { shown: false });
+        await waitForGigViewDismissal();
+      }
 
       const modeBySlot = new Map(
         (currentSnapshot.modeSlots ?? []).map((entry) => [entry.slot, entry.mode])

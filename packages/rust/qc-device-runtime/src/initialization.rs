@@ -108,13 +108,13 @@ impl DeviceStartupRuntime {
     /// during staged startup. This keeps an early preset/scene/mode push from
     /// being forgotten just because the final Updater gate arrived later.
     pub fn post_boot_initialization(
-        &self,
+        &mut self,
         now_ms: u64,
-        request_id: u64,
     ) -> Result<InitializationRuntime, DeviceStartupError> {
         if self.phase != DeviceStartupPhase::Connected {
             return Err(DeviceStartupError::StateError);
         }
+        let request_id = self.take_request_id();
         let mut initialization = InitializationRuntime::start_post_boot(now_ms, request_id);
         for message_type in &self.observed_types {
             initialization.observe(*message_type);
@@ -148,6 +148,12 @@ impl DeviceStartupRuntime {
                 message.connected,
                 Some(pa::connection_message::Connected::Connected(false))
             ) {
+                // A fresh in-session build must prove a fresh authoritative
+                // seed. Observations from the prior Connected epoch cannot
+                // make the rebuilt session ready.
+                self.observed_types.clear();
+                self.observed_types
+                    .insert(profile::MESSAGE_TYPE_CONNECTION);
                 self.phase = DeviceStartupPhase::Disconnected;
                 self.error = None;
                 let request_id = self.take_request_id();
@@ -597,7 +603,7 @@ mod tests {
         assert_eq!(runtime.phase(), DeviceStartupPhase::Connected);
 
         let mut seed = runtime
-            .post_boot_initialization(100, 10)
+            .post_boot_initialization(100)
             .expect("connected startup may begin its state seed");
         assert!(
             seed.synchronized(),

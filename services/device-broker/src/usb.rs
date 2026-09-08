@@ -358,12 +358,8 @@ impl QcUsb {
                         let (mut startup, _) =
                             DeviceStartupRuntime::start(attempt.request_id(), attempt.session_id());
                         let first_action = startup.observe(message.message_type, &message.payload);
-                        let connected = usb.finish_hello(
-                            attempt.attempt as u64 + 1,
-                            startup,
-                            first_action,
-                            session,
-                        )?;
+                        let connected =
+                            usb.finish_hello(startup, first_action, session)?;
                         session.handshake_completed(
                             session_clock.elapsed().as_millis() as u64,
                             connected.synchronized,
@@ -380,7 +376,6 @@ impl QcUsb {
 
     fn finish_hello(
         mut self,
-        request_id: u64,
         mut startup: DeviceStartupRuntime,
         mut startup_action: DeviceStartupAction,
         session: &mut TransportRuntime,
@@ -448,7 +443,7 @@ impl QcUsb {
         // during staged boot. This cannot replay Version/ModelRepo/subscriptions.
         let now_ms = initialization_clock.elapsed().as_millis() as u64;
         let mut initialization = startup
-            .post_boot_initialization(now_ms, request_id)
+            .post_boot_initialization(now_ms)
             .map_err(|error| {
                 UsbError::Initialization(format!("could not start state seed: {error:?}"))
             })?;
