@@ -29,7 +29,6 @@ struct SessionMachine {
     handshake_attempts: u32,
     next_handshake_at_ms: u64,
     next_keepalive_at_ms: u64,
-    liveness_probe_sent_at_ms: Option<u64>,
     consecutive_read_errors: u8,
     synchronized: bool,
 }
@@ -44,7 +43,6 @@ impl SessionMachine {
             handshake_attempts: 0,
             next_handshake_at_ms: now_ms,
             next_keepalive_at_ms: now_ms.saturating_add(profile::KEEPALIVE_INTERVAL_MS),
-            liveness_probe_sent_at_ms: None,
             consecutive_read_errors: 0,
             synchronized: false,
         }
@@ -55,7 +53,6 @@ impl SessionMachine {
         self.handshake_attempts = 0;
         self.next_handshake_at_ms = now_ms;
         self.next_keepalive_at_ms = now_ms.saturating_add(profile::KEEPALIVE_INTERVAL_MS);
-        self.liveness_probe_sent_at_ms = None;
         self.consecutive_read_errors = 0;
         self.synchronized = false;
     }
@@ -107,7 +104,6 @@ impl SessionMachine {
         self.next_handshake_at_ms = now_ms;
         self.synchronized = false;
         self.consecutive_read_errors = 0;
-        self.liveness_probe_sent_at_ms = None;
         self.outbound(now_ms);
     }
 
@@ -150,7 +146,6 @@ impl SessionMachine {
 
     fn state_observed(&mut self, _now_ms: u64, preset_synchronized: bool) {
         self.consecutive_read_errors = 0;
-        self.liveness_probe_sent_at_ms = None;
         if matches!(self.phase, SessionPhase::Syncing | SessionPhase::Ready) {
             self.synchronized = preset_synchronized;
             self.phase = if preset_synchronized {
@@ -174,21 +169,8 @@ impl SessionMachine {
         // Ordinary traffic is not a substitute for the device's KeepAlive.
     }
 
-    fn liveness_probe_sent(&mut self, now_ms: u64) {
-        self.liveness_probe_sent_at_ms = Some(now_ms);
+    fn defer_keepalive(&mut self, now_ms: u64) {
         self.next_keepalive_at_ms = now_ms.saturating_add(profile::KEEPALIVE_INTERVAL_MS);
-    }
-
-    fn suspend_liveness_probe(&mut self, now_ms: u64) {
-        self.liveness_probe_sent_at_ms = None;
-        self.next_keepalive_at_ms = now_ms.saturating_add(profile::KEEPALIVE_INTERVAL_MS);
-    }
-
-    fn liveness_probe_timed_out(&self, now_ms: u64) -> bool {
-        matches!(self.phase, SessionPhase::Syncing | SessionPhase::Ready)
-            && self.liveness_probe_sent_at_ms.is_some_and(|sent| {
-                now_ms.saturating_sub(sent) >= profile::LIVENESS_REPLY_TIMEOUT_MS
-            })
     }
 
     fn read_succeeded(&mut self) {
@@ -198,6 +180,11 @@ impl SessionMachine {
     fn read_failed(&mut self) -> bool {
         self.consecutive_read_errors = self.consecutive_read_errors.saturating_add(1);
         self.consecutive_read_errors >= 2
+    }
+
+    fn terminal_read_failed(&mut self) -> bool {
+        self.consecutive_read_errors = 2;
+        true
     }
 }
 
@@ -382,16 +369,8 @@ impl TransportRuntime {
         self.session.outbound(now_ms);
     }
 
-    pub fn suspend_liveness_probe(&mut self, now_ms: u64) {
-        self.session.suspend_liveness_probe(now_ms);
-    }
-
-    pub fn liveness_probe_sent(&mut self, now_ms: u64) {
-        self.session.liveness_probe_sent(now_ms);
-    }
-
-    pub fn liveness_probe_timed_out(&self, now_ms: u64) -> bool {
-        self.session.liveness_probe_timed_out(now_ms)
+    pub fn defer_keepalive(&mut self, now_ms: u64) {
+        self.session.defer_keepalive(now_ms);
     }
 
     pub fn read_succeeded(&mut self) {
@@ -400,6 +379,13 @@ impl TransportRuntime {
 
     pub fn read_failed(&mut self) -> bool {
         self.session.read_failed()
+    }
+
+    /// Report an OS-level reader failure after which the native endpoint can
+    /// no longer continue. Unlike a transient HID read error, a closed request
+    /// queue does not benefit from retrying on the same handle.
+    pub fn terminal_read_failed(&mut self) -> bool {
+        self.session.terminal_read_failed()
     }
 
     /// Encode an outbound message exactly once, then adapt only its outer HID
@@ -620,6 +606,14 @@ mod tests {
         runtime.disconnect(100, true);
         assert!(!runtime.reconnect_due(100));
         assert!(runtime.reconnect_due(100 + profile::RECONNECT_INTERVAL_MS));
+    }
+
+    #[test]
+    fn a_terminal_native_reader_failure_requests_immediate_recovery() {
+        let mut runtime = TransportRuntime::new(0);
+        runtime.transport_opened(0);
+        runtime.handshake_completed(1, true);
+        assert!(runtime.terminal_read_failed());
     }
 
     #[test]

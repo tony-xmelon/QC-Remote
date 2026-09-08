@@ -220,6 +220,9 @@ into a single burst. The following binary-evidenced corrections are implemented:
 - Count readiness seed evidence only after the shared state decoder accepts the
   payload and projects the required semantic fields. A message-type arrival or
   empty protobuf alone cannot make either host synchronized.
+- Treat the seed timeout as a bounded startup result, not a terminal state.
+  Both hosts remain in `Syncing`, retain semantic evidence, and advance to
+  `Ready` when a delayed authoritative seed completes without reconnecting.
 - Keep native HID adapters byte-transparent after report assembly. Bounded gzip
   decoding belongs to the shared `qc-protocol` state/response decoders, so
   Windows and Android consume identical logical payloads.

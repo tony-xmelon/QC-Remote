@@ -174,9 +174,17 @@ for (const symbol of ["handshakeAttempt", "startupObserved", "startupBeginBuildi
 }
 assert(androidUsbHost.includes("initializationObserved(decoded.messageType, decoded.payload)"),
   "Android must feed payload-validated semantic seed evidence into the shared readiness runtime.");
-assert(/if \(!initializationComplete\) \{\s*stateDecoder\.initializationObserved/.test(androidUsbHost)
+assert(/if \(!stateSynchronized\) \{\s*stateDecoder\.initializationObserved/.test(androidUsbHost)
   && androidJni.includes("*initialization = None"),
-  "Android must release the bounded seed reducer after completion like Windows and avoid steady-state JNI payload replay.");
+  "Android must retain an incomplete seed for late recovery, then release it at Ready and avoid steady-state JNI payload replay.");
+assert(/synchronizationChanged[\s\S]{0,500}sessionStateObserved\([\s\S]{0,100}decision\.synchronizedState/.test(androidUsbHost),
+  "Android must advance the shared transport from Syncing to Ready when a late authoritative seed completes.");
+assert(!/"preset"\.equals\(kind\)[\s\S]{0,100}stateSynchronized\s*=\s*true/.test(androidUsbHost),
+  "Android must not promote a preset observation to full authoritative synchronization.");
+assert(!/publishStateBatch\([\s\S]*?sessionStateObserved\(monotonicMillis\(\),\s*stateSynchronized\)/.test(androidUsbHost),
+  "Android must not bypass the shared semantic-seed decision when publishing an ordinary state batch.");
+assert(/advance_lifecycle\(now_ms\)[\s\S]{0,700}session\.state_observed\(now_ms, connected\.synchronized\)/.test(windowsWorker),
+  "Windows must advance the shared transport after lifecycle completion, including late seed recovery.");
 assert(androidUsbHost.includes("decision.beginBuilding"),
   "Android must consume the shared staged-startup transition instead of inferring it from a message type.");
 assert(!androidUsbHost.includes('"disconnected".equals(decision.phase)'),
@@ -207,10 +215,17 @@ assert(androidUsbHost.includes("sessionScheduleReconnect(monotonicMillis())"),
   "Android must obtain automatic reconnect cadence from the shared transport runtime.");
 assert(androidUsbHost.includes("sessionReconnectDue(now)"),
   "Android must let the shared transport runtime gate automatic reconnect attempts.");
+assert(androidUsbHost.includes("stateDecoder.sessionTerminalReadFailed()")
+  && androidJni.includes("transport.terminal_read_failed()"),
+  "Android terminal endpoint failures must enter the same shared read-failure policy as Windows.");
 assert(!/scheduleAutomaticReconnect[\s\S]{0,800},\s*250,\s*TimeUnit\.MILLISECONDS/.test(androidUsbHost),
   "Android must not hard-code an automatic reconnect delay.");
 assert(androidUsbHost.includes("systemTimeCommand(System.currentTimeMillis())"),
   "Android must send the shared device-facing system-time command after staged startup.");
+const androidFlightRecorder = await text("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbFlightRecorder.java");
+assert(/isRoutineLiveness[\s\S]{0,300}MESSAGE_TYPE_KEEP_ALIVE/.test(androidFlightRecorder)
+  && !/isRoutineLiveness[\s\S]{0,300}MESSAGE_TYPE_VERSION/.test(androidFlightRecorder),
+  "Android diagnostics must evict routine KeepAlive traffic without discarding startup Version evidence.");
 assert(androidUsbHost.includes("gatewayResponseMatches"), "Android USB reads must use shared response correlation.");
 assert(androidUsbHost.includes("plan.interMessageIntervalMs"), "Android must consume shared write pacing metadata.");
 assert(!androidUsbHost.includes("pacedRemoteGesture"), "Android must not infer remote gesture pacing from encoded messages.");

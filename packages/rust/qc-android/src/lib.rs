@@ -1419,7 +1419,10 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeInit
             .as_mut()
             .map(|runtime| runtime.advance(now_ms.max(0) as u64))
             .unwrap_or(InitializationAction::Wait);
-        if matches!(action, InitializationAction::Complete { .. }) {
+        if matches!(
+            action,
+            InitializationAction::Complete { synchronized: true }
+        ) {
             *initialization = None;
         }
         initialization_envelope(action)
@@ -1672,6 +1675,15 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeSess
         transport.reconnect_attempted(now_ms.max(0) as u64);
         0
     });
+}
+
+#[no_mangle]
+pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeSessionTerminalReadFailed(
+    _env: JNIEnv,
+    _class: JClass,
+    value: jlong,
+) -> jint {
+    with_transport(value, |transport| transport.terminal_read_failed() as jint)
 }
 
 #[no_mangle]

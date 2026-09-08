@@ -877,6 +877,27 @@ mod tests {
     }
 
     #[test]
+    fn a_late_seed_can_recover_after_the_bounded_incomplete_result() {
+        let mut runtime = InitializationRuntime::start_post_boot(0, 41);
+        runtime.observe_message(profile::MESSAGE_TYPE_RECALL_PRESET, &valid_preset());
+        assert!(matches!(runtime.advance(1), InitializationAction::Send(_)));
+        assert_eq!(
+            runtime.advance(1 + INITIAL_SEED_TIMEOUT_MS),
+            InitializationAction::Complete {
+                synchronized: false
+            }
+        );
+
+        for message_type in REQUIRED_SEED_TYPES {
+            runtime.observe(*message_type);
+        }
+        assert_eq!(
+            runtime.advance(2 + INITIAL_SEED_TIMEOUT_MS),
+            InitializationAction::Complete { synchronized: true }
+        );
+    }
+
+    #[test]
     fn a_missing_preset_is_requested_once_before_seeding() {
         let (mut runtime, _) = InitializationRuntime::start(0, 0, 77);
         let InitializationAction::Send(read) = runtime.advance(profile::INITIAL_SYNC_TIMEOUT_MS)

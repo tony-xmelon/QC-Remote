@@ -37,6 +37,11 @@ stabilization window. Android's semantic plans and initialization decisions
 cross JNI as named JSON fields; only actual HID reports and QC payload bytes use
 binary arrays. Verification cadence stays inside Rust rather than crossing JNI,
 so Java does not duplicate either a private plan codec or protocol timer loop.
+An ordinary preset push is not allowed to promote Android to Ready by itself;
+both native hosts publish synchronization only from the shared semantic-seed
+decision, including recovery when missing seed fields arrive late.
+Their bounded flight recorders likewise treat only the dedicated KeepAlive as
+routine transport noise, preserving Version frames as startup evidence.
 
 Windows starts preset-folder enumeration when the directory is first opened.
 Folder pushes are decoded and cached on the background receive lane. Starting

@@ -152,6 +152,11 @@ both native hosts. Native
 adapters may differ in OS lifecycle and endpoint APIs, but they do not
 independently choose session policy, handshake versions, subscriptions, frame
 limits, keepalive timing, or performance MIDI mappings.
+Each adapter classifies what its OS API can prove: Windows HID errors enter the
+shared transient-error threshold, while an Android `UsbRequest` queue or reader
+exception is terminal for that native handle and enters the shared immediate
+recovery edge. Android's legacy `bulkTransfer` `-1` remains a timeout because
+that API does not distinguish an idle timeout from an endpoint error.
 Android obtains its automatic-reconnect delay and due/attempt reservation from
 the same runtime as the Windows worker; clearing decoded state does not reset
 that transport decision. Both hosts also use the generated preset-sync and
