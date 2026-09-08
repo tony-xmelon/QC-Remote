@@ -509,7 +509,7 @@ test("Android requires explicit attachment connect but recovers an unexpected re
   assert.match(javaSource, /stateDecoder\.nextRequestId\(\)/);
   assert.doesNotMatch(javaSource, /AtomicLong requestIds/);
   assert.match(javaSource, /if \(!stateDecoder\.sessionSynchronized\(\)\) \{\s*stateDecoder\.initializationObserved\(decoded\.messageType, decoded\.payload\)/);
-  assert.match(javaSource, /synchronizationChanged[\s\S]*sessionStateObserved\([\s\S]*decision\.synchronizedState/);
+  assert.match(javaSource, /synchronizationChanged[\s\S]*sessionSynchronizationCompleted\([\s\S]*decision\.synchronizedState/);
   assert.match(javaSource, /decision\.beginBuilding[\s\S]*sessionStateObserved\(monotonicMillis\(\), false\)/);
   assert.doesNotMatch(javaSource, /scheduleAutomaticReconnect[\s\S]{0,800},\s*250,\s*TimeUnit\.MILLISECONDS/);
 });
@@ -581,6 +581,8 @@ test("Android's USB maintenance uses the same dedicated shared KeepAlive as Wind
   assert.match(javaSource, /MAINTENANCE_POLL_MS, MAINTENANCE_POLL_MS, TimeUnit\.MILLISECONDS/);
   assert.match(javaSource, /return connection != null && stateDecoder\.sessionConnected\(\)/);
   assert.doesNotMatch(javaSource, /handshakeComplete|stateSynchronized|initializationComplete/);
+  assert.match(javaSource, /MESSAGE_TYPE_RESET_COMMS_BUFFERS[\s\S]{0,120}StartupDecision\.SEND/);
+  assert.doesNotMatch(javaSource, /"versionValidating"\.equals\(startup\.phase\)/);
   assert.match(rustInitializationSource, /SessionValidating[\s\S]*commands::read_version\(\)/);
   assert.doesNotMatch(javaSource, /keepalive\.schedule\([\s\S]{0,500}readCommand\(QcUsbProfile\.MESSAGE_TYPE_VERSION\)/);
 });

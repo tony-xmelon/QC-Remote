@@ -26,6 +26,22 @@ pub enum DeviceStartupPhase {
     Failed,
 }
 
+impl DeviceStartupPhase {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::SessionValidating => "sessionValidating",
+            Self::VersionValidating => "versionValidating",
+            Self::Disconnected => "disconnected",
+            Self::Building => "building",
+            Self::Initializing => "initializing",
+            Self::Booting => "booting",
+            Self::Connected => "connected",
+            Self::Invalid => "invalid",
+            Self::Failed => "failed",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum DeviceStartupError {
@@ -38,6 +54,22 @@ pub enum DeviceStartupError {
     SessionMismatch = 7,
     UnsupportedDevice = 8,
     IncompatibleControllerVersion = 9,
+}
+
+impl DeviceStartupError {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Undefined => "Undefined",
+            Self::ParseMessageFailure => "ParseMessageFailure",
+            Self::InvalidCloudEndpoint => "InvalidCloudEndpoint",
+            Self::StateError => "StateError",
+            Self::ModelRepositoryDataError => "ModelRepositoryDataError",
+            Self::ModuleStatisticsDataError => "ModuleStatisticsDataError",
+            Self::SessionMismatch => "SessionMismatch",
+            Self::UnsupportedDevice => "UnsupportedDevice",
+            Self::IncompatibleControllerVersion => "IncompatibleControllerVersion",
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -787,6 +819,24 @@ mod tests {
         assert!(!runtime.is_active());
         assert!(!runtime.is_connected());
         assert!(!runtime.timed_out(u64::MAX));
+    }
+
+    #[test]
+    fn startup_status_vocabulary_is_stable_and_shared() {
+        assert_eq!(
+            DeviceStartupPhase::SessionValidating.as_str(),
+            "sessionValidating"
+        );
+        assert_eq!(DeviceStartupPhase::Connected.as_str(), "connected");
+        assert_eq!(DeviceStartupPhase::Failed.as_str(), "failed");
+        assert_eq!(
+            DeviceStartupError::SessionMismatch.as_str(),
+            "SessionMismatch"
+        );
+        assert_eq!(
+            DeviceStartupError::IncompatibleControllerVersion.as_str(),
+            "IncompatibleControllerVersion"
+        );
     }
 
     #[test]

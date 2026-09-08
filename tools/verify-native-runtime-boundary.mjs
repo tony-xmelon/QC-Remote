@@ -90,7 +90,7 @@ for (const field of [
 }
 
 const transportRuntime = await text("packages/rust/qc-device-runtime/src/transport.rs");
-for (const symbol of ["TransportRuntime", "next_handshake_write", "take_keepalive", "encode_reports", "push_report", "normalize_inbound_report"]) {
+for (const symbol of ["TransportRuntime", "next_handshake_write", "synchronization_completed", "take_keepalive", "encode_reports", "push_report", "normalize_inbound_report"]) {
   assert(transportRuntime.includes(symbol), `The shared native transport runtime is missing ${symbol}.`);
 }
 const backupRuntime = await text("packages/rust/qc-device-runtime/src/backup.rs");
@@ -119,7 +119,9 @@ assert(initializationRuntime.includes("self.synchronized && self.seed_complete()
 assert(initializationRuntime.includes("deadline_ms: now_ms.saturating_add(profile::READY_WAIT_TIMEOUT_MS)")
   && initializationRuntime.includes("pub fn timed_out")
   && initializationRuntime.includes("pub fn is_active")
-  && initializationRuntime.includes("pub fn is_connected"),
+  && initializationRuntime.includes("pub fn is_connected")
+  && initializationRuntime.includes("impl DeviceStartupPhase")
+  && initializationRuntime.includes("impl DeviceStartupError"),
   "The shared staged startup runtime must own the generated readiness deadline.");
 const correlationRuntime = await text("packages/rust/qc-device-runtime/src/correlation.rs");
 for (const symbol of ["ResponseExpectation", "matches", "expired", "timeout_message"]) {
@@ -185,13 +187,13 @@ assert(androidUsbHost.includes("initializationObserved(decoded.messageType, deco
 assert(/if \(!stateDecoder\.sessionSynchronized\(\)\) \{\s*stateDecoder\.initializationObserved/.test(androidUsbHost)
   && androidJni.includes("*initialization = None"),
   "Android must retain an incomplete seed for late recovery, then release it at Ready and avoid steady-state JNI payload replay.");
-assert(/synchronizationChanged[\s\S]{0,500}sessionStateObserved\([\s\S]{0,100}decision\.synchronizedState/.test(androidUsbHost),
+assert(/synchronizationChanged[\s\S]{0,500}sessionSynchronizationCompleted\([\s\S]{0,100}decision\.synchronizedState/.test(androidUsbHost),
   "Android must advance the shared transport from Syncing to Ready when a late authoritative seed completes.");
 assert(!/"preset"\.equals\(kind\)[\s\S]{0,100}(?:state|preset)Synchronized\s*=\s*true/.test(androidUsbHost),
   "Android must not promote a preset observation to full authoritative synchronization.");
 assert(!/publishStateBatch\([\s\S]*?sessionStateObserved\(monotonicMillis\(\),\s*(?:state|preset)Synchronized\)/.test(androidUsbHost),
   "Android must not bypass the shared semantic-seed decision when publishing an ordinary state batch.");
-assert(/advance_lifecycle\(now_ms\)[\s\S]{0,700}session\.state_observed\(now_ms, connected\.synchronized\)/.test(windowsWorker),
+assert(/advance_lifecycle\(now_ms\)[\s\S]{0,700}session\.synchronization_completed\(now_ms, connected\.synchronized\)/.test(windowsWorker),
   "Windows must advance the shared transport after lifecycle completion, including late seed recovery.");
 assert(/let initialization = \(!synchronized\)\.then_some\(initialization\);[\s\S]{0,300}initialization,/.test(windowsUsbHost),
   "Windows must retain an incomplete initial seed for the same late recovery supported on Android.");
@@ -207,7 +209,10 @@ assert(!/PERFORMANCE_MIDI_GAP_MS[\s\S]{0,120}System\.currentTimeMillis/.test(and
   "Android must enforce shared performance-MIDI pacing on a monotonic clock.");
 assert(androidUsbHost.includes("handshakeAttempt(monotonicMillis(), session)"),
   "Android must drive shared handshake deadlines with its monotonic clock.");
-assert(/InitializationDecision\.COMPLETE[\s\S]{0,400}sessionHandshakeComplete\([\s\S]{0,100}decision\.synchronizedState/.test(androidUsbHost),
+assert(/MESSAGE_TYPE_RESET_COMMS_BUFFERS[\s\S]{0,120}StartupDecision\.SEND/.test(androidUsbHost)
+  && !/"versionValidating"\.equals\(startup\.phase\)/.test(androidUsbHost),
+  "Android handshake completion must use the typed shared action, not a rendered phase name.");
+assert(/InitializationDecision\.COMPLETE[\s\S]{0,400}sessionSynchronizationCompleted\([\s\S]{0,100}decision\.synchronizedState/.test(androidUsbHost),
   "Android must advance shared transport readiness at the same post-seed boundary as Windows.");
 assert(/InitializationDecision\.SEND[\s\S]{0,300}connection == null \|\| !stateDecoder\.startupConnected\(\)/.test(androidUsbHost),
   "Android must allow shared post-boot seed writes before public transport readiness.");
@@ -221,7 +226,9 @@ assert(androidNativeFacade.includes("startupActive()")
   && !/private volatile boolean startupActive/.test(androidUsbHost),
   "Android must query the shared startup controller instead of mirroring its active epoch in Java.");
 assert(androidJni.includes("DeviceStartupRuntime::is_connected")
-  && !androidJni.includes("startup_phase_is_connected"),
+  && androidJni.includes('"phase": phase.as_str()')
+  && !androidJni.includes("startup_phase_is_connected")
+  && !androidJni.includes("fn startup_phase_name"),
   "Android must use the shared startup-connected projection without an adapter phase table.");
 assert(androidNativeFacade.includes("sessionConnected()")
   && androidNativeFacade.includes("sessionSynchronized()")
@@ -303,6 +310,8 @@ assert(windowsUsb.includes("post_boot_initialization"),
   "Windows must seed readiness from the shared staged-startup observations.");
 assert(windowsUsb.includes("startup.timed_out(session_clock.elapsed().as_millis() as u64)"),
   "Windows must enforce staged startup timeout through the shared Rust runtime.");
+assert(windowsUsb.includes("error.as_str()"),
+  "Windows must render startup errors through the same shared vocabulary as Android.");
 assert(windowsUsb.includes("pub fn observe_lifecycle"),
   "Windows must retain the shared startup controller for connected-state protocol events.");
 assert(windowsUsb.includes("self.startup.observe(message.message_type"),
