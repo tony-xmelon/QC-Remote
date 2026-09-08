@@ -57,6 +57,14 @@ the terminal count sentinel. This is the authoritative source for field
 numbers, optionality, enums, and message type IDs. It does **not** define
 sequencing, correlation, retries, or UI policy.
 
+The binary's auxiliary debug/XML message-name table omits `Undefined`, calls
+`GlobalTempo` simply `Tempo`, and is stale at its tail: it labels value 72 as
+`NumberOfMessageTypes`, while the embedded protobuf descriptor assigns 72 to
+`RemoteControl` and the sentinel to 73. Extractors therefore use the descriptor
+as authoritative and retain these conflicts only as diagnostic evidence. No
+implementation may derive names or the upper message-type bound from that
+debug table.
+
 The generated `coverage.json` is a source-tree inventory, not a product-support
 claim. Its current `implemented` predicate can be satisfied by constants,
 schema references, builders, decoders, tests, or internal-only code. Thus a

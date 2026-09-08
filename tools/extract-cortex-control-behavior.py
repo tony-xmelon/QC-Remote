@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import bisect
 import hashlib
+import importlib.util
 import json
 import re
 import struct
@@ -340,13 +341,40 @@ def immediate_values(instructions) -> set[int]:
     return values
 
 
-def extract_message_table(data: bytes) -> dict[int, str]:
+def extract_debug_message_table(data: bytes) -> dict[int, str]:
     return {
         int(value): name.decode()
         for name, value in re.findall(
             rb'<cortexMessage type="([A-Za-z0-9]+)" value="(\d+)"', data
         )
     }
+
+
+def extract_descriptor_message_table(data: bytes) -> dict[int, str]:
+    """Read the authoritative enum from the binary's protobuf descriptor.
+
+    Cortex Control 4.1.0 also embeds a debug/XML name table, but that table
+    omits Undefined, shortens GlobalTempo to Tempo, and is stale at the tail:
+    it calls value 72 NumberOfMessageTypes while the shipped descriptor assigns
+    72 to RemoteControl and the sentinel to 73. Keep the debug table as conflict
+    evidence; never use it to define the wire schema.
+    """
+    path = ROOT / "tools" / "extract-cortex-protocol.py"
+    spec = importlib.util.spec_from_file_location("cortex_protocol_extractor", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"could not load {path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    found = module.extract(data, b"ProductionAutomation.proto")
+    if found is None:
+        raise RuntimeError("embedded ProductionAutomation.proto descriptor not found")
+    _, _, descriptor = found
+    for message in descriptor.message_type:
+        if message.name == "CortexMessageType":
+            for enum in message.enum_type:
+                return {value.number: value.name for value in enum.value}
+    raise RuntimeError("CortexMessageType enum not found in embedded descriptor")
 
 
 def fmt_types(numbers: list[int], names: dict[int, str]) -> str:
@@ -361,6 +389,20 @@ def markdown(report: dict) -> str:
         f"Binary: `{report['binary']['path']}`",
         "",
         f"SHA-256: `{report['binary']['sha256']}`",
+        "",
+        "## Message-table authority",
+        "",
+        "Message names come from the protobuf descriptor embedded in the binary. "
+        "The auxiliary debug/XML table is retained only for diagnostics because its "
+        "tail is stale.",
+        "",
+    ]
+    for conflict in report["debugMessageTableConflicts"]:
+        lines.append(
+            f"- Value {conflict['number']}: descriptor "
+            f"`{conflict['descriptor']}`; debug table `{conflict['debugTable']}`."
+        )
+    lines += [
         "",
         "## Mechanically recovered state machine",
         "",
@@ -432,7 +474,17 @@ def main() -> int:
         return 2
 
     binary = Binary(args.exe)
-    message_types = extract_message_table(binary.data)
+    message_types = extract_descriptor_message_table(binary.data)
+    debug_message_types = extract_debug_message_table(binary.data)
+    debug_table_conflicts = [
+        {
+            "number": number,
+            "descriptor": message_types.get(number),
+            "debugTable": debug_message_types.get(number),
+        }
+        for number in sorted(set(message_types) | set(debug_message_types))
+        if message_types.get(number) != debug_message_types.get(number)
+    ]
     states = []
     for class_name in STATE_CLASSES:
         vtable = locate_vtable(binary, class_name)
@@ -472,6 +524,10 @@ def main() -> int:
         },
         "method": "MSVC RTTI + PE exception bounds + x64 control-flow inspection",
         "messageTypes": {str(number): name for number, name in sorted(message_types.items())},
+        "debugMessageTypes": {
+            str(number): name for number, name in sorted(debug_message_types.items())
+        },
+        "debugMessageTableConflicts": debug_table_conflicts,
         "deviceErrorCodes": {str(number): name for number, name in ERROR_CODES.items()},
         "states": states,
         "transitions": TRANSITIONS,
