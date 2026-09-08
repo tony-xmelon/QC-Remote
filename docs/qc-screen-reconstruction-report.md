@@ -1158,6 +1158,72 @@ The eight weakest by edge agreement, for the record: `device-search-results` and
 0.709, `empty-slot` 0.727, `fixture-editor-capture` 0.731, `device-browser-base`
 0.734, `io-output` 0.740, `device-browser-middle-deep` 0.740.
 
+### What the extracted device schema settles
+
+`references/cortex-protocol` holds the protobuf schema lifted out of Cortex
+Control's own binary - 153 messages of `ProductionAutomation.proto` and 15 of
+`Preset.proto`, rendered to text by `tools/generate_cortex_protos.py` and proved
+field-for-field against the shipped copy by `verify_cortex_protocol_fidelity.py`.
+It was extracted for the wire protocol, but it is also the device describing its
+own state, so it answers questions the frames cannot.
+
+**The twenty-three routing ports now have one description, not four.**
+`GainCalInputPortParameter.InputPortId` and `GainCalOutputPortParameter.OutputPortId`
+enumerate every port CorOS can route a row to. Four things claimed to describe
+them and none had been checked against another: that enum, the
+`contracts/qc-domain.v1.json` table our clients generate from, the words
+`routePickerLabel` prints in the app, and the rows the device draws in
+`input-route-selector.png` and `output-route-selector.png`. They agree on all
+twenty-three ids and every grouping - and disagreed on one word: the app said
+`USB Input 5` where CorOS says `USB input 5`. The device is deliberately
+asymmetric there, `USB input 5` against `USB Output 3`, which is exactly the
+kind of detail a transcription loses. `tests/route-alignment.test.ts` now pins
+all four together, and fails on each of the four drifts it exists to catch.
+
+**Three of the four remaining evidence gaps are no longer guesses.**
+
+| gap | what the fixture draws | what the device declares |
+| --- | --- | --- |
+| ST-06 `settings-update` | one state: *Your Quad Cortex is up to date* | `UpdaterMessage` carries `new_version_id`, `changelog`, `download_progress` and `installation_progress` across `UpdaterStatus` (none / available / downloaded / none available) and `UpdaterState` (idle, requesting, downloading, updating, reboot, failed) |
+| ED-14 `fixture-warning-clip` | *INPUT CLIPPING - reduce Input 1 gain* | `IOMeterMessage` has no input-clip flag at all. What it reports is limiter activity on the **outputs**: `xlr_1_limiter`, `xlr_2_limiter`, `out_3_limiter`, `out_4_limiter` and `hp_limiter_active` |
+| ED-15 `fixture-warning-dsp` | *DSP LIMIT REACHED - not enough processing power to add this device* | the device's own inhibited-module message, `CompilerInhibitedModulesMessage`, carries exactly two flags: `global_gate` and `global_eq` |
+
+Both warning fixtures were written from imagination, and the schema says the
+first is modelled on something the device does not measure. Neither is a
+rendering defect - they have no frame to be wrong against - but they are the
+same class of error as the invented `directory-filter` contents, and they are
+now marked as contradicted rather than merely unevidenced.
+
+**The settings screens map one-to-one onto `GeneralSettingsMessage`.** Every row
+`settings-device.tree.txt` shows is a field: Global Bypass is `global_bypass_cab`
+and `global_bypass_ir` over four rows, Scene Bypass Behavior is
+`scene_block_bypass`, Hold Timing is `hold_timing`, Swap Tempo and Tuner is
+`swap_tempo_tuner_access`, Gig View Access is `gig_view_stomp_access_enabled`,
+Latency Compensation is `enable_dynamic_delay_compensation`. That means the
+option lists behind those rows are enumerated rather than inferred: Scene Bypass
+Behavior offers always / non-stomp / never overwrite, MIDI Clock Out offers off /
+DIN / USB / both, Power Functions offers shutdown, reboot, standby and wake,
+Master Volume Knob assigns Out 1/2, Out 3/4, Send 1/2 and headphones, and Device
+Storage divides into presets, Neural Captures and impulse responses. None of
+those pages is captured yet; the list to capture is now exact.
+
+**What `Preset.proto` says a preset carries that our snapshot does not.**
+`stomp_labels`, `single_stomp_labels` and `stomp_is_momentary` are per-preset
+maps, so a footswitch caption is not always its block's name;
+`StompModeAssignment` marks a footswitch PRIMARY or SECONDARY; `scene_tempo` is
+per scene; `Model.sidechain_source_flag` / `sidechain_sink_flag` and
+`SlotNotification model_update_notifications` are per-block flags CorOS can
+draw. `PresetSnapshot` models none of them. Every corpus frame we reconstruct
+happens to use the defaults, so nothing is mis-drawn today, but a preset that
+uses them would not render correctly from our snapshot.
+
+**Where else the schema is ahead of the corpus.** `LooperStatus` distinguishes
+`redo_available` from `undo_count`, and carries `half_speed`, `in_reverse`,
+`one_shot`, `armed` and `waiting_for_cycle`; we have one looper frame, showing
+the idle state. `RemoteControlScreenshot` accepts an `x`/`y`/`w`/`h` region,
+which the capture tooling never uses. `IOMeter` is decodable but has never been
+seen on the wire, so the meters on the I/O pages are still drawn from stills.
+
 ## Improvements in this pass
 
 - Ran Neural Captures on the unit with the owner's approval and recorded

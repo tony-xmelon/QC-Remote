@@ -286,6 +286,30 @@ These states are implemented and captured on both hosts, but only against determ
 | ST-06 | Settings | Update availability/progress | `settings-update` | external-evidence | do-not-trigger | `settings-update` |
 | RC-02 | Recovery | Recovery options | `recovery-options` | disruptive | requires-scheduled-session | `recovery-options` |
 
+### What the device schema says these three should contain
+
+The protobuf schema extracted from Cortex Control (`references/cortex-protocol`)
+describes the state behind three of the four rows above. It gives no pixels, but
+it does say what the screens are made of, and in two cases it contradicts what
+the fixture draws.
+
+- **ST-06** - `UpdaterMessage` carries `new_version_id`, `changelog`,
+  `download_progress` and `installation_progress`. `UpdaterStatus` is none /
+  new version available / new version downloaded / no new version, and
+  `UpdaterState` is idle, requesting, downloading, updating, reboot, failed.
+  The fixture draws one of those, *up to date*; the capture plan needs the rest.
+- **ED-14** - `IOMeterMessage` reports no input clipping. It reports limiter
+  activity on the outputs: `xlr_1_limiter`, `xlr_2_limiter`, `out_3_limiter`,
+  `out_4_limiter`, `hp_limiter_active`. The fixture's *INPUT CLIPPING - reduce
+  Input 1 gain* dialog is invented and is modelled on something the device does
+  not measure.
+- **ED-15** - the device's inhibited-module message,
+  `CompilerInhibitedModulesMessage`, carries two flags: `global_gate` and
+  `global_eq`. The fixture's *DSP LIMIT REACHED* dialog is invented; whatever
+  CorOS shows when a block will not fit, this message is not it.
+
+RC-02 has no counterpart in the schema - recovery runs before CorOS does.
+
 ## Score source files
 
 - Physical Windows: `.artifacts/ui-parameter-parity-final/windows-comparison/summary.json`
