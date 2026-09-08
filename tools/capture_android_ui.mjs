@@ -135,7 +135,7 @@ for (const [id, view] of [["device-browser-plugin-list", "plugin-list"], ["devic
 }
 for (const [id, mode] of [["official-gig-view-stomp", "STOMP"], ["official-gig-view-preset", "PRESET"], ["official-gig-view-scene", "SCENE"], ["official-gig-view-hybrid", "HYBRID"]]) {
   if (!shouldCapture(id)) continue;
-  await load({ screen: `gig-official-${mode.toLowerCase()}` });
+  await load({ screen: mode === "HYBRID" ? "gig-official-hybrid-manual" : `gig-official-${mode.toLowerCase()}` });
   await capture(id);
 }
 

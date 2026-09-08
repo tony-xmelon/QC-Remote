@@ -211,10 +211,14 @@
     },
     {
       "id": "GL-22",
-      "renderer": "gig-official-hybrid",
+      "renderer": "gig-official-hybrid-manual",
       "official": [
         "official-gig-view-hybrid"
-      ],
+      ]
+    },
+    {
+      "id": "GL-22P",
+      "renderer": "gig-official-hybrid",
       "physical": [
         "gig-view-hybrid"
       ]

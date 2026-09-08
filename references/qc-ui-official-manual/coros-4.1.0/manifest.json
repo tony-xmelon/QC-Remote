@@ -106,7 +106,7 @@
       "height": 480,
       "deviceVariant": "quad-cortex",
       "renderer": {
-        "screen": "gig-official-hybrid"
+        "screen": "gig-official-hybrid-manual"
       }
     },
     {

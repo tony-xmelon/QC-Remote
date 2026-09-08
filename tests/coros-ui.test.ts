@@ -85,9 +85,18 @@ test("Neural Capture editor uses the shared measured rotary controls", () => {
 
 test("rebuilt amp and hybrid fixtures retain their captured screen identities", () => {
   const fixtureSource = readFileSync(new URL("../packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", import.meta.url), "utf8");
+  const windowsCapture = readFileSync(new URL("../tools/capture_windows_ui.mjs", import.meta.url), "utf8");
+  const androidCapture = readFileSync(new URL("../tools/capture_android_ui.mjs", import.meta.url), "utf8");
+  const coverage = readFileSync(new URL("../references/qc-ui-coverage/coros-4.1.0/coverage.json", import.meta.url), "utf8");
   assert.match(fixtureSource, /view === "fixture-editor-pages"/);
   assert.match(fixtureSource, /Brit 2203 <QcPresetStackIcon/);
   assert.match(fixtureSource, /7B Top 3 Acoustic Sims/);
+  assert.match(fixtureSource, /gig-official-hybrid-manual/);
+  assert.match(fixtureSource, /scenes\.slice\(0, 4\)/);
+  assert.match(fixtureSource, /stomps\.slice\(4\)/);
+  assert.match(windowsCapture, /mode === "HYBRID" \? "gig-official-hybrid-manual"/);
+  assert.match(androidCapture, /mode === "HYBRID" \? "gig-official-hybrid-manual"/);
+  assert.match(coverage, /"id": "GL-22"[\s\S]*?"renderer": "gig-official-hybrid-manual"[\s\S]*?"id": "GL-22P"[\s\S]*?"renderer": "gig-official-hybrid"/);
   assert.match(fixtureSource, /<QcUiIcon kind="check" \/>/, "Gig header must use the shared interface check asset");
 });
 
