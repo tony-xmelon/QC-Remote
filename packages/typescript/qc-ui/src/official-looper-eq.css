@@ -12,11 +12,11 @@
 .coros-looper > header button > svg { width: 3cqw; height: 3cqw; flex: none; color: var(--qc-icon-primary); fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .coros-looper > header button:first-child > svg { width: 3cqw; height: 3cqw; fill: currentColor; stroke: none; transform: translate(2px, 3px); }
 .coros-looper > header .looper-params { display: flex; align-items: center; justify-content: center; gap: 1cqw; }
-.coros-looper > header .looper-params > svg { width: 3.25cqw; height: 3cqw; transform: translate(-4px, 2px); }
+.coros-looper > header .looper-params > svg { width: 3.25cqw; height: 3cqw; transform: translate(-5px, 2px); }
 .coros-looper > header .looper-scene { display: flex; align-items: center; justify-content: space-around; }
 .coros-looper > header .looper-scene > svg { width: 3.5cqw; fill: currentColor; stroke: none; }
-.coros-looper > header .looper-scene > svg:first-child { transform: translateX(-1px); }
-.coros-looper > header .looper-scene > svg:last-child { transform: translateX(1px); }
+.coros-looper > header .looper-scene > svg:first-child { transform: translateX(-3px); }
+.coros-looper > header .looper-scene > svg:last-child { transform: translateX(4px); }
 .coros-looper > header button:last-child > svg { width: 3.5cqw; height: 3.5cqw; transform: translate(1px, 3px); }
 .coros-looper > header span small { font-size: 1.75cqw; }
 .coros-looper > header span strong { font-size: 2cqw; }
@@ -58,6 +58,7 @@
 .global-eq-controls > section > span { font-size: 2cqw; }
 .global-eq-controls > section > span:first-child { position: relative; top: -.125cqw; }
 .global-eq-controls > section:first-child button { inset: 6.875cqw 1.25cqw auto; height: 4.75cqw; font-size: 1.75cqw; }
+.global-eq-controls > section:first-child button .qc-eq-icon-high-pass { position: absolute; left: 1cqw; top: .875cqw; width: 3cqw; height: 3cqw; }
 .global-eq-controls .io-dial-wrap { inset: 4.625cqw 1cqw auto; height: 8cqw; }
 .global-eq-controls .io-dial { right: -.1875cqw; width: 8.375cqw; height: 8.375cqw; }
 .global-eq-controls .io-dial { background: radial-gradient(circle at center, #282c28 0 68%, transparent 70%), conic-gradient(from 220deg, #0874e0 0 22%, #101010 22%); }
@@ -138,4 +139,17 @@
 .coros-global-eq .global-eq-controls { background: #282c28; }
 .coros-global-eq > header button:last-child { background: #282c28; }
 
+/* NC-08: the Sanity Check failure reuses the progress layout, with the failed
+   stage in red, no spinner, and a recovery button back to calibration. */
+.capture-official-error>main>nav div.is-error{color:#f4463c}.capture-official-error>main>nav div.is-error b{background:#f4463c;color:#101210}.capture-official-error>main>nav div.is-pending b{background:#101210;color:#606460}.capture-official-error>main>nav div:last-child b{color:#606460}.capture-official-error h1{margin-bottom:3.375cqw}/* Its box is 220x44 at x 557, y 404 in the frame. */
+.capture-official-error section>button{position:absolute;right:2cqw;bottom:3cqw;padding:0 1cqw;height:5.5cqw;border:0;border-radius:.75cqw;background:#1668ff;color:#fff;font-size:2.25cqw;letter-spacing:.05cqw}
+
 }
+
+
+/* global-eq.png: the EQ is off and flat - only the band in view keeps a tile,
+   the rest of the tabs are bare text, and the power button is unlit. */
+.coros-global-eq .global-eq-tabs button { background: transparent; }
+.coros-global-eq .global-eq-tabs button.is-active { background: #212421; }
+.coros-global-eq .global-eq-power.is-off { background: #292c29; color: #adaaad; }
+.coros-global-eq .global-eq-power.is-off > i { background: #101010; }

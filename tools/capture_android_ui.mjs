@@ -139,7 +139,7 @@ for (const [id, mode] of [["official-gig-view-stomp", "STOMP"], ["official-gig-v
   await capture(id);
 }
 
-for (const [id, screen] of [["official-directory-presets", "directory-presets"], ["official-directory-captures", "directory-captures"], ["official-directory-favorites", "directory-favorites"], ["official-directory-irs", "directory-irs"], ["official-directory-nested", "directory-nested"], ["official-directory-plugin-presets", "directory-plugins"], ["official-directory-search-results", "directory-search-results"], ["official-directory-upload", "directory-cloud-upload"]]) {
+for (const [id, screen] of [["official-directory-presets", "directory-presets"], ["official-directory-captures", "directory-captures-official"], ["official-directory-favorites", "directory-favorites"], ["official-directory-irs", "directory-irs-official"], ["official-directory-nested", "directory-nested"], ["official-directory-plugin-presets", "directory-plugins"], ["official-directory-search-results", "directory-search-results"], ["official-directory-upload", "directory-cloud-upload"]]) {
   if (!shouldCapture(id)) continue;
   await load({ screen });
   await capture(id);

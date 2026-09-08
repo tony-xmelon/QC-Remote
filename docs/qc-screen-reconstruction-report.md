@@ -1,14 +1,33 @@
 # Quad Cortex screen reconstruction report
 
-Audit date: 2026-09-03
+Audit date: 2026-09-08 (dual-host rows measured 2026-09-03)
 Reference: physical Quad Cortex, CorOS 4.1.0, 800x480 framebuffer corpus
 
 ## Executive summary
 
-| Client | Physical corpus rendered | Mean structural match | Mean color similarity |
+**Every one of the 119 physical corpus frames is drawn and measured.** Each
+fixture is rendered at 800x480 and compared with the frame it reconstructs by
+`tools/visual-regression/qc_compare.py` - mean absolute error and 2px edge
+agreement:
+
+| Physical corpus (119 frames) | median | worst | best |
 | --- | ---: | ---: | ---: |
-| Windows | 70/70 (100%) | **83.78%** | **97.09%** |
-| Android | 70/70 (100%) | **83.78%** | **97.09%** |
+| Structural match (edge F1, 2px) | **87.6%** | 70.4% | 97.5% |
+| Colour similarity (1 - MAE) | **97.5%** | 93.7% | 99.1% |
+
+34 frames sit under 0.02 mean error, 86 under 0.03, 114 under 0.05 and all 119
+under 0.07. On structure, 10 agree on 95% or more of their edges, 49 on 90%,
+93 on 80%, and **every one on 70% or more**. Four of the 119 names are the same
+image stored twice, so the 119 are 115 distinct screens.
+
+The dual-host rows below are a different measurement, taken on 2026-09-03 over
+the 70 frames the Windows and Android capture drivers covered at the time, and
+have not been re-run since the reconstruction passes recorded further down:
+
+| Client | Physical corpus rendered | Mean structural match | Mean color similarity |
+| --- | --- | ---: | ---: |
+| Windows | 70/70 (2026-09-03) | 83.78% | 97.09% |
+| Android | 70/70 (2026-09-03) | 83.78% | 97.09% |
 
 These are native-size measurements, not audit estimates. Both hosts render the
 same versioned `coros410` scratch-preset fixture through `@qc-remote/ui`; each
@@ -37,9 +56,9 @@ rows**. Current canonical CorOS implementation counts are:
 | Shell only | 0 | 0 |
 | Missing | 0 | 0 |
 
-“70/70” therefore means every physical regression state has a renderer. All 104
-cataloged states are built, and 70 captured device frames now participate in the
-physical comparison.
+All 104 cataloged states are built, and **all 119 captured device frames now
+participate in the physical comparison** - the 70 in the dual-host rows are the
+subset those two drivers reached.
 
 The separate manual-reference smoke corpus now contains **85 states / 170 exact
 800x480 host captures** (Windows and Android). These validate shared composition
@@ -131,6 +150,12 @@ The complete per-state evidence and score join is in
 
 ## Measured physical corpus
 
+The two columns below are the 2026-09-03 host-parity check: the same fixture
+drawn by the Windows and the Android build, over the frames those two capture
+drivers covered at the time. They are kept because they are what shows the two
+hosts agree to the third decimal, not because they are the current accuracy -
+for that, see the 119 rows in the next section.
+
 | Physical state | Windows structural match | Android structural match |
 | --- | ---: | ---: |
 | `grid-base` | **93.45%** | **93.45%** |
@@ -185,6 +210,137 @@ The complete per-state evidence and score join is in
 | `settings-diagnostics` | **97.47%** | **97.47%** |
 | `settings-wifi` | **93.92%** | **93.92%** |
 | `settings-storage` | **93.31%** | **93.31%** |
+
+## Final per-frame audit, all 119 frames
+
+Measured 2026-09-08 by `tools/visual-regression/qc_compare.py` against the
+committed tree, every fixture drawn at 800x480 from a fresh server. Edge
+agreement is the 2px edge F1 and decides structure; mean absolute error is the
+colour distance over the whole frame. The renderer column names the fixture view
+where it is not the frame's own name; `-` means the two are the same. Alphabetical
+by frame; the weakest are called out in [The closing audit](#the-closing-audit).
+
+| Frame | Renderer view | Edge agreement (2px) | Mean abs. error |
+| --- | --- | ---: | ---: |
+| `block-context` | - | 0.9674 | 0.0184 |
+| `block-context-bottom` | - | 0.8946 | 0.0253 |
+| `capture-calibration` | - | 0.9298 | 0.0458 |
+| `capture-connect-input-2` | - | 0.8249 | 0.0558 |
+| `capture-connect-out` | - | 0.7849 | 0.0251 |
+| `capture-intro` | - | 0.7411 | 0.0248 |
+| `capture-monitoring` | - | 0.7711 | 0.0272 |
+| `capture-progress` | - | 0.7567 | 0.0539 |
+| `capture-result` | - | 0.9420 | 0.0206 |
+| `capture-routing` | - | 0.8095 | 0.0316 |
+| `capture-sanity-error` | - | 0.7758 | 0.0569 |
+| `capture-save` | - | 0.8654 | 0.0216 |
+| `capture-type` | - | 0.7495 | 0.0338 |
+| `cloud-upload-overwrite` | `overlay-overwrite` | 0.7086 | 0.0329 |
+| `copy-scene-destination` | `fixture-copy-scene` | 0.9152 | 0.0094 |
+| `cpu-monitor` | - | 0.8662 | 0.0169 |
+| `delete-confirmation` | `fixture-delete` | 0.9267 | 0.0132 |
+| `device-browser-base` | `corpus-device-browser-root` | 0.7342 | 0.0283 |
+| `device-browser-middle-deep` | - | 0.7402 | 0.0357 |
+| `device-browser-middle-reverb` | - | 0.7418 | 0.0373 |
+| `device-browser-models` | `corpus-device-browser-models` | 0.9215 | 0.0239 |
+| `device-browser-models-clean` | `corpus-device-browser-models-clean` | 0.9281 | 0.0194 |
+| `device-browser-neural-capture` | - | 0.8612 | 0.0305 |
+| `device-browser-plugin-list` | `plugin-list` | 0.8448 | 0.0248 |
+| `device-browser-plugin-locked` | `plugin-locked` | 0.9276 | 0.0375 |
+| `device-browser-plugin-models` | `plugin-models` | 0.9270 | 0.0313 |
+| `device-browser-root` | `corpus-device-browser-root` | 0.9572 | 0.0187 |
+| `device-browser-top` | `corpus-device-browser-root` | 0.8656 | 0.0216 |
+| `device-favorites` | - | 0.7864 | 0.0179 |
+| `device-preset-actions` | - | 0.9691 | 0.0361 |
+| `device-preset-save` | - | 0.9588 | 0.0122 |
+| `device-presets-exotic-z-boost` | `device-presets` | 0.9127 | 0.0235 |
+| `device-presets-user` | - | 0.9093 | 0.0156 |
+| `device-recents` | - | 0.8019 | 0.0169 |
+| `device-search` | `device-search-suggestions` | 0.7937 | 0.0202 |
+| `device-search-entry` | - | 0.8362 | 0.0143 |
+| `device-search-results` | - | 0.7035 | 0.0236 |
+| `directory-arrange` | - | 0.8549 | 0.0308 |
+| `directory-captures` | - | 0.8350 | 0.0273 |
+| `directory-categories` | - | 0.8299 | 0.0277 |
+| `directory-cloud-upload` | - | 0.7759 | 0.0334 |
+| `directory-copy` | - | 0.9177 | 0.0314 |
+| `directory-favorites` | - | 0.9292 | 0.0139 |
+| `directory-filter` | - | 0.8136 | 0.0192 |
+| `directory-irs` | - | 0.7482 | 0.0114 |
+| `directory-item-context` | - | 0.9151 | 0.0130 |
+| `directory-nested` | - | 0.8828 | 0.0282 |
+| `directory-new-folder` | - | 0.8708 | 0.0157 |
+| `directory-plugins` | - | 0.8174 | 0.0146 |
+| `directory-search` | `device-search-entry` | 0.8398 | 0.0143 |
+| `directory-search-results` | - | 0.8828 | 0.0283 |
+| `directory-sort` | - | 0.7839 | 0.0211 |
+| `edit-details-editor` | `edit-details` | 0.9269 | 0.0192 |
+| `editor-ambience` | - | 0.8992 | 0.0289 |
+| `editor-chief-ds1` | - | 0.9108 | 0.0270 |
+| `editor-digital-flanger` | - | 0.8643 | 0.0253 |
+| `editor-parametric-8` | - | 0.9120 | 0.0171 |
+| `editor-simple-gate` | - | 0.9118 | 0.0243 |
+| `editor-ukc30-cab` | - | 0.9343 | 0.0222 |
+| `editor-ukc30-topboost` | - | 0.9005 | 0.0273 |
+| `empty-slot` | - | 0.7274 | 0.0228 |
+| `expression-bypass` | - | 0.8604 | 0.0283 |
+| `expression-parameter` | - | 0.8582 | 0.0238 |
+| `fixture-editor-capture` | - | 0.7314 | 0.0412 |
+| `fixture-editor-pages` | - | 0.8165 | 0.0312 |
+| `generic-confirmation` | `overlay-confirmation` | 0.9267 | 0.0132 |
+| `gig-view` | `gig` | 0.9514 | 0.0371 |
+| `gig-view-hybrid` | - | 0.8338 | 0.0633 |
+| `gig-view-live-tuner` | `gig-live-tuner` | 0.9520 | 0.0360 |
+| `gig-view-preset` | - | 0.9406 | 0.0438 |
+| `gig-view-scene` | - | 0.9136 | 0.0331 |
+| `global-eq` | - | 0.7894 | 0.0514 |
+| `grid-base` | `grid` | 0.9199 | 0.0298 |
+| `grid-context-menu` | - | 0.8550 | 0.0144 |
+| `grid-context-menu-bottom` | - | 0.8469 | 0.0169 |
+| `grid-context-menu-favorite` | - | 0.8521 | 0.0147 |
+| `grid-restored` | `grid` | 0.9199 | 0.0298 |
+| `grid-scene-a-restored` | `grid` | 0.9199 | 0.0298 |
+| `grid-scene-b` | `grid` | 0.9199 | 0.0299 |
+| `grid-scene-selector` | - | 0.8156 | 0.0273 |
+| `input-gate-control` | `fixture-input-gate` | 0.8975 | 0.0265 |
+| `input-route-selector` | - | 0.7612 | 0.0216 |
+| `input-route-selector-top` | - | 0.8147 | 0.0156 |
+| `io-headphones` | - | 0.7833 | 0.0283 |
+| `io-input` | - | 0.8756 | 0.0253 |
+| `io-output` | - | 0.7399 | 0.0373 |
+| `io-overview` | - | 0.7528 | 0.0332 |
+| `io-send-return` | - | 0.8268 | 0.0301 |
+| `io-usb` | - | 0.8843 | 0.0319 |
+| `looper-editor` | - | 0.8946 | 0.0165 |
+| `mixer-editor` | - | 0.9048 | 0.0242 |
+| `modes-configuration` | `modes` | 0.9653 | 0.0143 |
+| `onscreen-keyboard` | `overlay-keyboard` | 0.9588 | 0.0122 |
+| `output-route-selector` | - | 0.7631 | 0.0191 |
+| `output-route-selector-top` | - | 0.7712 | 0.0212 |
+| `overlay-busy` | `plugin-refresh` | 0.8515 | 0.0257 |
+| `overlay-error` | `device-search` | 0.7035 | 0.0236 |
+| `plugin-browser-ready` | `plugin-list` | 0.8528 | 0.0240 |
+| `plugin-folders` | `plugin-list` | 0.8057 | 0.0296 |
+| `plugin-refresh` | - | 0.8068 | 0.0314 |
+| `preset-directory` | - | 0.9312 | 0.0207 |
+| `preset-midi-out` | `midi-out` | 0.9300 | 0.0235 |
+| `save-as-editor` | `save-as` | 0.8921 | 0.0176 |
+| `scene-assignment` | - | 0.8318 | 0.0198 |
+| `settings-account` | - | 0.9475 | 0.0168 |
+| `settings-device` | - | 0.9274 | 0.0364 |
+| `settings-diagnostics` | - | 0.9754 | 0.0127 |
+| `settings-info` | - | 0.9325 | 0.0261 |
+| `settings-midi` | - | 0.9134 | 0.0325 |
+| `settings-storage` | - | 0.9337 | 0.0243 |
+| `settings-support` | - | 0.9709 | 0.0388 |
+| `settings-system` | - | 0.9147 | 0.0335 |
+| `settings-wifi` | - | 0.9397 | 0.0217 |
+| `splitter-editor` | - | 0.8958 | 0.0251 |
+| `stomp-assignment` | - | 0.8226 | 0.0254 |
+| `swap-scene-destination` | `fixture-swap-scene` | 0.9143 | 0.0095 |
+| `tempo-metronome` | `tempo` | 0.8817 | 0.0255 |
+| `tuner` | - | 0.9094 | 0.0217 |
+| `tuner-live-enabled` | - | 0.9109 | 0.0217 |
 
 ## Text validated against the device's own scene graph
 
@@ -707,6 +863,404 @@ second line then needs 409px, and no single size makes both true, because our
 bold is wider relative to the roman than the device's. The measure is set so the
 paragraph takes two lines with a break one word later - closer than the three
 lines an exact-width box produced.
+
+### The audit: every frame against every render
+
+The sixth pass was then audited from a clean tree - fresh server, renders
+deleted, all 94 drawn again - and each frame scored against **every** render
+rather than only its own. Mean error alone cannot make that call, so the
+shortlist is taken on mean error and the verdict on 2px edge agreement, which is
+what separated the mislabelled captures in the first place.
+
+**Three frames in the corpus are stored twice under different names.** Byte for
+byte:
+
+| | | |
+| --- | --- | --- |
+| `generic-confirmation` | = | `delete-confirmation` |
+| `overlay-error` | = | `device-search-results` |
+| `onscreen-keyboard` | = | `device-preset-save` |
+
+So the 94 mapped frames are 91 distinct images, and the pairs that tie in the
+audit tie because they are the same picture, not because two views collide.
+
+**Two frames were matched better by another view, and both were defects.**
+
+`empty-slot` scored 0.731 against its own view and 0.792 against
+`device-browser-root`'s. Its Grid pane had been squeezed into the left 400px,
+which pushed the toolbar and Multi Out into the open half - on the unit they sit
+behind the list at x 610 and 748 - and left no room for the preset title the
+frame shows at full size. Redrawn as the whole 800px Grid with the list over its
+right half, measured off the frame (44x76 route tiles at x 8 on a 94px pitch
+from y 109, a 70px `#101010` slot at (152, 112), the cable at y 146): **0.023 /
+0.727**, and it is now its own closest match.
+
+`fixture-editor-capture` scored 0.705 against its own view and 0.721 against
+`editor-chief-ds1`'s - a near-identical screen drawn more accurately. Two causes:
+its header's undo and save glyphs had no fill or stroke rule, so they were
+invisible, and its editor was a rounded panel wrapping bar and parameters
+together where the frame has the same bar and five-cell strip the assignment
+screens use. **0.041 / 0.731**, and it now beats `editor-chief-ds1` on the frame
+it belongs to.
+
+Everything else that surfaced is explained: `copy-scene-destination` and
+`swap-scene-destination` are 0.0009 apart because the two screens differ by a
+word, `device-search` and `directory-new-folder` by 0.006 because both are the
+keyboard, and the I/O pages by 0.005 because they share one layout. **No mapping
+errors remain.** After the audit the 94 sit at a 0.0251 median, worst 0.0574,
+65 under 0.03, 88 under 0.04, and 90 agreeing on 70% or more of their edges.
+
+### The seventh pass: the last four below 70% edge agreement
+
+The four frames still under 0.7 edge agreement were taken, and every one was a
+layout the unit draws in its standard five-cell strip:
+
+| frame | before | after | what the frame shows |
+| --- | --- | --- | --- |
+| `expression-parameter` | 0.054 / 0.66 | **0.024 / 0.86** | the same 156px cells as the other editors, not three columns of 46/27/27 |
+| `device-recents` | 0.030 / 0.69 | **0.017 / 0.80** | search and close only, rows on one line, the pane's zigzag placeholder |
+| `device-favorites` | 0.030 / 0.69 | **0.018 / 0.79** | the rail and pane are `#181c18`, not `#151a16` |
+| `stomp-assignment` | 0.038 / 0.69 | **0.025 / 0.81** | the latch pills butt together, 128 and 152 wide from x 260 |
+
+`expression-bypass` came with them - the parameter grid had been forcing its
+second tile onto a new row, so NOISE REDUCTION and BYPASS stood one above the
+other on both screens where the frames have them side by side: 0.033 / 0.79 to
+**0.028 / 0.86**.
+
+**All 94 addressable frames now agree on 70% or more of their edges**, 74 on 80%
+or more and 42 on 90% or more. The median is 0.0243 and the worst 0.0569.
+
+#### A class of silent failure, and a check for it
+
+The stomp dialog would not take its measurements however specific the selector
+got. The cause is `@scope`: **scoping proximity is settled before specificity**,
+so a rule written after the block loses to any scoped rule that declares the
+same property on the same element, whatever the selectors say. The probe that
+settled it is worth keeping:
+
+```
+.capture-official-error > main > nav div.is-pending b     unscoped, (0,3,4)
+.capture-official-progress > main > nav div:last-child b  scoped,   (0,2,4)  <- wins
+```
+
+An earlier pass in this session had reached the opposite conclusion, because the
+case that prompted it turned out to be an unterminated brace. The reading now
+has a machine behind it: `audit_scope.mjs` renders every fixture, walks the
+stylesheets, and reports any unscoped declaration whose property is decided by a
+scoped rule instead. It found four, two of them defects:
+
+- the sanity-error screen's Training stage kept the progress screen's white
+  badge instead of its own `#606460` - the rules have been moved inside the
+  block, and `capture-sanity-error` went 0.057 / 0.75 to **0.057 / 0.78**;
+- the preset row in view lost its green whenever the slot was also unsaved,
+  which is exactly the row (`4F`) four directory frames were captured on.
+
+The other two are deliberate scoped overrides - the settings screens' `display`
+and the block context's darker page - and the check now reports none besides.
+
+Re-running the frame-against-every-render audit afterwards found no mapping
+errors: only the near-ties that are screens differing by a word
+(`copy-scene-destination`), by a caret (`device-search`), or by one I/O page's
+contents, plus the three frames the corpus stores twice.
+
+### Completing the audit: all 119 frames against all 120 views
+
+The sweep had been scoring 94 of the 119 frames; the other 25 were set aside as
+"reached by touch". Rendering **every declared view** - all 112 plus the seven
+parameter editors and the preset directory - and scoring each unscored frame
+against all of them settles what is really missing.
+
+**Ten of the 25 were already drawn**, and were out of the sweep only because
+their names do not match a view's:
+
+| frame | view that draws it | mae / edge f1 |
+| --- | --- | --- |
+| `capture-calibration` | `capture-calibration` | 0.046 / 0.93 |
+| `grid-base`, `grid-restored`, `grid-scene-a-restored`, `grid-scene-b` | `grid` | 0.030 / 0.92 |
+| `device-browser-top`, `device-browser-base` | `corpus-device-browser-root` | 0.022 / 0.87, 0.028 / 0.73 |
+| `plugin-browser-ready` | `plugin-list` | 0.024 / 0.85 |
+| `block-context-bottom` | `block-context` | 0.032 / 0.68 |
+| `fixture-editor-pages` | (see below) | |
+
+The sweep now scores **104 frames**: median 0.0251, worst 0.0569, all under
+0.06, 77 under 0.03, and 103 of the 104 agreeing on 70% or more of their edges
+(83 on 80%, 47 on 90%).
+
+**`fixture-editor-pages` was drawing the wrong screen.** Its frame is the shared
+Grid and action bar with GUITAR AMP / Brit 2203 in red and seven parameters over
+two 107px strips; the view fell through to the Ambience detail editor - a real
+CorOS layout, but the manual's. Rebuilt on the shared underlay it went 0.094 /
+0.13 to **0.031 / 0.82**.
+
+**The scope failure again, and a second catch.** Rebuilding it exposed that the
+assignment screens' strips had never taken the measurements written for them:
+`.assignment-parameters` and `.assignment-knob` still had rules *inside* the
+`@scope` block from the panel those screens used before they moved onto the
+shared underlay, and proximity let them beat everything written after it. The
+markup no longer uses that panel, so the rules were dead weight that was still
+winning. Deleting them let the measured layout through:
+
+| frame | before | after |
+| --- | --- | --- |
+| `fixture-editor-pages` | 0.048 / 0.69 | **0.031 / 0.82** |
+| `scene-assignment` | 0.021 / 0.80 | **0.020 / 0.83** |
+| `stomp-assignment` | 0.025 / 0.81 | **0.025 / 0.82** |
+
+That is the same class the previous pass documented, found a second time by the
+same check - which is the argument for keeping the check rather than the lesson.
+
+**Fifteen frames are screens no fixture draws.** They are not defects; they are
+the remaining reconstruction work, and each is a panel over a Grid the sweep's
+Grid does not hold:
+
+| frames | what they are | closest view |
+| --- | --- | --- |
+| `grid-context-menu`, `-bottom`, `-favorite` | the Grid's own menu: FILE / Create New / Save as... over QUAD CORTEX / New Neural Capture / Tempo / CPU Monitor / Settings | 0.51, 0.31, 0.30 |
+| `input-route-selector`, `-top` | the input list - MONO over Input 1/2, Return 1/2, USB inputs, Not In Use | 0.52, 0.29 |
+| `output-route-selector`, `-top` | the output list - STEREO over Multiple Outputs, Output 1/2, Send 1/2, USB, Row 3/4 | 0.53, 0.35 |
+| `grid-scene-selector` | eight scene rows with amber badges, 232x416 at (454, 44) | `grid` 0.078 / 0.69 |
+| `gig-view-preset`, `-scene`, `-hybrid` | the GIG view in the unit's own content; hybrid is a preset row over a scene row, not the scenes-over-stomps the manual shows | 0.31, 0.51, 0.31 |
+| `device-browser-middle-deep`, `-middle-reverb`, `-neural-capture` | the browser scrolled, and its model menu | 0.54, 0.55, 0.52 |
+| `capture-type` | the capture type picker, the one Capture V1 screen never captured | 0.59 |
+
+Each needs its own Grid content read off the frame, which is why they are listed
+rather than approximated: mapping them to a view that draws a different Grid
+would report coverage the reconstruction does not have.
+
+### The last fifteen: the whole corpus is scored
+
+The fifteen screens no fixture drew have been built, read off the captures and
+their graphics trees. **All 119 corpus frames now render and score** - median
+0.0251, worst 0.0633, every one under 0.07, 85 under 0.03, and 116 of the 119
+agreeing on 70% or more of their edges (92 on 80%, 49 on 90%).
+
+**Eight are one widget.** The preset menu, the two route lists and the scene
+selector are the same 270px panel over the Grid, scrolled by whole cells, under
+an `rgba(89,89,89,.74)` scrim - fitted from two samples, the page at `#424142`
+and white text at `#848684`. Their rows come from the frames' own trees; the
+scene selector raises no scrim, which is how its page stays `#000000`.
+
+| frame | closest view before | after |
+| --- | --- | --- |
+| `grid-context-menu` | 0.51 | **0.014 / 0.86** |
+| `grid-context-menu-favorite` | 0.37 | **0.015 / 0.85** |
+| `grid-context-menu-bottom` | 0.41 | **0.017 / 0.85** |
+| `input-route-selector` | 0.52 | **0.022 / 0.76** |
+| `input-route-selector-top` | 0.29 | **0.016 / 0.81** |
+| `output-route-selector` | 0.53 | **0.019 / 0.76** |
+| `output-route-selector-top` | 0.35 | **0.021 / 0.77** |
+| `grid-scene-selector` | 0.69 | **0.027 / 0.82** |
+
+Two things the frames settled that guesswork would not: the 32H chain runs
+**seven** blocks, which is only knowable because `input-route-selector.png`
+shows slots 3 to 6 where `grid-scene-selector.png` shows 0 to 4; and CorOS fits
+the preset name to the room it has - `pyquadcortex scratch` sets 40px where
+`QC MCP TEST_2` sets 58.
+
+**Three are the GIG view in its other modes**, which the existing view already
+knew how to draw:
+
+| frame | before | after |
+| --- | --- | --- |
+| `gig-view-preset` | 0.089 / 0.31 | **0.044 / 0.94** |
+| `gig-view-scene` | 0.098 / 0.32 | **0.033 / 0.91** |
+| `gig-view-hybrid` | 0.141 / 0.31 | **0.063 / 0.83** |
+
+Hybrid is the one worth recording: the unit puts **presets over scenes**, not
+the scenes-over-stomps the manual shows, and its scene row keeps the
+footswitch's own letter and colour while taking its name from the preset's
+first four scenes - so the badge reads F while the lit tile is `stereo`. The
+preset in view also takes its preset's colour: 7B is `#0875e7` where 32H is
+`#ff2421`.
+
+**Four more.** `capture-type.tree.txt` has `zenUI::Grid` at its root and nothing
+else - the type picker never came up, so that capture is simply the Grid in 2F
+(0.59 -> **0.034 / 0.75**). `device-browser-neural-capture` is the browser with
+the Captures Library open (0.52 -> **0.031 / 0.86**). The two
+`device-browser-middle-*` frames are its category list scrolled seven and three
+of its 78px rows; the list now matches row for row, but they were captured in
+3C over a four-row Grid the browser's snapshot does not hold, so they sit at
+**0.040 / 0.56** and **0.042 / 0.57** - the last two frames below 70%, and the
+residual is that Grid, not the browser.
+
+### The 3C grid, and the last frame over 70%
+
+The two `device-browser-middle-*` frames were left at 0.56 because their Grid -
+half the screen - was the browser's own 32H snapshot rather than the 3C preset
+they were captured over. It is all readable off
+`device-browser-middle-reverb.png`, and the columns and row centres land on the
+grid `CorOsOfficialGrid` already draws, so only the content was missing:
+
+- four rows, `In 1` on rows one, two and four and **`Prev. Row`** on the third;
+- rows one and two carry the same four devices - the Simple Gate's grey tile, a
+  cyan Delay, a green Compressor and an amber Pitch;
+- the third has the Compressor with a **bypassed** Pitch struck through beside
+  it, and the fourth the gate and the Compressor;
+- the browser is adding a device at **row four, column three** - its target slot
+  sits at (326, 397), not the root frame's (322, 206);
+- and 3C's preset letter is `#ff7100`, where 32H's is red.
+
+| frame | before | after |
+| --- | --- | --- |
+| `device-browser-middle-deep` | 0.040 / 0.56 | **0.036 / 0.74** |
+| `device-browser-middle-reverb` | 0.042 / 0.57 | **0.037 / 0.74** |
+
+That left one frame under 70%. `block-context-bottom` is the same ten-row menu
+three rows further down - Reset to defaults through Remove block from the grid -
+over a **reverb** editor rather than the empty parameter area
+`block-context.png` shows: PRE DELAY, DAMPING and HIGH PASS are the cells the
+menu leaves visible, on teal knobs. 0.032 / 0.68 to **0.025 / 0.89**.
+
+**Every one of the 119 frames now agrees on 70% or more of its edges** and sits
+under 0.07 mean error. The median is 0.0251, the worst 0.0633, 86 are under
+0.03, 93 agree on 80% or more and 49 on 90% or more.
+
+### The closing audit
+
+Run from a clean slate on the committed tree: fresh server, renders deleted,
+all 119 drawn again. Three checks, and the release gates.
+
+**Every frame against its own render.** 119 of 119 mapped, none unscored.
+
+| | median | worst | best |
+| --- | ---: | ---: | ---: |
+| edge agreement (2px) | 0.8756 | 0.7035 | 0.9754 |
+| mean absolute error | 0.0251 | 0.0633 | 0.0094 |
+
+34 under 0.02 mae, 86 under 0.03, 114 under 0.05, all 119 under 0.07; 10 frames
+at 95% edge agreement or better, 49 at 90%, 93 at 80%, all 119 at 70%.
+
+**Every frame against every render.** 23 frames have a closer render than their
+own on coarse mean error; on edge agreement only three are beaten, and all three
+by less than a point: `copy-scene-destination` by 0.0009 (two screens that
+differ by a word), `device-search` by 0.006 (both are the keyboard) and
+`io-output` by 0.005 (the I/O pages share one layout). Every other row is a tie
+between frames that share a view. **No mapping errors.**
+
+**Every unscoped declaration against what it computes.** Two, both deliberate
+scoped overrides on the block context screen - its `display` and its darker
+page. No declaration is silently losing to `@scope` proximity.
+
+The corpus itself holds **115 distinct images under 119 names**:
+`delete-confirmation` = `generic-confirmation`, `device-preset-save` =
+`onscreen-keyboard`, `device-search-results` = `overlay-error`, and
+`grid-base` = `grid-restored`.
+
+**Gates.** Typecheck clean; 381 tests; 81/81 geometry measurements; the 22-case
+regression proof catches 22/22; 1637 device strings across 110 of the 119
+screens with none missing (CorOS draws the other nine as images); coverage
+104/104 canonical states and 4/4 evidence gaps planned; corpora 119 + 37 + 27
+checksums; iconography 104/104 variants; Cortex protocol 171 messages and 72
+decodable types; and the test-assertion, architecture and app-parity checks.
+
+The eight weakest by edge agreement, for the record: `device-search-results` and
+`overlay-error` at 0.704 (one image under two names), `cloud-upload-overwrite`
+0.709, `empty-slot` 0.727, `fixture-editor-capture` 0.731, `device-browser-base`
+0.734, `io-output` 0.740, `device-browser-middle-deep` 0.740.
+
+### What the extracted device schema settles
+
+`references/cortex-protocol` holds the protobuf schema lifted out of Cortex
+Control's own binary - 153 messages of `ProductionAutomation.proto` and 15 of
+`Preset.proto`, rendered to text by `tools/generate_cortex_protos.py` and proved
+field-for-field against the shipped copy by `verify_cortex_protocol_fidelity.py`.
+It was extracted for the wire protocol, but it is also the device describing its
+own state, so it answers questions the frames cannot.
+
+**The twenty-three routing ports now have one description, not four.**
+`GainCalInputPortParameter.InputPortId` and `GainCalOutputPortParameter.OutputPortId`
+enumerate every port CorOS can route a row to. Four things claimed to describe
+them and none had been checked against another: that enum, the
+`contracts/qc-domain.v1.json` table our clients generate from, the words
+`routePickerLabel` prints in the app, and the rows the device draws in
+`input-route-selector.png` and `output-route-selector.png`. They agree on all
+twenty-three ids and every grouping - and disagreed on one word: the app said
+`USB Input 5` where CorOS says `USB input 5`. The device is deliberately
+asymmetric there, `USB input 5` against `USB Output 3`, which is exactly the
+kind of detail a transcription loses. `tests/route-alignment.test.ts` now pins
+all four together, and fails on each of the four drifts it exists to catch.
+
+**Three of the four remaining evidence gaps are no longer guesses.**
+
+| gap | what the fixture draws | what the device declares |
+| --- | --- | --- |
+| ST-06 `settings-update` | one state: *Your Quad Cortex is up to date* | `UpdaterMessage` carries `new_version_id`, `changelog`, `download_progress` and `installation_progress` across `UpdaterStatus` (none / available / downloaded / none available) and `UpdaterState` (idle, requesting, downloading, updating, reboot, failed) |
+| ED-14 `fixture-warning-clip` | *INPUT CLIPPING - reduce Input 1 gain* | `IOMeterMessage` has no input-clip flag at all. What it reports is limiter activity on the **outputs**: `xlr_1_limiter`, `xlr_2_limiter`, `out_3_limiter`, `out_4_limiter` and `hp_limiter_active` |
+| ED-15 `fixture-warning-dsp` | *DSP LIMIT REACHED - not enough processing power to add this device* | the device's own inhibited-module message, `CompilerInhibitedModulesMessage`, carries exactly two flags: `global_gate` and `global_eq` |
+
+Both warning fixtures were written from imagination, and the schema says the
+first is modelled on something the device does not measure. Neither is a
+rendering defect - they have no frame to be wrong against - but they are the
+same class of error as the invented `directory-filter` contents, and they are
+now marked as contradicted rather than merely unevidenced.
+
+**The settings screens map one-to-one onto `GeneralSettingsMessage`.** Every row
+`settings-device.tree.txt` shows is a field: Global Bypass is `global_bypass_cab`
+and `global_bypass_ir` over four rows, Scene Bypass Behavior is
+`scene_block_bypass`, Hold Timing is `hold_timing`, Swap Tempo and Tuner is
+`swap_tempo_tuner_access`, Gig View Access is `gig_view_stomp_access_enabled`,
+Latency Compensation is `enable_dynamic_delay_compensation`. That means the
+option lists behind those rows are enumerated rather than inferred: Scene Bypass
+Behavior offers always / non-stomp / never overwrite, MIDI Clock Out offers off /
+DIN / USB / both, Power Functions offers shutdown, reboot, standby and wake,
+Master Volume Knob assigns Out 1/2, Out 3/4, Send 1/2 and headphones, and Device
+Storage divides into presets, Neural Captures and impulse responses. None of
+those pages is captured yet; the list to capture is now exact.
+
+**The unit was then asked, and agreed with the schema.** Settings is a
+master-detail dialog and the corpus holds two of its panes; the session drove
+the unit through eight more and screenshotted each. Scene Bypass Behavior offers
+exactly the three `SceneBlockBypass` values, in that order, with *Always
+overwrite bypass state (default)* selected. Master Volume Knob is four
+checkboxes - OUT 1/2, OUT 3/4, SEND 1/2, headphones - which is
+`MasterVolumeAssignmentOptions` field for field. Hold Timing is a six-step bar
+from 500ms to 1000ms, Stomp Mode Bypass and Swap Tempo and Tuner and Gig View
+Access and Latency Compensation are each the two-state field the schema names,
+and Power Functions is `power_button_sensitivity` over Off/Low/Medium/High with
+a RESTART button - the one `PowerOptions` value the device exposes to its own
+touchscreen.
+
+None of the eight entered the corpus, and the coverage matrix records why and
+how to finish it. Two things went wrong and both are now enforced rather than
+remembered. Six panes were written under Device names while the dialog was
+showing the System category, because `capture` did not require a verified screen
+the way a gesture does - they were reverted, and the driver now refuses a
+capture without a fresh `expect`, which it demonstrated by refusing six on the
+next attempt. And the unit moved under the script: the Grid became the metronome
+editor between a refused tap and the next check, and a settings menu became Gig
+View, neither of which the script asked for. That is the unit's own footswitches,
+and the metronome screen's animation then stops the framebuffer stream, which is
+not recoverable without the Gig View toggle this project does not use - so the
+driver grew `--no-framebuffer`, which connects on the graphics tree alone and is
+enough to navigate off the animation. Scrolling a popup by its scrollbar rather
+than by swiping its rows avoids the other half of it. All of it now lives in the
+driver rather than in someone's memory.
+
+**ST-06 is the one that was seen and could not be kept.** The real Device
+Updates page reads *Your Quad Cortex is currently running* over **CorOS: 4.1.0**,
+with a blue CHECK FOR UPDATES button and a News block beside a QR code. Our
+`settings-update` fixture draws a CURRENT VERSION label, an *up to date* line
+and a four-tab nav the screen does not have. It is left alone rather than
+rebuilt from a screenshot that is not in this repository - reconstructing
+against evidence nobody else can check is the error this report already
+documents twice.
+
+**What `Preset.proto` says a preset carries that our snapshot does not.**
+`stomp_labels`, `single_stomp_labels` and `stomp_is_momentary` are per-preset
+maps, so a footswitch caption is not always its block's name;
+`StompModeAssignment` marks a footswitch PRIMARY or SECONDARY; `scene_tempo` is
+per scene; `Model.sidechain_source_flag` / `sidechain_sink_flag` and
+`SlotNotification model_update_notifications` are per-block flags CorOS can
+draw. `PresetSnapshot` models none of them. Every corpus frame we reconstruct
+happens to use the defaults, so nothing is mis-drawn today, but a preset that
+uses them would not render correctly from our snapshot.
+
+**Where else the schema is ahead of the corpus.** `LooperStatus` distinguishes
+`redo_available` from `undo_count`, and carries `half_speed`, `in_reverse`,
+`one_shot`, `armed` and `waiting_for_cycle`; we have one looper frame, showing
+the idle state. `RemoteControlScreenshot` accepts an `x`/`y`/`w`/`h` region,
+which the capture tooling never uses. `IOMeter` is decodable but has never been
+seen on the wire, so the meters on the I/O pages are still drawn from stills.
 
 ## Improvements in this pass
 

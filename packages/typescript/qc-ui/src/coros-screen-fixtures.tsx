@@ -5,7 +5,7 @@ import { officialBlockVisual } from "./block-visuals";
 import { openSplitPath } from "./coros-ui";
 import { QcDeviceGlyph } from "./device-glyph";
 import { QcDeviceCategoryGlyph as DeviceCategoryGlyph } from "./device-category-glyph";
-import { QcDirectoryIcon, QcEditorIcon, QcHardwareIcon, QcLibraryIcon, QcModeGlyph, QcPresetStackIcon, QcScreenHeaderGlyph, QcUiIcon } from "./theme-icons";
+import { QcCaptureFilterIcon, QcDirectoryIcon, QcEditorIcon, QcEqIcon, QcHardwareIcon, QcLibraryIcon, QcModeGlyph, QcPresetStackIcon, QcScreenHeaderGlyph, QcSettingsIcon, QcUiIcon } from "./theme-icons";
 import { QcCaptureKindGlyph, QcGigStompGlyph, QcHeadphonesGlyph, QcIoPortGlyph, QcLooperActionGlyph, QcScreenGlyph, type QcLooperActionGlyphName, type QcScreenGlyphName } from "./screen-glyphs";
 import "./fixture-live-surface.css";
 import "./remaining-fixtures.css";
@@ -79,8 +79,10 @@ function DirectoryCategoryGlyph({ label }: { label: string }) {
 
 type DirectoryFixtureView = "directory-presets" | "directory-categories" | "directory-captures" | "directory-irs" | "directory-plugins" | "directory-favorites" | "directory-search" | "directory-search-results" | "directory-sort" | "directory-filter" | "directory-arrange" | "directory-copy" | "directory-nested" | "directory-new-folder" | "directory-item-context" | "directory-cloud-upload";
 type OfficialDirectoryView = "directory-presets" | "directory-captures" | "directory-irs" | "directory-plugins" | "directory-favorites" | "directory-search-results" | "directory-nested" | "directory-cloud-upload";
+const CAPTURE_FILTERS = ["Default", "Amp", "Combo Amp", "Amp + Cab", "Cab", "Overdrive", "Fuzz", "Compressor"] as const;
 
-function CorOsOfficialDirectory({ view }: { view: OfficialDirectoryView }) {
+function CorOsOfficialDirectory({ view, filter = false }: { view: OfficialDirectoryView; filter?: boolean }) {
+  if (filter) return <section className="qc-screen directory-official directory-captures-official directory-filter-official"><header><button className="directory-official-category"><QcLibraryIcon kind="capture-header" /><span>Neural Captures</span><b><QcUiIcon kind="down" /></b></button><span /><button><QcDirectoryIcon kind="filter" /></button><button><QcUiIcon kind="check" /></button></header><main><nav className="directory-filter-list">{CAPTURE_FILTERS.map((label, index) => <button key={label} className={index === 0 ? "is-active" : undefined}><b><QcCaptureFilterIcon kind={label} /></b><span>{label}</span>{index === 0 && <i><QcUiIcon kind="check" /></i>}</button>)}</nav></main></section>;
   if (view === "directory-presets") {
     const rows = ["1A Brit 2203", "1B Brit Plexi100 Normal", "1C US TWN Vibrato", "1D Rols Jazz CH120", "1E California Tremo Red", "1F EV101III Red", "1G Freeman 100 Rhythm", "1H D-Cell H4 Ch3"];
     return <section className="qc-screen directory-official directory-presets-official"><header><button className="directory-official-category"><DirectoryIcon kind="grid" />Presets <b><QcUiIcon kind="down" /></b></button><span /><button><DirectoryIcon kind="sort" /></button><button><DirectoryIcon kind="arrange" /></button><button><DirectoryIcon kind="search" /></button><button><DirectoryIcon kind="done" /></button></header><main><nav><button><b><DirectoryIcon kind="download" /></b><span>Downloads</span></button><button><b><DirectoryIcon kind="cloud" /></b><span>Cloud Presets</span></button><button className="is-active"><b><DirectoryIcon kind="folder" number={0} /></b><span>Factory Presets</span></button><button><b><DirectoryIcon kind="folder" number={1} /></b><span>My Presets</span><small><QcUiIcon kind="more" /></small></button><button className="is-muted"><b><DirectoryIcon kind="new-folder" /></b><span>New Setlist</span></button></nav><nav className="directory-preset-banks">{Array.from({ length: 14 }, (_, index) => <button key={index}>{index + 1}</button>)}</nav><section className="directory-official-list">{rows.map((name, index) => <button key={name} style={index === 0 ? { color: "#2df36a" } : undefined}><span>{name}</span><b><QcUiIcon kind="more" /></b></button>)}</section></main></section>;
@@ -155,6 +157,14 @@ function CorOsRemainingFixture({ view }: { view: RemainingFixtureView }) {
       <header><button><QcUiIcon kind="more" /></button><span><small>INPUT GATE CONTROL</small><strong>Path 1</strong></span><nav><i><QcEditorIcon kind="scene-previous" /></i><b>A</b><i><QcEditorIcon kind="scene-next" /></i></nav><em /><button className="input-gate-power"><QcEditorIcon kind="bypass" /></button><button><QcUiIcon kind="check" /></button></header>
       <main><section><span>NOISE REDUCTION</span><i className="input-gate-knob reduction"><b /></i><strong>30.0 <small>%</small></strong></section><section><span>GAIN REDUCTION</span><strong>0.0 <small>dB</small></strong><i className="input-gate-meter"><b /></i></section><section><span>INPUT GAIN</span><i className="input-gate-knob gain"><b /></i><strong>0.0 <small>dB</small></strong></section></main>
     </section>
+  </section>;
+  // fixture-editor-pages.png: the amp editor is the shared Grid + action bar
+  // with two parameter strips, not the manual's full-screen page layout.
+  if (view === "fixture-editor-pages") return <section className="qc-screen coros-assignment is-amp-editor" aria-label="Amp parameter pages">
+    <PhysicalEditorUnderlay slot="4" letter="E" title="QC MCP TEST_2*" category="GUITAR AMP" device="Brit 2203" blocks={2} blockGlyphs={["Utility", "Amp"]} expression={false} mode="PRESET">
+      <div className="assignment-parameters">{[["GAIN", "5.0"], ["BASS", "5.0"], ["MID", "5.0"], ["TREBLE", "5.0"], ["PRESENCE", "5.0"]].map(([label, value]) => <section key={label}><span>{label}</span><i className="assignment-knob"><b /></i><strong>{value}</strong></section>)}</div>
+      <div className="assignment-parameters is-row-2">{[["MASTER", "3.0"], ["OUTPUT", "0.0 dB"]].map(([label, value], index) => <section key={label}>{index < 2 && <><span>{label}</span><i className="assignment-knob"><b /></i><strong>{value}</strong></>}</section>)}{[0, 1, 2].map((index) => <section key={`empty-${index}`} />)}</div>
+    </PhysicalEditorUnderlay>
   </section>;
   const editor = view === "fixture-editor-cab" ? ["2x12 UK C30 65 (M)","CABINET",["MIC 1 · 57","MIC 2 · 121","POSITION","DISTANCE","LEVEL","PAN"]] : view === "fixture-editor-eq" ? ["Parametric-8","EQUALIZER",["LOW CUT","BAND 1","BAND 2","BAND 3","HIGH CUT","LEVEL"]] : ["Ambience","REVERB · PAGE 2/2",["MOD RATE","MOD DEPTH","DUCKING","TRAILS","WIDTH","MIX"]];
   return <section className={`qc-screen coros-detail-editor ${view}`}><header><button><QcUiIcon kind="more" /></button><span><small>{editor[1] as string}</small><strong>{editor[0] as string}</strong></span><i className="status-dot" /><button><QcUiIcon kind="check" /></button></header>{view === "fixture-editor-cab" && <div className="cab-stage"><span>57</span><b><DeviceCategoryGlyph label="Cab" /></b><span>121</span></div>}{view === "fixture-editor-eq" && <svg viewBox="0 0 800 150" preserveAspectRatio="none"><path d="M0 120 C100 120 110 35 205 55 S335 115 410 70 S565 20 640 75 S735 105 800 60" /></svg>}<main>{(editor[2] as string[]).map((label,index)=><section key={label}><span>{label}</span><i><b style={{transform:`rotate(${index*23-35}deg)`}} /></i><strong>{index%2 ? "0.0 dB" : index===0 ? "80 Hz" : "5.0"}</strong></section>)}</main><footer><button>1</button><button className="is-active">2</button><span /><button>BYPASS</button></footer></section>;
@@ -248,8 +258,8 @@ function SettingsDeviceIcon({ label }: { label: string }) {
 function SettingsSectionGlyph({ view, label }: { view: "settings-account" | "settings-system" | "settings-device" | "settings-midi"; label?: string }) {
   if (view === "settings-account") return <SettingsAccountGlyph kind={label === "Backups" ? "backup" : label ? "user" : "cloud"} />;
   if (view === "settings-system") {
-    const kind: QcScreenGlyphName = label === "Connection" ? "wifi" : label === "Updates" ? "updates" : label === "Brightness" ? "brightness" : label === "Power Functions" ? "power-functions" : label === "Master Volume Knob" ? "volume" : label === "Device Storage" ? "storage" : "factory";
-    return <QcScreenGlyph kind={kind} />;
+    const kind = label === "Connection" ? "connection" : label === "Updates" ? "updates" : label === "Brightness" ? "brightness" : label === "Power Functions" ? "power" : label === "Master Volume Knob" ? "volume" : label === "Device Storage" ? "storage" : "factory-reset";
+    return <QcSettingsIcon kind={kind} />;
   }
   if (view === "settings-midi" && label === "MIDI") return <QcUiIcon kind="midi" />;
   return label ? <SettingsDeviceIcon label={label} /> : <QcScreenGlyph kind="device" />;
@@ -327,7 +337,7 @@ function SceneTileTools() {
   </span>;
 }
 
-function CorOsGigView({ snapshot, presetList, onClose, liveTuner = false }: { snapshot: PresetSnapshot; presetList?: PresetList; onClose: () => void; liveTuner?: boolean }) {
+function CorOsGigView({ snapshot, presetList, onClose, liveTuner = false, presetTone = "#ff2727" }: { snapshot: PresetSnapshot; presetList?: PresetList; onClose: () => void; liveTuner?: boolean; presetTone?: string }) {
   const gridBlocks = snapshot.blocks.filter((block) => block.column >= 0 && block.column < 8);
   const assignments = Array.from({ length: 8 }, (_, index) => snapshot.blocks
     .filter((block) => block.footswitch === index)
@@ -342,7 +352,7 @@ function CorOsGigView({ snapshot, presetList, onClose, liveTuner = false }: { sn
     const active = position === snapshot.presetPosition;
     const entry = listedPresets.find((candidate) => candidate.position === position);
     const name = active ? snapshot.presetName : entry?.name ?? "Unsaved";
-    return <button key={index} className={`gig-preset-tile${active ? " is-active" : ""}`}><span>{Math.floor(position / 8) + 1}<b style={{ color: letterColors[index] }}>{String.fromCharCode(65 + index)}</b></span><strong>{name}</strong></button>;
+    return <button key={index} className={`gig-preset-tile${active ? " is-active" : ""}`} style={active ? { "--gig-preset-tone": presetTone } as CSSProperties : undefined}><span>{Math.floor(position / 8) + 1}<b style={{ color: letterColors[index] }}>{String.fromCharCode(65 + index)}</b></span><strong>{name}</strong></button>;
   });
   const sceneTiles = Array.from({ length: 8 }, (_, index) => <button key={index} className={`gig-scene-tile${index === snapshot.activeScene ? " is-active" : ""}`} style={{ "--gig-color": sceneColors[index], "--gig-letter": sceneLetterColors[index] } as CSSProperties}><SceneTileTools /><b>{String.fromCharCode(65 + index)}</b><strong>{snapshot.scenes[index] ?? `Scene ${String.fromCharCode(65 + index)}`}</strong></button>);
   const stompTiles = assignments.map((assigned, index) => {
@@ -474,7 +484,7 @@ function CorOsGlobalEq({ onClose }: { onClose: () => void }) {
     <header><button className="global-eq-more"><QcUiIcon kind="more" /></button><span><small>GLOBAL EQ</small><strong>Parametric-5</strong></span><button className="global-eq-power"><i /> ON</button><button aria-label="Close Global EQ" onClick={onClose}><QcUiIcon kind="check" /></button></header>
     <div className="global-eq-graph"><div>{verticals.map((left) => <i key={left} style={{ left: `${left}%` }} />)}</div><svg viewBox="0 0 800 255" preserveAspectRatio="none"><g className="eq-axis-labels"><text x="208" y="13">100</text><text x="471" y="13">1k</text><text x="736" y="13">10k</text></g><path d="M25 252 C78 186 99 110 243 104 C400 125 513 115 513 146 C540 115 590 105 644 104 C700 95 750 82 800 80" /><g>{[[104,158],[243,105],[513,146],[607,126],[644,104]].map(([x,y], index) => <g key={index}><circle cx={x} cy={y} r="18" className={index === 0 ? "is-active" : ""} /><text x={x} y={y + 5}>{index + 1}</text></g>)}</g></svg></div>
     <div className="global-eq-tabs">{[1,2,3,4,5].map((tab) => <button key={tab} className={tab === 1 ? "is-active" : ""}>{tab}</button>)}<button>OUT</button></div>
-    <div className="global-eq-controls"><section><span>TYPE</span><button><DeviceCategoryGlyph label="Filter" /> HI PASS <QcUiIcon kind="down" /></button></section>{[["GAIN","0.0 dB"],["FREQ","50 Hz"],["Q","0.10"]].map(([label,value]) => <section key={label}><span>{label}</span><IoDial value={value} /></section>)}<section className="global-eq-bypass"><span>BYPASS 1</span><button><ExpressionPowerIcon /></button></section></div>
+    <div className="global-eq-controls"><section><span>TYPE</span><button><QcEqIcon kind="high-pass" /> HI PASS <QcUiIcon kind="down" /></button></section>{[["GAIN","0.0 dB"],["FREQ","50 Hz"],["Q","0.10"]].map(([label,value]) => <section key={label}><span>{label}</span><IoDial value={value} /></section>)}<section className="global-eq-bypass"><span>BYPASS 1</span><button><ExpressionPowerIcon /></button></section></div>
   </section>;
 }
 
@@ -602,7 +612,7 @@ function RoutingEditorHeaderControls() {
 }
 
 function CorOsRoutingScreen({ view, snapshot }: { view: "splitter-placement" | "splitter-editor" | "mixer-editor" | "empty-slot"; snapshot: PresetSnapshot }) {
-  if (view === "empty-slot") return <section className="qc-screen empty-slot-official" aria-label="Empty-slot device browser"><nav className="empty-slot-categories">{COROS_DEVICE_CATEGORIES.slice(0, 6).map(([label, color], index) => <button key={label} style={{ "--device-color": color } as CSSProperties}><i><DeviceCategoryGlyph label={label} /></i><span>{label}</span>{index === 0 && <b>New</b>}</button>)}</nav><section className="empty-slot-grid"><header><span className="empty-undo"><GridToolbarIcon kind="undo" /></span><b>A</b><span className="empty-save"><GridToolbarIcon kind="save" /></span><span className="empty-more"><GridToolbarIcon kind="more" /></span></header><div className="empty-mode"><GridToolbarIcon kind="mode" /><strong>PRESET</strong></div><main><i><QcUiIcon kind="add" /></i><i>Multi<br />Out</i><i><QcUiIcon kind="add" /></i><i><QcUiIcon kind="add" /></i><i><QcUiIcon kind="add" /></i></main></section></section>;
+  if (view === "empty-slot") return <section className="qc-screen empty-slot-official" aria-label="Empty-slot device browser"><nav className="empty-slot-categories">{COROS_DEVICE_CATEGORIES.slice(0, 6).map(([label, color], index) => <button key={label} style={{ "--device-color": color } as CSSProperties}><i><DeviceCategoryGlyph label={label} /></i><span>{label}</span>{index === 0 && <b>New</b>}</button>)}</nav><section className="empty-slot-grid"><header><strong><span>4</span>E</strong><h1>QC MCP TEST_2</h1><span className="empty-undo"><GridToolbarIcon kind="undo" /></span><b>A</b><span className="empty-save"><GridToolbarIcon kind="save" /></span><span className="empty-more"><GridToolbarIcon kind="more" /></span></header><div className="empty-mode"><GridToolbarIcon kind="mode" /><strong>PRESET</strong></div><main><span className="empty-route">In<br />1</span><span className="empty-route is-row-3">In<br />1</span><i className="empty-cable" /><i className="empty-cable is-row-3" /><i className="empty-add"><QcUiIcon kind="add" /></i><i className="empty-row is-row-2"><QcUiIcon kind="add" /></i><i className="empty-row is-row-4"><QcUiIcon kind="add" /></i><i className="empty-out">Multi<br />Out</i></main></section></section>;
   const placement = view === "splitter-placement";
   const splitter = view === "splitter-editor" || placement;
   if (splitter) return <section className="qc-screen coros-splitter-physical" aria-label={placement ? "Splitter and Mixer placement handles" : "Splitter parameter editor"}>
@@ -702,7 +712,7 @@ function CorOsLooperEditor() {
   return <section className="qc-screen coros-looper" aria-label="Looper X editor"><header><button aria-label="Open Looper menu"><QcUiIcon kind="more" /></button><span><small>LOOPER</small><strong>Looper X</strong></span><i /><button className="looper-params"><QcEditorIcon kind="looper" />Params</button><button className="looper-scene"><QcEditorIcon kind="scene-previous" /><b>A</b><QcEditorIcon kind="scene-next" /></button><button aria-label="Confirm"><QcEditorIcon kind="confirm" /></button></header><div className="looper-timeline"><span>USE <b><QcLooperActionGlyph kind="record" /></b> TO START RECORDING</span><span>USE <b className="looper-close-caret"><QcUiIcon kind="up" /></b> TO CLOSE THE LOOPER VIEW</span><em>AVAILABLE 4:38</em></div><div className="looper-actions">{actions.map(([label, glyph, key]) => <button key={label}><small>{label}</small><strong><QcLooperActionGlyph kind={glyph} /></strong><b>{key}</b></button>)}</div></section>;
 }
 
-type CaptureLibraryView = "device-favorites" | "device-recents" | "device-search" | "device-search-entry" | "device-search-suggestions" | "device-search-results";
+type CaptureLibraryView = "device-favorites" | "device-recents" | "device-browser-neural-capture" | "device-search" | "device-search-entry" | "device-search-suggestions" | "device-search-results";
 
 function CaptureLibraryRail() {
   return <nav className="capture-library-rail">{COROS_DEVICE_CATEGORIES.slice(0, 6).map(([label], index) => <button key={label} className={index === 2 ? "is-active" : ""}><i><DeviceCategoryGlyph label={label} /></i></button>)}</nav>;
@@ -718,7 +728,11 @@ function CorOsCaptureLibrary({ view }: { view: CaptureLibraryView }) {
   if (view === "device-search-suggestions") return <CaptureLibraryKeyboard query="gary" />;
   if (view === "device-search" || view === "device-search-results") return <section className="qc-screen capture-search-results"><header><button><QcDirectoryIcon kind="search" /> gary</button><i /><button><QcDirectoryIcon kind="grid" /> (0)</button><button className="is-active"><QcLibraryIcon kind="capture-library" /> (1)</button><button><QcLibraryIcon kind="capture-header" /> (0)</button><button aria-label="Filter"><QcDirectoryIcon kind="filter" /></button><button aria-label="Arrange"><QcDirectoryIcon kind="arrange" /></button><button aria-label="Done"><QcDirectoryIcon kind="done" /></button></header><main><h2>DEVICE DIRECTORIES <b><QcUiIcon kind="down" /></b></h2><article><strong>JQ~Marshall JMP (Gary Moore)~</strong><small>Josepqr</small><em>J</em></article><h2>DOWNLOADS <b><QcUiIcon kind="down" /></b></h2><p>No results</p></main></section>;
   const recent = view === "device-recents";
-  return <section className="qc-screen capture-library-browser"><CaptureLibraryRail /><header><span>Add device</span><button aria-label="Filter"><QcDirectoryIcon kind="filter" /></button><button aria-label="Arrange"><QcDirectoryIcon kind="arrange" /></button><button aria-label="Search"><QcDirectoryIcon kind="search" /></button><button aria-label="Close"><QcUiIcon kind="close" /></button></header><aside><button className={!recent ? "is-active" : ""}><b><QcLibraryIcon kind="heart" /></b><span>Favorites</span></button><button className={recent ? "is-active" : ""}><b><QcLibraryIcon kind="clock" /></b><span>Recent</span></button><button><b><QcDirectoryIcon kind="download" /></b><span>Downloads</span></button><button><b><QcLibraryIcon kind="capture-library" /></b><span>Captures Library</span><small>2127</small></button><i />{["Factory Captures V1","Factory Captures V2","My Captures"].map(label => <button key={label}><b><QcDirectoryIcon kind="folder" /></b><span>{label}</span></button>)}</aside><main><i><DeviceCategoryGlyph label="Neural Capture" fallback="" /></i></main></section>;
+  const library = view === "device-browser-neural-capture";
+  const captures = ["4-Comp Custom 1", "4-Comp Custom 2", "4-Comp Custom 3", "4-Comp Custom 4", "4-Comp Custom 5", "4-Comp Custom 6", "4-Comp Custom 7"];
+  return <section className="qc-screen capture-library-browser"><CaptureLibraryRail /><header><span>Add device</span>{!recent && <button aria-label="Filter"><QcDirectoryIcon kind="filter" /></button>}{!recent && <button aria-label="Arrange"><QcDirectoryIcon kind="arrange" /></button>}<button aria-label="Search"><QcDirectoryIcon kind="search" /></button><button aria-label="Close"><QcUiIcon kind="close" /></button></header><aside><button className={!recent && !library ? "is-active" : ""}><b><QcLibraryIcon kind="heart" /></b><span>Favorites</span></button><button className={recent ? "is-active" : ""}><b><QcLibraryIcon kind="clock" /></b><span>Recent</span></button><button><b><QcDirectoryIcon kind="download" /></b><span>Downloads</span></button><button className={library ? "is-active" : ""}><b><QcLibraryIcon kind="capture-library" /></b><span>Captures Library</span><small>2127</small></button><i />{["Factory Captures V1","Factory Captures V2","My Captures"].map(label => <button key={label}><b><QcDirectoryIcon kind="folder" /></b><span>{label}</span></button>)}</aside><main>{library
+      ? <div className="capture-library-rows">{captures.map((name) => <button key={name}><span>{name}<small>NeuralDSP</small></span><b>4</b></button>)}<aside className="capture-library-index">{["#", "•", "A", "•", "I", "•", "R", "•", "Z"].map((label, index) => <span key={`${label}-${index}`}>{label}</span>)}</aside></div>
+      : <DeviceWaveformGlyph className="capture-library-placeholder" />}</main></section>;
 }
 
 function CorOsDevicePresetScreen({ save = false, view = "factory" }: { save?: boolean; view?: "factory" | "user" | "actions" | "official-actions" | "official-factory" }) {
@@ -740,16 +754,58 @@ function ExpressionLinkIcon() {
   return <QcScreenGlyph kind="link" />;
 }
 
-function CorOsAssignmentScreen({ view }: { view: "stomp-assignment" | "scene-assignment" | "expression-parameter" | "expression-bypass" }) {
-  if (view === "expression-bypass") return <section className="qc-screen expression-bypass-official" aria-label="Expression bypass assignment"><header><button><QcUiIcon kind="close" /></button><button>Expression 1</button><button>Expression 2</button><button><QcEditorIcon kind="save" /></button></header><p>Please choose which parameters you wish to control.<br />You can assign multiple at once.</p><main className="expression-switch-panel"><section><button><ExpressionPowerIcon /></button></section><section><span>SWITCH ON</span><label><i /><b>Heel-Toe</b><small>Switch<br />Stop</small></label></section><section><span>INVERT RANGE</span><label><i /><b>On</b><small>Off</small></label></section><section className="switch-delay"><span>SWITCH DELAY</span><b>600 ms</b><i className="capture-level-dial" /></section><section className="switch-latch"><span>LATCH EMULATION</span><label><i /><b>On</b><small>Off</small></label></section></main><div className="expression-parameter-grid">{["GAIN", "BASS", "MID", "TREBLE", "LEVEL", "BYPASS"].map(label => <section key={label}><span>{label}<b><ExpressionLinkIcon /></b></span><button>ASSIGN</button></section>)}</div></section>;
-  const stomp = view === "stomp-assignment";
-  const scene = view === "scene-assignment";
-  if (stomp || scene) return <section className={`qc-screen coros-assignment is-${stomp ? "stomp" : "scene"}`} aria-label={view.replaceAll("-", " ")}>
-    <div className="assignment-grid-context"><span>In<br />1</span><i /><i /><i /><i /><strong>Multi<br />Out</strong></div>
-    <div className="assignment-device-editor">
-      <header><button className="assignment-more"><QcUiIcon kind="more" /></button><span><small>GUITAR AMP</small><strong>Brit 2203</strong></span><div className="assignment-toolbar">{stomp && <button className="assignment-stomp"><QcEditorIcon kind="footswitch" /></button>}<button className="assignment-scene-nav"><QcUiIcon kind="previous" /><b>{scene ? "A" : "B"}</b><QcUiIcon kind="next" /></button><i /><button className="assignment-power"><QcScreenGlyph kind="power" /></button><button className="assignment-confirm"><QcUiIcon kind="check" /></button></div></header>
-      {scene ? <div className="assignment-parameters">{[["GAIN","5.0"],["BASS","5.0"],["MID","5.0"],["TREBLE","5.0"],["PRESENCE","1.5"],["MASTER","8.0"],["OUTPUT","0.0 dB"]].map(([label, value], index) => <section key={label} className={index === 2 ? "is-assigned" : ""}><span>{label}</span>{index === 2 && <em>A B<br />C D</em>}<i className="assignment-knob"><b /></i><strong>{value}</strong>{index === 2 && <i className="assignment-touch" />}</section>)}</div> : <div className="assignment-stomp-message"><strong>Footswitch B</strong><span>Press a footswitch to change this assignment.</span></div>}
+function ExpressionChooser({ trim }: { trim: boolean }) {
+  const tiles: Array<[string, boolean]> = [["NOISE REDUCTION", false], ["BYPASS", !trim]];
+  return <section className={`qc-screen expression-bypass-official${trim ? " is-trim" : ""}`} aria-label={trim ? "Expression parameter assignment" : "Expression bypass assignment"}>
+    <header><button><QcUiIcon kind="close" /></button><button>Expression 1</button><button>Expression 2</button><button><QcScreenHeaderGlyph kind="save" /></button></header>
+    <p>Please choose which parameters you wish to control.<br />You can assign multiple at once.</p>
+    {trim
+      ? <main className="expression-switch-panel is-trim">
+          <section className="trim-hint"><span>Tap <b><ExpressionLinkIcon /></b> to trim</span><small>Max and Min values of the preferred parameter</small></section>
+          <section className="switch-delay"><span>MIN RANGE</span><b>0.00 %</b><i className="capture-level-dial is-unlit" /></section>
+          <section className="switch-delay"><span>MAX RANGE</span><b>100 %</b><i className="capture-level-dial" /></section>
+        </main>
+      : <main className="expression-switch-panel">
+          <section><button><ExpressionPowerIcon /></button></section>
+          <section><span>SWITCH ON</span><label><i /><b>Heel-Toe</b><small>Switch<br />Stop</small></label></section>
+          <section><span>INVERT RANGE</span><label><i /><b>On</b><small>Off</small></label></section>
+          <section className="switch-delay"><span>SWITCH DELAY</span><b>600 ms</b><i className="capture-level-dial" /></section>
+          <section className="switch-latch"><span>LATCH EMULATION</span><label><i /><b>On</b><small>Off</small></label></section>
+        </main>}
+    <div className="expression-parameter-grid">{tiles.map(([label, assigned]) => <section key={label}><span>{label}<b><ExpressionLinkIcon /></b></span><button className={assigned ? "is-assigned" : ""}>{assigned ? "ASSIGNED" : "ASSIGN"}</button></section>)}</div>
+  </section>;
+}
+
+// The Grid, its title and the editor action bar are one screen on the unit:
+// `block-context.png`, `scene-assignment.png` and `stomp-assignment.png` all
+// draw it and differ only in what sits over it.
+function PhysicalEditorUnderlay({ slot, letter, title, scene = "A", category, device, blocks = 0, blockGlyphs = [], output = ["Multi", "Out"], fit = false, expression = true, mode = "STOMP", children }: { slot: string; letter: string; title: string; scene?: string; category?: string; device?: string; blocks?: number; blockGlyphs?: string[]; output?: [string, string]; fit?: boolean; expression?: boolean; mode?: "STOMP" | "PRESET"; children?: ReactNode }) {
+  return <div className={`physical-grid-underlay${fit ? " is-long-title" : ""}`}>
+    <div className="underlay-grid">
+      <header><strong><span>{slot}</span>{letter}</strong><h1>{title}</h1><nav><i><GridToolbarIcon kind="undo" /></i><b>{scene}</b><i><GridToolbarIcon kind="save" /></i><i><QcUiIcon kind="more" /></i></nav><em><svg viewBox="0 0 24 24" aria-hidden="true"><ModeGlyph mode={mode} /></svg>{mode}</em></header>
+      <main><span className="underlay-route">In<br />1</span><i className="underlay-cable" />{Array.from({ length: blocks }, (_, index) => <i key={index} className={`underlay-block is-block-${index + 1}`}>{blockGlyphs[index] && <DeviceCategoryGlyph label={blockGlyphs[index]} fallback="" />}</i>)}<span className="underlay-output">{output[0]}<br />{output[1]}</span></main>
     </div>
+    {category && <button className="underlay-editor-more"><QcUiIcon kind="more" /></button>}
+    {category && <span className="underlay-editor-label"><small>{category}</small><strong>{device}</strong></span>}
+    <nav className="underlay-editor-bar">
+      {expression && <button className="editor-expression"><svg viewBox="0 0 24 24" aria-hidden="true"><ModeGlyph mode="STOMP" /></svg><small>?</small></button>}
+      <button className="editor-scene"><QcEditorIcon kind="scene-previous" /><b>{scene}</b><QcEditorIcon kind="scene-next" /></button>
+      <i className="editor-divider" />
+      <button className="editor-bypass" aria-label="Mute"><QcEditorIcon kind="bypass" /></button>
+      <button className="editor-confirm"><QcUiIcon kind="check" /></button>
+    </nav>
+    {children}
+  </div>;
+}
+
+function CorOsAssignmentScreen({ view }: { view: "stomp-assignment" | "scene-assignment" }) {
+  const scene = view === "scene-assignment";
+  const parameters: Array<[string, string]> = scene ? [["NOISE REDUCTION", "17.3 %"]] : [["GAIN", "0.0 dB"], ["BASS", "6.5"], ["MID", "5.0"], ["TREBLE", "5.0"], ["VOLUME", "14.9 dB"]];
+  return <section className={`qc-screen coros-assignment is-${scene ? "scene" : "stomp"}`} aria-label={view.replaceAll("-", " ")}>
+    <PhysicalEditorUnderlay slot="4" letter={scene ? "E" : "B"} title={scene ? "QC MCP TEST_2*" : "Top 3 Acoustic Sims"} scene={scene ? "A" : "F"} category={scene ? "UTILITY" : "NEURAL CAPTURE"} device={scene ? "Adaptive Gate" : "Akustyczna"} blocks={scene ? 1 : 2} blockGlyphs={scene ? ["Utility"] : ["Utility", "Neural Capture"]} output={scene ? ["Multi", "Out"] : ["Row", "3/4"]} fit={!scene}>
+      <div className="assignment-parameters">{Array.from({ length: 5 }, (_, index) => parameters[index]).map((parameter, index) => <section key={index}>{parameter && <><span>{parameter[0]}</span>{scene && <em>A B<br />C D</em>}<i className="assignment-knob"><b /></i><strong>{parameter[1]}</strong></>}</section>)}</div>
+    </PhysicalEditorUnderlay>
+    {!scene && <div className="assignment-stomp-message"><aside className="assignment-stomp-dialog"><h1>Assign footswitch</h1><p>Press the target footswitch to assign</p><div className="assignment-stomp-latch"><button className="is-active"><QcEditorIcon kind="footswitch" />Latching</button><button><QcEditorIcon kind="band-power" />Momentary</button></div><footer><button>CANCEL</button><button className="is-primary">UNASSIGN</button></footer></aside></div>}
   </section>;
   return <section className="qc-screen coros-assignment is-expression" aria-label={view.replaceAll("-", " ")}><header><button><QcUiIcon kind="close" /></button><span><small>EXPRESSION PEDAL ASSIGNMENT</small><strong>DISTORTION</strong></span><button><QcUiIcon kind="check" /></button></header><p>Move an expression pedal to assign its range</p><div className="expression-pedals"><button className="is-active"><b>EXP 1</b><i /><span>HEEL　0.0</span><span>TOE　10.0</span></button><button><b>EXP 2</b><i /><span>NOT ASSIGNED</span></button></div><footer><button>BYPASS ASSIGN</button><button>SWAP MIN / MAX</button><button>REMOVE</button></footer></section>;
 }
@@ -758,7 +814,109 @@ function BlockContextIcon({ kind }: { kind: "change" | "copy" | "paste" | "reset
   return <QcEditorIcon kind={kind === "bypass" ? "mute" : kind} />;
 }
 
-function CorOsBlockContext() {
+type GridPopupView = "capture-type" | "grid-context-menu" | "grid-context-menu-favorite" | "grid-context-menu-bottom"
+  | "input-route-selector" | "input-route-selector-top"
+  | "output-route-selector" | "output-route-selector-top" | "grid-scene-selector";
+
+type PopupCell = { label: string; caption?: boolean; icon?: ReactNode; note?: string; active?: boolean };
+
+// `grid-context-menu.tree.txt` lists the preset menu in one table, captions
+// included; the three frames of it differ only in how far it is scrolled.
+const GRID_MENU_CELLS: Array<[string, string]> = [
+  ["FILE", ""], ["Create New", "add"], ["Save as...", "save-as"], ["Edit Details", "edit"],
+  ["Copy Scene A", "copy"], ["Swap Scene A", "change"], ["Preset MIDI Out", "midi"],
+  ["Add to favorites", "favorite"], ["Delete Preset", "delete"], ["QUAD CORTEX", ""],
+  ["New Neural Capture", "capture"], ["Modes Configuration", "modes"], ["Tempo", "tempo"],
+  ["CPU Monitor", "cpu"], ["Settings", "settings"],
+];
+
+const ROUTE_INPUT_CELLS: Array<[string, string]> = [
+  ["MONO", ""], ["Input 1", "mono"], ["Input 2", "mono"], ["Return 1", "fx"], ["Return 2", "fx"],
+  ["USB input 5", "USB"], ["USB input 6", "USB"], ["USB input 7", "USB"], ["USB input 8", "USB"],
+  ["STEREO", ""], ["Input 1/2", "stereo"], ["Return 1/2", "fx"], ["USB input 5/6", "usb"],
+  ["USB input 7/8", "usb"], ["OTHER", ""], ["Prev. Row", "mono"], ["Not In Use", "add"],
+];
+
+const ROUTE_OUTPUT_CELLS: Array<[string, string]> = [
+  ["STEREO", ""], ["Multiple Outputs", "stereo"], ["Output 1/2", "stereo"], ["Output 3/4", "stereo"],
+  ["Send 1/2", "fx"], ["USB Output 3/4", "usb"], ["USB Output 5/6", "usb"], ["USB Output 7/8", "usb"],
+  ["MONO", ""], ["Output 1", "mono"], ["Output 2", "mono"], ["Output 3", "mono"], ["Output 4", "mono"],
+  ["Send 1", "fx"], ["Send 2", "fx"], ["USB Output 3", "usb"], ["USB Output 4", "usb"],
+  ["USB Output 5", "usb"], ["USB Output 6", "usb"], ["USB Output 7", "usb"], ["USB Output 8", "usb"],
+  ["OTHER", ""], ["Row 3", "mono"], ["Row 4", "mono"], ["Row 3/4", "stereo"], ["Not In Use", "add"],
+];
+
+function RouteGlyph({ kind }: { kind: string }) {
+  if (kind === "mono") return <QcScreenGlyph kind="route-output" className="route-glyph" />;
+  if (kind === "stereo") return <QcScreenGlyph kind="route-input" className="route-glyph" />;
+  if (kind === "fx") return <span className="route-glyph route-fx">FX</span>;
+  if (kind === "usb") return <QcScreenGlyph kind="route-usb" className="route-glyph" />;
+  return <QcUiIcon kind="add" className="route-plus" />;
+}
+
+function GridMenuIcon({ kind }: { kind: string }) {
+  if (kind === "copy" || kind === "change") return <QcEditorIcon kind={kind as "copy" | "change"} />;
+  return <QcUiIcon kind={kind as Parameters<typeof QcUiIcon>[0]["kind"]} />;
+}
+
+// Grid, popup box and scroll offset for each frame, all read off the captures.
+const GRID_POPUP_STATE: Record<GridPopupView, {
+  slot: string; letter: string; tone: string; name: string; mode: "STOMP" | "PRESET";
+  blocks: Array<[number, string, string]>; highlight?: "input" | "output";
+  kind: "menu" | "input" | "output" | "scene" | "none"; offset: number;
+}> = {
+  "capture-type": { slot: "2", letter: "F", tone: "#6748ff", name: "QC MCP TEST", mode: "PRESET", blocks: [[0, "#2df36a", "Utility"]], kind: "none", offset: 0 },
+  "grid-context-menu": { slot: "32", letter: "H", tone: "#ff2421", name: "pyquadcortex scratch", mode: "STOMP", blocks: [[0, "#949694", "Utility"], [1, "#ff7100", "Overdrive"], [2, "#525152", "Modulation"], [3, "#ff2421", "Amp"], [4, "#6748ff", "Cab"], [5, "#16dfcc", "Equalizer"], [6, "#16dfcc", "Reverb"]], kind: "menu", offset: 0 },
+  "grid-context-menu-favorite": { slot: "5", letter: "C", tone: "#ff7100", name: "Ilia", mode: "PRESET", blocks: [[1, "#16dfcc", "Reverb"], [2, "#ff2421", "Amp"]], kind: "menu", offset: 420 },
+  "grid-context-menu-bottom": { slot: "2", letter: "F", tone: "#6748ff", name: "QC MCP TEST_2", mode: "PRESET", blocks: [[0, "#2df36a", "Utility"]], kind: "menu", offset: 480 },
+  "input-route-selector": { slot: "32", letter: "H", tone: "#ff2421", name: "pyquadcortex scratch", mode: "STOMP", blocks: [[0, "#949694", "Utility"], [1, "#ff7100", "Overdrive"], [2, "#525152", "Modulation"], [3, "#ff2421", "Amp"], [4, "#6748ff", "Cab"], [5, "#16dfcc", "Equalizer"], [6, "#16dfcc", "Reverb"]], highlight: "input", kind: "input", offset: 480 },
+  "input-route-selector-top": { slot: "5", letter: "C", tone: "#ff7100", name: "Ilia", mode: "PRESET", blocks: [[1, "#16dfcc", "Reverb"], [2, "#ff2421", "Amp"]], highlight: "input", kind: "input", offset: 0 },
+  "output-route-selector": { slot: "32", letter: "H", tone: "#ff2421", name: "pyquadcortex scratch", mode: "STOMP", blocks: [[0, "#949694", "Utility"], [1, "#ff7100", "Overdrive"], [2, "#525152", "Modulation"], [3, "#ff2421", "Amp"], [4, "#6748ff", "Cab"], [5, "#16dfcc", "Equalizer"], [6, "#16dfcc", "Reverb"]], highlight: "output", kind: "output", offset: 1152 },
+  "output-route-selector-top": { slot: "5", letter: "C", tone: "#ff7100", name: "Ilia", mode: "PRESET", blocks: [[1, "#16dfcc", "Reverb"], [2, "#ff2421", "Amp"]], highlight: "output", kind: "output", offset: 0 },
+  "grid-scene-selector": { slot: "32", letter: "H", tone: "#ff2421", name: "pyquadcortex scratch", mode: "STOMP", blocks: [[0, "#949694", "Utility"], [1, "#ff7100", "Overdrive"], [2, "#525152", "Modulation"], [3, "#ff2421", "Amp"], [4, "#6748ff", "Cab"], [5, "#16dfcc", "Equalizer"], [6, "#16dfcc", "Reverb"]], kind: "scene", offset: 0 },
+};
+
+function CorOsGridPopup({ view }: { view: GridPopupView }) {
+  const state = GRID_POPUP_STATE[view];
+  const scenes = ["Default scene", "Scene B", "Scene C", "Scene D", "Scene E", "Scene F", "Scene G", "Scene H"];
+  const source = state.kind === "menu" ? GRID_MENU_CELLS : state.kind === "input" ? ROUTE_INPUT_CELLS : ROUTE_OUTPUT_CELLS;
+  const cells: PopupCell[] = state.kind === "scene"
+    ? scenes.map((label, index) => ({ label, active: index === 0 }))
+    : source.map(([label, icon]) => ({
+        label,
+        caption: !icon,
+        icon: state.kind === "menu" ? (icon ? <GridMenuIcon kind={icon} /> : undefined) : icon ? <RouteGlyph kind={icon} /> : undefined,
+        note: label === "Multiple Outputs" ? "1/2 + 3/4 + USB 3/4" : undefined,
+        active: label === "Input 1" || label === "Multiple Outputs",
+      }));
+  return <section className={`qc-screen coros-grid-popup is-${state.kind}`} aria-label={view.replaceAll("-", " ")}>
+    <div className="popup-grid">
+      <header><strong><span>{state.slot}</span><b style={{ color: state.tone }}>{state.letter}</b></strong><h1 style={{ fontSize: `${state.name.length > 15 ? 40 : 58}px`, marginTop: state.name.length > 15 ? "11px" : "6px" }}>{state.name}</h1>
+        <nav><i><GridToolbarIcon kind="undo" /></i><b>A</b><i><GridToolbarIcon kind="save" /></i><i><QcUiIcon kind="more" /></i></nav>
+        <em><svg viewBox="0 0 24 24" aria-hidden="true"><ModeGlyph mode={state.mode} /></svg>{state.mode}</em></header>
+      <main>
+        <span className={`popup-route${state.highlight === "input" ? " is-open" : ""}`}>In<br />1</span>
+        <i className="popup-cable" />
+        {state.blocks.map(([index, tone, label]) => <i key={index} className="popup-block" style={{ left: `${69 + Number(index) * 86}px`, borderColor: tone, color: tone }}><DeviceCategoryGlyph label={label as string} fallback="" /></i>)}
+        <span className={`popup-output${state.highlight === "output" ? " is-open" : ""}`}>Multi<br />Out</span>
+        {[1, 2, 3].map((row) => <span key={row} className="popup-plus" style={{ top: `${13 + row * 94}px` }}><QcUiIcon kind="add" /></span>)}
+        {[1, 2, 3].map((row) => <span key={`r${row}`} className="popup-plus is-right" style={{ top: `${13 + row * 94}px` }}><QcUiIcon kind="add" /></span>)}
+      </main>
+    </div>
+    {state.kind !== "scene" && state.kind !== "none" && <i className="popup-scrim" />}
+    {state.kind !== "none" && <aside className="popup-panel">
+      <div className="popup-list" style={{ top: `${-state.offset}px` }}>
+        {cells.map((cell, index) => <div key={`${cell.label}-${index}`} className={`popup-cell${cell.caption ? " is-caption" : ""}${cell.active ? " is-active" : ""}`}>
+          {state.kind === "scene" ? <b className="scene-badge">{String.fromCharCode(65 + index)}</b> : cell.icon}
+          <span>{cell.label}{cell.note && <small>{cell.note}</small>}</span>
+        </div>)}
+      </div>
+      <i className="popup-scrollbar" />
+    </aside>}
+  </section>;
+}
+
+function CorOsBlockContext({ bottom = false }: { bottom?: boolean }) {
   const rows: Array<[Parameters<typeof BlockContextIcon>[0]["kind"], string, string]> = [
     ["change", "Change device", ""],
     ["copy", "Copy device", ""],
@@ -771,10 +929,16 @@ function CorOsBlockContext() {
     ["model-downgrade", "Change to legacy version", "is-disabled"],
     ["remove", "Remove block from the grid", ""],
   ];
-  return <section className="qc-screen coros-block-context" aria-label="Block contextual actions">
-    <div className="physical-eq-underlay"><header><button className="physical-eq-more" aria-label="More"><QcUiIcon kind="more" /></button><span className="physical-eq-title"><small>EQ</small><strong>Parametric-8</strong></span><nav><button aria-label="Previous scene"><QcEditorIcon kind="scene-previous" /></button><b>A</b><button aria-label="Next scene"><QcEditorIcon kind="scene-next" /></button><i /><button className="physical-eq-save" aria-label="Save"><QcEditorIcon kind="save" /></button><button className="physical-eq-confirm" aria-label="Confirm"><QcEditorIcon kind="confirm" /></button></nav></header><svg viewBox="0 0 800 480" aria-hidden="true"><g className="physical-eq-grid"><path d="M449 60v250M712 60v250" /><text x="465" y="71">1k</text><text x="728" y="71">10k</text></g><path className="physical-eq-curve" d="M0 300C80 180 180 195 310 165S500 42 610 92 750 170 790 310" />{[[105,185],[185,185],[512,119],[600,113],[770,219]].map(([cx,cy], index) => <g key={index}><circle cx={cx} cy={cy} r="20" /><text x={cx} y={cy + 5} textAnchor="middle">{index + 1}</text></g>)}</svg><footer><span>TYPE</span><span>GAIN</span><span>FREQ<i className="physical-eq-footer-dial is-frequency" /><strong>50 <small>Hz</small></strong></span><span>Q<i className="physical-eq-footer-dial is-q" /><strong>0.10</strong></span><span>BYPASS 1<i className="physical-eq-footer-power" /></span></footer></div>
+  const reverb: Array<[string, string]> = [["MIX", "12.0 %"], ["SIZE", "Med"], ["PRE DELAY", "20.0 ms"], ["DAMPING", "50 %"], ["HIGH PASS", "80 Hz"]];
+  return <section className={`qc-screen coros-block-context${bottom ? " is-bottom" : ""}`} aria-label="Block contextual actions">
+    {bottom
+      ? <PhysicalEditorUnderlay slot="5" letter="C" title="Ilia" category="REVERB" device="Ambience" blocks={2} blockGlyphs={["Utility", "Reverb"]} expression={false}>
+          <div className="assignment-parameters">{reverb.map(([label, value]) => <section key={label}><span>{label}</span><i className="assignment-knob"><b /></i><strong>{value}</strong></section>)}</div>
+          <div className="assignment-parameters is-row-2">{[["LOW PASS", "6000 Hz"]].map(([label, value]) => <section key={label}><span>{label}</span><i className="assignment-knob"><b /></i><strong>{value}</strong></section>)}{[0, 1, 2, 3].map((index) => <section key={`empty-${index}`} />)}</div>
+        </PhysicalEditorUnderlay>
+      : <div className="physical-eq-underlay"><header><button className="physical-eq-more" aria-label="More"><QcUiIcon kind="more" /></button><span className="physical-eq-title"><small>EQ</small><strong>Parametric-8</strong></span><nav><button aria-label="Previous scene"><QcEditorIcon kind="scene-previous" /></button><b>A</b><button aria-label="Next scene"><QcEditorIcon kind="scene-next" /></button><i /><button className="physical-eq-save" aria-label="Save"><QcEditorIcon kind="save" /></button><button className="physical-eq-confirm" aria-label="Confirm"><QcEditorIcon kind="confirm" /></button></nav></header><svg viewBox="0 0 800 480" aria-hidden="true"><g className="physical-eq-grid"><path d="M449 60v250M712 60v250" /><text x="465" y="71">1k</text><text x="728" y="71">10k</text></g><path className="physical-eq-curve" d="M0 300C80 180 180 195 310 165S500 42 610 92 750 170 790 310" />{[[105,185],[185,185],[512,119],[600,113],[770,219]].map(([cx,cy], index) => <g key={index}><circle cx={cx} cy={cy} r="20" /><text x={cx} y={cy + 5} textAnchor="middle">{index + 1}</text></g>)}</svg><footer><span>TYPE</span><span>GAIN</span><span>FREQ<i className="physical-eq-footer-dial is-frequency" /><strong>50 <small>Hz</small></strong></span><span>Q<i className="physical-eq-footer-dial is-q" /><strong>0.10</strong></span><span>BYPASS 1<i className="physical-eq-footer-power" /></span></footer></div>}
     <i className="block-context-scrim" />
-    <aside>{rows.map(([kind, label, className], index) => <button key={label} className={`${className}${index === 3 ? " has-gap" : ""}`}><span><BlockContextIcon kind={kind} /></span>{label}</button>)}</aside>
+    <aside style={bottom ? { marginTop: "-180px" } : undefined}>{rows.map(([kind, label, className], index) => <button key={label} className={`${className}${index === 3 ? " has-gap" : ""}`}><span><BlockContextIcon kind={kind} /></span>{label}</button>)}</aside>
   </section>;
 }
 
@@ -818,7 +982,7 @@ const CORPUS_DEVICE_CATEGORIES: ReadonlyArray<readonly [string, string]> = [
 ] as const;
 const CORPUS_OVERDRIVE_MODELS = ["Exotic Z Boost", "81 Creations Drive", "Brit Blues", "Brit Governor", "Chief BD2", "Chief DS1", "Chief MT", "Chief OD1", "Chief SD1", "Exotic", "Facial Fuzz", "Freeman BOD"];
 
-function CorOsOfficialGrid({ snapshot, children, browserChrome = false }: { snapshot: PresetSnapshot; children?: ReactNode; browserChrome?: boolean }) {
+function CorOsOfficialGrid({ snapshot, children, browserChrome = false, letterTone }: { snapshot: PresetSnapshot; children?: ReactNode; browserChrome?: boolean; letterTone?: string }) {
   const columns = [101, 187, 272, 357, 443, 529, 615, 701];
   const rowY = [147, 241, 335, 429];
   const screenBlocks = snapshot.blocks.filter((block) => block.row >= 0 && block.row < 4 && block.column >= 0 && block.column < 8);
@@ -836,7 +1000,7 @@ function CorOsOfficialGrid({ snapshot, children, browserChrome = false }: { snap
   return <div className="qc-screen coros-vector-screen" aria-label="CorOS Grid">
     <svg className="coros-vector-canvas" viewBox="0 0 800 480" preserveAspectRatio="none" role="img" aria-label={`${snapshot.presetLocation} ${snapshot.presetName}, ${snapshot.mode} mode`}>
       <rect width="800" height="480" fill="#020202" />
-      <text x="14" y="76" fill="#f4f4f4" fontFamily={QC_TYPOGRAPHY.devicePlain} fontWeight="800" fontSize="64"><tspan letterSpacing="-2">{snapshot.presetLocation.slice(0, -1)}</tspan><tspan fill={browserChrome ? "#d63b3e" : "#2df36a"} letterSpacing="-2">{snapshot.presetLocation.slice(-1)}</tspan><tspan dx={16} dy={browserChrome ? -11 : 0} fill="#f4f4f4" fontSize={browserChrome ? 40 : 64} letterSpacing={browserChrome ? 0 : -2} textLength={browserChrome ? undefined : 313} lengthAdjust={browserChrome ? undefined : "spacingAndGlyphs"}>{snapshot.presetName}</tspan></text>
+      <text x="14" y="76" fill="#f4f4f4" fontFamily={QC_TYPOGRAPHY.devicePlain} fontWeight="800" fontSize="64"><tspan letterSpacing="-2">{snapshot.presetLocation.slice(0, -1)}</tspan><tspan fill={letterTone ?? (browserChrome ? "#d63b3e" : "#2df36a")} letterSpacing="-2">{snapshot.presetLocation.slice(-1)}</tspan><tspan dx={16} dy={browserChrome ? -11 : 0} fill="#f4f4f4" fontSize={browserChrome ? 40 : 64} letterSpacing={browserChrome ? 0 : -2} textLength={browserChrome ? undefined : 313} lengthAdjust={browserChrome ? undefined : "spacingAndGlyphs"}>{snapshot.presetName}</tspan></text>
       <QcScreenHeaderGlyph kind="undo" />
       <QcScreenHeaderGlyph kind="export" />
       <g className="grid-scene-badge"><rect x="656" y="12" width="25" height="25" rx="3" fill="#f2cf32" /><text x="668.5" y="33" textAnchor="middle" fill="#141414" fontFamily={QC_TYPOGRAPHY.devicePlain} fontWeight="800" fontSize="22">A</text></g>
@@ -855,13 +1019,19 @@ function CorOsOfficialGrid({ snapshot, children, browserChrome = false }: { snap
   </div>;
 }
 
-function CorOsCorpusDeviceBrowser({ snapshot, view }: { snapshot: PresetSnapshot; view: "corpus-device-browser-root" | "corpus-device-browser-models" | "corpus-device-browser-models-clean" }) {
-  const models = view !== "corpus-device-browser-root";
-  return <CorOsOfficialGrid snapshot={snapshot} browserChrome>
-    <span className="coros-device-empty-slot"><QcUiIcon kind="add" /></span>
+function CorOsCorpusDeviceBrowser({ snapshot, view }: { snapshot: PresetSnapshot; view: "corpus-device-browser-root" | "corpus-device-browser-models" | "corpus-device-browser-models-clean" | "device-browser-middle-deep" | "device-browser-middle-reverb" }) {
+  const models = view === "corpus-device-browser-models" || view === "corpus-device-browser-models-clean";
+  // device-browser-middle-deep.png opens on Compressor and -reverb on Cab:
+  // the same list, scrolled seven and three of its 78px rows.
+  const scrolled = view === "device-browser-middle-deep" ? 7 : view === "device-browser-middle-reverb" ? 3 : 0;
+  // Both middle frames were taken in 3C over a four-row grid, read off
+  // device-browser-middle-reverb.png.
+  const gridSnapshot: PresetSnapshot = scrolled ? { ...snapshot, presetLocation: "3C", presetName: "12 String Bass", routes: [{ row: 0, inputId: 0, outputId: 0, input: "In 1", output: "", splitMuted: false }, { row: 1, inputId: 0, outputId: 0, input: "In 1", output: "", splitMuted: false }, { row: 2, inputId: 0, outputId: 0, input: "Prev. Row", output: "", splitMuted: false }, { row: 3, inputId: 0, outputId: 0, input: "In 1", output: "", splitMuted: false }], blocks: [{ id: "c3-0-0", name: "Simple Gate", kind: "utility", category: "Utility", row: 0, column: 0 }, { id: "c3-0-1", name: "Digital Delay", kind: "delay", category: "Delay", row: 0, column: 1 }, { id: "c3-0-2", name: "Studio Comp", kind: "utility", category: "Compressor", row: 0, column: 2 }, { id: "c3-0-3", name: "Transpose", kind: "utility", category: "Pitch", row: 0, column: 3 }, { id: "c3-1-0", name: "Simple Gate", kind: "utility", category: "Utility", row: 1, column: 0 }, { id: "c3-1-1", name: "Digital Delay", kind: "delay", category: "Delay", row: 1, column: 1 }, { id: "c3-1-2", name: "Studio Comp", kind: "utility", category: "Compressor", row: 1, column: 2 }, { id: "c3-1-3", name: "Transpose", kind: "utility", category: "Pitch", row: 1, column: 3 }, { id: "c3-2-2", name: "Studio Comp", kind: "utility", category: "Compressor", row: 2, column: 2 }, { id: "c3-2-3", name: "Transpose", kind: "utility", category: "Pitch", row: 2, column: 3, bypassed: true }, { id: "c3-3-0", name: "Simple Gate", kind: "utility", category: "Utility", row: 3, column: 0 }, { id: "c3-3-2", name: "Studio Comp", kind: "utility", category: "Compressor", row: 3, column: 2 }] } : snapshot;
+  return <CorOsOfficialGrid snapshot={gridSnapshot} browserChrome letterTone={scrolled ? "#ff7100" : undefined}>
+    <span className={`coros-device-empty-slot${scrolled ? " is-row-4" : ""}`}><QcUiIcon kind="add" /></span>
     <button className="coros-device-dismiss" aria-label="Close device browser" />
     <section className="coros-device-browser" aria-label="Virtual Device browser">
-      <nav>{CORPUS_DEVICE_CATEGORIES.map(([label, color]) => <button key={label} data-category={label} className={models && label === "Overdrive" ? "is-active" : ""} style={{ "--device-color": color } as CSSProperties}><i><DeviceCategoryGlyph label={label} /></i><span>{label === "Equalizer" ? "EQ" : label}</span>{label === "Delay" && <b>New</b>}</button>)}</nav>
+      <nav style={scrolled ? { marginTop: `${-scrolled * 78}px` } : undefined}>{CORPUS_DEVICE_CATEGORIES.map(([label, color]) => <button key={label} data-category={label} className={models && label === "Overdrive" ? "is-active" : ""} style={{ "--device-color": color } as CSSProperties}><i><DeviceCategoryGlyph label={label} /></i><span>{label === "Equalizer" ? "EQ" : label}</span>{label === "Delay" && <b>New</b>}</button>)}</nav>
       {models && <div className="coros-device-models"><header><button className="is-active">GUITAR</button><button>BASS</button></header>{CORPUS_OVERDRIVE_MODELS.map((model, index) => <button key={model}><span>{index === 0 ? <b className="device-model-pin"><QcScreenGlyph kind="pin" /></b> : null}{model}</span><i><DevicePresetGlyph /></i></button>)}</div>}
     </section>
     {models && view !== "corpus-device-browser-models-clean" && <aside className="coros-device-preset-tip"><button aria-label="Dismiss Virtual Device Presets tip"><QcUiIcon kind="close" /></button><strong>VIRTUAL DEVICE PRESETS</strong><span>Tap the preset icon next to each virtual device to access its Factory and User Presets.</span></aside>}
@@ -885,13 +1055,17 @@ function IconographyAuditFixture() {
 export function CorOsScreenFixture({ view, snapshot, gigPresetList, onClose = () => undefined }: { view: CorOsScreenView; snapshot: PresetSnapshot; gigPresetList?: PresetList; onClose?: () => void }) {
   if ((view as string) === "iconography-audit") return <IconographyAuditFixture />;
   if (view === "grid-official-brit") return <CorOsOfficialGrid snapshot={snapshot} />;
-  if (view === "corpus-device-browser-root" || view === "corpus-device-browser-models" || view === "corpus-device-browser-models-clean") return <CorOsCorpusDeviceBrowser snapshot={snapshot} view={view} />;
+  if (view === "corpus-device-browser-root" || view === "corpus-device-browser-models" || view === "corpus-device-browser-models-clean" || view === "device-browser-middle-deep" || view === "device-browser-middle-reverb") return <CorOsCorpusDeviceBrowser snapshot={snapshot} view={view} />;
   if (view.startsWith("fixture-")) return <CorOsRemainingFixture view={view as RemainingFixtureView} />;
   if (view.startsWith("recovery-") || view.startsWith("overlay-")) return <CorOsSystemFixture view={view as SystemFixtureView} />;
   if (view === "tuner-live-enabled") return <CorOsTuner liveTuner onClose={onClose} />;
   if (view.startsWith("gig-official-")) return <CorOsOfficialGig mode={view.replace("gig-official-", "") as OfficialGigMode} />;
   if (view === "device-presets-official") return <CorOsDevicePresetScreen view="official-factory" />;
   if (view === "gig" || view === "gig-live-tuner") return <CorOsGigView snapshot={snapshot} presetList={gigPresetList} liveTuner={view === "gig-live-tuner"} onClose={onClose} />;
+  if (view === "gig-view-preset" || view === "gig-view-scene") return <CorOsGigView snapshot={{ ...snapshot, mode: view === "gig-view-preset" ? "PRESET" : "SCENE" }} presetList={gigPresetList} onClose={onClose} />;
+  // gig-view-hybrid.png was taken in 7B with scene F live, and its two rows are
+  // presets over scenes.
+  if (view === "gig-view-hybrid") return <CorOsGigView snapshot={{ ...snapshot, mode: "HYBRID", footswitchModes: ["PRESET", "SCENE"], presetLocation: "7B", presetName: "Top 3 Acoustic Sims", presetPosition: 49, activeScene: 5,  scenes: ["Scene A", "Scene B", "Scene C", "Scene D", "mono", "stereo", "chor", "fx"] }} presetList={{ setlistKey: snapshot.setlistKey, setlistName: "My Presets", currentPosition: 49, folders: [], presets: [{ position: 48, location: "7A", name: "Acoustic sim-_1", instrument: 0 }, { position: 49, location: "7B", name: "Top 3 Acoustic Sims", instrument: 0 }, { position: 50, location: "7C", name: "XUSH 12string Bass", instrument: 0 }, { position: 51, location: "7D", name: "QC-MCP-TEST-mtniwb_1", instrument: 0 }] }} presetTone="#0875e7" onClose={onClose} />;
   if (view === "tuner") return <CorOsTuner onClose={onClose} />;
   if (view === "tempo") return <CorOsTempo bpm={snapshot.tempo} onClose={onClose} />;
   if (view === "midi-out") return <CorOsMidiOut onClose={onClose} />;
@@ -903,12 +1077,18 @@ export function CorOsScreenFixture({ view, snapshot, gigPresetList, onClose = ()
   if (view === "device-preset-actions-official") return <CorOsDevicePresetScreen view="official-actions" />;
   if (view === "modes-official") return <CorOsOfficialModes onClose={onClose} />;
   if (view === "splitter-placement" || view === "splitter-editor" || view === "mixer-editor" || view === "empty-slot") return <CorOsRoutingScreen view={view} snapshot={snapshot} />;
-  if (view === "device-search" || view === "device-search-entry" || view === "device-search-suggestions" || view === "device-search-results" || view === "device-favorites" || view === "device-recents") return <CorOsCaptureLibrary view={view} />;
+  if (view === "device-search" || view === "device-search-entry" || view === "device-search-suggestions" || view === "device-search-results" || view === "device-favorites" || view === "device-recents" || view === "device-browser-neural-capture") return <CorOsCaptureLibrary view={view} />;
   if (view === "plugin-folders" || view === "plugin-list" || view === "plugin-models" || view === "plugin-locked" || view === "plugin-refresh") return <CorOsDeviceBrowserFixture view={view} />;
   if (view === "looper-editor") return <CorOsLooperEditor />;
   if (view === "device-presets" || view === "device-presets-user" || view === "device-preset-actions" || view === "device-preset-save") return <CorOsDevicePresetScreen save={view === "device-preset-save"} view={view === "device-presets-user" ? "user" : view === "device-preset-actions" ? "actions" : "factory"} />;
-  if (view === "stomp-assignment" || view === "scene-assignment" || view === "expression-parameter" || view === "expression-bypass") return <CorOsAssignmentScreen view={view} />;
-  if (view === "block-context") return <CorOsBlockContext />;
+  if (view === "expression-parameter" || view === "expression-bypass") return <ExpressionChooser trim={view === "expression-parameter"} />;
+  if (view === "stomp-assignment" || view === "scene-assignment") return <CorOsAssignmentScreen view={view} />;
+  if (view === "block-context" || view === "block-context-bottom") return <CorOsBlockContext bottom={view === "block-context-bottom"} />;
+  if (view === "capture-type" || view === "grid-scene-selector" || view.endsWith("-route-selector") || view.endsWith("-route-selector-top") || view.startsWith("grid-context-menu")) return <CorOsGridPopup view={view as GridPopupView} />;
+  if (view === "directory-new-folder") return <CorOsDirectoryNameScreen />;
+  if (view === "directory-filter") return <CorOsOfficialDirectory view="directory-captures" filter />;
+  if (view === "directory-captures-official") return <CorOsOfficialDirectory view="directory-captures" />;
+  if (view === "directory-irs-official") return <CorOsOfficialDirectory view="directory-irs" />;
   if (view.startsWith("directory-")) return (["directory-presets", "directory-captures", "directory-irs", "directory-plugins", "directory-favorites", "directory-search-results", "directory-nested", "directory-cloud-upload"] as string[]).includes(view) ? <CorOsOfficialDirectory view={view as OfficialDirectoryView} /> : <CorOsDirectoryFixture view={view as DirectoryFixtureView} />;
   if (view.startsWith("capture-")) return <CorOsCaptureFixture view={view as CaptureFixtureView} />;
   if (view.startsWith("settings-")) return <CorOsSettingsFixture view={view as SettingsFixtureView} />;

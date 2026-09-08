@@ -1,7 +1,6 @@
 /*
  * CorOS typography is app-owned so Windows and Android never choose different
- * system fallbacks. Arimo is Arial-metric and is the corpus-wide default;
- * Roboto is used only by screen families where its text-only edge score wins.
+ * system fallbacks. The bundled IBM Plex family is the corpus-wide default.
  */
 html body #root#root .qc-screen-bezel,
 html body #root#root .qc-screen-bezel *,

@@ -3,10 +3,13 @@ import { QC_COLORS, QC_SCREEN_ICON_VECTORS, QC_TYPOGRAPHY, type QcScreenIconLaye
 
 export type QcDirectoryIconName = "grid" | "download" | "cloud" | "cloud-upload" | "folder" | "new-folder" | "sort" | "filter" | "arrange" | "upload" | "search" | "trash" | "done";
 export type QcEditorIconName = "save" | "change" | "copy" | "paste" | "reset" | "expression" | "looper" | "mute" | "model-update" | "model-downgrade" | "remove" | "assignment-expression" | "band-power" | "footswitch" | "momentary" | "scene-previous" | "scene-next" | "bypass" | "confirm" | "waveform";
+export type QcCaptureFilterIconName = "Default" | "Amp" | "Combo Amp" | "Amp + Cab" | "Cab" | "Overdrive" | "Fuzz" | "Compressor";
+export type QcEqIconName = "high-pass";
 export type QcHardwareIconName = "power" | "brand-pulse";
 export type QcIoIconName = "usb" | "jack" | "midi" | "combo" | "input" | "headphones-symbol";
 export type QcLibraryIconName = "capture-library" | "capture-header" | "impulse-response" | "heart" | "clock" | "binoculars" | "broken-heart";
 export type QcScreenHeaderGlyphName = "undo" | "save" | "export" | "menu";
+export type QcSettingsIconName = "connection" | "updates" | "brightness" | "power" | "volume" | "storage" | "factory-reset";
 export type QcUiIconName = "add" | "subtract" | "previous" | "next" | "arrow-right" | "cab-previous" | "cab-next" | "up" | "down" | "more" | "check" | "close" | "refresh" | "backspace" | "microphone" | "attachment" | "file" | "send" | "stop" | "save-as" | "edit" | "midi" | "favorite" | "delete" | "capture" | "modes" | "tempo" | "cpu" | "settings" | "power" | "pin";
 
 type ScreenVectorName = keyof typeof QC_SCREEN_ICON_VECTORS;
@@ -42,6 +45,7 @@ function editorScreenVector(kind: QcEditorIconName): ScreenVectorName | undefine
     save: "editor.save", expression: "editor.expression", mute: "editor.mute",
     "model-update": "editor.model-update", "model-downgrade": "editor.model-downgrade",
     remove: "editor.remove", confirm: "editor.confirm", bypass: "editor.bypass",
+    "band-power": "editor.band-power", footswitch: "editor.footswitch", momentary: "editor.momentary",
     "scene-previous": "editor.scene-previous", "scene-next": "editor.scene-next"
   } as const;
   return kind in icons ? icons[kind as keyof typeof icons] : undefined;
@@ -49,6 +53,28 @@ function editorScreenVector(kind: QcEditorIconName): ScreenVectorName | undefine
 
 export function QcIoIcon({ kind, className }: { kind: QcIoIconName; className?: string }) {
   return <QcScreenVectorLayers icon={`io.${kind}` as ScreenVectorName} className={className} />;
+}
+
+export function QcEqIcon({ kind, className }: { kind: QcEqIconName; className?: string }) {
+  return <QcScreenVectorLayers icon={`eq.${kind}` as ScreenVectorName} className={className} />;
+}
+
+export function QcSettingsIcon({ kind, className }: { kind: QcSettingsIconName; className?: string }) {
+  return <QcScreenVectorLayers icon={`settings.${kind}` as ScreenVectorName} className={className} />;
+}
+
+export function QcCaptureFilterIcon({ kind, className }: { kind: QcCaptureFilterIconName; className?: string }) {
+  const icons: Record<QcCaptureFilterIconName, ScreenVectorName> = {
+    Default: "capture-filter.default",
+    Amp: "capture-filter.amp",
+    "Combo Amp": "capture-filter.combo-amp",
+    "Amp + Cab": "capture-filter.amp-cab",
+    Cab: "capture-filter.cab",
+    Overdrive: "capture-filter.overdrive",
+    Fuzz: "capture-filter.fuzz",
+    Compressor: "capture-filter.compressor"
+  };
+  return <QcScreenVectorLayers icon={icons[kind]} className={className ?? "qc-capture-filter-icon"} />;
 }
 
 export function QcPresetStackIcon() {
@@ -389,12 +415,7 @@ export function QcLibraryIcon({ kind, className }: { kind: QcLibraryIconName; cl
   const classes = `qc-library-icon qc-library-icon-${kind}${className ? ` ${className}` : ""}`;
   const heartPath = "M12 21 4.4 13.7C.5 9.8 3 4 7.4 4c2.1 0 3.4 1.2 4.6 2.7C13.2 5.2 14.5 4 16.6 4 21 4 23.5 9.8 19.6 13.7Z";
   if (kind === "clock") return <QcScreenVector icon="library.clock" className={classes} />;
-  if (kind === "capture-library")
-    return (
-      <svg className={classes} viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M2 2v20M6 5v17M10 2v20M14 4l7 18" fill="none" stroke={QC_COLORS.captured.iconPrimary} strokeWidth="2" strokeLinecap="butt" />
-      </svg>
-    );
+  if (kind === "capture-library") return <QcScreenVector icon="library.capture-library" className={classes} />;
   if (kind === "capture-header")
     return (
       <svg className={classes} viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
@@ -407,12 +428,7 @@ export function QcLibraryIcon({ kind, className }: { kind: QcLibraryIconName; cl
         <path d="M12 1h4v1h-4ZM12 5h9v1h-9ZM12 9h11v1H12ZM12 13h11v1H12ZM12 17h10v1H12ZM12 21h6v1H12Z" fill={QC_COLORS.captured.iconPrimary} stroke="none" />
       </svg>
     );
-  if (kind === "impulse-response")
-    return (
-      <svg className={classes} viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M2 3v18M6 7v10M10 5v14M14 10v4M18 8v8M22 11v2" fill="none" stroke={QC_COLORS.captured.iconPrimary} strokeWidth="1.8" strokeLinecap="butt" />
-      </svg>
-    );
+  if (kind === "impulse-response") return <QcScreenVector icon="library.impulse-response" className={classes} />;
   if (kind === "binoculars") return <QcScreenVector icon="library.binoculars" className={classes} crisp={false} />;
   if (kind === "broken-heart")
     return (
@@ -434,26 +450,12 @@ export function QcEditorIcon({ kind }: { kind: QcEditorIconName }) {
   if (kind === "looper") {
     return <svg viewBox="0 0 26 24" shapeRendering="crispEdges" aria-hidden="true"><path d={screenVectorPath("editor.looper", 1)} fill={QC_COLORS.captured.looperRing} stroke="none" /><path d={screenVectorPath("editor.looper", 0)} fill={QC_COLORS.captured.iconPrimary} stroke="none" /></svg>;
   }
-  if (kind === "band-power")
-    return (
-      <svg viewBox="0 0 24 24" shapeRendering="crispEdges" data-qc-icon={kind} aria-hidden="true">
-        <path fill="currentColor" stroke="none" d="M11 6h2v1h-2ZM6 7h2v1h-2ZM11 7h2v1h-2ZM16 7h2v1h-2ZM5 8h3v1h-3ZM11 8h2v1h-2ZM16 8h3v1h-3ZM4 9h4v1h-4ZM11 9h2v1h-2ZM16 9h4v1h-4ZM3 10h4v1h-4ZM11 10h2v1h-2ZM17 10h4v1h-4ZM3 11h3v1h-3ZM11 11h2v1h-2ZM18 11h3v1h-3ZM2 12h3v1h-3ZM11 12h2v1h-2ZM19 12h3v1h-3ZM2 13h3v1h-3ZM11 13h2v1h-2ZM19 13h3v1h-3ZM2 14h3v1h-3ZM11 14h2v1h-2ZM19 14h3v1h-3ZM2 15h2v1h-2ZM20 15h2v1h-2ZM2 16h2v1h-2ZM20 16h2v1h-2ZM2 17h3v1h-3ZM19 17h3v1h-3ZM2 18h3v1h-3ZM19 18h3v1h-3ZM2 19h3v1h-3ZM19 19h3v1h-3ZM3 20h3v1h-3ZM18 20h3v1h-3ZM3 21h4v1h-4ZM17 21h4v1h-4ZM4 22h4v1h-4ZM16 22h4v1h-4ZM5 23h6v1h-6ZM13 23h6v1h-6Z" />
-      </svg>
-    );
-  if (kind === "footswitch")
-    return (
-      <svg viewBox="0 0 24 24" shapeRendering="crispEdges" data-qc-icon={kind} aria-hidden="true">
-        <path fill="currentColor" stroke="none" d="M18 3h2v1h-2ZM10 4h1v1h-1ZM17 4h3v1h-3ZM8 5h4v1h-4ZM16 5h6v1h-6ZM7 6h15v1h-15ZM6 7h16v1h-16ZM4 8h18v1h-18ZM3 9h14v1h-14ZM18 9h5v1h-5ZM2 10h13v1h-13ZM16 10h7v1h-7ZM1 11h10v1h-10ZM12 11h8v1h-8ZM0 12h7v1h-7ZM8 12h8v1h-8ZM0 13h4v1h-4ZM5 13h7v1h-7ZM1 14h8v1h-8ZM0 15h5v1h-5ZM6 16h3v1h-3ZM5 17h4v1h-4ZM5 18h4v1h-4ZM2 19h10v1h-10ZM2 20h10v1h-10ZM2 21h10v1h-10ZM2 22h10v1h-10ZM2 23h10v1h-10Z" />
-      </svg>
-    );
   if (kind === "assignment-expression")
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M6 18h12l-1.6-8.4H8.1L6 18Zm2.2-8.4 1-3.6h5.7l1.5 3.6M9 21h6" />
       </svg>
     );
-  if (kind === "momentary")
-    return <svg viewBox="0 0 24 24" data-qc-icon={kind} aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor" stroke="none" /><path d="m13.2 3.8-7 10.1h4.6l-1 6.3 7.5-10.7h-4.7z" fill={QC_COLORS.captured.screen} stroke="none" /></svg>;
   if (kind === "waveform") return (
     <svg viewBox="0 0 80 32" aria-hidden="true">
       <path d="M2 16h11l7-12 14 24L48 4l7 12h23" />
