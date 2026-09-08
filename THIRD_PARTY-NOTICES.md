@@ -1,23 +1,22 @@
 # QC Remote third-party notices
 
-QC Remote contains or is distributed with third-party software. Copyright remains with the respective authors. The license expression below is derived mechanically from the locked runtime dependency graph; the corresponding license terms continue to apply.
+QC Remote contains or is distributed with third-party software and assets. Copyright remains with the respective authors. The license expression below is derived mechanically from the locked runtime dependency graph and declared bundled-asset inventory; the corresponding license terms continue to apply.
 
 The native protocol schema incorporates interoperability information derived from the MIT-licensed `pyquadcortex` community project. Its complete retained notice is distributed as `legal/COMMUNITY-PROTOCOL-LICENSE.txt`.
 
 Neural DSP and Quad Cortex are trademarks of Neural DSP Technologies Oy. Their use identifies compatibility only and does not indicate affiliation, authorization, sponsorship, endorsement, or support.
 
-For interface compatibility and recognition, QC Remote reproduces the visible geometry of functional device-category symbols documented in the publicly available Quad Cortex/CorOS user interface. Copyright and other rights in the referenced interface materials remain with Neural DSP Technologies Oy. The shared vector module contains no Neural DSP logo, embedded authoring-tool metadata, creator metadata, or claim of ownership by QC Remote. The symbols are used solely to identify the corresponding compatible device functions.
-
-Inventory: 520 locked runtime components; 0 unresolved license/version records.
+Inventory: 519 locked runtime components; 0 unresolved license/version records.
 
 Restricted SDK terms requiring publisher review: 6. These are listed in the machine-readable inventory and are not characterized as open-source licenses.
 
 For copyleft components, exact-version source archive locations are provided in `legal/THIRD_PARTY-SOURCE-OFFER.md`. Where a dependency offers multiple licenses, the machine-readable inventory records QC Remote's selected license.
 
-Bundled component-specific license/NOTICE texts: 243; components without a locally discoverable text: 0. License labels and upstream locations remain recorded for every component.
+Bundled component-specific license/NOTICE texts: 242; components without a locally discoverable text: 0. License labels and upstream locations remain recorded for every component.
 
 | Ecosystem | Component | Version | License | Author / source |
 | --- | --- | --- | --- | --- |
+| bundled-asset | IBM Plex Sans | 3.1 | OFL-1.1 | IBM Corp.; Bold Monday |
 | cargo | adler2 | 2.0.1 | 0BSD OR MIT OR Apache-2.0 | Jonas Schievink <jonasschievink@gmail.com>, oyvindln <oyvindln@users.noreply.github.com> |
 | cargo | aho-corasick | 1.1.5 | Unlicense OR MIT | Andrew Gallant <jamslam@gmail.com> |
 | cargo | alloc-no-stdlib | 2.0.4 | BSD-3-Clause | Daniel Reiter Horn <danielrh@dropbox.com> |
@@ -531,8 +530,6 @@ Bundled component-specific license/NOTICE texts: 243; components without a local
 | npm | @capacitor/android | 8.5.1 | MIT | Ionic Team <hi@ionic.io> (https://ionic.io) |
 | npm | @capacitor/core | 8.5.1 | MIT | Ionic Team <hi@ionic.io> (https://ionic.io) |
 | npm | @capacitor/status-bar | 8.0.3 | MIT | Ionic <hi@ionicframework.com> |
-| npm | @fontsource-variable/arimo | 5.3.0 | OFL-1.1 | Google Inc. |
-| npm | @fontsource-variable/roboto | 5.3.0 | OFL-1.1 | Google Inc. |
 | npm | @tauri-apps/api | 2.11.1 | Apache-2.0 OR MIT | https://github.com/tauri-apps/tauri |
 | npm | react-dom | 19.2.8 | MIT | https://github.com/react/react |
 | npm | react | 19.2.8 | MIT | https://github.com/react/react |

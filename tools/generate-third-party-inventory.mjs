@@ -13,6 +13,21 @@ const licenseTextsPath = resolve(repositoryRoot, "legal/THIRD_PARTY-LICENSE-TEXT
 const sourceOfferPath = resolve(repositoryRoot, "legal/THIRD_PARTY-SOURCE-OFFER.md");
 const legalFileName = /(?:^|\/)(?:licen[cs]e|copying|notice|copyright|third[_-]party[_-]licen[cs]es?)(?:[._-]|$)/i;
 
+const bundledAssetComponents = [{
+  ecosystem: "bundled-asset",
+  name: "IBM Plex Sans",
+  version: "3.1",
+  license: "OFL-1.1",
+  author: "IBM Corp.; Bold Monday",
+  sourceUrl: "https://github.com/IBM/plex",
+  assets: [
+    "packages/typescript/qc-theme/assets/fonts/IBMPlexSans.ttf",
+    "packages/typescript/qc-theme/assets/fonts/IBMPlexSans-Medium.ttf",
+    "packages/typescript/qc-theme/assets/fonts/IBMPlexSans-Bold.ttf"
+  ],
+  _packageDirectory: resolve(repositoryRoot, "packages/typescript/qc-theme/assets/fonts")
+}];
+
 const digest = (value) => createHash("sha256").update(value).digest("hex");
 const supplementalLegalTexts = {
   "gradle:org.checkerframework:checker-compat-qual@2.5.5": [{
@@ -267,8 +282,8 @@ export function collectLicenseTexts(components) {
   };
 }
 
-export function buildThirdPartyInventory({ npm = [], cargo = [], gradle = [] }, collected = { texts: [], componentHashes: new Map() }) {
-  const sourceComponents = [...npm, ...cargo, ...gradle].sort(compareRows);
+export function buildThirdPartyInventory({ npm = [], cargo = [], gradle = [], bundled = [] }, collected = { texts: [], componentHashes: new Map() }) {
+  const sourceComponents = [...npm, ...cargo, ...gradle, ...bundled].sort(compareRows);
   const components = sourceComponents.map(({ _packageDirectory, ...item }) => {
     const key = componentKey(item);
     const selectedLicense = key === "gradle:org.checkerframework:checker-compat-qual@2.5.5" ? "MIT" : undefined;
@@ -281,7 +296,7 @@ export function buildThirdPartyInventory({ npm = [], cargo = [], gradle = [] }, 
   return {
     schemaVersion: 1,
     product: "QC Remote",
-    generatedFrom: ["package-lock.json", "Cargo.lock files and target-filtered Cargo metadata", "Android releaseRuntimeClasspath and cached Maven POMs"],
+    generatedFrom: ["package-lock.json", "Cargo.lock files and target-filtered Cargo metadata", "Android releaseRuntimeClasspath and cached Maven POMs", "bundled asset manifest and adjacent license files"],
     components,
     licenseTexts: collected.texts.map(({ text, ...item }) => item),
     missingLocalLicenseText: components.filter((item) => item.licenseTextHashes.length === 0).map(componentKey),
@@ -310,7 +325,7 @@ function sourceOfferMarkdown(inventory) {
 }
 
 function licenseTextBundle(collected) {
-  const lines = ["QC Remote bundled third-party license and notice texts", "", "Generated from the exact installed npm packages, Cargo crate sources, and legal files embedded in resolved Android JAR/AAR archives.", ""];
+  const lines = ["QC Remote bundled third-party license and notice texts", "", "Generated from the exact installed npm packages, Cargo crate sources, legal files embedded in resolved Android JAR/AAR archives, and declared bundled assets.", ""];
   for (const item of collected.texts) {
     lines.push("================================================================================", `SHA-256: ${item.sha256}`, `Source file names: ${item.names.join(", ")}`, `Applies to: ${item.components.join(", ")}`, "--------------------------------------------------------------------------------", item.text, "");
   }
@@ -325,7 +340,7 @@ function noticeMarkdown(inventory) {
   const lines = [
     "# QC Remote third-party notices",
     "",
-    "QC Remote contains or is distributed with third-party software. Copyright remains with the respective authors. The license expression below is derived mechanically from the locked runtime dependency graph; the corresponding license terms continue to apply.",
+    "QC Remote contains or is distributed with third-party software and assets. Copyright remains with the respective authors. The license expression below is derived mechanically from the locked runtime dependency graph and declared bundled-asset inventory; the corresponding license terms continue to apply.",
     "",
     "The native protocol schema incorporates interoperability information derived from the MIT-licensed `pyquadcortex` community project. Its complete retained notice is distributed as `legal/COMMUNITY-PROTOCOL-LICENSE.txt`.",
     "",
@@ -361,8 +376,8 @@ export function generateThirdPartyInventory() {
   const gradleResult = androidGradleInventory();
   if (!gradleResult.resolved) throw new Error("Android releaseRuntimeClasspath did not resolve; refusing to generate an incomplete legal inventory.");
   const gradle = gradleLicenseInventory(gradleResult.components);
-  const collected = collectLicenseTexts([...npm, ...cargo, ...gradle]);
-  const inventory = buildThirdPartyInventory({ npm, cargo, gradle }, collected);
+  const collected = collectLicenseTexts([...npm, ...cargo, ...gradle, ...bundledAssetComponents]);
+  const inventory = buildThirdPartyInventory({ npm, cargo, gradle, bundled: bundledAssetComponents }, collected);
   mkdirSync(dirname(inventoryPath), { recursive: true });
   writeFileSync(inventoryPath, JSON.stringify(inventory, null, 2) + "\n");
   writeFileSync(noticePath, noticeMarkdown(inventory));

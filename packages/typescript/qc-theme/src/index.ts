@@ -3,7 +3,7 @@ import colorTheme from "./colors.json" with { type: "json" };
 import visualAssets from "./assets.json" with { type: "json" };
 import brand from "./brand.json" with { type: "json" };
 
-export { QC_SCREEN_ICON_VECTORS } from "./screen-icon-vectors.ts";
+export { QC_SCREEN_ICON_VECTORS, type QcScreenIconLayerRole } from "./screen-icon-vectors.ts";
 export { QC_LEGAL } from "./legal.ts";
 /**
  * Shared visual contract for the Windows and Android QC Remote apps.
@@ -19,7 +19,7 @@ export const QC_TYPOGRAPHY = {
   devicePlain: '"QC CorOS IBM Plex Sans", sans-serif',
   deviceRoute: '"QC CorOS IBM Plex Sans", sans-serif',
   control: '"QC CorOS IBM Plex Sans", sans-serif',
-  app: 'Inter, "Segoe UI Variable", "Segoe UI", sans-serif',
+  app: '"QC CorOS IBM Plex Sans", sans-serif',
   mono: '"DM Mono", "Cascadia Mono", Consolas, monospace'
 } as const;
 

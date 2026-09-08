@@ -286,7 +286,6 @@
 .coros-eq-editor .eq-axis-labels b:nth-child(1) { left: 21.75%; }
 .coros-eq-editor .eq-axis-labels b:nth-child(2) { left: 58.5%; }
 .coros-eq-editor .eq-axis-labels b:nth-child(3) { left: 94%; }
-.coros-eq-editor .eq-bypass-value strong .editor-power-icon { color: #eee; }
 .coros-reference-parameter-editor.coros-cab-editor,
 .coros-reference-parameter-editor.coros-cab-editor * { font-family: var(--qc-font-device-plain); }
 .coros-reference-parameter-editor.coros-cab-editor,
@@ -328,6 +327,4 @@
 .coros-eq-editor .eq-graph span:nth-of-type(2) { left: 17.9%; }
 .coros-eq-editor .eq-graph span:nth-of-type(3) { left: 42.9%; }
 .coros-eq-editor .eq-graph span:nth-of-type(4) { left: 53.7%; }
-.editor-power-icon { position: relative; display: inline-block; width: 2.5cqw; height: 2.5cqw; border: .25cqw solid currentColor; border-top-color: transparent; border-radius: 50%; }
-.editor-power-icon::after { content: ""; position: absolute; left: 50%; top: -.35cqw; width: .25cqw; height: 1.35cqw; translate: -50% 0; border-radius: .2cqw; background: currentColor; }
 }

@@ -1,5 +1,5 @@
 import type { PresetSnapshot } from "@qc-remote/client";
-import { QC_COLORS, QC_SCREEN_ICON_VECTORS, QC_TYPOGRAPHY } from "@qc-remote/theme";
+import { QC_COLORS, QC_SCREEN_ICON_VECTORS, QC_TYPOGRAPHY, type QcScreenIconLayerRole } from "@qc-remote/theme";
 
 export type QcDirectoryIconName = "grid" | "download" | "cloud" | "cloud-upload" | "folder" | "new-folder" | "sort" | "filter" | "arrange" | "upload" | "search" | "trash" | "done";
 export type QcEditorIconName = "save" | "change" | "copy" | "paste" | "reset" | "expression" | "looper" | "mute" | "model-update" | "model-downgrade" | "remove" | "assignment-expression" | "band-power" | "footswitch" | "momentary" | "scene-previous" | "scene-next" | "bypass" | "confirm" | "waveform";
@@ -7,24 +7,29 @@ export type QcHardwareIconName = "power" | "brand-pulse";
 export type QcIoIconName = "usb" | "jack" | "midi" | "combo" | "input" | "headphones-symbol";
 export type QcLibraryIconName = "capture-library" | "capture-header" | "impulse-response" | "heart" | "clock" | "binoculars" | "broken-heart";
 export type QcScreenHeaderGlyphName = "undo" | "save" | "export" | "menu";
-export type QcUiIconName = "add" | "subtract" | "previous" | "next" | "cab-previous" | "cab-next" | "up" | "down" | "more" | "check" | "close" | "refresh" | "backspace" | "microphone" | "attachment" | "file" | "send" | "stop" | "save-as" | "edit" | "midi" | "favorite" | "delete" | "capture" | "modes" | "tempo" | "cpu" | "settings";
+export type QcUiIconName = "add" | "subtract" | "previous" | "next" | "arrow-right" | "cab-previous" | "cab-next" | "up" | "down" | "more" | "check" | "close" | "refresh" | "backspace" | "microphone" | "attachment" | "file" | "send" | "stop" | "save-as" | "edit" | "midi" | "favorite" | "delete" | "capture" | "modes" | "tempo" | "cpu" | "settings" | "power" | "pin";
 
 type ScreenVectorName = keyof typeof QC_SCREEN_ICON_VECTORS;
 
-function QcScreenVector({ icon, color, className, crisp = true }: { icon: ScreenVectorName; color: string; className?: string; crisp?: boolean }) {
+function screenVectorColor(role: QcScreenIconLayerRole) {
+  const token = role.slice("captured.".length) as keyof typeof QC_COLORS.captured;
+  return QC_COLORS.captured[token];
+}
+
+function QcScreenVector({ icon, className, crisp = true }: { icon: ScreenVectorName; className?: string; crisp?: boolean }) {
   const vector = QC_SCREEN_ICON_VECTORS[icon];
-  const path = (vector.paths as Record<string, string>)[color];
-  return <svg className={className} width={vector.width} height={vector.height} viewBox={`0 0 ${vector.width} ${vector.height}`} shapeRendering={crisp ? "crispEdges" : "auto"} aria-hidden="true"><path d={path} fill={color} stroke="none" /></svg>;
+  const layer = vector.layers[0];
+  return <svg className={className} width={vector.width} height={vector.height} viewBox={`0 0 ${vector.width} ${vector.height}`} shapeRendering={crisp ? "crispEdges" : "auto"} aria-hidden="true"><path d={layer.path} fill={screenVectorColor(layer.role)} stroke="none" /></svg>;
 }
 
 function QcScreenVectorLayers({ icon, className }: { icon: ScreenVectorName; className?: string }) {
-  const raster = QC_SCREEN_ICON_VECTORS[icon];
+  const vector = QC_SCREEN_ICON_VECTORS[icon];
   const shapeRendering = icon === "editor.scene-previous" || icon === "editor.scene-next" ? "auto" : "crispEdges";
-  return <svg className={className} width={raster.width} height={raster.height} viewBox={`0 0 ${raster.width} ${raster.height}`} shapeRendering={shapeRendering} aria-hidden="true">{Object.entries(raster.paths).map(([color, path]) => <path key={color} d={path} fill={color} stroke="none" />)}</svg>;
+  return <svg className={className} width={vector.width} height={vector.height} viewBox={`0 0 ${vector.width} ${vector.height}`} shapeRendering={shapeRendering} aria-hidden="true">{vector.layers.map((layer) => <path key={layer.role} d={layer.path} fill={screenVectorColor(layer.role)} stroke="none" />)}</svg>;
 }
 
 function screenVectorPath(icon: ScreenVectorName, index = 0) {
-  return Object.values(QC_SCREEN_ICON_VECTORS[icon].paths)[index];
+  return QC_SCREEN_ICON_VECTORS[icon].layers[index].path;
 }
 
 function directoryReferenceIcon(kind: QcDirectoryIconName): "directory.download" | "directory.cloud" | "directory.cloud-upload-header" | "directory.trash" | undefined {
@@ -53,12 +58,15 @@ export function QcPresetStackIcon() {
 /** Shared app/CorOS glyph vocabulary. Text characters must not be used as icons. */
 export function QcUiIcon({ kind, className }: { kind: QcUiIconName; className?: string }) {
   const classes = `qc-ui-icon qc-ui-icon-${kind}${className ? ` ${className}` : ""}`;
+  if (kind === "power") return <svg className={classes} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M12 2v9" /><path d="M6.3 5.7a9 9 0 1 0 11.4 0" /></svg>;
+  if (kind === "pin") return <svg className={classes} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m14.8 2 7.2 7.2-2.1 2.1-1.1-1.1-4.6 4.6.7 2.1-1.4 1.4-3.9-3.9-6.2 6.2-1.4-1.4L8.2 13 4.3 9.1l1.4-1.4 2.1.7 4.6-4.6-1.1-1.1L13.4.6 14.8 2Z" /></svg>;
+  if (kind === "arrow-right") return <svg className={classes} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 12h15M14 7l5 5-5 5" /></svg>;
   if (kind === "settings" || kind === "check") return <QcScreenVectorLayers icon={`interface.${kind}` as ScreenVectorName} className={classes} />;
   const referenceIcons = {
     add: "interface.add", file: "interface.file", midi: "interface.midi", modes: "interface.modes",
     tempo: "interface.tempo"
   } as const;
-  if (kind in referenceIcons) return <QcScreenVector icon={referenceIcons[kind as keyof typeof referenceIcons]} color={QC_COLORS.captured.primaryText} className={classes} />;
+  if (kind in referenceIcons) return <QcScreenVector icon={referenceIcons[kind as keyof typeof referenceIcons]} className={classes} />;
   if (kind === "cab-previous" || kind === "cab-next") {
     const icon = kind === "cab-previous" ? "interface.previous-cab" : "interface.next-cab";
     return <svg className={classes} viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true"><path d={screenVectorPath(icon, 0)} style={{ fill: QC_COLORS.captured.cabArrowDark, stroke: "none" }} /><path d={screenVectorPath(icon, 1)} style={{ fill: QC_COLORS.captured.cabArrowLight, stroke: "none" }} /></svg>;
@@ -298,16 +306,16 @@ export function QcRouteGlyph({ side, label }: { side: "input" | "output"; label:
 
 export function QcModeGlyph({ mode }: { mode: PresetSnapshot["mode"] }) {
   const icon = `mode.${mode.toLowerCase()}` as ScreenVectorName;
-  const raster = QC_SCREEN_ICON_VECTORS[icon];
-  return <svg width="24" height="24" viewBox={`0 0 ${raster.width} ${raster.height}`} className={`qc-mode-glyph qc-mode-glyph-${mode.toLowerCase()}`} shapeRendering="crispEdges" aria-hidden="true">
-    {Object.entries(raster.paths).map(([color, path]) => <path key={color} d={path} fill={color} stroke="none" />)}
+  const vector = QC_SCREEN_ICON_VECTORS[icon];
+  return <svg width="24" height="24" viewBox={`0 0 ${vector.width} ${vector.height}`} className={`qc-mode-glyph qc-mode-glyph-${mode.toLowerCase()}`} shapeRendering="crispEdges" aria-hidden="true">
+    {vector.layers.map((layer) => <path key={layer.role} d={layer.path} fill={screenVectorColor(layer.role)} stroke="none" />)}
   </svg>;
 }
 
 export function QcDirectoryIcon({ kind, number }: { kind: QcDirectoryIconName; number?: number }) {
   const classes = `qc-directory-icon qc-directory-icon-${kind}`;
   const referenceIcon = directoryReferenceIcon(kind);
-  if (referenceIcon) return <QcScreenVector icon={referenceIcon} color={QC_COLORS.captured.iconPrimary} className={classes} />;
+  if (referenceIcon) return <QcScreenVector icon={referenceIcon} className={classes} />;
   if (kind === "grid")
     return (
       <svg className={classes} viewBox="0 0 24 24" aria-hidden="true">
@@ -380,7 +388,7 @@ export function QcDirectoryIcon({ kind, number }: { kind: QcDirectoryIconName; n
 export function QcLibraryIcon({ kind, className }: { kind: QcLibraryIconName; className?: string }) {
   const classes = `qc-library-icon qc-library-icon-${kind}${className ? ` ${className}` : ""}`;
   const heartPath = "M12 21 4.4 13.7C.5 9.8 3 4 7.4 4c2.1 0 3.4 1.2 4.6 2.7C13.2 5.2 14.5 4 16.6 4 21 4 23.5 9.8 19.6 13.7Z";
-  if (kind === "clock") return <QcScreenVector icon="library.clock" color={QC_COLORS.captured.iconPrimary} className={classes} />;
+  if (kind === "clock") return <QcScreenVector icon="library.clock" className={classes} />;
   if (kind === "capture-library")
     return (
       <svg className={classes} viewBox="0 0 24 24" aria-hidden="true">
@@ -405,7 +413,7 @@ export function QcLibraryIcon({ kind, className }: { kind: QcLibraryIconName; cl
         <path d="M2 3v18M6 7v10M10 5v14M14 10v4M18 8v8M22 11v2" fill="none" stroke={QC_COLORS.captured.iconPrimary} strokeWidth="1.8" strokeLinecap="butt" />
       </svg>
     );
-  if (kind === "binoculars") return <QcScreenVector icon="library.binoculars" color={QC_COLORS.captured.iconPrimary} className={classes} crisp={false} />;
+  if (kind === "binoculars") return <QcScreenVector icon="library.binoculars" className={classes} crisp={false} />;
   if (kind === "broken-heart")
     return (
       <svg className={classes} viewBox="0 0 24 24" aria-hidden="true">

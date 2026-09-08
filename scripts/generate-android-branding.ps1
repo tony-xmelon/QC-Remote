@@ -12,6 +12,15 @@ $nativeTheme = Get-Content -LiteralPath (Join-Path $repoRoot "packages\typescrip
 $brand = Get-Content -LiteralPath (Join-Path $repoRoot "packages\typescript\qc-theme\src\brand.json") -Raw | ConvertFrom-Json
 
 Add-Type -AssemblyName System.Drawing
+$fontCollection = [System.Drawing.Text.PrivateFontCollection]::new()
+$regularFontPath = Join-Path $repoRoot ("packages\typescript\qc-theme\" + $nativeTheme.android.splashFontRegular.Replace('/', '\'))
+$boldFontPath = Join-Path $repoRoot ("packages\typescript\qc-theme\" + $nativeTheme.android.splashFontBold.Replace('/', '\'))
+$fontCollection.AddFontFile((Resolve-Path -LiteralPath $regularFontPath -ErrorAction Stop).Path)
+$fontCollection.AddFontFile((Resolve-Path -LiteralPath $boldFontPath -ErrorAction Stop).Path)
+$splashFontFamily = $fontCollection.Families | Where-Object Name -eq $nativeTheme.android.splashFontFamily | Select-Object -First 1
+if ($null -eq $splashFontFamily) {
+    throw "Bundled splash font family '$($nativeTheme.android.splashFontFamily)' was not loaded."
+}
 
 function New-Canvas([int]$width, [int]$height, [bool]$transparent = $false) {
     $bitmap = [System.Drawing.Bitmap]::new($width, $height, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
@@ -63,8 +72,8 @@ try {
 
         $brandSize = [Math]::Max(10, [int]($shortEdge * 0.055))
         $captionSize = [Math]::Max(7, [int]($shortEdge * 0.024))
-        $brandFont = [System.Drawing.Font]::new($nativeTheme.android.splashFontFamily, $brandSize, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-        $captionFont = [System.Drawing.Font]::new($nativeTheme.android.splashFontFamily, $captionSize, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
+        $brandFont = [System.Drawing.Font]::new($splashFontFamily, $brandSize, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+        $captionFont = [System.Drawing.Font]::new($splashFontFamily, $captionSize, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
         $center = [System.Drawing.StringFormat]::new()
         $center.Alignment = [System.Drawing.StringAlignment]::Center
         $brandBrush = [System.Drawing.SolidBrush]::new([System.Drawing.ColorTranslator]::FromHtml($nativeTheme.android.splashText))
@@ -78,6 +87,7 @@ try {
 }
 finally {
     $icon.Dispose()
+    $fontCollection.Dispose()
 }
 
 Write-Output "Generated Android launcher and splash assets from the $($brand.appName) master icon."

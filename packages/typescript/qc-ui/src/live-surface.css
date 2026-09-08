@@ -284,6 +284,7 @@
 .cab-channel-footer > button { padding: 0; border: 0; border-radius: .8cqw; background: var(--qc-device-panel-raised); color: var(--qc-palette-eee); font: 600 2.4cqw var(--qc-font-device-plain); }
 .cab-phase.is-active { color: var(--cab-accent); }
 .cab-channel-power { color: var(--qc-palette-777) !important; }
+.cab-channel-power .qc-ui-icon { width: 2.5cqw; height: 2.5cqw; }
 .cab-channel-power.is-active { color: var(--qc-palette-f2f2f2) !important; }
 .cab-microphone-selector { display: grid; grid-template-columns: 14% minmax(0, 1fr) 14%; align-items: center; min-width: 0; overflow: hidden; border-radius: .8cqw; background: var(--qc-device-panel-raised); }
 .cab-microphone-selector button { height: 100%; padding: 0; border: 0; background: var(--qc-transparent); color: var(--qc-palette-8f9093); font: 300 3.2cqw var(--qc-font-device-plain); }
