@@ -145,7 +145,7 @@ test("shared glyph registry covers hardware, routing, directory, editing, and co
   assert.match(fixtures, /<QcRotaryDial className="assignment-knob"/, "assignment screens must reuse the canonical rotary");
   assert.match(fixtures, /<QcRotaryDial className="splitter-knob"/, "splitter controls must reuse the canonical rotary");
   const parameterEditor = read("packages/typescript/qc-ui/src/parameter-editor.tsx");
-  assert.match(parameterEditor, /<QcRotaryDial progress=\{referenceDial\.progress\}/, "parameter editors must reuse the canonical rotary");
+  assert.match(parameterEditor, /<QcRotaryDial progress=\{referenceDial\.progress\} angle=\{referenceDial\.angle - 90\}/, "parameter editors must reuse the canonical rotary with the device's twelve-o'clock pointer origin");
   assert.doesNotMatch(parameterEditor, /<span className="coros-dial"[^>]*><i \/><\/span>/, "parameter editors must not carry an alternate CSS-drawn rotary");
   const captureFilter = icons.slice(icons.indexOf("export function QcCaptureFilterIcon"), icons.indexOf("export function QcEditorIcon"));
   assert.match(captureFilter, /return <QcReferenceRaster icon=\{icons\[kind\]\}/, "capture filters must render from their authoritative corpus crops");
