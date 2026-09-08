@@ -117,9 +117,7 @@
 .coros-block:hover .block-tooltip, .coros-block:focus-visible .block-tooltip { opacity: 1; }
 
 .screen-nav-control { position: absolute; z-index: 3; top: 18%; right: 5.2%; width: 9.5%; height: 27%; display: grid; grid-template-rows: 12% 1fr 12%; place-items: center; }
-.nav-arrow { width: clamp(8px, .85vw, 13px); aspect-ratio: 1; border-left: 2px solid var(--qc-palette-e7e7e7); border-top: 2px solid var(--qc-palette-e7e7e7); }
-.nav-arrow-up { transform: rotate(45deg); }
-.nav-arrow-down { transform: rotate(225deg); }
+.nav-arrow { width: clamp(12px, 1.1vw, 17px); height: clamp(12px, 1.1vw, 17px); }
 .footswitch-deck { position: absolute; z-index: 2; left: 2.5%; right: 2.5%; top: 61.5%; bottom: 2.2%; display: grid; grid-template-rows: 1fr 1fr; gap: 2%; }
 .footswitch-row { display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; }
 .hardware-switch { height: 100%; display: grid; grid-template-rows: 14% 62% 14%; place-items: center; align-content: center; gap: 1%; overflow: visible; }
@@ -326,7 +324,7 @@
 .footswitch-deck .switch-ring,
 .screen-nav-control .switch-ring { width: var(--qc-hardware-switch-diameter); }
 .footswitch-deck .switch-label { left: 68%; top: 54%; font-size: clamp(18px, 2.5vw, 36px); font-weight: 400; }
-.nav-arrow { width: clamp(9px, 1vw, 15px); border-width: clamp(2px, .2vw, 3px); }
+.nav-arrow { width: clamp(13px, 1.2vw, 18px); height: clamp(13px, 1.2vw, 18px); }
 .mode-bracket { right: 5.9%; top: 31.5%; width: 4.5%; height: 36%; font-size: clamp(8px, .8vw, 12px); font-weight: 600; }
 .mode-bracket::before { left: -35%; width: 58%; border-width: 2px; }
 .tuner-hint { right: .4%; bottom: 47.5%; width: 8.6%; font-size: clamp(7px, .65vw, 10px); font-weight: 600; line-height: 1.15; }

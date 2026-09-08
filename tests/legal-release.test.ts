@@ -672,6 +672,16 @@ test("current locked inventory is resolved and packaged by both app builds", () 
   assert.ok(inventory.sourceAvailabilityNotice.length > 0);
   assert.ok(inventory.sourceAvailabilityNotice.every((item) => /^https:\/\/crates\.io\/api\/v1\/crates\/.+\/download$/.test(item.sourceArchiveUrl)));
   assert.equal(inventory.components.find((item) => item.name === "org.checkerframework:checker-compat-qual")?.selectedLicense, "MIT");
+  const plex = inventory.components.find((item) => item.ecosystem === "bundled-asset" && item.name === "IBM Plex Sans");
+  assert.equal(plex?.version, "3.1");
+  assert.equal(plex?.license, "OFL-1.1");
+  assert.deepEqual(plex?.assets, [
+    "packages/typescript/qc-theme/assets/fonts/IBMPlexSans.ttf",
+    "packages/typescript/qc-theme/assets/fonts/IBMPlexSans-Medium.ttf",
+    "packages/typescript/qc-theme/assets/fonts/IBMPlexSans-Bold.ttf"
+  ]);
+  assert.ok(plex?.licenseTextHashes.length > 0);
+  assert.ok(!inventory.components.some((item) => /^@fontsource-variable\/(?:arimo|roboto)$/.test(item.name)));
   assert.match(androidBuild, /dependencyLocking\s*\{\s*lockAllConfigurations\(\)/);
   assert.match(androidLock, /releaseRuntimeClasspath/);
   for (const source of [windowsVite, androidVite, tauri]) {

@@ -268,7 +268,7 @@ function ConnectionBadge({ connection, deviceReady, syncProgress, expanded, onCl
   return <button type="button" className={`connection-badge phase-${phase}`} aria-expanded={expanded} aria-haspopup="dialog" aria-label={syncing ? `Synchronizing device, ${syncProgress}% complete; open connection details` : `${label}; open connection details`} title={detail} onClick={onClick}>
     <span className="status-light" />
     <span>{label}</span>
-    <span className="connection-chevron" aria-hidden="true" />
+    <QcUiIcon kind="down" className="connection-chevron" />
     {syncing && <span className="connection-progress" aria-hidden="true"><span style={{ width: `${syncProgress}%` }} /></span>}
   </button>;
 }
@@ -299,7 +299,7 @@ function RelayBadge({ status, expanded, onClick }: { status?: PublicRelayStatus;
   return <button type="button" className={`connection-badge relay-badge phase-${relayPhase(status)}`} aria-expanded={expanded} aria-haspopup="dialog" aria-label={`${label}; open MCP relay details`} title={detail} onClick={onClick}>
     <span className="status-light" />
     <span>{label}</span>
-    <span className="connection-chevron" aria-hidden="true" />
+    <QcUiIcon kind="down" className="connection-chevron" />
   </button>;
 }
 
@@ -307,6 +307,6 @@ function ChatStatusBadge({ status, activity, thinking, expanded, onClick }: { st
   return <button type="button" className={`chat-status-badge status-${status}${thinking ? " is-thinking" : ""}`} aria-expanded={expanded} aria-haspopup="dialog" aria-label={`${activity}; open model details`} onClick={onClick}>
     <span className="status-light" />
     <span>{activity}</span>
-    <span className="connection-chevron" aria-hidden="true" />
+    <QcUiIcon kind="down" className="connection-chevron" />
   </button>;
 }

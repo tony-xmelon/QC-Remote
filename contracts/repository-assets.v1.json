@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "visualManifest": "packages/typescript/qc-theme/src/assets.json",
+  "canonicalVisualRoot": "packages/typescript/qc-theme/assets/",
+  "embeddedVectorOwners": [
+    "packages/typescript/qc-ui/src/coros-capture-connections.tsx",
+    "packages/typescript/qc-ui/src/coros-screen-fixtures.tsx",
+    "packages/typescript/qc-ui/src/device-category-glyph.tsx",
+    "packages/typescript/qc-ui/src/device-glyph.tsx",
+    "packages/typescript/qc-ui/src/parameter-editor.tsx",
+    "packages/typescript/qc-ui/src/plugin-badge-glyph.tsx",
+    "packages/typescript/qc-ui/src/qc-rotary-dial.tsx",
+    "packages/typescript/qc-ui/src/quad-cortex-surface.tsx",
+    "packages/typescript/qc-ui/src/screen-glyphs.tsx",
+    "packages/typescript/qc-ui/src/theme-icons.tsx"
+  ],
+  "dynamicMediaOwners": [
+    "apps/windows/src/chat-dock.tsx",
+    "packages/typescript/qc-ui/src/assistant-chat-primitives.tsx",
+    "apps/windows/src-tauri/src/chat.rs"
+  ],
+  "nonVisualBinaryArtifacts": [
+    {
+      "path": "apps/android/android/gradle/wrapper/gradle-wrapper.jar",
+      "sha256": "7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172",
+      "owner": "Android Gradle wrapper",
+      "purpose": "Pinned Gradle bootstrap executable; not shipped as product artwork"
+    },
+    {
+      "path": "references/cortex-protocol/Preset.desc",
+      "sha256": "2ac2041c54e39a96d060ec01c639bc64053c0edd31c27f42291a98ec1972e230",
+      "owner": "qc-protocol schema verifier",
+      "purpose": "Interoperability descriptor evidence; not a visual or runtime asset"
+    },
+    {
+      "path": "references/cortex-protocol/ProductionAutomation.desc",
+      "sha256": "2e0a74d0c8c2270e26e9dfe65bf937df5206d4af81acb4608fa34a53453af6bf",
+      "owner": "qc-protocol schema verifier",
+      "purpose": "Interoperability descriptor evidence; not a visual or runtime asset"
+    }
+  ],
+  "ignoredPrivateReferencePrefixes": [
+    "references/qc-ui-corpus/",
+    "references/qc-ui-iconography/",
+    "references/qc-ui-official-detail/",
+    "references/qc-ui-official-manual/"
+  ]
+}

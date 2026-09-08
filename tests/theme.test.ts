@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import test from "node:test";
-import { QC_BRAND, QC_COLORS, QC_GEOMETRY, QC_NATIVE_THEME, QC_TYPOGRAPHY, QC_VISUAL_ASSETS } from "../packages/typescript/qc-theme/src/index.ts";
+import { QC_BRAND, QC_COLORS, QC_GEOMETRY, QC_NATIVE_THEME, QC_SCREEN_ICON_VECTORS, QC_TYPOGRAPHY, QC_VISUAL_ASSETS } from "../packages/typescript/qc-theme/src/index.ts";
 
 const read = (path: string) => readFileSync(path, "utf8");
 const sha256 = (path: string) => createHash("sha256").update(path.endsWith(".svg")
@@ -134,13 +134,29 @@ test("shared glyph registry covers hardware, routing, directory, editing, and co
   assert.match(fixtures, /return <QcDirectoryIcon kind=\{kind\} number=\{number\} \/>/, "fixture Directory icons must delegate to the shared glyph registry");
 });
 
+test("screen vector layers are ordered, semantic, theme-resolved, and neutral", () => {
+  const registry = read("packages/typescript/qc-theme/src/screen-icon-vectors.ts");
+  assert.doesNotMatch(registry, /library\.neural-mark|\bpaths:\s*\{|"#[0-9a-f]{3,8}"\s*:/i);
+  for (const [icon, vector] of Object.entries(QC_SCREEN_ICON_VECTORS)) {
+    assert.ok(vector.layers.length > 0, `${icon} needs at least one ordered layer`);
+    for (const layer of vector.layers) {
+      assert.match(layer.role, /^captured\.[A-Za-z][A-Za-z0-9]*$/);
+      const token = layer.role.slice("captured.".length) as keyof typeof QC_COLORS.captured;
+      assert.equal(typeof QC_COLORS.captured[token], "string", `${icon} uses unknown theme role ${layer.role}`);
+      assert.ok(layer.path.length >= 8, `${icon} contains empty vector geometry`);
+    }
+  }
+});
+
 test("screen controls use shared vectors and theme-owned fonts without character or raster fallbacks", () => {
   const sourceFiles = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "--", "apps/windows/src", "apps/android/src", "packages/typescript/qc-ui/src"], { encoding: "utf8" })
     .trim().split(/\r?\n/).filter((file) => /\.(?:css|ts|tsx)$/.test(file) && existsSync(file));
-  const iconCharacter = /[▲▼►▶◀◁▷‹›⌄⌃⋮＋✕✓✔✚⏵⏴■↵⇥✎☆⌫◇♩▥⚙▤↑↓↶↻◉♜▰◴◫♞▣]/u;
+  const iconCharacter = /[▲▼►▶◀◁▷‹›⌄⌃⋮＋✕✓✔✚⏵⏴■↵⇥✎☆⌫◇♩▥⚙▤↑↓⏻↶↻◉♜▰◴◫♞▣]/u;
+  const jsxIconCharacter = />\s*[→⏻]\s*</u;
   const literalFont = /(font(?:-family)?|fontFamily)\s*[:=][^;\n}]*(?:Arial|Roboto|Helvetica|Segoe UI|sans-serif|system-ui)/i;
   for (const file of sourceFiles) {
     assert.doesNotMatch(read(file), iconCharacter, `${file} must render controls through shared SVG glyph components`);
+    if (/\.tsx?$/.test(file)) assert.doesNotMatch(read(file), jsxIconCharacter, `${file} must not render character glyphs as controls`);
     assert.doesNotMatch(read(file), literalFont, `${file} must use shared typography tokens`);
   }
 
@@ -171,7 +187,7 @@ test("Directory toolbar glyphs use shared colors and the exact device geometry",
   const colors = JSON.parse(read("packages/typescript/qc-theme/src/colors.json"));
   assert.equal(colors.captured.iconPrimary, "#f8fcf8");
   assert.equal(colors.captured.iconToolbarMuted, "#606060");
-  const icons = read("packages/typescript/qc-ui/src/theme-icons.tsx");
+  const icons = read("packages/typescript/qc-ui/src/theme-icons.tsx") + read("packages/typescript/qc-theme/src/screen-icon-vectors.ts");
   for (const path of [
     "M14 4H1v2h13V4Z",
     "M22 4.254c0 .259-.101.508-.281.695",
@@ -242,8 +258,31 @@ test("authored vector geometry has one owner", () => {
       owners.set(match[1], location);
     }
   }
+  const registryFile = "packages/typescript/qc-theme/src/screen-icon-vectors.ts";
+  const registrySource = read(registryFile);
+  for (const match of registrySource.matchAll(/(?:\bpath:\s*|\bconst\s+\w+_PATH\s*=\s*)"([^"]{8,})"/g)) {
+    const location = `${registryFile}:${registrySource.slice(0, match.index).split("\n").length}`;
+    assert.ok(!owners.has(match[1]), `${location} duplicates vector geometry owned by ${owners.get(match[1])}`);
+    owners.set(match[1], location);
+  }
   const components = sourceFiles.flatMap((file) => [...read(file).matchAll(/function\s+(?:Qc)?DeviceGlyph\b/g)].map(() => file));
   assert.deepEqual(components, ["packages/typescript/qc-ui/src/device-glyph.tsx"]);
+});
+
+test("shared SVG controls cannot regress to CSS pseudo-icons", () => {
+  const cssFiles = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "--", "apps/**/*.css", "packages/**/*.css"], { encoding: "utf8" })
+    .trim().split(/\r?\n/).filter((file) => Boolean(file) && existsSync(file));
+  const css = cssFiles.map((file) => read(file)).join("\n");
+  assert.doesNotMatch(css, /\.(?:device-pin|editor-power-icon)(?:::|:(?:before|after))/i);
+  assert.doesNotMatch(css, /\.nav-arrow\s*\{[^}]*\bborder-(?:left|right|top|bottom)\s*:/i);
+  assert.doesNotMatch(css, /\.connection-chevron\s*\{[^}]*\bborder-(?:left|right|top|bottom)\s*:/i);
+
+  const jsxFiles = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "--", "apps/**/*.tsx", "packages/**/*.tsx"], { encoding: "utf8" })
+    .trim().split(/\r?\n/).filter((file) => Boolean(file) && existsSync(file));
+  const jsx = jsxFiles.map((file) => read(file)).join("\n");
+  assert.doesNotMatch(jsx, /className="editor-power-icon"/);
+  assert.doesNotMatch(jsx, /className="device-pin"\s*\/>/);
+  assert.doesNotMatch(jsx, /<span\b[^>]*className="nav-arrow[^"}]*"[^>]*\/>/);
 });
 
 test("every declared icon is wired outside its registry and audit gallery", () => {
@@ -317,6 +356,7 @@ test("authored app and device sources cannot bypass the shared visual contract",
     .filter((file) => !file.startsWith("packages/typescript/qc-theme/"))
     .filter((file) => !file.startsWith("packages/typescript/qc-ui/src/official-") && !file.startsWith("packages/typescript/qc-ui/src/remaining-fixtures") && !file.endsWith("/coros-screen-fixtures.tsx") && !file.endsWith("/coros-capture-connections.css") && !file.endsWith("/fixture-live-surface.css") && !file.endsWith("/reference-parameter-editor.css") && !file.endsWith("/qc-device-typography.css"))
     .filter((file) => !/^tools\/capture_.*\.mjs$/.test(file))
+    .filter((file) => file !== "tools/generate-third-party-inventory.mjs")
     .filter((file) => file !== "tools/sweep_qc_font.mjs")
     .filter((file) => file !== "tools/compare_qc_font_candidates.py")
     .filter((file) => file !== "apps/android/capacitor.config.json")
@@ -325,7 +365,8 @@ test("authored app and device sources cannot bypass the shared visual contract",
   const colorLiteral = /#[0-9a-f]{3,8}\b|rgba?\s*\(|hsla?\s*\(/i;
   const deployedAssetUrl = /url\([^)]*\.(?:svg|png|webp|jpe?g|ico)\b/i;
   const literalFontStack = /["'](?:Arial Narrow|Arial|Helvetica Neue|Helvetica|Roboto Condensed|Roboto|DM Mono|Cascadia Mono|IBM Plex Sans|Segoe UI Variable|Segoe UI|Inter|Consolas)["']|fontFamily=["']|android:fontFamily">\s*(?!@(?:string|font)\/)[^<]+/mi;
-  const iconCharacter = /[▲▼►▶◀◁▷‹›⌄⌃⋮＋✕✓✔✚⏵⏴■↵⇥✎☆⌫◇♩▥⚙▤↑↓]/u;
+  const iconCharacter = /[▲▼►▶◀◁▷‹›⌄⌃⋮＋✕✓✔✚⏵⏴■↵⇥✎☆⌫◇♩▥⚙▤↑↓⏻]/u;
+  const jsxIconCharacter = />\s*[→⏻]\s*</u;
   for (const file of files) {
     const fullSource = read(file);
     if (/Generated by scripts\//.test(fullSource.slice(0, 300))) continue;
@@ -334,7 +375,10 @@ test("authored app and device sources cannot bypass the shared visual contract",
     assert.doesNotMatch(source, deployedAssetUrl, `${file} must use @qc-remote/theme asset tokens`);
     assert.doesNotMatch(source, literalFontStack, `${file} must use @qc-remote/theme typography`);
     if (file.endsWith(".css")) assert.doesNotMatch(source.replaceAll("--qc-transparent", ""), /\btransparent\b/i, `${file} must use the shared transparent token`);
-    if (/\.tsx?$/.test(file) && !file.endsWith("theme-icons.tsx")) assert.doesNotMatch(source, iconCharacter, `${file} must reference a shared vector glyph instead of an icon character literal`);
+    if (/\.tsx?$/.test(file) && !file.endsWith("theme-icons.tsx")) {
+      assert.doesNotMatch(source, iconCharacter, `${file} must reference a shared vector glyph instead of an icon character literal`);
+      assert.doesNotMatch(source, jsxIconCharacter, `${file} must not render character glyphs as controls`);
+    }
   }
   assert.doesNotMatch(read("scripts/sync-theme-assets.mjs"), /copyFile|assetCopies|deployedPaths/);
   assert.match(read("scripts/generate-qc-domain.mjs"), /colors\.json/);

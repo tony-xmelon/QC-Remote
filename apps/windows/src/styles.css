@@ -49,8 +49,8 @@ body { min-height: 100vh; overflow: hidden; background: radial-gradient(circle a
 .chat-status-badge.status-offline { color: var(--qc-palette-adb4bd); border-color: var(--qc-palette-4a5059); background: var(--qc-palette-24282e); }
 .chat-status-badge.status-error { color: var(--qc-palette-ff806f); border-color: var(--qc-palette-743a33); background: var(--qc-palette-2e1917); }
 .chat-status-badge.is-thinking .status-light { animation: syncing-pulse 1s ease-in-out infinite; }
-.connection-chevron { width: 6px; height: 6px; margin-left: auto; border-right: 1px solid currentColor; border-bottom: 1px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform .14s ease; }
-.connection-badge[aria-expanded="true"] .connection-chevron { transform: translateY(2px) rotate(225deg); }
+.connection-chevron { width: 12px; height: 12px; margin-left: auto; transform: translateY(-1px); transition: transform .14s ease; }
+.connection-badge[aria-expanded="true"] .connection-chevron { transform: translateY(1px) rotate(180deg); }
 .status-light { width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 7px currentColor; }
 .phase-needs-attention { color: var(--qc-palette-ff806f); border-color: var(--qc-palette-743a33); background: var(--qc-palette-2e1917); }
 .phase-ready { color: var(--qc-palette-61e6a3); border-color: var(--qc-palette-31694e); background: var(--qc-palette-14291f); }

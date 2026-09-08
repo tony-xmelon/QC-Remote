@@ -11,7 +11,9 @@
     "brandScreen": "#2d8daf",
     "splashText": "#f4f6f8",
     "splashCaption": "#71808b",
-    "splashFontFamily": "Segoe UI",
+    "splashFontFamily": "IBM Plex Sans",
+    "splashFontRegular": "assets/fonts/IBMPlexSans.ttf",
+    "splashFontBold": "assets/fonts/IBMPlexSans-Bold.ttf",
     "appFontFamily": "sans"
   }
 }

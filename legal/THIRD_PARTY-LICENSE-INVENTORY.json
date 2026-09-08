@@ -4,9 +4,26 @@
   "generatedFrom": [
     "package-lock.json",
     "Cargo.lock files and target-filtered Cargo metadata",
-    "Android releaseRuntimeClasspath and cached Maven POMs"
+    "Android releaseRuntimeClasspath and cached Maven POMs",
+    "bundled asset manifest and adjacent license files"
   ],
   "components": [
+    {
+      "ecosystem": "bundled-asset",
+      "name": "IBM Plex Sans",
+      "version": "3.1",
+      "license": "OFL-1.1",
+      "author": "IBM Corp.; Bold Monday",
+      "sourceUrl": "https://github.com/IBM/plex",
+      "assets": [
+        "packages/typescript/qc-theme/assets/fonts/IBMPlexSans.ttf",
+        "packages/typescript/qc-theme/assets/fonts/IBMPlexSans-Medium.ttf",
+        "packages/typescript/qc-theme/assets/fonts/IBMPlexSans-Bold.ttf"
+      ],
+      "licenseTextHashes": [
+        "d11e418bafa4d056699ebe66a5cf3dcedc1396ed83e45e53cfe8f6865f664b2b"
+      ]
+    },
     {
       "ecosystem": "cargo",
       "name": "adler2",
@@ -7524,28 +7541,6 @@
     },
     {
       "ecosystem": "npm",
-      "name": "@fontsource-variable/arimo",
-      "version": "5.3.0",
-      "license": "OFL-1.1",
-      "author": "Google Inc.",
-      "sourceUrl": "https://github.com/fontsource/font-files",
-      "licenseTextHashes": [
-        "facaf4ad1efb65bf100c3d8ccb49de77140dcebfe0c3495a5e8813671f9e89ba"
-      ]
-    },
-    {
-      "ecosystem": "npm",
-      "name": "@fontsource-variable/roboto",
-      "version": "5.3.0",
-      "license": "OFL-1.1",
-      "author": "Google Inc.",
-      "sourceUrl": "https://github.com/fontsource/font-files",
-      "licenseTextHashes": [
-        "b21c0013c7f83719c2da07c11676716b9c6692efc2eaa2935b2e87aa5d80b4d1"
-      ]
-    },
-    {
-      "ecosystem": "npm",
       "name": "@tauri-apps/api",
       "version": "2.11.1",
       "license": "Apache-2.0 OR MIT",
@@ -10675,15 +10670,6 @@
       ]
     },
     {
-      "sha256": "b21c0013c7f83719c2da07c11676716b9c6692efc2eaa2935b2e87aa5d80b4d1",
-      "names": [
-        "LICENSE"
-      ],
-      "components": [
-        "npm:@fontsource-variable/roboto@5.3.0"
-      ]
-    },
-    {
       "sha256": "b2a541f10560a218c2a8b9506c3b5c7ac40d2c99e2d2845eae3c4cf16c70000f",
       "names": [
         "LICENSE-MIT"
@@ -11314,6 +11300,15 @@
       ]
     },
     {
+      "sha256": "d11e418bafa4d056699ebe66a5cf3dcedc1396ed83e45e53cfe8f6865f664b2b",
+      "names": [
+        "LICENSE.txt"
+      ],
+      "components": [
+        "bundled-asset:IBM Plex Sans@3.1"
+      ]
+    },
+    {
       "sha256": "d30183ec6610abca89d6095d5f1dc56ea50248a1001cbb4549fadc3a582f6f9a",
       "names": [
         "LICENSE"
@@ -11704,15 +11699,6 @@
       ],
       "components": [
         "cargo:cargo_toml@0.22.3"
-      ]
-    },
-    {
-      "sha256": "facaf4ad1efb65bf100c3d8ccb49de77140dcebfe0c3495a5e8813671f9e89ba",
-      "names": [
-        "LICENSE"
-      ],
-      "components": [
-        "npm:@fontsource-variable/arimo@5.3.0"
       ]
     },
     {

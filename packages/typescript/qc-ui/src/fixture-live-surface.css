@@ -585,6 +585,8 @@
 .coros-name-editor .name-editor-tab { border: 1px solid #20ef55; background: #07170b; color: #21f05a; }
 .coros-name-editor .name-editor-metadata { font-size: 2.8cqw; }
 .coros-name-editor .name-editor-next { width: 100%; grid-column: 7; justify-self: end; background: #1733ff; font-size: 4cqw; }
+.coros-name-editor .name-editor-next .qc-ui-icon { width: 4cqw; height: 4cqw; }
+.capture-routing-map em .qc-ui-icon { display: block; width: 2.4cqw; height: 2.4cqw; }
 .name-editor-value { box-sizing: border-box; width: 73%; height: 9.75cqw; margin: 4.6cqw auto 6.1cqw; overflow: hidden; padding-left: .5cqw; background: #082812; color: #23fa5c; font-size: 7.1cqw; letter-spacing: .25cqw; line-height: 1.25; white-space: nowrap; }
 .name-editor-keyboard { display: grid; gap: 1cqw; padding: 0 .9%; }
 .name-key-row { height: 7cqw; display: flex; justify-content: center; gap: 1.1cqw; }
