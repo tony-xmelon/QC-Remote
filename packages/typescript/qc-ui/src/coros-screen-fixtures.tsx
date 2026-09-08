@@ -250,9 +250,6 @@ function CorOsCaptureFixture({ view }: { view: CaptureFixtureView }) {
   </section>;
 }
 
-type SettingsFixtureView = "settings-account" | "settings-system" | "settings-device" | "settings-support" | "settings-wifi" | "settings-storage" | "settings-midi" | "settings-info" | "settings-diagnostics"
-  | "settings-system-power" | "settings-system-volume" | "settings-update-idle";
-
 function SettingsAccountGlyph({ kind }: { kind: "cloud" | "user" | "backup" }) {
   return <QcScreenGlyph kind={kind} />;
 }
@@ -304,42 +301,191 @@ function CorOsOfficialSettings({ view }: { view: "settings-account" | "settings-
 }
 
 type CapturedSettingsView = "settings-support" | "settings-wifi" | "settings-storage" | "settings-info" | "settings-diagnostics"
-  | "settings-system-power" | "settings-system-volume" | "settings-update-idle" | "settings-system-reset";
+  | "settings-system-power" | "settings-system-volume" | "settings-update-idle" | "settings-system-reset"
+  | "settings-device-scene-bypass" | "settings-device-stomp-bypass" | "settings-device-hold-timing" | "settings-device-swap-tempo-tuner" | "settings-device-gig-view" | "settings-device-latency"
+  | "settings-support-report" | "settings-support-licenses" | "settings-account-backups" | "settings-restart-confirm";
+
+type SettingsFixtureView = CapturedSettingsView | "settings-account" | "settings-system" | "settings-device" | "settings-midi"
+  | "settings-diagnostics-dsp" | "settings-diagnostics-footswitch" | "settings-diagnostics-usb";
+
+const USB_STATISTICS: Array<[string, string, string?]> = [
+  ["USBConnected", "Yes"], ["IN rd/wr idx", "0/0"], ["OUT rd/wr idx", "0/0"],
+  ["UI to DSP HID count (tx/rx)", "468829/468809"],
+  ["USBAudioInRdWrDistanceAverage", "0", "is-red"], ["USBAudioOutRdWrDistanceAverage", "0", "is-red"],
+  ["USBAudioRxFrame", "0"], ["USBAudioTxFrame", "0"], ["USBAudioTxFrameSkipped", "0"],
+  ["USBAudioTxFrameAborted", "0"], ["USBAudioOUTGapsDetected", "0"], ["USBAudioOUTGapResets", "0"],
+  ["USBAudioOUTBufferResets", "0"], ["USBAudioPlusOneSampleCount", "0", "is-green"],
+  ["USBAudioMinusOneSampleCount", "0", "is-blue"], ["USBAudioStreamingEPEnabled", "0"],
+  ["USBAudioStreamingEPDisabled", "0"], ["USBMidiInCount", "18"], ["USBMidiOutCount", "0"],
+  ["HID driver sent report count", "468809"], ["HID driver received report count", "3779"]
+];
+
+const FOOTSWITCH_STATISTICS: Array<[string, string, string]> = [
+  ["A", "(p: 2, r: 2)", "(l: 0, r: 0)"], ["B", "(p: 0, r: 0)", "(l: 0, r: 0)"],
+  ["C", "(p: 0, r: 0)", "(l: 0, r: 0)"], ["D", "(p: 0, r: 0)", "(l: 0, r: 0)"],
+  ["DOWN", "(p: 0, r: 0)", "(l: 0, r: 0)"], ["E", "(p: 0, r: 0)", "(l: 0, r: 0)"],
+  ["F", "(p: 0, r: 0)", "(l: 0, r: 0)"], ["G", "(p: 0, r: 0)", "(l: 0, r: 0)"],
+  ["H", "(p: 0, r: 0)", "(l: 0, r: 0)"], ["TEMPO", "(p: 0, r: 0)", "(l: 0, r: 0)"],
+  ["UP", "(p: 0, r: 0)", "(l: 0, r: 0)"]
+];
+
+/** Five columns: the frame shows four, and clips SOC2 ARM the way CorOS does. */
+const DSP_CORES = ["Core 1", "Core 2", "Core 3", "Core 4", "SOC2 ARM"];
+const DSP_DIAGNOSTICS: Array<[string, string[]]> = [
+  ["Drp Msg:", ["0", "0", "0", "0", "-1"]],
+  ["FP exc:", ["0", "0", "0", "0", "-1"]],
+  ["CPU Av/Pk(%):", ["3.3/3.6/1.7", "32/33/0.58", "4.8/4.9/1.3", "1.3/1.5/0", "-1"]],
+  ["EMDMA (%):", ["0", "7.91", "0", "0", "-1"]],
+  ["Heap(%):", ["DM:0.177/PM:0/SD:0.00687", "DM:3.3/PM:6.74/SD:0.208", "DM:0.135/PM:0/SD:0.00687", "DM:0.135/PM:0/SD:0.00687", "-1"]]
+];
+
+function CorOsDiagnosticsDialog({ view }: { view: "settings-diagnostics-dsp" | "settings-diagnostics-footswitch" | "settings-diagnostics-usb" }) {
+  const title = view === "settings-diagnostics-dsp" ? "DSP Diagnostics"
+    : view === "settings-diagnostics-footswitch" ? "Footswitch Statistics" : "USB Statistics";
+  return <section className={`qc-screen coros-diagnostics-dialog ${view}`} aria-label={title}>
+    <header><h1>{title}</h1><button className="settings-done"><QcUiIcon kind="check" /></button></header>
+    {view === "settings-diagnostics-usb" && <div className="usb-statistics">{USB_STATISTICS.map(([label, value, tone]) => <span key={label}><b>{label}</b><i className={tone}>{value}</i></span>)}</div>}
+    {view === "settings-diagnostics-footswitch" && <div className="footswitch-statistics">{FOOTSWITCH_STATISTICS.map(([name, press, hold]) => <span key={name}><b>{name}</b><i>{press}</i><em>{hold}</em></span>)}</div>}
+    {view === "settings-diagnostics-dsp" && <div className="dsp-diagnostics">
+      <header>{[["SOC1.1", "53873"], ["SOC1.2", "21457"], ["SOC2.0", "0"]].map(([soc, count]) => <span key={soc}><b>{soc}</b><i>{count}</i></span>)}</header>
+      <div className="dsp-cores">{DSP_CORES.map((core) => <span key={core}><button>Off</button><small>{core}</small></span>)}</div>
+      <div className="dsp-table">{DSP_DIAGNOSTICS.map(([label, values]) => <section key={label}><b>{label}</b>{values.map((value, index) => <i key={index}>{value}</i>)}</section>)}</div>
+    </div>}
+  </section>;
+}
+
+const DEVICE_COPY = {
+  gigView: `Enable this feature to toggle Gig View by pressing and holding  and TEMPO footswitches simultaneously.
+
+When enabled, single-pressing + TEMPO to cycle MODES is triggered upon footswitches release.`,
+  sceneBypassThird: "Do not overwrite bypass state when changing bypass state by any method.",
+  resetSettings: "Reset Settings will restore Quad Cortex to its default settings. User data (Presets, Captures, etc.) will not be removed.",
+  factoryReset: "Factory Reset will remove all user data and the device will be restored to factory settings."
+};
+
+/** Every licence CorOS lists; the frame shows the first six of them. */
+const THIRD_PARTY_LICENSES = [
+  "binutils license", "busybox license", "bzip2 license", "collectd license", "cramfs license",
+  "e2fsprogs license", "elfutils license", "expat license", "f2fstools license", "fontconfig license",
+  "freetype license", "harfbuzz license", "hostapd license", "iw license", "jpeg-turbo license",
+  "libarchive license", "libcurl license", "libevent license", "libffi license", "libnl license",
+  "libpcap license", "libpng license", "libsigc license", "libsigsegv license", "libtirpc license",
+  "libungif license", "libunwind license", "linux license", "lrzsz license", "lz4 license",
+  "lzip license", "lzo license", "lzop license", "memtester license", "mtd license",
+  "ncurses license", "ntp license", "openssh license", "openssl license", "oprofile license",
+  "pcutils license", "popt license", "pppd license", "protobuf license", "qt license",
+  "readline license", "rsync license", "squashfs license", "tslib license", "uboot-tools license",
+  "util-linux license", "wpa_supplicant license", "zlib license", "ADVobfuscator license", "pugixml license"
+];
 
 function CapturedSettingsIcon({ kind }: { kind: string }) {
   if (kind === "headphones") return <QcHeadphonesGlyph />;
-  const normalized = kind === "support" ? "info" : kind === "power" ? "power-functions" : (["about", "info", "report", "diagnostics", "licenses", "wifi", "updates", "brightness", "volume", "storage", "system"] as const).includes(kind as never) ? kind : "factory";
+  const normalized = kind === "support" ? "info" : kind === "power" ? "power-functions" : kind === "gig-access" ? "gig-view" : kind === "bypass" ? "global-bypass" : (["about", "cloud", "device", "headphones", "hold", "info", "latency", "midi", "report", "diagnostics", "licenses", "scene-bypass", "stomp-bypass", "swap", "wifi", "updates", "brightness", "volume", "storage", "system"] as const).includes(kind as never) ? kind : "factory";
   return <QcScreenGlyph kind={normalized as QcScreenGlyphName} />;
 }
 
 function CorOsCapturedSettings({ view }: { view: CapturedSettingsView }) {
-  const support = view === "settings-support" || view === "settings-info" || view === "settings-diagnostics";
+  const support = view === "settings-support" || view === "settings-info" || view === "settings-diagnostics"
+    || view === "settings-support-report" || view === "settings-support-licenses";
+  const account = view === "settings-account-backups";
+  const deviceRows: Array<[string, string]> = [["bypass", "Global Bypass"], ["scene-bypass", "Scene Bypass Behavior"], ["stomp-bypass", "Stomp Mode Bypass"],
+    ["hold", "Hold Timing"], ["swap", "Swap Tempo and Tuner"], ["gig-access", "Gig View Access"], ["latency", "Latency Compensation"], ["midi", "MIDI"]];
   // The category selector is drawn on some panes and not others. Every frame
   // that reaches these three shows the dialog without it, and the menu below
   // does not move when it goes, so only the header changes.
   const selector = !["settings-system-power", "settings-system-volume", "settings-update-idle", "settings-system-reset"].includes(view);
-  const rows = support
-    ? [["about", "About and Contact"], ["info", "Device Information"], ["report", "Send Report"], ["diagnostics", "Diagnostics"], ["licenses", "3rd Party Licenses"]]
-    : [["wifi", "Connection"], ["updates", "Updates"], ["brightness", "Brightness"], ["power", "Power Functions"], ["volume", "Master Volume Knob"], ["storage", "Device Storage"], ["factory", "Factory Reset"]];
+  const device = view.startsWith("settings-device-");
+  const rows = account
+    ? [["user", "My Account"], ["backup", "Backups"]]
+    : view.startsWith("settings-device-")
+    ? deviceRows
+    : support
+      ? [["about", "About and Contact"], ["info", "Device Information"], ["report", "Send Report"], ["diagnostics", "Diagnostics"], ["licenses", "3rd Party Licenses"]]
+      : [["wifi", "Connection"], ["updates", "Updates"], ["brightness", "Brightness"], ["power", "Power Functions"], ["volume", "Master Volume Knob"], ["storage", "Device Storage"], ["factory", "Factory Reset"]];
   const active = ({
     "settings-support": 0, "settings-info": 1, "settings-diagnostics": 3, "settings-wifi": 0,
-    "settings-update-idle": 1, "settings-system-power": 3, "settings-system-volume": 4, "settings-storage": 5, "settings-system-reset": 6
+    "settings-update-idle": 1, "settings-system-power": 3, "settings-system-volume": 4, "settings-storage": 5, "settings-system-reset": 6,
+    "settings-device-scene-bypass": 1, "settings-device-stomp-bypass": 2, "settings-device-hold-timing": 3,
+    "settings-device-swap-tempo-tuner": 4, "settings-device-gig-view": 5, "settings-device-latency": 6,
+    "settings-support-report": 2, "settings-support-licenses": 4, "settings-account-backups": 1
   } as Record<string, number>)[view] ?? 5;
   return <section className={`qc-screen coros-settings-official coros-settings-captured ${view}`} aria-label={view.replaceAll("-", " ")}>
-    <header>{selector && <button className="settings-section"><b><CapturedSettingsIcon kind={support ? "support" : "system"} /></b>{support ? "Support" : "System"}<i /></button>}{view === "settings-info" && <button className="settings-edit" aria-label="Edit device name"><QcScreenGlyph kind="edit" /></button>}<button className="settings-done"><QcUiIcon kind="check" /></button></header>
+    <header>{selector && <button className="settings-section"><b><CapturedSettingsIcon kind={device ? "device" : account ? "cloud" : support ? "support" : "system"} /></b>{device ? "Device" : account ? "Account" : support ? "Support" : "System"}<i /></button>}{account && <button className="backups-refresh" aria-label="Refresh backups"><QcUiIcon kind="refresh" /></button>}{view === "settings-info" && <button className="settings-edit" aria-label="Edit device name"><QcScreenGlyph kind="edit" /></button>}<button className="settings-done"><QcUiIcon kind="check" /></button></header>
     <main><nav>{rows.map(([icon, label], index) => <button key={label} className={index === active ? "is-active" : ""}><b><CapturedSettingsIcon kind={icon} /></b>{label}</button>)}</nav>
       <section className="captured-settings-detail">
-        {view === "settings-support" && <><h1>Device support</h1><div className="support-company"><span><strong>Connected-device information</strong><br />Support details are intentionally not reproduced in QC Remote.</span></div><hr /><div className="support-contact"><span>Use the manufacturer's official support resources for device and firmware assistance.</span></div></>}
+        {view === "settings-support" && <><h1>Device support</h1><div className="support-company"><span><strong>Connected-device information</strong><br />Support details are intentionally not reproduced in QC Remote.</span></div><hr /><div className="support-contact"><span>Use the manufacturer’s official support resources for device and firmware assistance.</span></div></>}
         {view === "settings-diagnostics" && <div className="captured-list">{["DSP Diagnostics", "Footswitch Statistics", "USB Statistics"].map(label => <button key={label}>{label}<span><QcUiIcon kind="next" /></span></button>)}</div>}
         {view === "settings-storage" && <><h1>Device Storage</h1><div className="storage-captured">{[["presets", "My Presets", "270/3072", 9], ["captures", "My Captures", "65/2048", 3], ["irs", "My Impulse Responses", "0/2048", 0]].map(([kind, label, value, amount]) => <div key={String(label)}><span><CapturedSettingsIcon kind={String(kind)} /><strong>{label}</strong><i><QcUiIcon kind="next" /></i><em>{value}</em></span><b><i style={{ width: `${amount}%` }} /></b></div>)}</div></>}
-        {view === "settings-info" && <><h1>Device information</h1><div className="information-table"><span><b>Serial number:</b><i /></span><span><b>Device name:</b><i>Neural DSP Quad Cortex</i></span><span><b>MAC address:</b><i /></span></div><hr /><h1>Software information</h1><div className="information-table"><span><b>CorOS:</b><i>4.1.0</i></span><span><b>Linux kernel:</b><i>Linux buildroot 4.0.0-ADI-1.3.0 #1 PREEMPT Tue<br />Aug 18 01:26:58 EEST 2026 armv7l (none)</i></span><span><b>U-Boot:</b><i>U-Boot 2015.01 ADI-1.3.0 (Sep 30 2021 -<br />01:01:44)</i></span><span><b>Zeniack FW app:</b><i>d14e</i></span></div></>}
-        {view === "settings-system-power" && <><h1>Power Functions</h1><h2>Power Button Sensitivity</h2><p>Configure the sensitivity below. Tap the power button above the volume knob to verify the response.</p><div className="power-scale">{["Off", "Low", "Medium", "High"].map((label, index) => <span key={label} className={index === 3 ? "is-active" : ""}>{label}</span>)}</div><div className="power-bar">{[0, 1, 2, 3].map((index) => <i key={index} />)}</div><button className="power-restart">RESTART</button></>}
-        {view === "settings-system-volume" && <><h1>Master Volume Knob Assignment</h1><p className="volume-lead">Master Volume can control different outputs</p><hr /><div className="volume-assignments">{["OUT 1/2", "OUT 3/4", "SEND 1/2", ""].map((label, index) => <span key={index}>{label ? <em>{label}</em> : <CapturedSettingsIcon kind="headphones" />}<i><QcUiIcon kind="check" /></i></span>)}</div></>}
+        {view === "settings-info" && <><h1>Device information</h1><div className="information-table"><span><b>Serial number:</b><i /></span><span><b>Device name:</b><i>Neural DSP Quad Cortex</i></span><span><b>MAC address:</b><i /></span></div><hr /><h1>Software information</h1><div className="information-table"><span><b>CorOS:</b><i>4.1.0</i></span><span><b>Linux kernel:</b><i>Linux buildroot 4.0.0-ADI-1.3.0 #1 PREEMPT Tue<br />Aug 18 01:26:58 EEST 2026 armv7l (none)</i></span><span><b>U-Boot:</b><i>U-Boot 2015.01 ADI-1.3.0 (Sep 30 2021 -<br />01:01:44)</i></span><span><b>Zenjack FW app:</b><i>d14e</i></span><span><b>Zenjack FW bootloader:</b><i>b113</i></span><span><b>Zencoder FW app:</b><i>d111</i></span><span><b>Zencoder FW bootloader:</b><i>b103</i></span><span><b>Zenwireless FW:</b><i>cf9daede4300aaae664fc527cede12ae</i></span></div></>}
+        {["settings-device-stomp-bypass", "settings-device-swap-tempo-tuner", "settings-device-gig-view", "settings-device-latency"].includes(view) && (() => {
+          const pane = ({
+            "settings-device-stomp-bypass": {
+              title: "Stomp Mode Bypass Assignment",
+              body: ["A global setting for whether footswitches are automatically assigned to blocks' bypass settings. If you enable auto-assign, blocks will be assigned to footswitches in the order they are added to The Grid."],
+              label: "AUTO-ASSIGN", options: ["Enabled", "Disabled (Factory Default)"], active: 1
+            },
+            "settings-device-swap-tempo-tuner": {
+              title: "Swap Tempo and Tuner Access",
+              body: ["Enable this option to access the Tuner by double-tapping the bottom-right footswitch, and access the Tempo settings by holding the bottom-right footswitch."],
+              label: "SWAP TEMPO AND TUNER", options: ["Yes", "No (Factory Default)"], active: 1
+            },
+            "settings-device-gig-view": {
+              title: "Gig View Footswitch Access",
+              body: DEVICE_COPY.gigView.split("\n\n"),
+              options: ["On", "Off (Factory Default)"], active: 1
+            },
+            "settings-device-latency": {
+              title: "Dynamic Latency Compensation",
+              body: ["Disabling Dynamic Latency Compensation may help if phasing occurs when bypassing a device."],
+              options: ["Enabled (Factory Default)", "Disabled"], active: 0
+            }
+          } as Record<string, { title: string; body: string[]; label?: string; options: string[]; active: number }>)[view];
+          return <>
+            <h1>{pane.title}</h1>
+            {pane.body.map((text, index) => <p key={index} className={`settings-body is-${index}`}>{text}</p>)}
+            {pane.label && <span className="settings-field-label">{pane.label}</span>}
+            <div className="settings-toggle">
+              <i className={pane.active === 0 ? "is-top" : "is-bottom"} />
+              {pane.options.map((option, index) => <span key={option} className={index === pane.active ? "is-active" : ""}>{option}</span>)}
+            </div>
+          </>;
+        })()}
+        {view === "settings-device-scene-bypass" && <>
+          <h1>Scene Bypass State Behavior</h1>
+          <p className="settings-body is-0">This feature controls whether changes to the bypass state of a block in Scene Mode are automatically saved to the active Scene.</p>
+          <div className="scene-bypass-options">{[
+            ["Always overwrite bypass state (default).", true],
+            ["Do not overwrite bypass state when changing bypass state via footswitches in Stomp Mode (including Hybrid Stomp Mode) or MIDI. Changes made with the touchscreen will be saved.", false],
+            [DEVICE_COPY.sceneBypassThird, false]
+          ].map(([text, active], index) => <section key={index}><p>{text}</p><i className={active ? "is-active" : ""}><b /></i></section>)}</div>
+        </>}
+        {view === "settings-support-report" && <>
+          <h1>Thanks a lot for your help</h1>
+          <p className="settings-body is-0">A diagnostic report is available to generate. Sending the report can take up to five minutes. You can continue to use your Quad Cortex during this time, but you may experience some slowness.</p>
+          <button className="report-send">SEND REPORT</button>
+        </>}
+        {view === "settings-support-licenses" && <>
+          <h1>3rd party Licenses</h1>
+          <div className="licenses-list">{THIRD_PARTY_LICENSES.map((name) => <button key={name}>{name}<i /></button>)}</div>
+          <span className="licenses-scrollbar" />
+        </>}
+        {view === "settings-account-backups" && <>
+          <h1>Cloud Backups <em>3/5</em></h1>
+          <span className="backups-utc">All timestamps are UTC</span>
+          <div className="backups-list">{[0, 1, 2].map((index) => <section key={index}><i /></section>)}</div>
+          <button className="backups-new">NEW CLOUD BACKUP</button>
+        </>}
+        {view === "settings-device-hold-timing" && <>
+          <h1>Hold Timing</h1>
+          <p className="settings-body is-0">Sets how long a footswitch must be held down to trigger its assigned HOLD action.</p>
+          <div className="hold-scale">{["500ms", "600ms", "700ms", "800ms", "900ms", "1000ms"].map((label, index) => <span key={label} className={index === 3 ? "is-active" : ""}>{label}</span>)}</div>
+          <div className="hold-bar">{[0, 1, 2, 3, 4, 5].map((index) => <i key={index} className={index < 4 ? "is-filled" : ""} />)}</div>
+        </>}
         {view === "settings-system-reset" && <>
           <h1>Choose a Recovery option</h1>
-          <p className="reset-lead"><strong>Reset Settings</strong> restores device settings to their defaults without removing user presets, captures, or impulse responses.</p>
+          <p className="reset-lead"><strong>{DEVICE_COPY.resetSettings.slice(0, 14)}</strong>{DEVICE_COPY.resetSettings.slice(14)}</p>
           <button className="reset-settings">RESET SETTINGS</button>
-          <p className="reset-factory-lead"><strong>Factory Reset</strong> restores defaults and removes user data stored on the device.</p>
+          <p className="reset-factory-lead"><strong>{DEVICE_COPY.factoryReset.slice(0, 13)}</strong>{DEVICE_COPY.factoryReset.slice(13)}</p>
           <button className="reset-factory">FACTORY RESET</button>
         </>}
         {view === "settings-update-idle" && <><h1>Device Updates</h1><p className="update-version">Your Quad Cortex is currently running<br /><strong>CorOS: 4.1.0</strong></p><hr /><button className="update-check">CHECK FOR UPDATES</button><div className="update-news"><h2>Updates</h2><p>Use the connected device's official update service to check for current firmware.</p></div></>}
@@ -351,6 +497,15 @@ function CorOsCapturedSettings({ view }: { view: CapturedSettingsView }) {
 
 function CorOsSettingsFixture({ view }: { view: SettingsFixtureView }) {
   if (view === "settings-account" || view === "settings-system" || view === "settings-device" || view === "settings-midi") return <CorOsOfficialSettings view={view} />;
+  // The restart confirmation is CorOS's `ConfirmationMessage` drawn over the
+  // pane that raised it: a title, a message, and two buttons whose captions the
+  // message itself carries.
+  if (view === "settings-diagnostics-dsp" || view === "settings-diagnostics-footswitch" || view === "settings-diagnostics-usb") return <CorOsDiagnosticsDialog view={view} />;
+  if (view === "settings-restart-confirm") return <div className="coros-restart-confirm">
+    <CorOsCapturedSettings view="settings-system-power" />
+    <div className="restart-scrim" />
+    <aside className="restart-dialog"><h1>Restart device</h1><p>Any unsaved changes will be lost</p><footer><button>CANCEL</button><button className="is-primary">RESTART</button></footer></aside>
+  </div>;
   return <CorOsCapturedSettings view={view} />;
 }
 
