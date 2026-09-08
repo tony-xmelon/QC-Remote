@@ -136,6 +136,10 @@ impl DeviceStartupRuntime {
         )
     }
 
+    pub fn is_connected(&self) -> bool {
+        self.phase == DeviceStartupPhase::Connected
+    }
+
     /// Whether staged protocol startup exceeded the one generated readiness
     /// budget. Connected and terminal states no longer own a startup timer.
     pub fn timed_out(&self, now_ms: u64) -> bool {
@@ -164,7 +168,7 @@ impl DeviceStartupRuntime {
         &mut self,
         now_ms: u64,
     ) -> Result<InitializationRuntime, DeviceStartupError> {
-        if self.phase != DeviceStartupPhase::Connected {
+        if !self.is_connected() {
             return Err(DeviceStartupError::StateError);
         }
         let request_id = self.take_request_id();
@@ -745,6 +749,7 @@ mod tests {
         );
         assert_eq!(runtime.phase(), DeviceStartupPhase::Connected);
         assert!(runtime.is_active());
+        assert!(runtime.is_connected());
         assert!(!runtime.timed_out(u64::MAX));
 
         let mut seed = runtime
@@ -768,6 +773,7 @@ mod tests {
         let started_at = 1_000;
         let (mut runtime, _) = DeviceStartupRuntime::start_at(7, "session", started_at);
         assert!(runtime.is_active());
+        assert!(!runtime.is_connected());
         assert!(!runtime.timed_out(started_at + profile::READY_WAIT_TIMEOUT_MS - 1));
         assert!(runtime.timed_out(started_at + profile::READY_WAIT_TIMEOUT_MS));
 
@@ -779,6 +785,7 @@ mod tests {
             DeviceStartupAction::Invalid(DeviceStartupError::SessionMismatch)
         ));
         assert!(!runtime.is_active());
+        assert!(!runtime.is_connected());
         assert!(!runtime.timed_out(u64::MAX));
     }
 

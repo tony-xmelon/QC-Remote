@@ -173,10 +173,6 @@ fn startup_phase_name(phase: DeviceStartupPhase) -> &'static str {
     }
 }
 
-fn startup_phase_is_connected(phase: DeviceStartupPhase) -> bool {
-    phase == DeviceStartupPhase::Connected
-}
-
 fn startup_envelope(
     phase: DeviceStartupPhase,
     action: DeviceStartupAction,
@@ -1316,9 +1312,9 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeStar
                 .startup
                 .lock()
                 .ok()
-                .and_then(|startup| startup.as_ref().map(|runtime| runtime.phase()))
+                .and_then(|startup| startup.as_ref().map(DeviceStartupRuntime::is_connected))
         })
-        .is_some_and(startup_phase_is_connected) as jint
+        .unwrap_or(false) as jint
 }
 
 #[no_mangle]
@@ -2090,19 +2086,8 @@ mod tests {
 
     #[test]
     fn android_public_readiness_requires_the_updater_connected_gate() {
-        for phase in [
-            DeviceStartupPhase::SessionValidating,
-            DeviceStartupPhase::VersionValidating,
-            DeviceStartupPhase::Disconnected,
-            DeviceStartupPhase::Building,
-            DeviceStartupPhase::Initializing,
-            DeviceStartupPhase::Booting,
-            DeviceStartupPhase::Invalid,
-            DeviceStartupPhase::Failed,
-        ] {
-            assert!(!startup_phase_is_connected(phase), "phase {phase:?}");
-        }
-        assert!(startup_phase_is_connected(DeviceStartupPhase::Connected));
+        let (runtime, _) = DeviceStartupRuntime::start(1, "session");
+        assert!(!runtime.is_connected());
     }
 
     #[test]
