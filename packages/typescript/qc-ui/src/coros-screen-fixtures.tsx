@@ -2288,21 +2288,21 @@ function CorOsIoSettings({
   );
 }
 
-function CorOsGlobalEq({ onClose }: { onClose: () => void }) {
+function CorOsGlobalEq({ onClose, manualReference = false }: { onClose: () => void; manualReference?: boolean }) {
   const verticals = [
     46, 79, 105, 125, 143, 158, 172, 184, 263, 343, 369, 389, 407, 422, 436,
     448, 527, 574, 607, 633, 653, 671, 686, 700, 712, 791,
   ].map((pixel) => pixel / 8);
   return (
-    <section className="coros-global-eq" aria-label="Global EQ">
+    <section className={`coros-global-eq${manualReference ? " is-manual-reference" : ""}`} aria-label="Global EQ">
       <header>
-        <button className="global-eq-more"><QcPresetStackIcon /></button>
+        <button className="global-eq-more">{manualReference ? <QcUiIcon kind="more" /> : <QcPresetStackIcon />}</button>
         <span>
           <small>GLOBAL EQ</small>
           <strong>Parametric-5</strong>
         </span>
-        <button className="global-eq-power is-off">
-          <i /> OFF
+        <button className={`global-eq-power${manualReference ? "" : " is-off"}`}>
+          <i /> {manualReference ? "ON" : "OFF"}
         </button>
         <button aria-label="Close Global EQ" onClick={onClose}>
           <QcUiIcon kind="check" />
@@ -2326,17 +2326,17 @@ function CorOsGlobalEq({ onClose }: { onClose: () => void }) {
               10k
             </text>
           </g>
-          <path d="M0 125H800" />
+          <path d={manualReference ? "M26 252C64 197 79 172 105 156C145 113 205 101 244 104C335 110 390 121 468 122C489 122 500 143 513 144C526 137 535 118 550 116C568 111 590 124 607 124C620 124 632 108 644 103C695 94 750 84 800 80" : "M0 125H800"} />
           <g>
-            {[105, 210, 447, 606, 671].map((x, index) => (
+            {(manualReference ? [[105, 156], [244, 105], [513, 146], [607, 125], [644, 104]] : [[105, 125], [210, 125], [447, 125], [606, 125], [671, 125]]).map(([x, y], index) => (
               <g key={x}>
                 <circle
                   cx={x}
-                  cy={125}
+                  cy={y}
                   r={index === 0 ? 27 : 21}
                   className={index === 0 ? "is-active" : ""}
                 />
-                <text x={x} y={130}>
+                <text x={x} y={y + 5}>
                   {index + 1}
                 </text>
               </g>
@@ -2355,12 +2355,12 @@ function CorOsGlobalEq({ onClose }: { onClose: () => void }) {
       <div className="global-eq-controls">
         <section>
           <span>TYPE</span>
-          <button><QcEqIcon kind="high-pass" />　LO SHELF　<QcUiIcon kind="down" /></button>
+          <button><QcEqIcon kind="high-pass" />　{manualReference ? "HI PASS" : "LO SHELF"}　<QcUiIcon kind="down" /></button>
         </section>
         {[
           ["GAIN", "0.0 dB"],
           ["FREQ", "50 Hz"],
-          ["Q", "0.71"],
+          ["Q", manualReference ? "0.10" : "0.71"],
         ].map(([label, value], index) => (
           <section key={label}>
             <span>{label}</span>
@@ -2974,6 +2974,7 @@ export function CorOsScreenFixture({ view, snapshot, gigPresetList, onClose = ()
   if ((view as string) === "capture-progress-official") return <CorOsOfficialCapture view="capture-progress" manualProgress />;
   if ((view as string) === "expression-bypass-official") return <ExpressionChooser trim={false} manualAmp />;
   if ((view as string) === "looper-editor-official") return <CorOsLooperEditor manualReference />;
+  if ((view as string) === "global-eq-official") return <CorOsGlobalEq onClose={onClose} manualReference />;
   if (view.startsWith("gig-official-")) return <CorOsOfficialGig mode={view.replace("gig-official-", "") as OfficialGigMode} />;
   if (view === "device-presets-official") return <CorOsDevicePresetScreen view="official-factory" />;
   if (view === "gig" || view === "gig-live-tuner") return <CorOsGigView snapshot={snapshot} presetList={gigPresetList} liveTuner={view === "gig-live-tuner"} onClose={onClose} />;

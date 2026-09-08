@@ -334,6 +334,16 @@ test("official Looper keeps the manual all-actions state separate", () => {
   assert.match(manifest, /"id": "official-looper"[\s\S]*?"screen": "looper-editor-official"/);
 });
 
+test("official Global EQ keeps the manual enabled curve separate", () => {
+  const fixture = readFileSync("packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", "utf8");
+  const manifest = readFileSync("references/qc-ui-official-manual/coros-4.1.0/manifest.json", "utf8");
+  assert.match(fixture, /global-eq-official[\s\S]*?<CorOsGlobalEq onClose=\{onClose\} manualReference/);
+  assert.match(fixture, /manualReference \? "ON" : "OFF"/);
+  assert.match(fixture, /manualReference \? \[\[105, 156\], \[244, 105\], \[513, 146\], \[607, 125\], \[644, 104\]\]/);
+  assert.match(fixture, /manualReference \? "HI PASS" : "LO SHELF"/);
+  assert.match(manifest, /"id": "official-global-eq"[\s\S]*?"screen": "global-eq-official"/);
+});
+
 // Every rule above pins a number that is supposed to have come off a device
 // frame, but a test that reads our own stylesheet cannot tell a measurement from
 // an invention - that is how the item menu kept a four-entry height and the

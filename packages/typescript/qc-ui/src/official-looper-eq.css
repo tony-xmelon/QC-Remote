@@ -204,6 +204,11 @@
 .coros-global-eq:has(.global-eq-power.is-off) .global-eq-graph > div i { border-left-color: #212421; }
 .coros-global-eq:has(.global-eq-power.is-off) .global-eq-graph > svg { transform: translateY(1px); }
 .coros-global-eq:has(.global-eq-power.is-off) .global-eq-graph path { stroke: #5a595a; }
+.coros-global-eq.is-manual-reference .global-eq-graph > svg { transform: translateY(1px); }
+.coros-global-eq.is-manual-reference .global-eq-tabs button { background: #181c18; }
+.coros-global-eq.is-manual-reference .global-eq-tabs button.is-active,
+.coros-global-eq.is-manual-reference .global-eq-controls { background: #292c29; }
+.coros-global-eq.is-manual-reference .global-eq-more svg { fill: currentColor; stroke: none; color: #f8fcf8; }
 .coros-global-eq .global-eq-tabs button.is-active { min-height: calc(100% + 4px); }
 .coros-global-eq .global-eq-controls { transform: translateY(-1px); }
 

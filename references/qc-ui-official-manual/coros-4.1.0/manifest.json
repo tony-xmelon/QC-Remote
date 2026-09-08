@@ -148,7 +148,7 @@
       "height": 480,
       "deviceVariant": "quad-cortex",
       "renderer": {
-        "screen": "global-eq"
+        "screen": "global-eq-official"
       }
     },
     {
