@@ -8,7 +8,7 @@ description = "Reusable outbound public-relay client for QC Remote device hosts"
 [dependencies]
 async-trait = "0.1"
 futures-util = "0.3"
-rand = "0.9"
+rand = "0.10"
 reqwest = { version = "0.13", features = ["json"] }
 qc-relay-protocol = { path = "../qc-relay-protocol" }
 serde = { version = "1", features = ["derive"] }
