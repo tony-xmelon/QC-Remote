@@ -143,9 +143,8 @@ test("official low-score refinements retain their measured geometry and glyphs",
   assert.match(fixture, /function CorOsCapturedSettings[\s\S]*?className=\{`qc-screen coros-settings-official coros-settings-captured/);
   assert.match(fixture, /\["DSP Diagnostics", "Footswitch Statistics", "USB Statistics"\]/);
   assert.match(fixture, /\["presets", "My Presets", "270\/3072", 9\]/);
-  assert.match(fixture, /const SUPPORT_QR = \[[\s\S]*?"11111111011111001101011111111"/);
+  assert.doesNotMatch(fixture, /const SUPPORT_QR|support@neuraldsp\.com|unity\.neuraldsp\.com/);
   assert.match(settingsCss, /\.storage-captured > div > span \{ height: 7\.625cqw;/);
-  assert.match(settingsCss, /\.support-qr \{[^}]*grid-template-columns: repeat\(29, \.375cqw\);/);
   assert.match(settingsCss, /\.settings-support \.captured-settings-detail > h1 \{ margin-bottom: 2\.125cqw; \}/);
   assert.match(settingsCss, /\.settings-info \.captured-settings-detail > h1:nth-of-type\(2\) \{ margin-bottom: 2\.5cqw; \}/);
   assert.match(settingsCss, /\.settings-info \.information-table:last-child > span:nth-child\(2\),[\s\S]*?min-height: 6\.125cqw;/);
@@ -180,7 +179,30 @@ test("official MIDI Out retains the measured disabled header action", () => {
   assert.match(fixtureCss, /\.coros-midi-out \.midi-expression label div>i\{[^}]*left:\.75cqw;right:\.75cqw;[^}]*clip-path:polygon/);
 });
 
-test("official System brightness values remain right-aligned", () => {
+test("official Account and MIDI settings retain the captured navigation content", () => {
+  const fixture = readFileSync("packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", "utf8");
+  assert.match(fixture, /<h1>Device linked to<\/h1>/);
+  assert.doesNotMatch(fixture, /Device linked to \[redacted\]/);
+  assert.match(
+    fixture,
+    /view === "settings-midi"[\s\S]*?active: 6,[\s\S]*?"Hold Timing"[\s\S]*?"Swap Tempo and Tuner"[\s\S]*?"Gig View Access"[\s\S]*?"Latency Compensation"[\s\S]*?"MIDI"/,
+  );
+});
+
+test("physical multi-select and stomp assignment labels retain measured spacing", () => {
+  const liveCss = readFileSync("packages/typescript/qc-ui/src/fixture-live-surface.css", "utf8");
+  const fixesCss = readFileSync("packages/typescript/qc-ui/src/remaining-fixtures-fixes.css", "utf8");
+  assert.match(liveCss, /button:has\(> \.preset-select\) \{ grid-template-columns: 44px 1fr; padding-left: 22px; \}/);
+  assert.match(fixesCss, /\.assignment-stomp-latch button\{width:128px;height:45px;padding-left:20px\}/);
+});
+
+test("USB I/O keeps separate measured dial geometry for level and headphone source", () => {
+  const ioCss = readFileSync("packages/typescript/qc-ui/src/official-io.css", "utf8");
+  assert.match(ioCss, /section:first-child \.io-dial \{ right: -\.5625cqw; width: 9\.375cqw; height: 9\.375cqw; transform: translateY\(-\.1875cqw\); \}/);
+  assert.match(ioCss, /section:nth-child\(2\) \.io-dial \{ right: \.0625cqw; width: 8\.125cqw; height: 8\.125cqw; transform: translateY\(1cqw\); \}/);
+});
+
+test("official System brightness values keep the alignment the device uses", () => {
   const css = readFileSync("packages/typescript/qc-ui/src/official-settings-device.css", "utf8");
   assert.match(css, /\.settings-system-detail > div span \{ position: relative; top: 1\.375cqw; \}/);
   assert.match(css, /\.settings-system-detail > div strong \{ position: absolute; left: 56\.75cqw; right: auto; top: 1\.375cqw; \}/);

@@ -96,9 +96,6 @@
 .support-company > b { display: flex; align-items: center; font-size: 3cqw; }
 .support-company > b i { margin-right: .75cqw; font-size: 4cqw; font-style: normal; }
 .support-contact { display: flex; justify-content: space-between; font-size: 2.25cqw; line-height: 1.28; }
-.support-qr { width: 12.5cqw; height: 12.5cqw; display: grid; grid-template-columns: repeat(29, .375cqw); grid-template-rows: repeat(29, .375cqw); place-content: center; margin-top: -.125cqw; background: #fff; }
-.support-qr > i { width: .375cqw; height: .375cqw; background: #fff; }
-.support-qr > i.is-dark { background: #000; }
 .captured-list { margin: -2.125cqw -2cqw; }
 .captured-list button { width: 100%; height: 7.5cqw; display: flex; align-items: center; justify-content: space-between; padding: 0 2cqw; border: 0; background: transparent; color: inherit; font-size: 2cqw; text-align: left; }
 .captured-list button span { font-size: 2.75cqw; }

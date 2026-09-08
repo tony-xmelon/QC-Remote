@@ -1,0 +1,40 @@
+/* Settings > System, the three panes the walker reached: Power Functions,
+   Master Volume Knob and Device Updates. Every position here is measured off
+   the frame in references/qc-ui-corpus/coros-4.1.0. The detail panel's border
+   box is x 272..791, y 60..470, so a child's `left`/`top` is the screen
+   coordinate less (272, 60), in cqw at 8px each.
+
+   These three frames show the dialog without its category selector, so the
+   header carries only the done button. The menu below does not move when the
+   selector goes. */
+@scope (.qc-screen-fixture-root) {
+
+  .settings-system-power .captured-settings-detail > h1,
+  .settings-system-volume .captured-settings-detail > h1,
+  .settings-update-idle .captured-settings-detail > h1 { margin: 0; font-size: 2.5cqw; line-height: 1.15; }
+
+  .settings-system-power .captured-settings-detail > h2 { position: absolute; left: 2cqw; top: 7.25cqw; margin: 0; font-size: 2.25cqw; font-weight: 400; }
+  .settings-system-power .captured-settings-detail > p { position: absolute; left: 2cqw; right: 2cqw; top: 12.5cqw; margin: 0; font-size: 2.25cqw; line-height: 1.44; }
+  .power-scale { position: absolute; left: 2cqw; top: 23.5cqw; width: 60.75cqw; display: grid; grid-template-columns: repeat(4, 1fr); font-size: 2cqw; text-align: center; color: #757a75; }
+  .power-scale .is-active { color: #f4f4f4; }
+  .power-bar { position: absolute; left: 2cqw; top: 29cqw; width: 60.75cqw; height: 2.75cqw; display: grid; grid-template-columns: repeat(4, 1fr); gap: .25cqw; }
+  .power-bar > i { background: #42fb63; }
+  .power-restart { position: absolute; left: 2cqw; top: 37.375cqw; width: 27.375cqw; height: 5.625cqw; border: 0; border-radius: .75cqw; background: #101010; color: #f4f4f4; font-size: 2.25cqw; letter-spacing: .05cqw; }
+
+  .volume-lead { position: absolute; left: 2cqw; top: 7.25cqw; margin: 0; font-size: 2.25cqw; }
+  .settings-system-volume .captured-settings-detail > hr { position: absolute; left: 2cqw; right: 2cqw; top: 12.875cqw; height: 1px; margin: 0; border: 0; background: #101010; }
+  .volume-assignments { position: absolute; left: 2.125cqw; top: 16.25cqw; display: grid; grid-template-columns: repeat(4, 11.25cqw); }
+  .volume-assignments > span { display: block; font-size: 2cqw; color: #d5dad5; }
+  .volume-assignments em { font-style: normal; }
+  .volume-assignments svg { width: 2.75cqw; height: 2.75cqw; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  .volume-assignments > span > i { width: 8.25cqw; height: 5.5cqw; margin-top: 1.375cqw; display: grid; place-items: center; border-radius: .75cqw; background: #42fb63; color: #101410; }
+  .volume-assignments > span > i svg { width: 3.25cqw; height: 3.25cqw; stroke-width: 2.4; }
+
+  .update-version { position: absolute; left: 2cqw; top: 7.25cqw; margin: 0; font-size: 2.25cqw; line-height: 1.35; }
+  .update-version strong { font-weight: 700; }
+  .settings-update-idle .captured-settings-detail > hr { position: absolute; left: 1.875cqw; right: 1.75cqw; top: 16.25cqw; height: 1px; margin: 0; border: 0; background: #3f423f; }
+  .update-check { position: absolute; left: 2cqw; top: 19.375cqw; width: 29.5cqw; height: 5.625cqw; border: 0; border-radius: .75cqw; background: #1838ff; color: #fff; font-size: 2.25cqw; letter-spacing: .05cqw; }
+  .update-news { position: absolute; left: 2cqw; right: 2cqw; top: 34.75cqw; }
+  .update-news h2 { margin: 0 0 .75cqw; font-size: 2.5cqw; font-weight: 400; }
+  .update-news p { margin: 0; font-size: 2.25cqw; line-height: 1.45; }
+}
