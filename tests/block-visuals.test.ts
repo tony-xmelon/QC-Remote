@@ -143,9 +143,8 @@ test("official low-score refinements retain their measured geometry and glyphs",
   assert.match(fixture, /function CorOsCapturedSettings[\s\S]*?className=\{`qc-screen coros-settings-official coros-settings-captured/);
   assert.match(fixture, /\["DSP Diagnostics", "Footswitch Statistics", "USB Statistics"\]/);
   assert.match(fixture, /\["presets", "My Presets", "270\/3072", 9\]/);
-  assert.match(fixture, /const SUPPORT_QR = \[[\s\S]*?"11111111011111001101011111111"/);
+  assert.doesNotMatch(fixture, /const SUPPORT_QR|support@neuraldsp\.com|unity\.neuraldsp\.com/);
   assert.match(settingsCss, /\.storage-captured > div > span \{ height: 7\.625cqw;/);
-  assert.match(settingsCss, /\.support-qr \{[^}]*grid-template-columns: repeat\(29, \.375cqw\);/);
   assert.match(settingsCss, /\.settings-support \.captured-settings-detail > h1 \{ margin-bottom: 2\.125cqw; \}/);
   assert.match(settingsCss, /\.settings-info \.captured-settings-detail > h1:nth-of-type\(2\) \{ margin-bottom: 2\.5cqw; \}/);
   assert.match(settingsCss, /\.settings-info \.information-table:last-child > span:nth-child\(2\),[\s\S]*?min-height: 6\.125cqw;/);
