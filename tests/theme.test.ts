@@ -32,6 +32,7 @@ test("shared theme retains every measured native QC color", () => {
     routePill: "#101010",
     unsaved: "#313031",
     routeRail: "#c6c3c6",
+    directoryCopyText: "#dedfde",
     routeText: "#ffffff",
     routeGlyphSurface: "#292c29",
     utilityMark: "#949694",
@@ -401,7 +402,13 @@ test("authored app and device sources cannot bypass the shared visual contract",
 });
 
 test("device capture comparison covers every checked screenshot and visual family", () => {
-  const manifest = JSON.parse(read("tests/fixtures/qc-theme-reference.json")) as { screenshots: string[]; commonPalette: Array<{ name: string }>; regions: Array<{ name: string }> };
+  const manifest = JSON.parse(read("tests/fixtures/qc-theme-reference.json")) as { screenshots: string[]; themeTokens: string[]; commonPalette: Array<{ name: string }>; regions: Array<{ name: string }> };
+  const colorSource = read("packages/typescript/qc-theme/src/colors.json").toLowerCase();
+  const themeCss = read("packages/typescript/qc-theme/src/theme.css").toLowerCase();
+  for (const token of manifest.themeTokens) {
+    assert.match(colorSource, new RegExp(token.toLowerCase()), `${token} must be owned by the typed shared palette`);
+    assert.match(themeCss, new RegExp(token.toLowerCase()), `${token} must be exposed by the shared CSS theme`);
+  }
   assert.equal(manifest.screenshots.length, 8);
   assert.deepEqual(manifest.commonPalette.map((entry) => entry.name), ["screen", "routePill", "routeRail", "utilityMark", "primaryText"]);
   for (const region of ["undoGlyph", "sceneBadge", "saveGlyph", "menuGlyph", "modeGlyph", "inputPill", "addBlock", "routeRail", "unsavedTitle"]) assert.ok(manifest.regions.some((entry) => entry.name === region), "capture comparison needs " + region);

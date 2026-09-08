@@ -820,7 +820,7 @@
    label flowing as one paragraph around its bold word. */
 .coros-directory-fixture .directory-copy-dialog { height: 54.25cqw; }
 .coros-directory-fixture .directory-copy-dialog > p { width: 51cqw; margin: 0 auto 4.5cqw; padding: 0; }
-.coros-directory-fixture .directory-copy-dialog > button { box-sizing: border-box; width: 45.75cqw; min-height: 5.625cqw; margin: 0 auto 1cqw; padding: .625cqw 2.125cqw; gap: 0; border-radius: .75cqw; background: #181c18; color: #dedfde; line-height: 1.45; }
+.coros-directory-fixture .directory-copy-dialog > button { box-sizing: border-box; width: 45.75cqw; min-height: 5.625cqw; margin: 0 auto 1cqw; padding: .625cqw 2.125cqw; gap: 0; border-radius: .75cqw; background: #181c18; color: var(--qc-directory-copy-text); line-height: 1.45; }
 .coros-directory-fixture .directory-copy-dialog > button > span { flex: 1; max-width: 38cqw; }
 .coros-directory-fixture .directory-copy-dialog > button.is-active { background: #fff; color: #101010; }
 .coros-directory-fixture .directory-copy-dialog > button > i { flex: none; margin-left: 1cqw; }
