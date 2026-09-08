@@ -1553,9 +1553,6 @@ fn update_message(
     *count = count.saturating_add(1);
     status.last_message_type = Some(message_type);
     if message_type == qc_protocol::profile::MESSAGE_TYPE_RECALL_PRESET {
-        status.phase = "ready".into();
-        status.detail = "Active preset synchronized".into();
-        status.synchronized = true;
         status.active_preset_name = preset_name;
     }
     if let Some(scene) = active_scene {
@@ -1733,6 +1730,33 @@ mod tests {
         let status = BrokerStatus::default();
         assert_eq!(status.phase, "searching");
         assert!(!status.connected);
+        assert!(!status.synchronized);
+    }
+
+    #[test]
+    fn preset_observation_does_not_bypass_shared_readiness() {
+        let state = Arc::new(Mutex::new(BrokerStatus {
+            phase: "syncing".into(),
+            detail: "Waiting for authoritative state seed".into(),
+            connected: true,
+            ..BrokerStatus::default()
+        }));
+        let mut latest = HashMap::new();
+        update_message(
+            &state,
+            &mut latest,
+            IncomingMessage {
+                sequence: 1,
+                message_type: qc_protocol::profile::MESSAGE_TYPE_RECALL_PRESET,
+                payload: Vec::new(),
+                received_at_unix_ms: 0,
+            },
+        );
+
+        let status = state.lock_recover();
+        assert_eq!(status.phase, "syncing");
+        assert_eq!(status.detail, "Waiting for authoritative state seed");
+        assert!(status.connected);
         assert!(!status.synchronized);
     }
 
