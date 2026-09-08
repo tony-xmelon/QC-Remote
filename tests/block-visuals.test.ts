@@ -251,6 +251,12 @@ test("physical multi-select and stomp assignment labels retain measured spacing"
   assert.match(fixesCss, /\.assignment-stomp-latch button\{width:128px;height:45px;padding-left:20px\}/);
 });
 
+test("USB I/O keeps separate measured dial geometry for level and headphone source", () => {
+  const ioCss = readFileSync("packages/typescript/qc-ui/src/official-io.css", "utf8");
+  assert.match(ioCss, /section:first-child \.io-dial \{ right: -\.5625cqw; width: 9\.375cqw; height: 9\.375cqw; transform: translateY\(-\.1875cqw\); \}/);
+  assert.match(ioCss, /section:nth-child\(2\) \.io-dial \{ right: \.0625cqw; width: 8\.125cqw; height: 8\.125cqw; transform: translateY\(1cqw\); \}/);
+});
+
 test("official System brightness values keep the alignment the device uses", () => {
   const css = readFileSync("packages/typescript/qc-ui/src/official-settings-device.css", "utf8");
   const fixture = readFileSync("packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", "utf8");

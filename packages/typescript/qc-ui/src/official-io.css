@@ -82,8 +82,8 @@
 .io-editor.is-analog .io-dial { width: 8.125cqw; height: 8.125cqw; }
 .io-editor.is-analog > section:nth-child(1) .io-dial { right: .0625cqw; }
 .io-editor.is-usb .io-dial-wrap { inset: 4.75cqw 1cqw auto; }
-.io-editor.is-usb > section:first-child .io-dial { right: -.4375cqw; width: 9.375cqw; height: 9.375cqw; transform: translateY(-.4375cqw); }
-.io-editor.is-usb > section:nth-child(2) .io-dial { width: 7.5cqw; height: 7.5cqw; transform: translateY(1.375cqw); }
+.io-editor.is-usb > section:first-child .io-dial { right: -.5625cqw; width: 9.375cqw; height: 9.375cqw; transform: translateY(-.1875cqw); }
+.io-editor.is-usb > section:nth-child(2) .io-dial { right: .0625cqw; width: 8.125cqw; height: 8.125cqw; transform: translateY(1cqw); }
 .io-editor.is-usb > section:first-child .io-dial { background: radial-gradient(circle at center, #292c29 0 68%, transparent 70%), conic-gradient(from 220deg, #40f860 0 83%, #101010 83%); }
 .io-editor.is-usb > section:nth-child(2) .io-dial { background: #292c29; }
 .io-editor.is-usb > section:nth-child(2) .io-dial-wrap::after { content: ""; position: absolute; right: 1cqw; top: 7cqw; width: .625cqw; height: .625cqw; border-radius: 50%; background: #40f860; }
