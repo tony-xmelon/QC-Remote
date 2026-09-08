@@ -188,6 +188,8 @@ assert(!/publishStateBatch\([\s\S]*?sessionStateObserved\(monotonicMillis\(\),\s
   "Android must not bypass the shared semantic-seed decision when publishing an ordinary state batch.");
 assert(/advance_lifecycle\(now_ms\)[\s\S]{0,700}session\.state_observed\(now_ms, connected\.synchronized\)/.test(windowsWorker),
   "Windows must advance the shared transport after lifecycle completion, including late seed recovery.");
+assert(/let initialization = \(!synchronized\)\.then_some\(initialization\);[\s\S]{0,300}initialization,/.test(windowsUsbHost),
+  "Windows must retain an incomplete initial seed for the same late recovery supported on Android.");
 assert(androidUsbHost.includes("decision.beginBuilding"),
   "Android must consume the shared staged-startup transition instead of inferring it from a message type.");
 assert(!androidUsbHost.includes('"disconnected".equals(decision.phase)'),

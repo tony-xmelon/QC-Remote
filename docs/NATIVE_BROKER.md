@@ -49,6 +49,8 @@ or synchronization readiness mirrors.
 An ordinary preset push is not allowed to promote Android to Ready by itself;
 both native hosts publish synchronization only from the shared semantic-seed
 decision, including recovery when missing seed fields arrive late.
+An incomplete initial seed remains retained on both hosts until late state
+completes it; a synchronized seed is released immediately.
 Their bounded flight recorders likewise treat only the dedicated KeepAlive as
 routine transport noise, preserving Version frames as startup evidence.
 

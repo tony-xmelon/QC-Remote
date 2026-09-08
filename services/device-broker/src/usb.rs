@@ -561,6 +561,10 @@ impl QcUsb {
         } else {
             "initialization-incomplete"
         });
+        // Keep an incomplete semantic seed alive after connect. Late QC state
+        // frames can then promote the shared transport from Syncing to Ready,
+        // exactly as they do on Android and during an in-session rebuild.
+        let initialization = (!synchronized).then_some(initialization);
         Ok(ConnectedQc {
             usb: self,
             synchronized,
@@ -568,7 +572,7 @@ impl QcUsb {
             latest_messages,
             initial_messages,
             startup,
-            initialization: None,
+            initialization,
         })
     }
 
