@@ -1621,11 +1621,18 @@ public class QcUsbPlugin extends Plugin {
             return;
         }
         if (decision.kind == QcNativeStateDecoder.InitializationDecision.COMPLETE) {
-            if (!initializationComplete) {
+            boolean firstCompletion = !initializationComplete;
+            boolean synchronizationChanged = presetSynchronized != decision.synchronizedState;
+            if (firstCompletion) {
                 stateDecoder.sessionHandshakeComplete(
                     monotonicMillis(), decision.synchronizedState);
-                initializationComplete = true;
-                presetSynchronized = decision.synchronizedState;
+            } else if (synchronizationChanged) {
+                stateDecoder.sessionStateObserved(
+                    monotonicMillis(), decision.synchronizedState);
+            }
+            initializationComplete = true;
+            presetSynchronized = decision.synchronizedState;
+            if (firstCompletion || synchronizationChanged) {
                 commandNotBeforeMs = monotonicMillis() + QcUsbProfile.POST_INITIALIZATION_WRITE_DELAY_MS;
                 resolvePendingReady();
             }
@@ -1850,7 +1857,7 @@ public class QcUsbPlugin extends Plugin {
                 lastError = "Could not advance QC startup: " + error.getMessage();
             }
         }
-        if (!initializationComplete) {
+        if (!presetSynchronized) {
             stateDecoder.initializationObserved(decoded.messageType, decoded.payload);
         }
         advanceInitialization();

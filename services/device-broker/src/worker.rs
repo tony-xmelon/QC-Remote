@@ -1322,6 +1322,7 @@ fn run(
                 continue;
             }
             update_lifecycle_status(&state, connected, was_synchronized);
+            session.state_observed(now_ms, connected.synchronized);
             // Device loss is detected by read errors, as in the reference
             // client: a write carries no information because every QC write
             // stalls its status stage. The old Version-probe teardown is gone

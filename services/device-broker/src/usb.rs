@@ -95,7 +95,9 @@ impl ConnectedQc {
             }
             InitializationAction::Complete { synchronized } => {
                 self.synchronized = synchronized;
-                self.initialization = None;
+                if synchronized {
+                    self.initialization = None;
+                }
             }
         }
         Ok(())

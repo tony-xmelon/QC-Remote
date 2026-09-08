@@ -174,9 +174,13 @@ for (const symbol of ["handshakeAttempt", "startupObserved", "startupBeginBuildi
 }
 assert(androidUsbHost.includes("initializationObserved(decoded.messageType, decoded.payload)"),
   "Android must feed payload-validated semantic seed evidence into the shared readiness runtime.");
-assert(/if \(!initializationComplete\) \{\s*stateDecoder\.initializationObserved/.test(androidUsbHost)
+assert(/if \(!presetSynchronized\) \{\s*stateDecoder\.initializationObserved/.test(androidUsbHost)
   && androidJni.includes("*initialization = None"),
-  "Android must release the bounded seed reducer after completion like Windows and avoid steady-state JNI payload replay.");
+  "Android must retain an incomplete seed for late recovery, then release it at Ready and avoid steady-state JNI payload replay.");
+assert(/synchronizationChanged[\s\S]{0,500}sessionStateObserved\([\s\S]{0,100}decision\.synchronizedState/.test(androidUsbHost),
+  "Android must advance the shared transport from Syncing to Ready when a late authoritative seed completes.");
+assert(/advance_lifecycle\(now_ms\)[\s\S]{0,700}session\.state_observed\(now_ms, connected\.synchronized\)/.test(windowsWorker),
+  "Windows must advance the shared transport after lifecycle completion, including late seed recovery.");
 assert(androidUsbHost.includes("decision.beginBuilding"),
   "Android must consume the shared staged-startup transition instead of inferring it from a message type.");
 assert(!androidUsbHost.includes('"disconnected".equals(decision.phase)'),

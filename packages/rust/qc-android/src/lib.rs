@@ -1419,7 +1419,10 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeInit
             .as_mut()
             .map(|runtime| runtime.advance(now_ms.max(0) as u64))
             .unwrap_or(InitializationAction::Wait);
-        if matches!(action, InitializationAction::Complete { .. }) {
+        if matches!(
+            action,
+            InitializationAction::Complete { synchronized: true }
+        ) {
             *initialization = None;
         }
         initialization_envelope(action)
