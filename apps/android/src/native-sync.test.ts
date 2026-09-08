@@ -146,7 +146,9 @@ test("large model metadata never blocks the permanent USB reader", () => {
   assert.match(javaSource, /stateDecoder\.postBootInitializationStarted\(/);
   assert.match(javaSource, /stateDecoder\.systemTimeCommand\(System\.currentTimeMillis\(\)\)/);
   assert.match(javaSource, /stateDecoder\.initializationAdvance\(/);
-  assert.match(javaSource, /startupActive && stateDecoder\.startupTimedOut\(now\)/);
+  assert.match(javaSource, /stateDecoder\.startupTimedOut\(now\)/);
+  assert.match(javaSource, /stateDecoder\.startupActive\(\)[\s\S]{0,100}MESSAGE_TYPE_MODEL_REPO/);
+  assert.doesNotMatch(javaSource, /private volatile boolean startupActive/);
   assert.match(rustInitializationSource, /deadline_ms: now_ms\.saturating_add\(profile::READY_WAIT_TIMEOUT_MS\)/);
   assert.match(javaSource, /stateDecoder\.sessionSynchronized\(\) && currentSetlist != null/);
   assert.match(javaSource, /InitializationDecision\.SEND[\s\S]{0,300}connection == null \|\| !stateDecoder\.startupConnected\(\)/);
