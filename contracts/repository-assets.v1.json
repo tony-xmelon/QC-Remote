@@ -5,7 +5,7 @@
   "embeddedVectorSources": [
     { "path": "packages/typescript/qc-theme/src/screen-icon-vectors.ts", "sha256": "a5c4552a790fddfda7fb5e0cc50eb2102d6fd2ce8e6c53385e9c16e318e2d72d", "purpose": "canonical neutral screen-icon geometry" },
     { "path": "packages/typescript/qc-ui/src/coros-capture-connections.tsx", "sha256": "5515af113eb777b012a7d805664f0270b95680cd36bce399a193374e05b1c99d", "purpose": "functional capture-cabling diagrams" },
-    { "path": "packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", "sha256": "7248c2c6f4f56ec2b18f81507d717a3b5ab6e2b394eafc06fd291187ac2d9963", "purpose": "shared screen diagrams and fixture composition" },
+    { "path": "packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", "sha256": "d70d5535d79ba4f4d272b500c3a5b18a0a815d8f5f436c574f6719eb3f4a2774", "purpose": "shared screen diagrams and fixture composition" },
     { "path": "packages/typescript/qc-ui/src/device-category-glyph.tsx", "sha256": "4af1e03f6b006874b645734462e13f53e8e72b6aac368e02700471d6a745bffa", "purpose": "device-category glyph composition" },
     { "path": "packages/typescript/qc-ui/src/device-glyph.tsx", "sha256": "7588f205f47acbe8269ce5d96a5eaba072ad062184b74a9b1feb1b657cd1b63e", "purpose": "block-tile glyph composition" },
     { "path": "packages/typescript/qc-ui/src/parameter-editor.tsx", "sha256": "a1787d4ef1541b795cba117133960dece03fc55177a69ae5f11704ffe5304fa9", "purpose": "interactive parameter and signal diagrams" },
@@ -13,7 +13,7 @@
     { "path": "packages/typescript/qc-ui/src/qc-rotary-dial.tsx", "sha256": "fd41e6763dd7999403e75b4822f9831ed5cdc86532ac7857a599556dab97e3ba", "purpose": "interactive rotary control geometry" },
     { "path": "packages/typescript/qc-ui/src/quad-cortex-surface.tsx", "sha256": "a52bc00ee09464efbda07340f8dfe39731c9e8cd50ab86f303ad071c245c7b59", "purpose": "shared device surface and routing geometry" },
     { "path": "packages/typescript/qc-ui/src/screen-glyphs.tsx", "sha256": "d20753169e904db7d613b6802d09e744de2c44d08346ccf0eff9d6b1cfd18f9d", "purpose": "semantic screen glyph composition" },
-    { "path": "packages/typescript/qc-ui/src/theme-icons.tsx", "sha256": "eb99b92acccc883a596e212b670a5f5c392d1f8c9f9b7ddbd8cf5b78c9aa31a1", "purpose": "shared icon renderer and remaining neutral glyph geometry" }
+    { "path": "packages/typescript/qc-ui/src/theme-icons.tsx", "sha256": "0db97dcb43ab4976e1442eab7ddd67eff5d24228ea0f444961ff7c1f19b001ab", "purpose": "shared icon renderer and remaining neutral glyph geometry" }
   ],
   "dynamicMediaOwners": [
     "apps/windows/src/chat-dock.tsx",
