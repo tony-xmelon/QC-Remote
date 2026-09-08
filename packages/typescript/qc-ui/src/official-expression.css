@@ -35,4 +35,22 @@
 .expression-parameter-grid section:last-child button { margin-top: 2.75cqw; }
 .expression-bypass-official:not(.is-trim) .expression-switch-panel > section:first-child > button { background: #42fb63; color: #101010; }
 
+
+/* expression-parameter.png and expression-bypass.png: both screens are the
+   five 156px cells the other editors use, with the two parameter tiles side by
+   side in the first two. The power tile is filled green, MIN RANGE's dial is
+   unlit, and an assigned tile is #292c29 against the strip's #181c18. */
+.expression-switch-panel.is-trim { grid-template-columns: repeat(5, 19.625cqw); }
+.expression-switch-panel > section:first-child > button { background: #42fb63; color: #000; }
+.expression-switch-panel .capture-level-dial.is-unlit { filter: grayscale(1) brightness(.55); }
+.expression-parameter-grid section.is-assigned-tile { background: #292c29; }
+
+/* The save button's glyph had no paint rule, so it rendered as a bare blue
+   tile. On the trim screen the range labels and values are unlit - #6b716b and
+   #636963 against the parameter tiles' white - and the parameter grid carries
+   the strip colour rather than the bypass screen's darker one. */
+.expression-bypass-official > header > button:last-child svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.expression-switch-panel.is-trim .switch-delay > span { color: #6b716b; }
+.expression-switch-panel.is-trim .switch-delay > b { color: #636963; }
+.expression-bypass-official.is-trim .expression-parameter-grid { background: #292c29; }
 }

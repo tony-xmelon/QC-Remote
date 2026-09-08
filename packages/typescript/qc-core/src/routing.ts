@@ -39,8 +39,9 @@ export function routePickerLabel(side: RouteSide, label: string): string {
   if (side === "output" && label === "Multi Out") return "Multiple Outputs";
   if (side === "input") {
     if (/^In /.test(label)) return label.replace(/^In /, "Input ");
-    if (/^USB input /i.test(label)) return label.replace(/^USB input /i, "USB input ");
-    if (/^USB /.test(label)) return label.replace(/^USB /, "USB Input ");
+    // CorOS is deliberately asymmetric here: input-route-selector.tree.txt says
+    // 'USB input 5', output-route-selector.tree.txt says 'USB Output 3'.
+    if (/^USB /i.test(label)) return label.replace(/^USB /i, "USB input ");
   } else {
     if (/^Out /.test(label)) return label.replace(/^Out /, "Output ");
     if (/^USB output /i.test(label)) return label.replace(/^USB output /i, "USB Output ");

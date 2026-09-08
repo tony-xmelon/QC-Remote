@@ -19,7 +19,6 @@
 .empty-slot-categories button span { position: relative; top: 1px; }
 .empty-slot-categories button b { position: absolute; right: 2cqw; top: 3.125cqw; padding: .75cqw 1.625cqw; border-radius: 2cqw; background: #f4d224; color: #111; font-size: 1.75cqw; font-weight: 400; }
 .empty-slot-grid { position: relative; z-index: 2; grid-column: 2; grid-row: 1; background: #404440; color: #a3a6a3; }
-.empty-slot-grid header { height: 12.5%; display: flex; align-items: center; justify-content: flex-end; gap: 3cqw; padding: 0 2cqw; font-size: 3cqw; }
 .empty-slot-grid header b { color: #b09e4b; }
 .empty-slot-grid header strong { font-size: 3cqw; }
 .empty-slot-grid header .empty-undo { position: absolute; left: 26.25cqw; top: 1.25cqw; }
@@ -35,14 +34,33 @@
 .empty-slot-grid .empty-mode svg { width: 3cqw; height: 3cqw; fill: currentColor; stroke: none; }
 .empty-slot-grid .empty-mode svg { transform: matrix(1.28, 0, 0, 1.4, 0, -3); transform-origin: center; }
 .empty-slot-grid .empty-mode strong { font: inherit; }
-.empty-slot-grid main { position: absolute; inset: 12.5% 0 0; background: transparent !important; }
-.empty-slot-grid main::before { content: ""; position: absolute; left: 0; right: 5.5cqw; top: 10.75cqw; border-top: 2px solid #707870; }
-.empty-slot-grid main i { position: absolute; right: 1cqw; width: 5.5cqw; height: 9.5cqw; display: grid; place-items: center; border-radius: 1.5cqw; background: #404840; font-size: 4cqw; font-style: normal; }
-.empty-slot-grid main i:first-child { left: 22.5cqw; right: auto; top: 6.5cqw; background: #111; color: #969a97; }
-.empty-slot-grid main i:first-child { width: 8.75cqw; height: 8.75cqw; }
-.empty-slot-grid main i:nth-child(2) { top: 6.125cqw; font-size: 1.8cqw; text-align: center; }
-.empty-slot-grid main i:nth-child(3) { top: 17.875cqw; }
-.empty-slot-grid main i:nth-child(4) { top: 29.625cqw; }
-.empty-slot-grid main i:nth-child(5) { top: 41.375cqw; }
+
+
+/* empty-slot.png, measured on the frame: the dimmed Grid runs the full 800 with
+   the list over x 400. Its route tiles are 44x76 at x 8 on a 94px row pitch
+   from y 109, the open slot is a 70px #101010 tile at (152, 112), the cable is
+   #737973 at y 147, and the title is the Grid's own 71/58px header. */
+.qc-screen.empty-slot-official { display: block; }
+.empty-slot-official > .empty-slot-grid { position: absolute; z-index: 1; inset: 0; background: #424542; color: #848a84; }
+.empty-slot-official > .empty-slot-categories { position: absolute; z-index: 2; left: 400px; top: 0; bottom: 0; width: 400px; border-right: 0; border-left: 8px solid #111; }
+.empty-slot-grid > header { position: absolute; inset: 0 0 auto; height: 96px; display: flex; align-items: flex-start; justify-content: flex-start; gap: 0; padding: 20px 13.6px; }
+.empty-slot-grid > header > strong { color: #638284; font-size: 71px; line-height: .82; font-weight: 700; letter-spacing: 1.4px; transform: translateY(5px); }
+.empty-slot-grid > header > strong > span { color: #848a84; }
+.empty-slot-grid > header > h1 { margin: 6px 0 0 12.6px; color: #848a84; font-size: 58px; line-height: 1; font-weight: 700; }
+.empty-slot-grid > main { position: absolute; inset: 96px 0 0; }
+.empty-slot-grid > main .empty-route, .empty-slot-grid > main .empty-row, .empty-slot-grid > main .empty-out { position: absolute; left: 8px; width: 44px; height: 76px; display: grid; place-items: center; border-radius: 14px; background: #424942; color: #737973; font-size: 14px; font-style: normal; line-height: 1.35; text-align: center; }
+.empty-slot-grid > main .empty-route { top: 13px; }
+.empty-slot-grid > main .empty-route.is-row-3 { top: 201px; }
+.empty-slot-grid > main .empty-row.is-row-2 { top: 107px; font-size: 26px; }
+.empty-slot-grid > main .empty-row.is-row-4 { top: 295px; font-size: 26px; }
+.empty-slot-grid > main .empty-out { left: auto; right: 6px; font-size: 15px; }
+.empty-slot-grid > main .empty-cable { position: absolute; left: 52px; right: 52px; top: 50px; height: 2px; background: #737973; }
+.empty-slot-grid > main .empty-cable.is-row-3 { top: 238px; }
+.empty-slot-grid > main .empty-add { position: absolute; left: 152px; top: 16px; width: 70px; height: 70px; display: grid; place-items: center; border-radius: 14px; background: #101010; color: #949694; font-size: 34px; font-style: normal; }
+.empty-slot-grid > .empty-mode { left: 610px; top: 56px; color: #848a84; }
+.empty-slot-grid > header .empty-undo { left: 610px; top: 10px; }
+.empty-slot-grid > header > b { left: 668px; top: 13px; }
+.empty-slot-grid > header .empty-save { left: 716px; top: 10px; }
+.empty-slot-grid > header .empty-more { left: 765px; top: 9px; }
 
 }
