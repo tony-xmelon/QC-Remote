@@ -1009,7 +1009,8 @@
         "settings-account"
       ],
       "physical": [
-        "settings-account"
+        "settings-account",
+        "settings-account-backups"
       ]
     },
     {
@@ -1037,14 +1038,22 @@
         "settings-device"
       ],
       "physical": [
-        "settings-device"
+        "settings-device",
+        "settings-device-gig-view",
+        "settings-device-hold-timing",
+        "settings-device-latency",
+        "settings-device-scene-bypass",
+        "settings-device-stomp-bypass",
+        "settings-device-swap-tempo-tuner"
       ]
     },
     {
       "id": "ST-04",
       "renderer": "settings-support",
       "physical": [
-        "settings-support"
+        "settings-support",
+        "settings-support-licenses",
+        "settings-support-report"
       ],
       "smoke": [
         "settings-support"
@@ -1146,7 +1155,8 @@
       "renderer": "overlay-confirmation",
       "physical": [
         "cloud-upload-overwrite",
-        "generic-confirmation"
+        "generic-confirmation",
+        "settings-restart-confirm"
       ],
       "smoke": [
         "overlay-confirmation"

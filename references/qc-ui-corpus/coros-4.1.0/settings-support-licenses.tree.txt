@@ -1,0 +1,443 @@
+zenUI::RootGraphicsItem
+  zenUI::SettingsDialog
+    zenUI::GraphicsItem
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/24/done.png'
+          zenUI::PressAnimationView
+      zenUI::ComboBoxWithSelector
+        text : 'Support'
+        image: 'icons/custom/down_triangle.png'
+        zenUI::GraphicsItem
+          image: 'icons/system/settings/contact.png'
+        zenUI::PressAnimationView
+    zenUI::SettingsMenu
+      zenUI::GraphicsItem
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'About and Contact'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/system/settings/support/about.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Device Information'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/system/settings/support/info.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Send Report'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/system/settings/support/report.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Diagnostics'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/system/settings/support/diag.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : '3rd Party Licenses'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/system/settings/support/thirdparty.png'
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+    zenUI::GraphicsItem
+      zenUI::ThirdPartyLicenses
+        zenUI::GraphicsItem
+          text : '3rd party Licenses'
+        zenUI::LicensesMenu
+          zenUI::GraphicsItem
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'binutils license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'busybox license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'bzip2 license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'collectd license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'cramfs license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'e2fsprogs license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'elfutils license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'expat license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'f2fstools license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'fontconfig license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'freetype license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'harfbuzz license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'hostapd license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'iw license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'jpeg-turbo license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'libarchive license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'libcurl license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'libevent license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'libffi license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'libnl license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'libpcap license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'libpng license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'libsigc license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'libsigsegv license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'libtirpc license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'libungif license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'libunwind license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'linux license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'lrzsz license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'lz4 license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'lzip license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'lzo license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'lzop license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'memtester license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'mtd license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'ncurses license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'ntp license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'openssh license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'openssl license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'oprofile license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'pcutils license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'popt license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'pppd license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'protobuf license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'qt license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'readline license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'rsync license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'squashfs license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'tslib license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'uboot-tools license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'util-linux license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'wpa_supplicant license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'zlib license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'ADVobfuscator license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+            zenUI::TableCell
+              zenUI::GraphicsItem
+                text : 'pugixml license'
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+              zenUI::GraphicsItem
+                image: 'icons/system/popup menu/menu_forward.png'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem

@@ -320,9 +320,6 @@ function CorOsCaptureFixture({ view }: { view: CaptureFixtureView }) {
   return <CorOsOfficialCapture view={view} />;
 }
 
-type SettingsFixtureView = "settings-account" | "settings-system" | "settings-device" | "settings-support" | "settings-wifi" | "settings-storage" | "settings-midi" | "settings-info" | "settings-diagnostics"
-  | "settings-system-power" | "settings-system-volume" | "settings-update-idle";
-
 function SettingsAccountGlyph({ kind }: { kind: "cloud" | "user" | "backup" }) {
   if (kind === "user") return <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="9" r="5" /><path d="M7 29v-7a9 9 0 0 1 18 0v7" /></svg>;
   if (kind === "backup") return <svg viewBox="0 0 32 32" aria-hidden="true"><path d={SETTINGS_CLOUD_PATH} /><path d="m11 16-3 3 3 3m10-6 3 3-3 3M8 19h5m11 0h-5" /></svg>;
@@ -370,7 +367,35 @@ function CorOsOfficialSettings({ view }: { view: "settings-account" | "settings-
 }
 
 type CapturedSettingsView = "settings-support" | "settings-wifi" | "settings-storage" | "settings-info" | "settings-diagnostics"
-  | "settings-system-power" | "settings-system-volume" | "settings-update-idle" | "settings-system-reset";
+  | "settings-system-power" | "settings-system-volume" | "settings-update-idle" | "settings-system-reset"
+  | "settings-device-scene-bypass" | "settings-device-stomp-bypass" | "settings-device-hold-timing" | "settings-device-swap-tempo-tuner" | "settings-device-gig-view" | "settings-device-latency"
+  | "settings-support-report" | "settings-support-licenses" | "settings-account-backups" | "settings-restart-confirm";
+
+type SettingsFixtureView = CapturedSettingsView | "settings-account" | "settings-system" | "settings-device" | "settings-midi";
+
+const DEVICE_COPY = {
+  gigView: `Enable this feature to toggle Gig View by pressing and holding  and TEMPO footswitches simultaneously.
+
+When enabled, single-pressing + TEMPO to cycle MODES is triggered upon footswitches release.`,
+  sceneBypassThird: "Do not overwrite bypass state when changing bypass state by any method.",
+  resetSettings: "Reset Settings will restore Quad Cortex to its default settings. User data (Presets, Captures, etc.) will not be removed.",
+  factoryReset: "Factory Reset will remove all user data and the device will be restored to factory settings."
+};
+
+/** Every licence CorOS lists; the frame shows the first six of them. */
+const THIRD_PARTY_LICENSES = [
+  "binutils license", "busybox license", "bzip2 license", "collectd license", "cramfs license",
+  "e2fsprogs license", "elfutils license", "expat license", "f2fstools license", "fontconfig license",
+  "freetype license", "harfbuzz license", "hostapd license", "iw license", "jpeg-turbo license",
+  "libarchive license", "libcurl license", "libevent license", "libffi license", "libnl license",
+  "libpcap license", "libpng license", "libsigc license", "libsigsegv license", "libtirpc license",
+  "libungif license", "libunwind license", "linux license", "lrzsz license", "lz4 license",
+  "lzip license", "lzo license", "lzop license", "memtester license", "mtd license",
+  "ncurses license", "ntp license", "openssh license", "openssl license", "oprofile license",
+  "pcutils license", "popt license", "pppd license", "protobuf license", "qt license",
+  "readline license", "rsync license", "squashfs license", "tslib license", "uboot-tools license",
+  "util-linux license", "wpa_supplicant license", "zlib license", "ADVobfuscator license", "pugixml license"
+];
 
 const SUPPORT_QR = [
   "11111111011111001101011111111", "10000001011001011100010000001", "10111101001100011111010111101", "10111101000101111111010111101", "10111101000001111101010111101", "10111101011001111100010111101", "10000001011110110001010000001", "11111111011010101101011111111", "00000000011100001110000000000", "11110011011101100110111110011", "11110111011101110111111111011", "01110100000000110111011011011", "00000001111110100111011011101", "00011000100011101101101111000", "00011011011110100111011000001", "01011100001110010111111000011", "11011101101101010111010011101", "11111111111111011111111111101", "00110010011011001101101111000", "11110101100011001101111110010", "00000000011101110001000110001", "11111111000011000001010110001", "10000001011101101111000110001", "10111101000011000111111110010", "10111101000111110111111110110", "10111101001111110110100110110", "10111101011011000111001111011", "10000001011010100001001110000", "11111111011001100001100011001"
@@ -407,6 +432,15 @@ function CapturedSettingsIcon({ kind }: { kind: string }) {
   if (kind === "diagnostics") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3h4v18h-4zM3 10h18v4H3z" fill="currentColor" stroke="none" /></svg>;
   if (kind === "licenses") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 2h9l5 5v15H5zM8 12h8M8 16h8M8 8h3" /></svg>;
   if (kind === "wifi") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8a14 14 0 0 1 18 0M6 12a9 9 0 0 1 12 0m-9 4a4 4 0 0 1 6 0" /><circle cx="12" cy="20" r="1" fill="currentColor" /></svg>;
+  if (kind === "device") return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2" /><path d="M8 6h8M8 11h2m3 0h3M8 15h2m3 0h3M8 19h8" /></svg>;
+  if (kind === "scene-bypass") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v8" /><path d="M6.5 6.5a8 8 0 1 0 11 0" /></svg>;
+  if (kind === "stomp-bypass") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17h7l9-9-4-4-9 9zM3 21h18" /></svg>;
+  if (kind === "hold") return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 12V5a7 7 0 0 1 7 7z" fill="currentColor" stroke="none" /></svg>;
+  if (kind === "swap") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h16m0 0-4-4m4 4-4 4M21 16H5m0 0 4-4m-4 4 4 4" /></svg>;
+  if (kind === "gig-access") return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="4" width="9" height="7" rx="1" /><rect x="13" y="4" width="9" height="7" rx="1" /><rect x="2" y="13" width="9" height="7" rx="1" /><rect x="13" y="13" width="9" height="7" rx="1" /></svg>;
+  if (kind === "latency") return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></svg>;
+  if (kind === "midi") return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><circle cx="8" cy="10" r="1.2" fill="currentColor" /><circle cx="12" cy="8" r="1.2" fill="currentColor" /><circle cx="16" cy="10" r="1.2" fill="currentColor" /><circle cx="9" cy="15" r="1.2" fill="currentColor" /><circle cx="15" cy="15" r="1.2" fill="currentColor" /></svg>;
+  if (kind === "bypass") return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" /><circle cx="12" cy="12" r="9" /></svg>;
   if (kind === "headphones") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16v-4a8 8 0 0 1 16 0v4" /><rect x="2" y="14" width="5" height="7" rx="2" /><rect x="17" y="14" width="5" height="7" rx="2" /></svg>;
   if (kind === "updates") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 7V2l-3 3a8 8 0 1 0 4 13M6 17v5l3-3" /></svg>;
   if (kind === "brightness") return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 1v3m0 16v3M1 12h3m16 0h3M4 4l2 2m12 12 2 2M20 4l-2 2M6 18l-2 2" /></svg>;
@@ -417,31 +451,107 @@ function CapturedSettingsIcon({ kind }: { kind: string }) {
 }
 
 function CorOsCapturedSettings({ view }: { view: CapturedSettingsView }) {
-  const support = view === "settings-support" || view === "settings-info" || view === "settings-diagnostics";
+  const support = view === "settings-support" || view === "settings-info" || view === "settings-diagnostics"
+    || view === "settings-support-report" || view === "settings-support-licenses";
+  const account = view === "settings-account-backups";
+  const deviceRows: Array<[string, string]> = [["bypass", "Global Bypass"], ["scene-bypass", "Scene Bypass Behavior"], ["stomp-bypass", "Stomp Mode Bypass"],
+    ["hold", "Hold Timing"], ["swap", "Swap Tempo and Tuner"], ["gig-access", "Gig View Access"], ["latency", "Latency Compensation"], ["midi", "MIDI"]];
   // The category selector is drawn on some panes and not others. Every frame
   // that reaches these three shows the dialog without it, and the menu below
   // does not move when it goes, so only the header changes.
   const selector = !["settings-system-power", "settings-system-volume", "settings-update-idle", "settings-system-reset"].includes(view);
-  const rows = support
-    ? [["about", "About and Contact"], ["info", "Device Information"], ["report", "Send Report"], ["diagnostics", "Diagnostics"], ["licenses", "3rd Party Licenses"]]
-    : [["wifi", "Connection"], ["updates", "Updates"], ["brightness", "Brightness"], ["power", "Power Functions"], ["volume", "Master Volume Knob"], ["storage", "Device Storage"], ["factory", "Factory Reset"]];
+  const device = view.startsWith("settings-device-");
+  const rows = account
+    ? [["user", "My Account"], ["backup", "Backups"]]
+    : view.startsWith("settings-device-")
+    ? deviceRows
+    : support
+      ? [["about", "About and Contact"], ["info", "Device Information"], ["report", "Send Report"], ["diagnostics", "Diagnostics"], ["licenses", "3rd Party Licenses"]]
+      : [["wifi", "Connection"], ["updates", "Updates"], ["brightness", "Brightness"], ["power", "Power Functions"], ["volume", "Master Volume Knob"], ["storage", "Device Storage"], ["factory", "Factory Reset"]];
   const active = ({
     "settings-support": 0, "settings-info": 1, "settings-diagnostics": 3, "settings-wifi": 0,
-    "settings-update-idle": 1, "settings-system-power": 3, "settings-system-volume": 4, "settings-storage": 5, "settings-system-reset": 6
+    "settings-update-idle": 1, "settings-system-power": 3, "settings-system-volume": 4, "settings-storage": 5, "settings-system-reset": 6,
+    "settings-device-scene-bypass": 1, "settings-device-stomp-bypass": 2, "settings-device-hold-timing": 3,
+    "settings-device-swap-tempo-tuner": 4, "settings-device-gig-view": 5, "settings-device-latency": 6,
+    "settings-support-report": 2, "settings-support-licenses": 4, "settings-account-backups": 1
   } as Record<string, number>)[view] ?? 5;
   return <section className={`qc-screen coros-settings-official coros-settings-captured ${view}`} aria-label={view.replaceAll("-", " ")}>
-    <header>{selector && <button className="settings-section"><b><CapturedSettingsIcon kind={support ? "support" : "system"} /></b>{support ? "Support" : "System"}<i /></button>}{view === "settings-info" && <button className="settings-edit" aria-label="Edit device name"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5v15h15v-8M11 14 20 5l-3-3-9 9-1 4 4-1Z" /></svg></button>}<button className="settings-done"><QcUiIcon kind="check" /></button></header>
+    <header>{selector && <button className="settings-section"><b><CapturedSettingsIcon kind={device ? "device" : account ? "cloud" : support ? "support" : "system"} /></b>{device ? "Device" : account ? "Account" : support ? "Support" : "System"}<i /></button>}{account && <button className="backups-refresh" aria-label="Refresh backups"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 3v5h-5" /></svg></button>}{view === "settings-info" && <button className="settings-edit" aria-label="Edit device name"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5v15h15v-8M11 14 20 5l-3-3-9 9-1 4 4-1Z" /></svg></button>}<button className="settings-done"><QcUiIcon kind="check" /></button></header>
     <main><nav>{rows.map(([icon, label], index) => <button key={label} className={index === active ? "is-active" : ""}><b><CapturedSettingsIcon kind={icon} /></b>{label}</button>)}</nav>
       <section className="captured-settings-detail">
         {view === "settings-support" && <><h1>About Us</h1><div className="support-company"><span><strong>Neural DSP Technologies LLC</strong><br />Elimäenkatu 20A<br />00510 Helsinki<br />Finland</span><b><i>ϟ</i> Neural</b></div><hr /><div className="support-contact"><span>If you need support, you can contact<br />support@neuraldsp.com.<br /><br />Also be sure to check out our user forums at<br />unity.neuraldsp.com.</span><SupportQr /></div></>}
         {view === "settings-diagnostics" && <div className="captured-list">{["DSP Diagnostics", "Footswitch Statistics", "USB Statistics"].map(label => <button key={label}>{label}<span>›</span></button>)}</div>}
         {view === "settings-storage" && <><h1>Device Storage</h1><div className="storage-captured">{[["presets", "My Presets", "270/3072", 9], ["captures", "My Captures", "65/2048", 3], ["irs", "My Impulse Responses", "0/2048", 0]].map(([kind, label, value, amount]) => <div key={String(label)}><span><CapturedSettingsIcon kind={String(kind)} /><strong>{label}</strong><i>›</i><em>{value}</em></span><b><i style={{ width: `${amount}%` }} /></b></div>)}</div></>}
         {view === "settings-info" && <><h1>Device information</h1><div className="information-table"><span><b>Serial number:</b><i /></span><span><b>Device name:</b><i>Neural DSP Quad Cortex</i></span><span><b>MAC address:</b><i /></span></div><hr /><h1>Software information</h1><div className="information-table"><span><b>CorOS:</b><i>4.1.0</i></span><span><b>Linux kernel:</b><i>Linux buildroot 4.0.0-ADI-1.3.0 #1 PREEMPT Tue<br />Aug 18 01:26:58 EEST 2026 armv7l (none)</i></span><span><b>U-Boot:</b><i>U-Boot 2015.01 ADI-1.3.0 (Sep 30 2021 -<br />01:01:44)</i></span><span><b>Zenjack FW app:</b><i>d14e</i></span><span><b>Zenjack FW bootloader:</b><i>b113</i></span><span><b>Zencoder FW app:</b><i>d111</i></span><span><b>Zencoder FW bootloader:</b><i>b103</i></span><span><b>Zenwireless FW:</b><i>cf9daede4300aaae664fc527cede12ae</i></span></div></>}
+        {["settings-device-stomp-bypass", "settings-device-swap-tempo-tuner", "settings-device-gig-view", "settings-device-latency"].includes(view) && (() => {
+          const pane = ({
+            "settings-device-stomp-bypass": {
+              title: "Stomp Mode Bypass Assignment",
+              body: ["A global setting for whether footswitches are automatically assigned to blocks' bypass settings. If you enable auto-assign, blocks will be assigned to footswitches in the order they are added to The Grid."],
+              label: "AUTO-ASSIGN", options: ["Enabled", "Disabled (Factory Default)"], active: 1
+            },
+            "settings-device-swap-tempo-tuner": {
+              title: "Swap Tempo and Tuner Access",
+              body: ["Enable this option to access the Tuner by double-tapping the bottom-right footswitch, and access the Tempo settings by holding the bottom-right footswitch."],
+              label: "SWAP TEMPO AND TUNER", options: ["Yes", "No (Factory Default)"], active: 1
+            },
+            "settings-device-gig-view": {
+              title: "Gig View Footswitch Access",
+              body: DEVICE_COPY.gigView.split("\n\n"),
+              options: ["On", "Off (Factory Default)"], active: 1
+            },
+            "settings-device-latency": {
+              title: "Dynamic Latency Compensation",
+              body: ["Disabling Dynamic Latency Compensation may help if phasing occurs when bypassing a device."],
+              options: ["Enabled (Factory Default)", "Disabled"], active: 0
+            }
+          } as Record<string, { title: string; body: string[]; label?: string; options: string[]; active: number }>)[view];
+          return <>
+            <h1>{pane.title}</h1>
+            {pane.body.map((text, index) => <p key={index} className={`settings-body is-${index}`}>{text}</p>)}
+            {pane.label && <span className="settings-field-label">{pane.label}</span>}
+            <div className="settings-toggle">
+              <i className={pane.active === 0 ? "is-top" : "is-bottom"} />
+              {pane.options.map((option, index) => <span key={option} className={index === pane.active ? "is-active" : ""}>{option}</span>)}
+            </div>
+          </>;
+        })()}
+        {view === "settings-device-scene-bypass" && <>
+          <h1>Scene Bypass State Behavior</h1>
+          <p className="settings-body is-0">This feature controls whether changes to the bypass state of a block in Scene Mode are automatically saved to the active Scene.</p>
+          <div className="scene-bypass-options">{[
+            ["Always overwrite bypass state (default).", true],
+            ["Do not overwrite bypass state when changing bypass state via footswitches in Stomp Mode (including Hybrid Stomp Mode) or MIDI. Changes made with the touchscreen will be saved.", false],
+            [DEVICE_COPY.sceneBypassThird, false]
+          ].map(([text, active], index) => <section key={index}><p>{text}</p><i className={active ? "is-active" : ""}><b /></i></section>)}</div>
+        </>}
+        {view === "settings-support-report" && <>
+          <h1>Thanks a lot for your help</h1>
+          <p className="settings-body is-0">A diagnostic report is available to generate. Sending the report can take up to five minutes. You can continue to use your Quad Cortex during this time, but you may experience some slowness.</p>
+          <button className="report-send">SEND REPORT</button>
+        </>}
+        {view === "settings-support-licenses" && <>
+          <h1>3rd party Licenses</h1>
+          <div className="licenses-list">{THIRD_PARTY_LICENSES.map((name) => <button key={name}>{name}<i /></button>)}</div>
+          <span className="licenses-scrollbar" />
+        </>}
+        {view === "settings-account-backups" && <>
+          <h1>Cloud Backups <em>3/5</em></h1>
+          <span className="backups-utc">All timestamps are UTC</span>
+          <div className="backups-list">{[0, 1, 2].map((index) => <section key={index}><i /></section>)}</div>
+          <button className="backups-new">NEW CLOUD BACKUP</button>
+        </>}
+        {view === "settings-device-hold-timing" && <>
+          <h1>Hold Timing</h1>
+          <p className="settings-body is-0">Sets how long a footswitch must be held down to trigger its assigned HOLD action.</p>
+          <div className="hold-scale">{["500ms", "600ms", "700ms", "800ms", "900ms", "1000ms"].map((label, index) => <span key={label} className={index === 3 ? "is-active" : ""}>{label}</span>)}</div>
+          <div className="hold-bar">{[0, 1, 2, 3, 4, 5].map((index) => <i key={index} className={index < 4 ? "is-filled" : ""} />)}</div>
+        </>}
         {view === "settings-system-reset" && <>
           <h1>Choose a Recovery option</h1>
-          <p className="reset-lead"><strong>Reset Settings</strong> will restore Quad Cortex to its default settings. User data (Presets, Captures, etc.) will not be removed.</p>
+          <p className="reset-lead"><strong>{DEVICE_COPY.resetSettings.slice(0, 14)}</strong>{DEVICE_COPY.resetSettings.slice(14)}</p>
           <button className="reset-settings">RESET SETTINGS</button>
-          <p className="reset-factory-lead"><strong>Factory Reset</strong> will remove all user data and the device will be restored to factory settings.</p>
+          <p className="reset-factory-lead"><strong>{DEVICE_COPY.factoryReset.slice(0, 13)}</strong>{DEVICE_COPY.factoryReset.slice(13)}</p>
           <button className="reset-factory">FACTORY RESET</button>
         </>}
         {view === "settings-system-power" && <>
@@ -473,13 +583,21 @@ function CorOsCapturedSettings({ view }: { view: CapturedSettingsView }) {
 
 function CorOsSettingsFixture({ view }: { view: SettingsFixtureView }) {
   if (view === "settings-account" || view === "settings-system" || view === "settings-device" || view === "settings-midi") return <CorOsOfficialSettings view={view} />;
+  // The restart confirmation is CorOS's `ConfirmationMessage` drawn over the
+  // pane that raised it: a title, a message, and two buttons whose captions the
+  // message itself carries.
+  if (view === "settings-restart-confirm") return <div className="coros-restart-confirm">
+    <CorOsCapturedSettings view="settings-system-power" />
+    <div className="restart-scrim" />
+    <aside className="restart-dialog"><h1>Restart device</h1><p>Any unsaved changes will be lost</p><footer><button>CANCEL</button><button className="is-primary">RESTART</button></footer></aside>
+  </div>;
   return <CorOsCapturedSettings view={view} />;
 }
 
 function SceneTileTools() {
   return <span className="gig-scene-tools" aria-hidden="true">
     <QcUiIcon kind="edit" />
-    <svg viewBox="0 0 24 24"><path d="M3 8h16m0 0-4-4m4 4-4 4M21 16H5m0 0 4-4m-4 4 4 4" /></svg>
+    <CapturedSettingsIcon kind="swap" />
     <svg viewBox="0 0 24 24"><rect x="3" y="7" width="14" height="14" rx="2" /><path d="M7 7V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-2" /></svg>
   </span>;
 }

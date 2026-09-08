@@ -1,0 +1,74 @@
+zenUI::RootGraphicsItem
+  zenUI::SettingsDialog
+    zenUI::GraphicsItem
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/24/done.png'
+          zenUI::PressAnimationView
+      zenUI::ComboBoxWithSelector
+        text : 'Device'
+        image: 'icons/custom/down_triangle.png'
+        zenUI::GraphicsItem
+          image: 'icons/system/settings/device.png'
+        zenUI::PressAnimationView
+    zenUI::SettingsMenu
+      zenUI::GraphicsItem
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Global Bypass'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/system/settings/device/global_bypass.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Scene Bypass Behavior'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/system/settings/device/scene_bypass.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Stomp Mode Bypass'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/system/settings/device/stomp_bypass.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Hold Timing'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/system/settings/device/hold_timing.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Swap Tempo and Tuner'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/system/settings/device/swap_tempo.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Gig View Access'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/navigationBar/modes/scene.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Latency Compensation'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/system/settings/device/latency.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'MIDI'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/system/settings/device/midi.png'
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+    zenUI::GraphicsItem
+      zenUI::SwapTempoAndTunerAccessSettings
+        zenUI::GraphicsItem
+          text : 'Swap Tempo and Tuner Access'
+        zenUI::GraphicsItem
+          text : 'Enable this option to access the Tuner by double-tapping the bottom-right footswitch, and access the Tempo settings by holding the bottom-right footswitch.'
+        zenUI::ParameterControl

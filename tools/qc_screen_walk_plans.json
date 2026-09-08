@@ -56,7 +56,7 @@
           150
         ]
       ],
-      "marker": "Scene Bypass State Behavior"
+      "marker": "zenUI::BypassSettings"
     },
     {
       "slug": "settings-device-stomp-bypass",
@@ -70,7 +70,7 @@
           210
         ]
       ],
-      "marker": "Stomp Mode Bypass Assignment"
+      "marker": "zenUI::StompModeBypassAssignmentSettings"
     },
     {
       "slug": "settings-device-hold-timing",
@@ -84,7 +84,7 @@
           270
         ]
       ],
-      "marker": "Sets how long a footswitch"
+      "marker": "zenUI::HoldTimeSettings"
     },
     {
       "slug": "settings-device-swap-tempo-tuner",
@@ -98,7 +98,7 @@
           330
         ]
       ],
-      "marker": "Swap Tempo and Tuner Access"
+      "marker": "zenUI::SwapTempoAndTunerAccessSettings"
     },
     {
       "slug": "settings-device-gig-view",
@@ -112,7 +112,7 @@
           390
         ]
       ],
-      "marker": "Gig View Footswitch Access"
+      "marker": "zenUI::GigViewStompAccessSettings"
     },
     {
       "slug": "settings-device-latency",
@@ -126,7 +126,7 @@
           450
         ]
       ],
-      "marker": "Dynamic Latency Compensation"
+      "marker": "zenUI::DynamicDelayCompensationSetting"
     },
     {
       "slug": "settings-system-reset",
@@ -141,6 +141,48 @@
         ]
       ],
       "marker": "zenUI::ResetMenu"
+    },
+    {
+      "slug": "settings-support-report",
+      "label": "Settings > Support > Send Report",
+      "route": [
+        "support"
+      ],
+      "rows": [
+        [
+          140,
+          210
+        ]
+      ],
+      "marker": "zenUI::SendReport"
+    },
+    {
+      "slug": "settings-support-licenses",
+      "label": "Settings > Support > 3rd Party Licenses",
+      "route": [
+        "support"
+      ],
+      "rows": [
+        [
+          140,
+          330
+        ]
+      ],
+      "marker": "zenUI::ThirdPartyLicenses"
+    },
+    {
+      "slug": "settings-account-backups",
+      "label": "Settings > Account > Backups",
+      "route": [
+        "account"
+      ],
+      "rows": [
+        [
+          140,
+          150
+        ]
+      ],
+      "marker": "zenUI::Backups"
     }
   ],
   "deliberately-not-captured": {

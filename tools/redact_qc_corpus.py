@@ -61,6 +61,19 @@ REDACTIONS = {
     # chips live under RecentInputBox and the query under the search PushButton,
     # so both are removed structurally - a regex naming the terms would have to
     # write them into this file to strip them from the corpus.
+    # The Backups page lists what this unit's owner has named their cloud
+    # backups and when each was taken. The names are removed structurally with
+    # the BackupItem rows rather than by a regex, which would have to write them
+    # into this file to strip them from the corpus.
+    "settings-account-backups": {
+        "boxes": [
+            (286, 128, 500, 170),
+            (286, 188, 500, 230),
+            (286, 248, 500, 290),
+        ],
+        "tree_widgets": ["zenUI::BackupItem"],
+        "fields": ["cloud backup names", "cloud backup timestamps"],
+    },
     "device-search-entry": {
         "boxes": [(12, 176, 218, 210)],
         "tree_widgets": ["zenUI::RecentInputBox"],

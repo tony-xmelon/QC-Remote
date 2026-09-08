@@ -1,0 +1,73 @@
+zenUI::RootGraphicsItem
+  zenUI::SettingsDialog
+    zenUI::GraphicsItem
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/24/done.png'
+          zenUI::PressAnimationView
+      zenUI::RefreshButtonBase
+        zenUI::Button
+          image: 'icons/24/updater.png'
+          zenUI::PressAnimationView
+      zenUI::ComboBoxWithSelector
+        text : 'Account'
+        image: 'icons/custom/down_triangle.png'
+        zenUI::GraphicsItem
+          image: 'icons/system/settings/cloud.png'
+        zenUI::PressAnimationView
+    zenUI::SettingsMenu
+      zenUI::GraphicsItem
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'My Account'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/system/settings/account/account.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Backups'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/system/settings/account/backups.png'
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+    zenUI::GraphicsItem
+      zenUI::Backups
+        zenUI::GraphicsItem
+          text : 'Cloud Backups'
+        zenUI::GraphicsItem
+          text : 'All timestamps are UTC'
+        zenUI::GraphicsItem
+          text : '3/5'
+        zenUI::Button
+          text : 'NEW CLOUD BACKUP'
+          zenUI::PressAnimationView
+        zenUI::BackupItem
+          zenUI::GraphicsItem
+            text : '[redacted]'
+          zenUI::GraphicsItem
+            text : '[redacted]'
+            image: 'icons/custom/cloud_upload_small.png'
+          zenUI::Button
+            image: 'icons/24/dotsN70.png'
+            zenUI::PressAnimationView
+        zenUI::BackupItem
+          zenUI::GraphicsItem
+            text : '[redacted]'
+          zenUI::GraphicsItem
+            text : '[redacted]'
+            image: 'icons/custom/cloud_upload_small.png'
+          zenUI::Button
+            image: 'icons/24/dotsN70.png'
+            zenUI::PressAnimationView
+        zenUI::BackupItem
+          zenUI::GraphicsItem
+            text : '[redacted]'
+          zenUI::GraphicsItem
+            text : '[redacted]'
+            image: 'icons/custom/cloud_upload_small.png'
+          zenUI::Button
+            image: 'icons/24/dotsN70.png'
+            zenUI::PressAnimationView

@@ -42,6 +42,7 @@ from qc_device_gateway.remote_control import (  # noqa: E402
     capture_screen,
     capture_settled_screen,
     install_remote_control_compat,
+    swipe_screen,
     tap_screen,
 )
 
@@ -113,6 +114,13 @@ class Walk:
         self.qc._t.send(self.message(action=1, mouse={"x": x2, "y": y2, "type": 0}))
         time.sleep(self.settle)
 
+    def swipe(self, x1: int, y1: int, x2: int, y2: int) -> None:
+        """CorOS's own atomic DRAG. It scrolls a list where dragging a
+        scrollbar sometimes misses it, and is sometimes read as a tap on the row
+        under it instead - which is why every caller checks where it landed."""
+        swipe_screen(self.qc, x1, y1, x2, y2)
+        time.sleep(self.settle)
+
     def settle_screen(self, seconds: float = 25.0) -> str:
         """Wait out whatever the unit put on screen by itself."""
         deadline = time.time() + seconds
@@ -124,13 +132,15 @@ class Walk:
         return self.tree()
 
     def to_grid(self, attempts: int = 8) -> bool:
+        """Close whatever is open. A wrong tap lands on some other dialog often
+        enough that closing only the two expected ones leaves the walk stuck."""
         for _ in range(attempts):
             tree = self.settle_screen()
-            if "zenUI::SettingsDialog" in tree:
-                self.tap(*DONE_BUTTON)
-                continue
             if "zenUI::MainMenuPopup" in tree:
                 self.tap(*MENU_BUTTON)
+                continue
+            if any(line.strip().endswith("Dialog") for line in tree.splitlines()):
+                self.tap(*DONE_BUTTON)
                 continue
             if "zenUI::NavMenuBlock" in tree and "zenUI::Grid" in tree:
                 return True
@@ -154,7 +164,12 @@ class Walk:
                 return True
             if not self.to_menu():
                 continue
+            # The tree lists every menu row whether or not it is scrolled into
+            # view, so it cannot say where Settings is. Drag the scrollbar to
+            # the foot twice - the second is a no-op once it is there - and let
+            # the loop notice if the tap still landed on something else.
             self.drag(*MENU_SCROLLBAR)
+            self.swipe(600, 420, 600, 150)
             if "Settings" not in self.settle_screen():
                 continue
             self.tap(*SETTINGS_ROW)
@@ -188,6 +203,7 @@ class Walk:
         "account": lambda self: self.to_category("account"),
         "system": lambda self: self.to_category("system"),
         "device": lambda self: self.to_category("device"),
+        "support": lambda self: self.to_category("support"),
     }
 
     # -- capture ---------------------------------------------------------

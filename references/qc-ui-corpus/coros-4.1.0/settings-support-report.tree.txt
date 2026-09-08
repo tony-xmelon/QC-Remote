@@ -1,0 +1,58 @@
+zenUI::RootGraphicsItem
+  zenUI::SettingsDialog
+    zenUI::GraphicsItem
+      zenUI::PushButton
+        zenUI::Button
+          image: 'icons/24/done.png'
+          zenUI::PressAnimationView
+      zenUI::ComboBoxWithSelector
+        text : 'Support'
+        image: 'icons/custom/down_triangle.png'
+        zenUI::GraphicsItem
+          image: 'icons/system/settings/contact.png'
+        zenUI::PressAnimationView
+    zenUI::SettingsMenu
+      zenUI::GraphicsItem
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'About and Contact'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/system/settings/support/about.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Device Information'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/system/settings/support/info.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Send Report'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/system/settings/support/report.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : 'Diagnostics'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/system/settings/support/diag.png'
+        zenUI::TableCell
+          zenUI::GraphicsItem
+            text : '3rd Party Licenses'
+          zenUI::GraphicsItem
+          zenUI::GraphicsItem
+            image: 'icons/system/settings/support/thirdparty.png'
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+      zenUI::GraphicsItem
+    zenUI::GraphicsItem
+      zenUI::SendReport
+        zenUI::GraphicsItem
+          text : 'Thanks a lot for your help'
+        zenUI::GraphicsItem
+          text : 'A diagnostic report is available to generate. Sending the report can take up to five minutes. You can continue to use your Quad Cortex during this time, but you may experience some slowness.'
+        zenUI::Button
+          text : 'SEND REPORT'
+          zenUI::PressAnimationView
