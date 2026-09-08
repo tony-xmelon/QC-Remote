@@ -27,7 +27,6 @@
   "backupTotalTimeoutMs": 180000,
   "backupFirstChunkTimeoutMs": 60000,
   "backupStreamStallTimeoutMs": 15000,
-  "backupMaximumAttempts": 2,
   "backupMaximumDocumentBytes": 33554432,
   "midi": {
     "controlChangeStatus": 176,

@@ -1141,13 +1141,11 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeBack
         let (kind, error) = match action {
             BackupAction::Wait => ("wait", None),
             BackupAction::Keepalive => ("keepalive", None),
-            BackupAction::Rerequest => ("rerequest", None),
             BackupAction::Failed(error) => ("failed", Some(error)),
         };
         serde_json::to_string(&serde_json::json!({
             "action": kind,
             "error": error,
-            "attempts": runtime.attempts(),
             "started": runtime.started(),
         }))
         .map_err(|error| error.to_string())

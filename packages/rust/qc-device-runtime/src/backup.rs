@@ -1,8 +1,8 @@
 //! Platform-neutral lifecycle for the QC's uncorrelated LocalBackup stream.
 //!
 //! Hosts provide only a monotonic clock, deliver payloads, and execute the
-//! returned I/O action. Retry, liveness, progress, and stream-splicing policy
-//! belong here because they are properties of the device protocol.
+//! returned I/O action. Replay prevention, liveness, progress, and stream
+//! boundary policy belong here because they are properties of the protocol.
 
 use qc_protocol::profile;
 use qc_protocol::responses::BackupAssembler;
@@ -21,8 +21,6 @@ pub enum BackupAction {
     Wait,
     /// Send the dedicated QC KeepAlive. Busy inbound traffic must not defer it.
     Keepalive,
-    /// Repeat LocalBackup only before a document has started.
-    Rerequest,
     Failed(String),
 }
 
@@ -41,7 +39,6 @@ pub struct BackupRuntime {
     first_chunk_deadline_ms: u64,
     progress_deadline_ms: u64,
     next_keepalive_ms: u64,
-    attempts: usize,
     terminal: bool,
     terminal_state: Option<BackupTerminalState>,
 }
@@ -63,14 +60,9 @@ impl BackupRuntime {
             ),
             progress_deadline_ms: deadline_ms,
             next_keepalive_ms: now_ms.saturating_add(profile::KEEPALIVE_INTERVAL_MS),
-            attempts: 1,
             terminal: false,
             terminal_state: None,
         }
-    }
-
-    pub fn attempts(&self) -> usize {
-        self.attempts
     }
 
     pub fn started(&self) -> bool {
@@ -106,8 +98,8 @@ impl BackupRuntime {
         let document = match self.assembler.push(payload) {
             Ok(document) => document,
             Err(error) => {
-                // A malformed/oversized message after stream start must not
-                // reset the assembler and accidentally make a retry eligible.
+                // A malformed/oversized message is terminal. Never replay an
+                // uncorrelated export request or splice separate streams.
                 self.terminal = true;
                 self.terminal_state = Some(BackupTerminalState::Failed);
                 return Err(error.to_string());
@@ -124,7 +116,7 @@ impl BackupRuntime {
             );
         } else if !was_started && self.assembler.ignored_prefix_chunks() > previous_ignored {
             // An earlier uncorrelated transfer is still draining. Do not inject
-            // a duplicate request into it; extend only the pre-start window.
+            // a duplicate request; extend only the observation window.
             self.first_chunk_deadline_ms = window(
                 now_ms,
                 profile::BACKUP_FIRST_CHUNK_TIMEOUT_MS,
@@ -149,8 +141,7 @@ impl BackupRuntime {
             self.terminal = true;
             self.terminal_state = Some(BackupTerminalState::Failed);
             return BackupAction::Failed(format!(
-                "QC backup timed out: overall deadline reached after {} request(s), {} complete document chunk(s), and {} ignored prefix chunk(s)",
-                self.attempts,
+                "QC backup timed out: overall deadline reached after the single request, {} complete document chunk(s), and {} ignored prefix chunk(s)",
                 self.assembler.chunks(),
                 self.assembler.ignored_prefix_chunks()
             ));
@@ -160,28 +151,18 @@ impl BackupRuntime {
                 self.terminal = true;
                 self.terminal_state = Some(BackupTerminalState::Failed);
                 return BackupAction::Failed(format!(
-                    "QC backup timed out: stream stalled after {} chunk(s); the partial document was discarded and was not combined with a retry",
+                    "QC backup timed out: stream stalled after {} chunk(s); the partial document was discarded and the export request was not replayed",
                     self.assembler.chunks()
                 ));
             }
         } else if now_ms >= self.first_chunk_deadline_ms {
-            if self.attempts >= profile::BACKUP_MAXIMUM_ATTEMPTS {
-                self.terminal = true;
-                self.terminal_state = Some(BackupTerminalState::Failed);
-                return BackupAction::Failed(format!(
-                    "QC backup timed out: no JSON document start arrived after {} request(s); ignored {} stale chunk(s) and {} stale terminator(s)",
-                    self.attempts,
-                    self.assembler.ignored_prefix_chunks(),
-                    self.assembler.ignored_prefix_terminators()
-                ));
-            }
-            self.attempts += 1;
-            self.first_chunk_deadline_ms = window(
-                now_ms,
-                profile::BACKUP_FIRST_CHUNK_TIMEOUT_MS,
-                self.deadline_ms,
-            );
-            return BackupAction::Rerequest;
+            self.terminal = true;
+            self.terminal_state = Some(BackupTerminalState::Failed);
+            return BackupAction::Failed(format!(
+                "QC backup timed out: no JSON document start arrived after the single request; ignored {} stale chunk(s) and {} stale terminator(s)",
+                self.assembler.ignored_prefix_chunks(),
+                self.assembler.ignored_prefix_terminators()
+            ));
         }
         if now_ms >= self.next_keepalive_ms {
             self.next_keepalive_ms = now_ms.saturating_add(profile::KEEPALIVE_INTERVAL_MS);
@@ -206,32 +187,21 @@ mod tests {
                 }
             }
         }
-        let mut payload = vec![0x1a]; // field 3: backup_json
+        let mut payload = vec![0x08, 0x01, 0x1a]; // UPDATE + field 3: backup_json
         push_varint(text.len(), &mut payload);
         payload.extend_from_slice(text.as_bytes());
-        if last {
-            payload.extend_from_slice(&[0x30, 0x01]); // field 6: is_last_chunk
-        }
+        payload.extend_from_slice(&[0x30, u8::from(last)]); // explicit field 6
         payload
     }
 
     #[test]
-    fn retries_only_before_document_start() {
+    fn never_replays_an_uncorrelated_export_request() {
         let mut runtime = BackupRuntime::start(1_000, 180_000);
-        assert_eq!(
-            runtime.advance(1_000 + profile::BACKUP_FIRST_CHUNK_TIMEOUT_MS),
-            BackupAction::Rerequest
-        );
-        assert_eq!(runtime.attempts(), 2);
-        runtime
-            .absorb(20_000, &chunk("{\"type\":\"backup\"", false))
-            .unwrap();
-        assert!(runtime.started());
         assert!(matches!(
-            runtime.advance(20_000 + profile::BACKUP_STREAM_STALL_TIMEOUT_MS),
-            BackupAction::Failed(message) if message.contains("not combined with a retry")
+            runtime.advance(1_000 + profile::BACKUP_FIRST_CHUNK_TIMEOUT_MS),
+            BackupAction::Failed(message) if message.contains("single request")
         ));
-        assert_eq!(runtime.attempts(), 2);
+        assert_eq!(runtime.terminal_state(), Some(BackupTerminalState::Failed));
     }
 
     #[test]
@@ -296,6 +266,5 @@ mod tests {
             malformed.advance(profile::BACKUP_FIRST_CHUNK_TIMEOUT_MS),
             BackupAction::Wait
         );
-        assert_eq!(malformed.attempts(), 1);
     }
 }

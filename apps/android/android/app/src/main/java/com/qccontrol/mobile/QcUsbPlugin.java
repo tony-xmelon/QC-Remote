@@ -255,7 +255,6 @@ public class QcUsbPlugin extends Plugin {
         final long createdAt = System.currentTimeMillis();
         volatile int chunks;
         volatile int ignoredPrefixChunks;
-        volatile int attempts = 1;
         volatile int rawReports;
         volatile int decodedMessages;
         volatile int lastRawReportBytes;
@@ -437,19 +436,15 @@ public class QcUsbPlugin extends Plugin {
         return result;
     }
 
-    /**
-     * LocalBackup replies have no correlation id. A retry is safe only before
-     * the first JSON chunk: a second request after a stream starts could
-     * create an unrelated document that must never be combined with it.
-     */
+    /** LocalBackup export is a single uncorrelated request. Never replay it. */
     private void issueBackupRequest(QcPendingOperations.Entry<PendingBackup> pending) {
         commandIo.execute(() -> {
             try {
                 if (pendingBackup != pending || pending.result.isDone()
                     || pending.operation.recoveryStarted) return;
                 if (!isReady()) throw new RelayException("NOT_CONNECTED", "Quad Cortex USB disconnected before the backup.");
-                android.util.Log.i("QcUsbPlugin", "Sending native backup request " + pending.operation.attempts
-                    + "; includeReportId=" + includeReportId);
+                android.util.Log.i("QcUsbPlugin", "Sending single native backup request; includeReportId="
+                    + includeReportId);
                 writeMessage(stateDecoder.backupCommand());
             } catch (Exception error) {
                 failPendingBackupRecovery(pending, error);
@@ -464,7 +459,6 @@ public class QcUsbPlugin extends Plugin {
             if (operation.recoveryStarted) return;
             try {
                 JSObject decision = stateDecoder.backupAdvance(monotonicMillis());
-                operation.attempts = decision.getInteger("attempts", operation.attempts);
                 String action = decision.getString("action", "wait");
                 if ("keepalive".equals(action)) {
                     commandIo.execute(() -> {
@@ -476,8 +470,6 @@ public class QcUsbPlugin extends Plugin {
                             failPendingBackupRecovery(pending, error);
                         }
                     });
-                } else if ("rerequest".equals(action)) {
-                    issueBackupRequest(pending);
                 } else if ("failed".equals(action)) {
                     pendingBackup = null;
                     stateDecoder.backupCancelled();

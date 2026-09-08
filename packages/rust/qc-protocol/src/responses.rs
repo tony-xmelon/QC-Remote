@@ -235,13 +235,22 @@ impl BackupAssembler {
 
     pub fn push(&mut self, payload: &[u8]) -> Result<Option<String>, ResponseDecodeError> {
         let message: pa::LocalBackupMessage = decode_reply(payload)?;
-        let terminal = matches!(
-            message.is_last_chunk,
-            Some(pa::local_backup_message::IsLastChunk::IsLastChunk(true))
-        );
+        // Cortex Control's receiver dispatches LocalBackup data only on the
+        // device's UPDATE path. CREATE is the one-shot outbound export request,
+        // not a stream chunk, and must not be spliced into a response stream.
+        if message.action != pa::message_action::Enum::Update as i32 {
+            return Ok(None);
+        }
+        // The official receiver appends a chunk only when the terminal field is
+        // explicitly present. The device sends Some(false) on intermediate
+        // chunks and Some(true) on the final chunk.
+        let terminal = match message.is_last_chunk {
+            Some(pa::local_backup_message::IsLastChunk::IsLastChunk(value)) => value,
+            None => return Ok(None),
+        };
         let chunk = match message.backup_json {
             Some(pa::local_backup_message::BackupJson::BackupJson(chunk)) => chunk,
-            None => String::new(),
+            None => return Ok(None),
         };
 
         if !self.started {
@@ -1591,13 +1600,16 @@ mod tests {
 
         let mut backup = BackupAssembler::default();
         let first = pa::LocalBackupMessage {
+            action: pa::message_action::Enum::Update as i32,
             backup_json: Some(pa::local_backup_message::BackupJson::BackupJson(
                 "{\"type\":\"backup\",".into(),
             )),
+            is_last_chunk: Some(pa::local_backup_message::IsLastChunk::IsLastChunk(false)),
             ..Default::default()
         }
         .encode_to_vec();
         let last = pa::LocalBackupMessage {
+            action: pa::message_action::Enum::Update as i32,
             backup_json: Some(pa::local_backup_message::BackupJson::BackupJson(
                 "\"creator\":\"quad\"}".into(),
             )),
@@ -1612,6 +1624,7 @@ mod tests {
         );
 
         let stale_tail = pa::LocalBackupMessage {
+            action: pa::message_action::Enum::Update as i32,
             backup_json: Some(pa::local_backup_message::BackupJson::BackupJson(
                 "old-tail".into(),
             )),
@@ -1714,6 +1727,7 @@ mod tests {
     #[test]
     fn backup_ignores_an_uncorrelated_stale_tail_before_the_next_document() {
         let stale_tail = pa::LocalBackupMessage {
+            action: pa::message_action::Enum::Update as i32,
             backup_json: Some(pa::local_backup_message::BackupJson::BackupJson(
                 "end-of-an-older-document".into(),
             )),
@@ -1722,6 +1736,7 @@ mod tests {
         }
         .encode_to_vec();
         let valid = pa::LocalBackupMessage {
+            action: pa::message_action::Enum::Update as i32,
             backup_json: Some(pa::local_backup_message::BackupJson::BackupJson(
                 "{\"type\":\"backup\",\"creator\":\"quad\"}".into(),
             )),
@@ -1742,15 +1757,18 @@ mod tests {
     }
 
     #[test]
-    fn backup_rejects_a_partial_document_instead_of_splicing_a_retry() {
+    fn backup_rejects_a_partial_document_instead_of_splicing_another_stream() {
         let first = pa::LocalBackupMessage {
+            action: pa::message_action::Enum::Update as i32,
             backup_json: Some(pa::local_backup_message::BackupJson::BackupJson(
                 "{\"type\":\"backup\",".into(),
             )),
+            is_last_chunk: Some(pa::local_backup_message::IsLastChunk::IsLastChunk(false)),
             ..Default::default()
         }
         .encode_to_vec();
         let broken_last = pa::LocalBackupMessage {
+            action: pa::message_action::Enum::Update as i32,
             backup_json: Some(pa::local_backup_message::BackupJson::BackupJson(
                 "not-json".into(),
             )),
@@ -1765,6 +1783,31 @@ mod tests {
             backup.push(&broken_last).unwrap_err().to_string(),
             "the QC backup stream ended with an incomplete or unsupported document"
         );
+        assert!(!backup.started());
+    }
+
+    #[test]
+    fn backup_accepts_only_the_recovered_update_chunk_shape() {
+        let create_echo = pa::LocalBackupMessage {
+            backup_json: Some(pa::local_backup_message::BackupJson::BackupJson(
+                "{\"type\":\"backup\",".into(),
+            )),
+            is_last_chunk: Some(pa::local_backup_message::IsLastChunk::IsLastChunk(false)),
+            ..Default::default()
+        }
+        .encode_to_vec();
+        let missing_terminal_presence = pa::LocalBackupMessage {
+            action: pa::message_action::Enum::Update as i32,
+            backup_json: Some(pa::local_backup_message::BackupJson::BackupJson(
+                "{\"type\":\"backup\",".into(),
+            )),
+            ..Default::default()
+        }
+        .encode_to_vec();
+
+        let mut backup = BackupAssembler::default();
+        assert_eq!(backup.push(&create_echo).unwrap(), None);
+        assert_eq!(backup.push(&missing_terminal_presence).unwrap(), None);
         assert!(!backup.started());
     }
 

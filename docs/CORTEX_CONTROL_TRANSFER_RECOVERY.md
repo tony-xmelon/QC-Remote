@@ -39,8 +39,9 @@ factory content.
   is therefore the empty payload/default `CREATE`, not `UPDATE`.
 - `LocalBackupMessageSender::sendBackupChunk` carries `backup_json` and
   `is_last_chunk` from host to device, and its separate `install` builder sends
-  `action = UPDATE` (enum value 1, exact payload `08 01`). These are the local
-  restore/apply path and must not be used as evidence for starting an export.
+  `action = UPDATE` plus `can_apply_backup = true` (exact payload
+  `08 01 20 01`). These are the local restore/apply path and must not be used as
+  evidence for starting an export.
 - `LocalBackup` (40) has optional `backup_json`, `can_apply_backup`,
   `applied_backup`, and `is_last_chunk` fields.
 - `BackupsForward` (30) identifies a transfer with `backups_request_id` and can
@@ -55,6 +56,36 @@ factory content.
   download through Cortex Control, and cancel. Device states are idle,
   requesting, downloading, updating, reboot, and failed; download and install
   progress are independent optional values.
+
+### Recovered LocalBackup controller flow
+
+The backup-specific RTTI/vtable and call-graph pass is reproducible with
+`python tools/extract-cortex-backup-behavior.py`. For the reference binary it
+establishes:
+
+- The export builder at `0x141BDA180` has exactly two direct callers. The
+  create-new callback at `0x141FFD4E0` stores `localBackupName` and invokes the
+  builder once. The update-existing callback at `0x142002B20` stores
+  `localBackupUpdateRequested` and `localBackupUpdateName`, then invokes the
+  same builder once.
+- Neither path sends a preparatory USB message. Neither path contains a loop,
+  timer registration, or automatic resend of the export request.
+- `LocalBackupMessageReceiver` dispatch at `0x141BFE2E0` processes received
+  backup data only for `action = UPDATE`. It independently handles
+  `can_apply_backup`, `backup_json`, and `applied_backup` presence.
+- A received `backup_json` is routed to either the create-new or update-existing
+  local-file path according to `localBackupUpdateRequested`. Both paths append
+  chunks and commit only after an explicitly present, true `is_last_chunk`.
+- The receiver does not use `request_id` to correlate the exported stream.
+- `LocalBackupMessageSender::install` is not an export operation. Its builder
+  sets both `action = UPDATE` and `can_apply_backup = true`; its exact protobuf
+  payload is `08 01 20 01`.
+
+This closes the desktop-side export choreography: one empty `CREATE`, followed
+by device-originated `UPDATE` chunks with explicit terminal state. A device
+which accepts the request but emits no first chunk is failing or withholding
+the operation inside CorOS; Cortex Control has no additional desktop-side
+start message hidden around the export call.
 
 Retained names independently establish separate sender/receiver types and
 chunking helpers:
@@ -109,18 +140,19 @@ physical testing**, not claimed Cortex Control constants:
 
 | Bound | Value | Meaning |
 |---|---:|---|
-| Overall transfer | 180,000 ms | Absolute cap across all pre-start attempts |
-| First document chunk | 60,000 ms | May trigger one re-request only while no document has started |
+| Overall transfer | 180,000 ms | Absolute cap from the single export request |
+| First document chunk | 60,000 ms | Fail if the single request produces no document start |
 | Inter-chunk stall | 15,000 ms | Terminal failure after document start |
-| Maximum requests | 2 | Initial request plus at most one pre-start retry |
 | Maximum document | 33,554,432 bytes | Hard allocation/content bound |
 | Keepalive interval | 5,000 ms | Independent of inbound chunk progress |
 
-The shared runtime has no retry action after stream start. Ignored stale prefix
-fragments extend the pre-start observation window but do not cause another
+Static call-graph recovery found exactly two callers of the export builder: the
+create-new and update-existing UI callbacks. Each invokes the builder once;
+there is no backup timer/retry callback which resends `CREATE`. The shared
+runtime therefore has no retry action before or after stream start. Ignored
+stale prefix fragments extend the observation window but do not cause another
 request to be injected into a stream which may still be draining. A malformed
-message now makes the runtime terminal even when the lower-level assembler
-resets its buffer, preventing accidental eligibility for a duplicate request.
+message is terminal, preventing accidental duplicate requests.
 
 Forwarded backup/update streams use caller-supplied total/stall/size policy and
 likewise have no replay action. A retry, if ever added, must create a fresh
@@ -187,8 +219,8 @@ completes the lifecycle. Reconnection alone is not success.
 
 | Situation | Retry | Reconnect | Result |
 |---|---|---|---|
-| Local backup: no document start by first-chunk deadline | At most one | No | Fresh request while still pre-start |
-| Local backup: stale leading tail/terminator | No immediate retry | No | Ignore and keep waiting within bounds |
+| Local backup: no document start by first-chunk deadline | No | No | Fail the single request |
+| Local backup: stale leading tail/terminator | No replay | No | Ignore and keep waiting within bounds |
 | Local backup: valid terminal document | No | Not inherently | Complete once |
 | Local backup: stall/malformed/oversized/invalid after start | Never | Only if transport/session was lost | Fail and discard partial document |
 | Forward stream: wrong request ID | Never splice | No | Report stale |
@@ -225,13 +257,13 @@ state for diagnostics, but must not execute the requested URL.
 Focused shared-runtime tests cover:
 
 - complete-once terminal behavior and stale ID rejection;
-- no retry/splice after a started stream stalls;
+- no automatic replay and no cross-stream splice;
 - cancellation, remote error, timeout, size, and transport-loss terminals;
 - a compile-time API with no network-enable path;
 - updater request-ID isolation and cancellation boundary; and
 - reboot disconnect/reconnect/device-confirmation sequencing.
 
-LocalBackup regression tests additionally prove pre-start-only retry,
+LocalBackup regression tests additionally prove single-request behavior,
 keepalive independence, complete-once delivery, and terminal handling of a
 malformed started stream. Physical release testing remains required; typed
 state-machine tests do not prove Cortex Cloud or firmware-update execution.

@@ -157,8 +157,8 @@ Implementation requirements:
   repeated, stale, oversized, and malformed tails.
 - Preserve operation IDs where supplied, but do not assume every firmware reply
   echoes them. Prevent a stale stream from satisfying a new operation.
-- Separate first-chunk timeout, inter-chunk stall timeout, total timeout, and
-  retry-before-stream-start policy.
+- Separate first-chunk timeout, inter-chunk stall timeout, and total timeout;
+  do not automatically replay the uncorrelated export request.
 - Do not automatically start a second backup after a completed device-side run.
 - Keep cloud credentials and arbitrary forwarding headers out of logs and test
   artifacts.

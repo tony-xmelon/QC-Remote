@@ -1302,11 +1302,6 @@ fn run(
                     update_usb_telemetry(&state, connected);
                     session.defer_keepalive(session_clock.elapsed().as_millis() as u64);
                 }
-                Some(BackupAction::Rerequest) => {
-                    connected.usb.send_command(commands::create_local_backup());
-                    update_usb_telemetry(&state, connected);
-                    session.defer_keepalive(session_clock.elapsed().as_millis() as u64);
-                }
                 Some(BackupAction::Failed(error)) => {
                     finish_backup(&mut backup, &state, session.synchronized(), Err(error));
                 }
@@ -1568,10 +1563,15 @@ mod tests {
 
     fn backup_chunk(json: &str, last: bool) -> Vec<u8> {
         pa::LocalBackupMessage {
+            action: pa::message_action::Enum::Update as i32,
             backup_json: Some(pa::local_backup_message::BackupJson::BackupJson(
                 json.into(),
             )),
-            is_last_chunk: last.then_some(pa::local_backup_message::IsLastChunk::IsLastChunk(true)),
+            is_last_chunk: Some(if last {
+                pa::local_backup_message::IsLastChunk::IsLastChunk(true)
+            } else {
+                pa::local_backup_message::IsLastChunk::IsLastChunk(false)
+            }),
             ..Default::default()
         }
         .encode_to_vec()

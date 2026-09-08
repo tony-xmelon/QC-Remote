@@ -601,25 +601,21 @@ test("Android refreshes authoritative preset state after non-idempotent history 
   assert.match(javaSource, /Undo and redo are non-idempotent[\s\S]{0,180}instead of replaying them/);
 });
 
-test("Android retries a backup only before a physical document starts", () => {
+test("Android sends one backup export request and never replays it", () => {
   // Windows collects the document on its device loop in worker.rs; Android's
-  // equivalent lives in QcUsbPlugin. Both must retry only before a document
-  // starts, and never splice two attempts together.
+  // equivalent lives in QcUsbPlugin. Both send one uncorrelated export request
+  // and never splice streams or replay that request.
   assert.match(rustAndroidSource, /"started": progress\.started/);
   assert.match(rustAndroidSource, /"ignoredPrefixChunks": progress\.ignored_prefix_chunks/);
   assert.match(javaSource, /scheduleBackupWatchdog\(pending, MAINTENANCE_POLL_MS\)/);
   assert.match(usbProfileSource, /BACKUP_FIRST_CHUNK_TIMEOUT_MS = 60000L/);
   assert.match(usbProfileSource, /BACKUP_STREAM_STALL_TIMEOUT_MS = 15000L/);
   assert.match(javaSource, /stateDecoder\.backupAdvance\(monotonicMillis\(\)\)/);
-  assert.match(javaSource, /"rerequest"\.equals\(action\)[\s\S]*issueBackupRequest\(pending\)/);
+  assert.doesNotMatch(javaSource, /"rerequest"\.equals\(action\)/);
   assert.match(javaSource, /"failed"\.equals\(action\)[\s\S]*stateDecoder\.backupCancelled\(\)/);
-  assert.match(javaSource, /Sending native backup request " \+ pending\.operation\.attempts/);
-  assert.match(usbProfileSource, /BACKUP_MAXIMUM_ATTEMPTS = 2/);
-  // A started document is terminal on Windows: its branch reports the stall
-  // and never reaches the re-request path below it.
-  assert.match(rustBackupRuntimeSource, /if self\.assembler\.started\(\)[\s\S]*not combined with a retry/);
-  assert.match(rustBackupRuntimeSource, /partial document was discarded and was not combined with a retry/);
-  assert.match(rustBackupRuntimeSource, /BACKUP_MAXIMUM_ATTEMPTS[\s\S]*BackupAction::Rerequest/);
+  assert.match(javaSource, /Sending single native backup request/);
+  assert.match(rustBackupRuntimeSource, /export request was not replayed/);
+  assert.doesNotMatch(rustBackupRuntimeSource, /BackupAction::Rerequest/);
   assert.match(javaSource, /stateDecoder\.backupStarted\(monotonicMillis\(\), QcUsbProfile\.BACKUP_TOTAL_TIMEOUT_MS\)/);
 });
 

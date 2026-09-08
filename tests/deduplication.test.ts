@@ -794,7 +794,7 @@ test("one generated profile owns native backup limits across both hosts", () => 
   const windowsRpc = source("services/device-broker/src/rpc.rs");
   const responses = source("packages/rust/qc-protocol/src/responses.rs");
   const sharedBackup = source("packages/rust/qc-device-runtime/src/backup.rs");
-  for (const value of [contract.backupTotalTimeoutMs, contract.backupFirstChunkTimeoutMs, contract.backupStreamStallTimeoutMs, contract.backupMaximumAttempts, contract.backupMaximumDocumentBytes]) {
+  for (const value of [contract.backupTotalTimeoutMs, contract.backupFirstChunkTimeoutMs, contract.backupStreamStallTimeoutMs, contract.backupMaximumDocumentBytes]) {
     assert.match(javaProfile, new RegExp(`= ${value}(?:L)?;`));
     assert.match(rustProfile, new RegExp(`= ${value};`));
   }
@@ -804,7 +804,7 @@ test("one generated profile owns native backup limits across both hosts", () => 
   assert.match(windowsWorker, /BackupRuntime/);
   assert.match(sharedBackup, /profile::BACKUP_FIRST_CHUNK_TIMEOUT_MS/);
   assert.match(sharedBackup, /profile::BACKUP_STREAM_STALL_TIMEOUT_MS/);
-  assert.match(sharedBackup, /profile::BACKUP_MAXIMUM_ATTEMPTS/);
+  assert.doesNotMatch(sharedBackup, /BackupAction::Rerequest/);
   assert.match(windowsRpc, /profile::BACKUP_TOTAL_TIMEOUT_MS/);
   assert.match(responses, /profile::BACKUP_MAXIMUM_DOCUMENT_BYTES/);
 });
