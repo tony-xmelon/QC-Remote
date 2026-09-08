@@ -93,7 +93,6 @@ public class QcUsbPlugin extends Plugin {
     private volatile int selectedInputEndpointAddress = -1;
     private volatile int selectedInputMaxPacketSize;
     private volatile boolean includeReportId = true;
-    private volatile boolean startupActive;
     private volatile long commandNotBeforeMs;
     private volatile boolean connecting;
     private volatile CompletableFuture<org.json.JSONObject> reconnectInFlight;
@@ -189,8 +188,7 @@ public class QcUsbPlugin extends Plugin {
         );
         keepalive.scheduleWithFixedDelay(() -> {
             long now = monotonicMillis();
-            if (startupActive && stateDecoder.startupTimedOut(now)) {
-                startupActive = false;
+            if (stateDecoder.startupTimedOut(now)) {
                 lastError = "QC staged startup exceeded the shared readiness timeout.";
                 if (flight != null) flight.event("startup-timed-out");
                 scheduleAutomaticReconnect(lastError);
@@ -1522,7 +1520,6 @@ public class QcUsbPlugin extends Plugin {
             resetReply = new CountDownLatch(1);
             try {
                 QcNativeStateDecoder.StartupDecision entry = handshake.startup;
-                startupActive = true;
                 if (entry.kind != QcNativeStateDecoder.StartupDecision.SEND
                     || entry.messages.isEmpty()) {
                     throw new IllegalStateException("Native QC startup did not produce a reset command.");
@@ -1554,7 +1551,6 @@ public class QcUsbPlugin extends Plugin {
         if (decision.kind == QcNativeStateDecoder.StartupDecision.WAIT) return;
         if (decision.kind == QcNativeStateDecoder.StartupDecision.INVALID
             || decision.kind == QcNativeStateDecoder.StartupDecision.FAILED) {
-            startupActive = false;
             lastError = "QC startup " + decision.phase + ": "
                 + (decision.error == null ? "unknown protocol error" : decision.error);
             if (flight != null) flight.event("startup-" + decision.phase);
@@ -1856,7 +1852,8 @@ public class QcUsbPlugin extends Plugin {
         messagesReceivedByType.merge(decoded.messageType, 1L, Long::sum);
         if (flight != null) flight.inbound(decoded.messageType);
         lastMessageType = decoded.messageType;
-        if (startupActive && decoded.messageType != QcUsbProfile.MESSAGE_TYPE_MODEL_REPO) {
+        if (stateDecoder.startupActive()
+            && decoded.messageType != QcUsbProfile.MESSAGE_TYPE_MODEL_REPO) {
             try {
                 QcNativeStateDecoder.StartupDecision startup =
                     stateDecoder.startupObserved(decoded.messageType, decoded.payload);
@@ -2197,7 +2194,7 @@ public class QcUsbPlugin extends Plugin {
                 List<JSObject> states = stateDecoder.installModelRepo(payload);
                 if (generation != connectionGeneration.get()) return;
                 publishStateBatch(states, null);
-                if (startupActive) {
+                if (stateDecoder.startupActive()) {
                     QcNativeStateDecoder.StartupDecision startup =
                         stateDecoder.startupObserved(QcUsbProfile.MESSAGE_TYPE_MODEL_REPO, payload);
                     dispatchStartupDecision(startup, QcUsbProfile.MESSAGE_TYPE_MODEL_REPO);
@@ -2226,7 +2223,6 @@ public class QcUsbPlugin extends Plugin {
         boolean hadSession = connection != null || reading;
         if (flight != null && hadSession) flight.event("transport-closing");
         reading = false;
-        startupActive = false;
         commandNotBeforeMs = 0;
         connectionGeneration.incrementAndGet();
         UsbRequest[] inputRequests = activeInputRequests;

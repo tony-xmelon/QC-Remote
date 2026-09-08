@@ -1322,6 +1322,24 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeStar
 }
 
 #[no_mangle]
+pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeStartupActive(
+    _env: JNIEnv,
+    _class: JClass,
+    value: jlong,
+) -> jint {
+    handle(value)
+        .ok()
+        .and_then(|native| {
+            native
+                .startup
+                .lock()
+                .ok()
+                .and_then(|startup| startup.as_ref().map(DeviceStartupRuntime::is_active))
+        })
+        .unwrap_or(false) as jint
+}
+
+#[no_mangle]
 pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeStartupTimedOut(
     _env: JNIEnv,
     _class: JClass,

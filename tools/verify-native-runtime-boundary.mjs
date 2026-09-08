@@ -117,7 +117,8 @@ for (const symbol of [
 assert(initializationRuntime.includes("self.synchronized && self.seed_complete()"),
   "Shared initialization readiness must require the full authoritative seed.");
 assert(initializationRuntime.includes("deadline_ms: now_ms.saturating_add(profile::READY_WAIT_TIMEOUT_MS)")
-  && initializationRuntime.includes("pub fn timed_out"),
+  && initializationRuntime.includes("pub fn timed_out")
+  && initializationRuntime.includes("pub fn is_active"),
   "The shared staged startup runtime must own the generated readiness deadline.");
 const correlationRuntime = await text("packages/rust/qc-device-runtime/src/correlation.rs");
 for (const symbol of ["ResponseExpectation", "matches", "expired", "timeout_message"]) {
@@ -212,8 +213,12 @@ assert(/InitializationDecision\.SEND[\s\S]{0,300}connection == null \|\| !stateD
 assert(androidUsbHost.includes("postBootInitializationStarted(monotonicMillis())"),
   "Android must let the shared startup runtime allocate post-boot request IDs.");
 assert(androidNativeFacade.includes("startupTimedOut(long nowMs)")
-  && androidUsbHost.includes("startupActive && stateDecoder.startupTimedOut(now)"),
+  && androidUsbHost.includes("stateDecoder.startupTimedOut(now)"),
   "Android must enforce staged startup timeout through the shared Rust runtime.");
+assert(androidNativeFacade.includes("startupActive()")
+  && androidUsbHost.includes("stateDecoder.startupActive()")
+  && !/private volatile boolean startupActive/.test(androidUsbHost),
+  "Android must query the shared startup controller instead of mirroring its active epoch in Java.");
 assert(androidNativeFacade.includes("sessionConnected()")
   && androidNativeFacade.includes("sessionSynchronized()")
   && !/(?:handshakeComplete|stateSynchronized|initializationComplete)/.test(androidUsbHost),

@@ -47,7 +47,7 @@ Verification cadence stays inside Rust rather than crossing JNI,
 so Java does not duplicate either a private plan codec or protocol timer loop.
 Android also queries the shared transport's connected and synchronized
 projections directly instead of maintaining Java handshake, initialization,
-or synchronization readiness mirrors.
+startup-epoch, or synchronization readiness mirrors.
 An ordinary preset push is not allowed to promote Android to Ready by itself;
 both native hosts publish synchronization only from the shared semantic-seed
 decision, including recovery when missing seed fields arrive late.
