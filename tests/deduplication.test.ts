@@ -10,6 +10,7 @@ test("nonempty repository files have unique bytes unless their generated or arch
   const files = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard"], { encoding: "utf8" })
     .trim().split(/\r?\n/).filter((file) => file && existsSync(file) && statSync(file).size > 0)
     .map((file) => file.replaceAll("\\", "/"));
+  assert.ok(files.length > 0, "the repository file inventory must not be empty");
   const allowedPairs = new Set<string>();
   const allowPair = (left: string, right: string) => allowedPairs.add([left, right].sort().join("\n"));
 
@@ -25,6 +26,7 @@ test("nonempty repository files have unique bytes unless their generated or arch
   const corpusManifest = `${corpusRoot}/manifest.json`;
   if (existsSync(corpusManifest)) {
     const corpus = JSON.parse(source(corpusManifest));
+    assert.ok(Array.isArray(corpus.captures) && corpus.captures.length > 0, "the optional UI corpus manifest must contain captures");
     const captures = new Map(corpus.captures.map((capture: { id: string }) => [capture.id, capture]));
     for (const capture of corpus.captures) {
       if (capture.identicalImageOf) {
@@ -753,6 +755,8 @@ test("application payload types are generated once for TypeScript, Rust, and Pyt
   const typescript = source("packages/typescript/qc-client/src/generated-payloads.ts");
   const rust = source("packages/rust/qc-protocol/src/generated_payloads.rs");
   const python = source("services/device-gateway/src/qc_device_gateway/generated_payloads.py");
+  assert.ok(Array.isArray(schema["x-generate"]) && schema["x-generate"].length > 0, "the cross-language payload list must not be empty");
+  assert.ok(Array.isArray(schema["x-rust-types"]) && schema["x-rust-types"].length > 0, "the Rust payload list must not be empty");
   for (const name of schema["x-generate"]) {
     assert.match(typescript, new RegExp(`interface ${name}\\b`));
     assert.match(python, new RegExp(`class ${name}\\b`));

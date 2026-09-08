@@ -37,7 +37,7 @@ test("physical interaction fixtures preserve the captured CorOS overlay structur
   for (const marker of ["coros-physical-keyboard", "coros-physical-confirmation", "directory-context-scrim", "block-context-scrim"]) {
     assert.match(fixture, new RegExp(marker));
   }
-  assert.match(fixture, /\["Edit", "Copy", "Cut", "Delete"\]/);
+  assert.match(fixture, /\["Edit", "Copy", "Cut", "Paste to replace", "Delete"\]/);
   assert.match(fixture, /DirectoryIcon kind="folder" number=\{4\}/);
   assert.match(fixture, /function PhysicalDirectoryStatusIcon/);
   assert.match(fixture, /function PluginLockIcon/);
@@ -51,22 +51,22 @@ test("physical interaction fixtures preserve the captured CorOS overlay structur
   assert.match(fixture, /dy=\{browserChrome \? -11 : 0\}/);
   assert.match(css, /\.qc-screen\.coros-block-context > aside \{[^}]*left: 30px;[^}]*width: 322px;/s);
   assert.match(css, /\.qc-screen\.coros-block-context > aside button \{[^}]*grid-template-columns: 57px 1fr;[^}]*font: 16px var\(--qc-font-device-plain\);/s);
-  assert.match(css, /\.coros-block-context > \.block-context-scrim \{[^}]*rgba\(71,74,71,\.92\)/s);
+  assert.match(css, /\.coros-block-context > \.block-context-scrim \{[^}]*rgba\(85,88,85,\.72\)/s);
   assert.match(css, /\.coros-block-context > aside button span svg \{[^}]*width: 24px;[^}]*height: 24px;/s);
   assert.match(css, /\.physical-eq-underlay header nav \.physical-eq-confirm \{[^}]*width: 98px;/s);
   assert.match(css, /\.physical-eq-underlay footer::before \{[^}]*top: -45px;/s);
-  assert.match(css, /\.coros-directory-fixture \.directory-item-menu \{[^}]*left: 528px;[^}]*width: 256px;[^}]*height: 208px;/s);
+  assert.match(css, /\.coros-directory-fixture \.directory-item-menu \{[^}]*left: 528px;[^}]*width: 256px;[^}]*height: 260px;/s);
   assert.match(css, /\.coros-directory-fixture\.is-physical-context > header > button:last-child \{[^}]*left: 694px;[^}]*width: 98px;[^}]*min-width: 98px;/s);
   assert.match(css, /\.coros-directory-fixture\.is-physical-context \.directory-fixture-items \{[^}]*gap: 0;/s);
   assert.match(css, /\.directory-fixture-folders \.folder-number \{[^}]*fill: #202421;[^}]*stroke: none;/s);
-  assert.match(css, /\.directory-item-menu button:nth-child\(4\) \{[^}]*translateY\(-6px\)/s);
+  assert.match(css, /\.coros-directory-fixture \.directory-item-menu button \{[^}]*height: 52px;/s);
   assert.match(css, /\.coros-physical-confirmation > aside \{[^}]*left: 190px;[^}]*width: 420px;[^}]*height: 230px;/s);
   assert.match(css, /\.physical-keyboard-rows button \{[^}]*background: #212421;/s);
   assert.match(remainingCss, /\.splitter-panel>header>svg\{transform:translate\(-1\.625cqw,\.25cqw\)\}/);
   assert.match(remainingCss, /\.coros-splitter-physical:not\(\.coros-mixer-physical\) \.splitter-knob\{left:73\.375%;top:4\.5cqw;/);
   assert.match(remainingCss, /repeating-linear-gradient\(to bottom,#212421 0 \.5cqw,transparent \.5cqw 1\.25cqw\)/);
   assert.match(remainingCss, /\.is-physical-plugin-list \.browser-fixture-panel>nav button\.is-active\{background:#181c18\}/);
-  assert.match(remainingCss, /\.is-physical-plugin-list \.browser-fixture-panel>nav button\.is-active i\{[^}]*background:#000;/);
+  assert.match(remainingCss, /\.coros-browser-fixture\.is-physical-plugin-list \.browser-fixture-panel>nav button\.is-active i\{[^}]*background:#102818;/);
   assert.match(remainingCss, /\.is-physical-plugin-list \.plugin-license-lock svg[^}]*\{fill:currentColor;stroke:none\}/);
   assert.match(remainingCss, /\.is-physical-plugin-list \.plugin-license-lock\{width:2\.5cqw;height:3\.25cqw;transform:translateX\(1px\)\}/);
   assert.match(remainingCss, /\.is-physical-plugin-list \.plugin-grid-underlay main::before\{left:6\.875cqw\}/);

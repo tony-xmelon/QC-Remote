@@ -151,6 +151,7 @@ test("screen vector layers are ordered, semantic, theme-resolved, and neutral", 
 test("screen controls use shared vectors and theme-owned fonts without character or raster fallbacks", () => {
   const sourceFiles = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "--", "apps/windows/src", "apps/android/src", "packages/typescript/qc-ui/src"], { encoding: "utf8" })
     .trim().split(/\r?\n/).filter((file) => /\.(?:css|ts|tsx)$/.test(file) && existsSync(file));
+  assert.ok(sourceFiles.length > 0, "the screen source inventory must not be empty");
   const iconCharacter = /[▲▼►▶◀◁▷‹›⌄⌃⋮＋✕✓✔✚⏵⏴■↵⇥✎☆⌫◇♩▥⚙▤↑↓⏻Ø↶↻◉♜▰◴◫♞▣]/u;
   const jsxIconCharacter = />\s*[→⏻]\s*</u;
   const literalFont = /(font(?:-family)?|fontFamily)\s*[:=][^;\n}]*(?:Arial|Roboto|Helvetica|Segoe UI|sans-serif|system-ui)/i;
@@ -172,6 +173,7 @@ test("screen controls use shared vectors and theme-owned fonts without character
 test("production and comparison screens cannot select alternate icon artwork", () => {
   const sourceFiles = execFileSync("git", ["ls-files", "--", "apps", "packages", "tests"], { encoding: "utf8" })
     .trim().split(/\r?\n/).filter((file) => /\.(?:ts|tsx)$/.test(file) && existsSync(file));
+  assert.ok(sourceFiles.length > 0, "the production/comparison source inventory must not be empty");
   const fixtureOnlyVariant = new RegExp(["official", "Raster"].join(""));
   for (const file of sourceFiles) {
     assert.doesNotMatch(read(file), fixtureOnlyVariant, `${file} must use the same canonical artwork in production and comparisons`);
@@ -206,6 +208,7 @@ test("canonical asset sources are shared neutral vectors or fonts, never rasters
   const canonicalExtensions = /\.(?:svg|woff2?|ttf|otf)$/i;
   const rasterExtensions = /\.(?:png|ico|webp|jpe?g|gif|avif)$/i;
   const sourcePaths = Object.values(QC_VISUAL_ASSETS).map((asset) => asset.sourcePath.replaceAll("\\", "/"));
+  assert.ok(sourcePaths.length > 0, "the canonical visual asset manifest must not be empty");
   assert.deepEqual(sourcePaths.sort(), [
     "packages/typescript/qc-theme/assets/app-icon.svg",
     "packages/typescript/qc-theme/assets/fonts/IBMPlexSans-Bold.ttf",
@@ -223,6 +226,7 @@ test("canonical asset sources are shared neutral vectors or fonts, never rasters
 test("every tracked visual, font, audio, or video asset is owned by the theme manifest", () => {
   const visualFiles = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "--", "*.png", "*.svg", "*.ico", "*.webp", "*.jpg", "*.jpeg", "*.gif", "*.avif", "*.woff", "*.woff2", "*.ttf", "*.otf", "*.mp3", "*.wav", "*.ogg", "*.mp4", "*.webm"], { encoding: "utf8" })
     .trim().split(/\r?\n/).filter(Boolean).map((file) => file.replaceAll("\\", "/")).filter(existsSync);
+  assert.ok(visualFiles.length > 0, "the tracked visual asset inventory must not be empty");
   const exact = new Set<string>();
   const prefixes: string[] = [];
   for (const asset of Object.values(QC_VISUAL_ASSETS)) {
@@ -230,7 +234,9 @@ test("every tracked visual, font, audio, or video asset is owned by the theme ma
     if ("derivedPathPrefixes" in asset) prefixes.push(...asset.derivedPathPrefixes);
   }
   for (const file of visualFiles) assert.ok(exact.has(file) || prefixes.some((prefix) => file.startsWith(prefix)), `${file} is not owned by qc-theme/src/assets.json`);
-  for (const file of visualFiles.filter((path) => /\.(?:png|ico|webp|jpe?g|gif|avif)$/i.test(path))) {
+  const rasterFiles = visualFiles.filter((path) => /\.(?:png|ico|webp|jpe?g|gif|avif)$/i.test(path));
+  assert.ok(rasterFiles.length > 0, "the generated raster asset inventory must not be empty");
+  for (const file of rasterFiles) {
     assert.ok(prefixes.some((prefix) => file.startsWith(prefix)), `${file} raster must be a declared generated platform output`);
   }
 });
@@ -239,6 +245,7 @@ test("product visual assets have no byte-for-byte duplicates", () => {
   const visualFiles = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "--", "*.png", "*.svg", "*.ico", "*.webp", "*.jpg", "*.jpeg", "*.gif", "*.avif", "*.woff", "*.woff2", "*.ttf", "*.otf", "*.mp3", "*.wav", "*.ogg", "*.mp4", "*.webm"], { encoding: "utf8" })
     .trim().split(/\r?\n/).filter(Boolean).map((file) => file.replaceAll("\\", "/"))
     .filter((file) => existsSync(file) && !file.startsWith("references/"));
+  assert.ok(visualFiles.length > 0, "the product visual asset inventory must not be empty");
   const owners = new Map<string, string>();
   for (const file of visualFiles) {
     const fingerprint = sha256(file);
@@ -250,9 +257,12 @@ test("product visual assets have no byte-for-byte duplicates", () => {
 test("authored vector geometry has one owner", () => {
   const sourceFiles = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "--", "apps/**/*.tsx", "packages/**/*.tsx"], { encoding: "utf8" })
     .trim().split(/\r?\n/).filter((file) => Boolean(file) && existsSync(file));
+  assert.ok(sourceFiles.length > 0, "the authored TSX source inventory must not be empty");
   const owners = new Map<string, string>();
+  let geometryCount = 0;
   for (const file of sourceFiles) {
     for (const match of read(file).matchAll(/\bd="([^"]{8,})"/g)) {
+      geometryCount++;
       const location = `${file}:${read(file).slice(0, match.index).split("\n").length}`;
       assert.ok(!owners.has(match[1]), `${location} duplicates vector geometry owned by ${owners.get(match[1])}`);
       owners.set(match[1], location);
@@ -261,10 +271,12 @@ test("authored vector geometry has one owner", () => {
   const registryFile = "packages/typescript/qc-theme/src/screen-icon-vectors.ts";
   const registrySource = read(registryFile);
   for (const match of registrySource.matchAll(/(?:\bpath:\s*|\bconst\s+\w+_PATH\s*=\s*)"([^"]{8,})"/g)) {
+    geometryCount++;
     const location = `${registryFile}:${registrySource.slice(0, match.index).split("\n").length}`;
     assert.ok(!owners.has(match[1]), `${location} duplicates vector geometry owned by ${owners.get(match[1])}`);
     owners.set(match[1], location);
   }
+  assert.ok(geometryCount > 0, "the vector geometry inventory must not be empty");
   const components = sourceFiles.flatMap((file) => [...read(file).matchAll(/function\s+(?:Qc)?DeviceGlyph\b/g)].map(() => file));
   assert.deepEqual(components, ["packages/typescript/qc-ui/src/device-glyph.tsx"]);
 });
@@ -293,11 +305,14 @@ test("every declared icon is wired outside its registry and audit gallery", () =
   const authoredSource = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "--", "apps/**/*.ts", "apps/**/*.tsx", "packages/**/*.ts", "packages/**/*.tsx"], { encoding: "utf8" })
     .trim().split(/\r?\n/).filter((file) => existsSync(file) && file !== iconFile && file !== fixtureFile && !file.endsWith(".test.ts") && !file.endsWith(".test.tsx"))
     .map(read).concat(fixtureSource).join("\n");
+  let declaredVariantCount = 0;
   for (const union of iconSource.matchAll(/export type \w+(?:IconName|GlyphName)\s*=\s*([^;]+);/g)) {
     for (const variant of union[1].matchAll(/"([^"]+)"/g)) {
+      declaredVariantCount++;
       assert.match(authoredSource, new RegExp(`["']${variant[1].replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}["']`), `${variant[1]} is declared but not wired`);
     }
   }
+  assert.ok(declaredVariantCount > 0, "the declared icon variant inventory must not be empty");
 });
 
 test("product branding has one shared owner across web and native hosts", () => {
@@ -362,6 +377,7 @@ test("authored app and device sources cannot bypass the shared visual contract",
     .filter((file) => file !== "apps/android/capacitor.config.json")
     .filter((file) => !file.includes("/tests/") && !file.endsWith(".test.ts") && !file.endsWith(".test.tsx"))
     .filter((file) => !/generated[-_]/i.test(file) && !file.endsWith("package-lock.json"));
+  assert.ok(files.length > 0, "the authored app/device source inventory must not be empty");
   const colorLiteral = /#[0-9a-f]{3,8}\b|rgba?\s*\(|hsla?\s*\(/i;
   const deployedAssetUrl = /url\([^)]*\.(?:svg|png|webp|jpe?g|ico)\b/i;
   const literalFontStack = /["'](?:Arial Narrow|Arial|Helvetica Neue|Helvetica|Roboto Condensed|Roboto|DM Mono|Cascadia Mono|IBM Plex Sans|Segoe UI Variable|Segoe UI|Inter|Consolas)["']|fontFamily=["']|android:fontFamily">\s*(?!@(?:string|font)\/)[^<]+/mi;

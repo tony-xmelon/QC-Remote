@@ -33,6 +33,14 @@ factory content.
 
 **Binary, high confidence:**
 
+- The submit path from `showCreateBackupModal` stores `localBackupName`, then
+  calls the export helper at image VA `0x141BDA180`. That helper constructs
+  message type 40 with no populated protobuf fields: the exact export request
+  is therefore the empty payload/default `CREATE`, not `UPDATE`.
+- `LocalBackupMessageSender::sendBackupChunk` carries `backup_json` and
+  `is_last_chunk` from host to device, and its separate `install` builder sends
+  `action = UPDATE` (enum value 1, exact payload `08 01`). These are the local
+  restore/apply path and must not be used as evidence for starting an export.
 - `LocalBackup` (40) has optional `backup_json`, `can_apply_backup`,
   `applied_backup`, and `is_last_chunk` fields.
 - `BackupsForward` (30) identifies a transfer with `backups_request_id` and can
@@ -67,7 +75,9 @@ successful retail-firmware execution of every cloud/update path.
 **Physical, high confidence for the tested firmware/device:**
 
 - One `CREATE` produced 12 ordered JSON chunks: 11 full chunks and one terminal
-  chunk.
+  chunk. As protobuf's default enum value, `CREATE` encodes as an empty payload.
+- Cortex Control stores the chosen backup name locally; it is not included in
+  the type-40 export request.
 - Backup chunks did not echo `request_id`; message type or request ID alone
   cannot correlate a transfer.
 - A newly attached collector can inherit fragments or a terminal marker from

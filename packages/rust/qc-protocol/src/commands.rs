@@ -2670,6 +2670,19 @@ mod tests {
         );
     }
 
+    #[test]
+    fn local_backup_export_matches_cortex_control_create_path() {
+        let message = create_local_backup();
+        assert_eq!(message.message_type, profile::MESSAGE_TYPE_LOCAL_BACKUP);
+        // CREATE is protobuf's zero value, so the canonical export request has
+        // an empty body. Do not confuse this with the UPDATE sent by Cortex
+        // Control after streaming a local backup back to the device.
+        assert!(message.payload.is_empty());
+        let decoded = pa::LocalBackupMessage::decode(message.payload.as_slice()).unwrap();
+        assert_eq!(decoded.action, pa::message_action::Enum::Create as i32);
+        assert!(decoded.request_id.is_none());
+    }
+
     /// The QC dates everything it saves from whatever the host last told it.
     #[test]
     fn system_time_sync_carries_unix_milliseconds() {
