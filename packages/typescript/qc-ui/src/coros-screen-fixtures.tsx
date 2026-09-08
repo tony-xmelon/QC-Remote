@@ -5,7 +5,7 @@ import { officialBlockVisual } from "./block-visuals";
 import { openSplitPath } from "./coros-ui";
 import { QcDeviceGlyph } from "./device-glyph";
 import { QcDeviceCategoryGlyph as DeviceCategoryGlyph } from "./device-category-glyph";
-import { QcDirectoryIcon, QcEditorIcon, QcHardwareIcon, QcLibraryIcon, QcModeGlyph, QcPresetStackIcon, QcScreenHeaderGlyph, QcUiIcon } from "./theme-icons";
+import { QcCaptureFilterIcon, QcDirectoryIcon, QcEditorIcon, QcEqIcon, QcHardwareIcon, QcLibraryIcon, QcModeGlyph, QcPresetStackIcon, QcScreenHeaderGlyph, QcSettingsIcon, QcUiIcon } from "./theme-icons";
 import { QcCaptureKindGlyph, QcGigStompGlyph, QcHeadphonesGlyph, QcIoPortGlyph, QcLooperActionGlyph, QcScreenGlyph, type QcLooperActionGlyphName, type QcScreenGlyphName } from "./screen-glyphs";
 import "./fixture-live-surface.css";
 import "./remaining-fixtures.css";
@@ -79,8 +79,10 @@ function DirectoryCategoryGlyph({ label }: { label: string }) {
 
 type DirectoryFixtureView = "directory-presets" | "directory-categories" | "directory-captures" | "directory-irs" | "directory-plugins" | "directory-favorites" | "directory-search" | "directory-search-results" | "directory-sort" | "directory-filter" | "directory-arrange" | "directory-copy" | "directory-nested" | "directory-new-folder" | "directory-item-context" | "directory-cloud-upload";
 type OfficialDirectoryView = "directory-presets" | "directory-captures" | "directory-irs" | "directory-plugins" | "directory-favorites" | "directory-search-results" | "directory-nested" | "directory-cloud-upload";
+const CAPTURE_FILTERS = ["Default", "Amp", "Combo Amp", "Amp + Cab", "Cab", "Overdrive", "Fuzz", "Compressor"] as const;
 
-function CorOsOfficialDirectory({ view }: { view: OfficialDirectoryView }) {
+function CorOsOfficialDirectory({ view, filter = false }: { view: OfficialDirectoryView; filter?: boolean }) {
+  if (filter) return <section className="qc-screen directory-official directory-captures-official directory-filter-official"><header><button className="directory-official-category"><QcLibraryIcon kind="capture-header" /><span>Neural Captures</span><b><QcUiIcon kind="down" /></b></button><span /><button><QcDirectoryIcon kind="filter" /></button><button><QcUiIcon kind="check" /></button></header><main><nav className="directory-filter-list">{CAPTURE_FILTERS.map((label, index) => <button key={label} className={index === 0 ? "is-active" : undefined}><b><QcCaptureFilterIcon kind={label} /></b><span>{label}</span>{index === 0 && <i><QcUiIcon kind="check" /></i>}</button>)}</nav></main></section>;
   if (view === "directory-presets") {
     const rows = ["1A Brit 2203", "1B Brit Plexi100 Normal", "1C US TWN Vibrato", "1D Rols Jazz CH120", "1E California Tremo Red", "1F EV101III Red", "1G Freeman 100 Rhythm", "1H D-Cell H4 Ch3"];
     return <section className="qc-screen directory-official directory-presets-official"><header><button className="directory-official-category"><DirectoryIcon kind="grid" />Presets <b><QcUiIcon kind="down" /></b></button><span /><button><DirectoryIcon kind="sort" /></button><button><DirectoryIcon kind="arrange" /></button><button><DirectoryIcon kind="search" /></button><button><DirectoryIcon kind="done" /></button></header><main><nav><button><b><DirectoryIcon kind="download" /></b><span>Downloads</span></button><button><b><DirectoryIcon kind="cloud" /></b><span>Cloud Presets</span></button><button className="is-active"><b><DirectoryIcon kind="folder" number={0} /></b><span>Factory Presets</span></button><button><b><DirectoryIcon kind="folder" number={1} /></b><span>My Presets</span><small><QcUiIcon kind="more" /></small></button><button className="is-muted"><b><DirectoryIcon kind="new-folder" /></b><span>New Setlist</span></button></nav><nav className="directory-preset-banks">{Array.from({ length: 14 }, (_, index) => <button key={index}>{index + 1}</button>)}</nav><section className="directory-official-list">{rows.map((name, index) => <button key={name} style={index === 0 ? { color: "#2df36a" } : undefined}><span>{name}</span><b><QcUiIcon kind="more" /></b></button>)}</section></main></section>;
@@ -248,8 +250,8 @@ function SettingsDeviceIcon({ label }: { label: string }) {
 function SettingsSectionGlyph({ view, label }: { view: "settings-account" | "settings-system" | "settings-device" | "settings-midi"; label?: string }) {
   if (view === "settings-account") return <SettingsAccountGlyph kind={label === "Backups" ? "backup" : label ? "user" : "cloud"} />;
   if (view === "settings-system") {
-    const kind: QcScreenGlyphName = label === "Connection" ? "wifi" : label === "Updates" ? "updates" : label === "Brightness" ? "brightness" : label === "Power Functions" ? "power-functions" : label === "Master Volume Knob" ? "volume" : label === "Device Storage" ? "storage" : "factory";
-    return <QcScreenGlyph kind={kind} />;
+    const kind = label === "Connection" ? "connection" : label === "Updates" ? "updates" : label === "Brightness" ? "brightness" : label === "Power Functions" ? "power" : label === "Master Volume Knob" ? "volume" : label === "Device Storage" ? "storage" : "factory-reset";
+    return <QcSettingsIcon kind={kind} />;
   }
   if (view === "settings-midi" && label === "MIDI") return <QcUiIcon kind="midi" />;
   return label ? <SettingsDeviceIcon label={label} /> : <QcScreenGlyph kind="device" />;
@@ -474,7 +476,7 @@ function CorOsGlobalEq({ onClose }: { onClose: () => void }) {
     <header><button className="global-eq-more"><QcUiIcon kind="more" /></button><span><small>GLOBAL EQ</small><strong>Parametric-5</strong></span><button className="global-eq-power"><i /> ON</button><button aria-label="Close Global EQ" onClick={onClose}><QcUiIcon kind="check" /></button></header>
     <div className="global-eq-graph"><div>{verticals.map((left) => <i key={left} style={{ left: `${left}%` }} />)}</div><svg viewBox="0 0 800 255" preserveAspectRatio="none"><g className="eq-axis-labels"><text x="208" y="13">100</text><text x="471" y="13">1k</text><text x="736" y="13">10k</text></g><path d="M25 252 C78 186 99 110 243 104 C400 125 513 115 513 146 C540 115 590 105 644 104 C700 95 750 82 800 80" /><g>{[[104,158],[243,105],[513,146],[607,126],[644,104]].map(([x,y], index) => <g key={index}><circle cx={x} cy={y} r="18" className={index === 0 ? "is-active" : ""} /><text x={x} y={y + 5}>{index + 1}</text></g>)}</g></svg></div>
     <div className="global-eq-tabs">{[1,2,3,4,5].map((tab) => <button key={tab} className={tab === 1 ? "is-active" : ""}>{tab}</button>)}<button>OUT</button></div>
-    <div className="global-eq-controls"><section><span>TYPE</span><button><DeviceCategoryGlyph label="Filter" /> HI PASS <QcUiIcon kind="down" /></button></section>{[["GAIN","0.0 dB"],["FREQ","50 Hz"],["Q","0.10"]].map(([label,value]) => <section key={label}><span>{label}</span><IoDial value={value} /></section>)}<section className="global-eq-bypass"><span>BYPASS 1</span><button><ExpressionPowerIcon /></button></section></div>
+    <div className="global-eq-controls"><section><span>TYPE</span><button><QcEqIcon kind="high-pass" /> HI PASS <QcUiIcon kind="down" /></button></section>{[["GAIN","0.0 dB"],["FREQ","50 Hz"],["Q","0.10"]].map(([label,value]) => <section key={label}><span>{label}</span><IoDial value={value} /></section>)}<section className="global-eq-bypass"><span>BYPASS 1</span><button><ExpressionPowerIcon /></button></section></div>
   </section>;
 }
 
@@ -909,6 +911,9 @@ export function CorOsScreenFixture({ view, snapshot, gigPresetList, onClose = ()
   if (view === "device-presets" || view === "device-presets-user" || view === "device-preset-actions" || view === "device-preset-save") return <CorOsDevicePresetScreen save={view === "device-preset-save"} view={view === "device-presets-user" ? "user" : view === "device-preset-actions" ? "actions" : "factory"} />;
   if (view === "stomp-assignment" || view === "scene-assignment" || view === "expression-parameter" || view === "expression-bypass") return <CorOsAssignmentScreen view={view} />;
   if (view === "block-context") return <CorOsBlockContext />;
+  if (view === "directory-filter") return <CorOsOfficialDirectory view="directory-captures" filter />;
+  if (view === "directory-captures-official") return <CorOsOfficialDirectory view="directory-captures" />;
+  if (view === "directory-irs-official") return <CorOsOfficialDirectory view="directory-irs" />;
   if (view.startsWith("directory-")) return (["directory-presets", "directory-captures", "directory-irs", "directory-plugins", "directory-favorites", "directory-search-results", "directory-nested", "directory-cloud-upload"] as string[]).includes(view) ? <CorOsOfficialDirectory view={view as OfficialDirectoryView} /> : <CorOsDirectoryFixture view={view as DirectoryFixtureView} />;
   if (view.startsWith("capture-")) return <CorOsCaptureFixture view={view as CaptureFixtureView} />;
   if (view.startsWith("settings-")) return <CorOsSettingsFixture view={view as SettingsFixtureView} />;
