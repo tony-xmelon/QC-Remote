@@ -5,7 +5,7 @@
   "embeddedVectorSources": [
     { "path": "packages/typescript/qc-theme/src/screen-icon-vectors.ts", "sha256": "a5c4552a790fddfda7fb5e0cc50eb2102d6fd2ce8e6c53385e9c16e318e2d72d", "purpose": "canonical neutral screen-icon geometry" },
     { "path": "packages/typescript/qc-ui/src/coros-capture-connections.tsx", "sha256": "5515af113eb777b012a7d805664f0270b95680cd36bce399a193374e05b1c99d", "purpose": "functional capture-cabling diagrams" },
-    { "path": "packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", "sha256": "7248c2c6f4f56ec2b18f81507d717a3b5ab6e2b394eafc06fd291187ac2d9963", "purpose": "shared screen diagrams and fixture composition" },
+    { "path": "packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", "sha256": "d70d5535d79ba4f4d272b500c3a5b18a0a815d8f5f436c574f6719eb3f4a2774", "purpose": "shared screen diagrams and fixture composition" },
     { "path": "packages/typescript/qc-ui/src/device-category-glyph.tsx", "sha256": "4af1e03f6b006874b645734462e13f53e8e72b6aac368e02700471d6a745bffa", "purpose": "device-category glyph composition" },
     { "path": "packages/typescript/qc-ui/src/device-glyph.tsx", "sha256": "7588f205f47acbe8269ce5d96a5eaba072ad062184b74a9b1feb1b657cd1b63e", "purpose": "block-tile glyph composition" },
     { "path": "packages/typescript/qc-ui/src/parameter-editor.tsx", "sha256": "a1787d4ef1541b795cba117133960dece03fc55177a69ae5f11704ffe5304fa9", "purpose": "interactive parameter and signal diagrams" },
@@ -13,7 +13,7 @@
     { "path": "packages/typescript/qc-ui/src/qc-rotary-dial.tsx", "sha256": "fd41e6763dd7999403e75b4822f9831ed5cdc86532ac7857a599556dab97e3ba", "purpose": "interactive rotary control geometry" },
     { "path": "packages/typescript/qc-ui/src/quad-cortex-surface.tsx", "sha256": "a52bc00ee09464efbda07340f8dfe39731c9e8cd50ab86f303ad071c245c7b59", "purpose": "shared device surface and routing geometry" },
     { "path": "packages/typescript/qc-ui/src/screen-glyphs.tsx", "sha256": "d20753169e904db7d613b6802d09e744de2c44d08346ccf0eff9d6b1cfd18f9d", "purpose": "semantic screen glyph composition" },
-    { "path": "packages/typescript/qc-ui/src/theme-icons.tsx", "sha256": "eb99b92acccc883a596e212b670a5f5c392d1f8c9f9b7ddbd8cf5b78c9aa31a1", "purpose": "shared icon renderer and remaining neutral glyph geometry" }
+    { "path": "packages/typescript/qc-ui/src/theme-icons.tsx", "sha256": "0db97dcb43ab4976e1442eab7ddd67eff5d24228ea0f444961ff7c1f19b001ab", "purpose": "shared icon renderer and remaining neutral glyph geometry" }
   ],
   "dynamicMediaOwners": [
     "apps/windows/src/chat-dock.tsx",
@@ -31,8 +31,8 @@
     { "path": "apps/android/android/app/src/main/res/drawable-port-xhdpi/splash.png", "sha256": "241c2ceaac115e04b4a7bde6ed9a4875d7186a4cf98f32b73c22c5d6e80df14b", "bytes": 42849 },
     { "path": "apps/android/android/app/src/main/res/drawable-port-xxhdpi/splash.png", "sha256": "25e2b7dfd15673d1fa70f602db104a23b33476fccc6d621218d0e2ecc9f4f9f5", "bytes": 65965 },
     { "path": "apps/android/android/app/src/main/res/drawable-port-xxxhdpi/splash.png", "sha256": "5d923d927636cc41ccf9658bd48331095650f5e9ac7c46d8e04609866c42b677", "bytes": 91326 },
-    { "path": "apps/android/android/app/src/main/res/drawable/splash.xml", "sha256": "4eb041324acd7150664aeb65d3a2b75f908dc163aba7e04d73c5ea65fca7d81f", "bytes": 198 },
-    { "path": "apps/android/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml", "sha256": "6be9be8d39cb250f663814bc3ac3ba570d9629be22fbebcc95d0c058e2249717", "bytes": 269 },
+    { "path": "apps/android/android/app/src/main/res/drawable/splash.xml", "sha256": "e0417dad676d6ae66237b5b2095bc8c3dc534956174bb5ce765b989ee368cd7c", "bytes": 194 },
+    { "path": "apps/android/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml", "sha256": "9c3a7e0a6515c6e1a7ae834a9ae430311ebc3241f7b2e5e7f0460aa690709a7c", "bytes": 265 },
     { "path": "apps/android/android/app/src/main/res/mipmap-hdpi/ic_launcher.png", "sha256": "2417d616ead0dd456348489e394deda1fc6c825c48ad33fbcc9004f34ec372f0", "bytes": 7064 },
     { "path": "apps/android/android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png", "sha256": "887f0bfd651faf8d1e831fe6851ccce8f17215169bde540b8d7036a75d1bdfa8", "bytes": 12304 },
     { "path": "apps/android/android/app/src/main/res/mipmap-mdpi/ic_launcher.png", "sha256": "78e5c2b5d60121a24d73afbecd291aeb4d04d3def2ade4fe1728731d9c9246b3", "bytes": 4354 },

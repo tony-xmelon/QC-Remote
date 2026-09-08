@@ -10,7 +10,7 @@ export type QcIoIconName = "usb" | "jack" | "midi" | "combo" | "input" | "headph
 export type QcLibraryIconName = "capture-library" | "capture-header" | "impulse-response" | "heart" | "clock" | "binoculars" | "broken-heart";
 export type QcScreenHeaderGlyphName = "undo" | "save" | "export" | "menu";
 export type QcSettingsIconName = "connection" | "updates" | "brightness" | "power" | "volume" | "storage" | "factory-reset";
-export type QcUiIconName = "add" | "subtract" | "previous" | "next" | "arrow-right" | "cab-previous" | "cab-next" | "up" | "down" | "more" | "check" | "close" | "refresh" | "backspace" | "microphone" | "attachment" | "file" | "send" | "stop" | "save-as" | "edit" | "midi" | "favorite" | "delete" | "capture" | "modes" | "tempo" | "cpu" | "settings" | "power" | "phase-invert" | "pin";
+export type QcUiIconName = "add" | "subtract" | "previous" | "next" | "arrow-right" | "cab-previous" | "cab-next" | "up" | "down" | "collapse" | "more" | "check" | "close" | "refresh" | "backspace" | "microphone" | "attachment" | "file" | "send" | "stop" | "save-as" | "edit" | "midi" | "favorite" | "delete" | "capture" | "modes" | "tempo" | "cpu" | "settings" | "power" | "phase-invert" | "pin";
 
 type ScreenVectorName = keyof typeof QC_SCREEN_ICON_VECTORS;
 
@@ -88,6 +88,7 @@ export function QcUiIcon({ kind, className }: { kind: QcUiIconName; className?: 
   if (kind === "phase-invert") return <svg className={classes} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="7" /><path d="M7 19 17 5" /></svg>;
   if (kind === "pin") return <svg className={classes} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m14.8 2 7.2 7.2-2.1 2.1-1.1-1.1-4.6 4.6.7 2.1-1.4 1.4-3.9-3.9-6.2 6.2-1.4-1.4L8.2 13 4.3 9.1l1.4-1.4 2.1.7 4.6-4.6-1.1-1.1L13.4.6 14.8 2Z" /></svg>;
   if (kind === "arrow-right") return <svg className={classes} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 12h15M14 7l5 5-5 5" /></svg>;
+  if (kind === "collapse") return <svg className={classes} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 9 7 7 7-7" /></svg>;
   if (kind === "settings" || kind === "check") return <QcScreenVectorLayers icon={`interface.${kind}` as ScreenVectorName} className={classes} />;
   const referenceIcons = {
     add: "interface.add", file: "interface.file", midi: "interface.midi", modes: "interface.modes",

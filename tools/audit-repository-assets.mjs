@@ -68,9 +68,11 @@ export function auditRepositoryAssets() {
     if (!tracked.includes(path)) errors.push(`declared generated visual is not tracked: ${path}`);
     else if (!visualFiles.includes(path)) errors.push(`declared generated visual is not recognized as visual media: ${path}`);
     else {
-      const bytes = readFileSync(resolve(root, path));
-      if (bytes.length !== entry.bytes) errors.push(`generated visual byte count differs: ${path}`);
-      if (sha256(bytes) !== entry.sha256) errors.push(`generated visual fingerprint differs: ${path}`);
+      const raw = readFileSync(resolve(root, path));
+      const normalized = path.endsWith(".xml") ? Buffer.from(raw.toString("utf8").replaceAll("\r\n", "\n")) : raw;
+      const bytesMatch = raw.length === entry.bytes && sha256(raw) === entry.sha256;
+      const normalizedMatch = normalized.length === entry.bytes && sha256(normalized) === entry.sha256;
+      if (!bytesMatch && !normalizedMatch) errors.push(`generated visual byte count or fingerprint differs: ${path}`);
       if (!prefixes.some((prefix) => path.startsWith(prefix))) errors.push(`generated visual is outside a canonical asset's derived prefixes: ${path}`);
     }
   }
