@@ -933,7 +933,7 @@
 
 /* directory-filter.png: the funnel opens a 231x416 panel at (300, 57) - eight
    52px rows, no caption - over the same dimmed directory the other menus use. */
-.directory-official .directory-context-scrim { position: absolute; inset: 0; z-index: 4; background: rgba(92,96,92,.65); }
+.directory-official .directory-context-scrim { position: absolute; inset: 0; z-index: 4; background: rgba(92,96,92,.66); }
 .directory-official .directory-tool-menu.is-filter { left: 300px; right: auto; top: 57px; width: 231px; height: 416px; padding: 0; border: 0; border-radius: 8px; background: #000; box-shadow: none; }
 .directory-official .directory-tool-menu.is-filter button { box-sizing: border-box; width: 100%; height: 52px; display: flex; align-items: center; gap: 16px; justify-content: flex-start; padding: 0 16px; border: 0; background: transparent; color: #f0f0f0; font: 18px Arial,sans-serif; }
 .directory-official .directory-tool-menu.is-filter button > b { display: grid; place-items: center; width: 24px; height: 24px; font-weight: 400; }

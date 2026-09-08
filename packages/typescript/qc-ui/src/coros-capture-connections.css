@@ -203,18 +203,27 @@
 .capture-tube-warning {
   position: absolute;
   left: 38.5cqw;
-  right: 1.5cqw;
-  /* capture-connect-input-2.png: the box runs y 293..410. */
-  top: 36.625cqw;
+  right: 1.75cqw;
+  /* capture-connect-input-2.png: the box runs y 301..411. */
+  top: 37.625cqw;
   display: grid;
-  grid-template-columns: 1fr 6cqw;
+  grid-template-columns: 1fr;
   align-items: center;
-  gap: 1cqw;
-  padding: 1.25cqw 1.5cqw;
-  border-left: .5cqw solid #6b4a12;
+  gap: 0;
+  padding: .5cqw 8cqw 1.125cqw 4.25cqw;
   border-radius: .5cqw;
-  background: #f5b96b;
+  background: #ffba6b;
   color: #201703;
+}
+
+.capture-tube-warning::before {
+  content: "";
+  position: absolute;
+  left: 2cqw;
+  top: 1cqw;
+  bottom: 1cqw;
+  width: 2px;
+  background: #211808;
 }
 
 .capture-tube-warning strong {
@@ -225,16 +234,18 @@
 
 .capture-tube-warning p {
   grid-column: 1;
-  margin: .5cqw 0 0;
+  margin: .75cqw 0 0;
   font-size: 1.875cqw;
   /* Its four lines sit on an 18px pitch. */
   line-height: 1.2;
 }
 
 .capture-tube-warning svg {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  width: 100%;
+  position: absolute;
+  right: 1.75cqw;
+  top: 1.625cqw;
+  width: 4.5cqw;
+  height: 10.5cqw;
   fill: none;
   stroke: #201703;
   stroke-width: 2;

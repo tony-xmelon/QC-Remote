@@ -2098,7 +2098,7 @@ function CorOsIoSettings({
           </section>
           <section>
             <span>HP SOURCE</span>
-            <IoDial value="BOTH" />
+            <IoDial value="BOTH" progress={0} angle={45} accent="#101010" />
           </section>
           <div className="io-meter-grid">
             {meters.map((meter) => (

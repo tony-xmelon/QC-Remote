@@ -280,6 +280,12 @@ export function QcRouteGlyph({ side, label }: { side: "input" | "output"; label:
         <circle cx="15.8" cy="14.2" r="1.15" />
       </svg>
     );
+  if (label.includes("/"))
+    return (
+      <svg viewBox="0 0 32 32" shapeRendering="crispEdges" aria-hidden="true">
+        <path d={ROUTE_STEREO_OUTPUT_RASTER} fill={QC_COLORS.captured.primaryText} stroke="none" />
+      </svg>
+    );
   if (label.startsWith("Out "))
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -291,12 +297,6 @@ export function QcRouteGlyph({ side, label }: { side: "input" | "output"; label:
     return (
       <svg viewBox="0 0 32 32" shapeRendering="crispEdges" aria-hidden="true">
         <path d="M26 3h2v1h-2ZM26 4h3v1h-3ZM26 5h4v1h-4ZM2 6h30v1h-30ZM2 7h30v1h-30ZM26 8h5v1h-5ZM26 9h3v1h-3ZM26 10h2v1h-2ZM30 16h2v1h-2ZM30 17h2v1h-2ZM30 18h2v1h-2ZM30 19h2v1h-2ZM30 20h2v1h-2ZM6 21h2v1h-2ZM30 21h2v1h-2ZM5 22h3v1h-3ZM30 22h2v1h-2ZM4 23h4v1h-4ZM30 23h2v1h-2ZM2 24h30v1h-30ZM2 25h30v1h-30ZM3 26h5v1h-5ZM5 27h3v1h-3ZM6 28h2v1h-2Z" fill={QC_COLORS.captured.primaryText} stroke="none" />
-      </svg>
-    );
-  if (label.includes("/"))
-    return (
-      <svg viewBox="0 0 32 32" shapeRendering="crispEdges" aria-hidden="true">
-        <path d={ROUTE_STEREO_OUTPUT_RASTER} fill={QC_COLORS.captured.primaryText} stroke="none" />
       </svg>
     );
   return (

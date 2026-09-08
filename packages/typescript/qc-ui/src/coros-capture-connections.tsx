@@ -167,7 +167,7 @@ export function CorOsCaptureConnections({ view }: { view: CaptureConnectionView 
       {step.warning && <aside className="capture-tube-warning">
         <strong>TUBE AMPLIFIER WARNING</strong>
         <p>Connecting the speaker output from a tube amplifier to Quad Cortex could damage both units. Ensure you are using a D. I. Out and your amplifier is still connected to a cabinet or reactive load box.</p>
-        <svg viewBox="0 0 40 60" aria-hidden="true"><rect x="8" y="6" width="24" height="40" rx="12" /><path d="M14 46h12M16 52h8M20 14v24M16 20v14M24 20v14" /></svg>
+        <svg viewBox="0 0 40 60" aria-hidden="true"><path d="M20 1v7m-5 0h10m-12 5h14m-14 0c-4 4-6 8-6 15v21c0 5 4 8 9 8h8c5 0 9-3 9-8V28c0-7-2-11-6-15M8 23h24M8 48h24M13 53h14M14 57v3m4-3v3m4-3v3m4-3v3M15 26v19m10-19v19M12 31h16" /></svg>
       </aside>}
     </div>
     {step.footer && <p className="capture-connections-footer">{step.footer}</p>}

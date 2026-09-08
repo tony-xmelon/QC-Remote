@@ -73,7 +73,8 @@
 .directory-filter-official > header .directory-filter-back svg { width: 3cqw; height: 3cqw; fill: none; }
 .directory-filter-official > header .directory-official-category { width: 18.75cqw; }
 .directory-filter-official > header > span { flex: 1; }
-.directory-filter-official > header .is-filter-active { background: #000; }
+.directory-filter-official > header .is-filter-active { position: relative; z-index: 5; background: #000; }
+.directory-filter-official > header button:nth-last-child(2) { margin-right: 1.25cqw; }
 .directory-filter-official nav button.is-filter-root { height: 7.5cqw; grid-template-columns: 4.75cqw 1fr; color: var(--qc-icon-primary); }
 .directory-filter-official nav button.is-filter-root span { line-height: 1.25; }
 .directory-filter-official nav button.is-filter-root span small { display: block; color: #2df36a; }
