@@ -124,7 +124,7 @@ final class QcUsbFlightRecorder {
     private boolean isRoutineLiveness(JSONObject entry) {
         String event = entry.optString("event");
         return ("outbound".equals(event) || "inbound".equals(event))
-            && entry.optInt("messageType", -1) == QcUsbProfile.MESSAGE_TYPE_VERSION;
+            && entry.optInt("messageType", -1) == QcUsbProfile.MESSAGE_TYPE_KEEP_ALIVE;
     }
 
     private void load() {

@@ -222,6 +222,10 @@ assert(!/scheduleAutomaticReconnect[\s\S]{0,800},\s*250,\s*TimeUnit\.MILLISECOND
   "Android must not hard-code an automatic reconnect delay.");
 assert(androidUsbHost.includes("systemTimeCommand(System.currentTimeMillis())"),
   "Android must send the shared device-facing system-time command after staged startup.");
+const androidFlightRecorder = await text("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbFlightRecorder.java");
+assert(/isRoutineLiveness[\s\S]{0,300}MESSAGE_TYPE_KEEP_ALIVE/.test(androidFlightRecorder)
+  && !/isRoutineLiveness[\s\S]{0,300}MESSAGE_TYPE_VERSION/.test(androidFlightRecorder),
+  "Android diagnostics must evict routine KeepAlive traffic without discarding startup Version evidence.");
 assert(androidUsbHost.includes("gatewayResponseMatches"), "Android USB reads must use shared response correlation.");
 assert(androidUsbHost.includes("plan.interMessageIntervalMs"), "Android must consume shared write pacing metadata.");
 assert(!androidUsbHost.includes("pacedRemoteGesture"), "Android must not infer remote gesture pacing from encoded messages.");

@@ -525,7 +525,8 @@ test("Android persists a bounded payload-free USB flight recorder", () => {
     "shutdown must drain older checkpoints before the final current snapshot");
   assert.match(recorder, /MAX_FILE_BYTES = 256 \* 1024L/);
   assert.match(recorder, /entries\.addLast\(sanitize\(entry\)\)/);
-  assert.match(recorder, /isRoutineLiveness[\s\S]*MESSAGE_TYPE_VERSION/);
+  assert.match(recorder, /isRoutineLiveness[\s\S]*MESSAGE_TYPE_KEEP_ALIVE/);
+  assert.doesNotMatch(recorder, /isRoutineLiveness[\s\S]{0,250}MESSAGE_TYPE_VERSION/);
   assert.match(javaSource, /flight\.activity\(GeneratedGatewayMethods\.contains\(method\)[\s\S]{0,100}"gateway-dispatch:" \+ method/);
   assert.doesNotMatch(javaSource, /gateway-dispatch:" \+ (?:params|expected)/);
   assert.doesNotMatch(recorder, /entry\.put\("(?:payload|serial|deviceName|credential|token)"/i);
