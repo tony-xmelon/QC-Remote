@@ -167,6 +167,9 @@ const androidJni = await text("packages/rust/qc-android/src/lib.rs");
 const windowsUsbHost = await text("services/device-broker/src/usb.rs");
 const windowsWorker = await text("services/device-broker/src/worker.rs");
 const windowsRpc = await text("services/device-broker/src/rpc.rs");
+const windowsMain = await text("services/device-broker/src/main.rs");
+assert(!/\.get\(&(?:13|15)\)/.test(windowsWorker + windowsMain),
+  "Windows production status projection must use generated message-type names, not wire literals.");
 assert(androidJni.includes("InitializationRuntime"),
   "Android JNI must retain the shared post-boot initialization runtime.");
 for (const symbol of ["handshakeAttempt", "startupObserved", "startupBeginBuilding", "postBootInitializationStarted", "initializationObserved", "initializationAdvance"]) {

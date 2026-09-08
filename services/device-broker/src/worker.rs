@@ -1487,11 +1487,11 @@ fn install_connection_status(
     status.synchronized = connection.synchronized;
     status.active_preset_name = connection
         .latest_messages
-        .get(&15)
+        .get(&qc_protocol::profile::MESSAGE_TYPE_RECALL_PRESET)
         .and_then(|message| crate::usb::preset_name(&message.payload));
     status.active_scene = connection
         .latest_messages
-        .get(&13)
+        .get(&qc_protocol::profile::MESSAGE_TYPE_SCENE)
         .and_then(|message| crate::usb::scene_value(&message.payload));
     status.connected_at_unix_ms = Some(
         SystemTime::now()
