@@ -244,6 +244,13 @@ test("official Account and MIDI settings retain the captured navigation content"
   );
 });
 
+test("physical multi-select and stomp assignment labels retain measured spacing", () => {
+  const liveCss = readFileSync("packages/typescript/qc-ui/src/fixture-live-surface.css", "utf8");
+  const fixesCss = readFileSync("packages/typescript/qc-ui/src/remaining-fixtures-fixes.css", "utf8");
+  assert.match(liveCss, /button:has\(> \.preset-select\) \{ grid-template-columns: 44px 1fr; padding-left: 22px; \}/);
+  assert.match(fixesCss, /\.assignment-stomp-latch button\{width:128px;height:45px;padding-left:20px\}/);
+});
+
 test("official System brightness values keep the alignment the device uses", () => {
   const css = readFileSync("packages/typescript/qc-ui/src/official-settings-device.css", "utf8");
   const fixture = readFileSync("packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", "utf8");

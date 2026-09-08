@@ -889,7 +889,7 @@
 
 /* In that mode each preset row carries a 22px box at x 416 and drops its
    overflow dots; the rows still empty on the unit are #adaaad, not white. */
-.coros-directory-fixture.is-physical-context .directory-fixture-items button:has(> .preset-select) { grid-template-columns: 39px 1fr; padding-left: 21px; }
+.coros-directory-fixture.is-physical-context .directory-fixture-items button:has(> .preset-select) { grid-template-columns: 44px 1fr; padding-left: 22px; }
 .coros-directory-fixture.is-physical-context .directory-fixture-items button > .preset-select { width: 22px; height: 22px; border: 2px solid #fff; border-radius: 6px; }
 .coros-directory-fixture.is-physical-context .directory-fixture-items button.is-empty .physical-preset-name { color: #adaaad; }
 
