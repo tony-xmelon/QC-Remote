@@ -118,7 +118,8 @@ assert(initializationRuntime.includes("self.synchronized && self.seed_complete()
   "Shared initialization readiness must require the full authoritative seed.");
 assert(initializationRuntime.includes("deadline_ms: now_ms.saturating_add(profile::READY_WAIT_TIMEOUT_MS)")
   && initializationRuntime.includes("pub fn timed_out")
-  && initializationRuntime.includes("pub fn is_active"),
+  && initializationRuntime.includes("pub fn is_active")
+  && initializationRuntime.includes("pub fn is_connected"),
   "The shared staged startup runtime must own the generated readiness deadline.");
 const correlationRuntime = await text("packages/rust/qc-device-runtime/src/correlation.rs");
 for (const symbol of ["ResponseExpectation", "matches", "expired", "timeout_message"]) {
@@ -219,6 +220,9 @@ assert(androidNativeFacade.includes("startupActive()")
   && androidUsbHost.includes("stateDecoder.startupActive()")
   && !/private volatile boolean startupActive/.test(androidUsbHost),
   "Android must query the shared startup controller instead of mirroring its active epoch in Java.");
+assert(androidJni.includes("DeviceStartupRuntime::is_connected")
+  && !androidJni.includes("startup_phase_is_connected"),
+  "Android must use the shared startup-connected projection without an adapter phase table.");
 assert(androidNativeFacade.includes("sessionConnected()")
   && androidNativeFacade.includes("sessionSynchronized()")
   && !/(?:handshakeComplete|stateSynchronized|initializationComplete)/.test(androidUsbHost),
