@@ -444,7 +444,7 @@ export function QcLibraryIcon({ kind, className }: { kind: QcLibraryIconName; cl
   );
 }
 
-export function QcEditorIcon({ kind }: { kind: QcEditorIconName }) {
+export function QcEditorIcon({ kind, className }: { kind: QcEditorIconName; className?: string }) {
   const referenceIcon = editorScreenVector(kind);
   if (referenceIcon) return <QcScreenVectorLayers icon={referenceIcon} />;
   if (kind === "looper") {
@@ -457,7 +457,7 @@ export function QcEditorIcon({ kind }: { kind: QcEditorIconName }) {
       </svg>
     );
   if (kind === "waveform") return (
-    <svg viewBox="0 0 80 32" aria-hidden="true">
+    <svg className={className} viewBox="0 0 80 32" aria-hidden="true">
       <path d="M2 16h11l7-12 14 24L48 4l7 12h23" />
     </svg>
   );

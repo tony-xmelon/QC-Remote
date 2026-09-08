@@ -151,7 +151,7 @@ Two things below are **not** refreshed for them, because both come from a scored
 | ST-03 | Settings | Device settings | official frame | Built | Built | — / — | — / — | 92.92% / 92.92% | 96.37% / 96.38% |
 | ST-04 | Settings | Support settings | physical frame | Built | Built | 97.08% / 97.08% | 95.96% / 95.96% | — / — | — / — |
 | ST-05 | Settings | Wi-Fi/network chooser | physical frame | Built | Built | 93.92% / 93.92% | 97.69% / 97.69% | — / — | — / — |
-| ST-06 | Settings | Update availability/progress | physical frame | Built | Built | 98.08% / 98.08% | 97.12% / 97.12% | — / — | — / — |
+| ST-06 | Settings | Update availability/progress | smoke only | Built | Built | — / — | — / — | — / — | — / — |
 | ST-07 | Settings | Storage and factory reset | physical frame | Built | Built | 93.31% / 93.31% | 97.39% / 97.39% | — / — | — / — |
 | ST-08 | Settings | MIDI settings | official frame | Built | Built | — / — | — / — | 96.16% / 96.16% | 97.44% / 97.44% |
 | ST-09 | Settings | Device information | physical frame | Built | Built | 93.21% / 93.21% | 97.20% / 97.20% | — / — | — / — |

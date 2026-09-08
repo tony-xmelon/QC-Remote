@@ -714,6 +714,7 @@
 .coros-physical-confirmation > .coros-directory-fixture { position: absolute; inset: 0; }
 .coros-physical-confirmation > .confirmation-scrim { position: absolute; inset: 0; z-index: 4; background: rgba(92,96,92,.65); }
 .coros-physical-confirmation > aside { position: absolute; z-index: 5; left: 190px; top: 125px; box-sizing: border-box; width: 420px; height: 230px; border-radius: 10px; background: #101110; text-align: center; }
+.coros-physical-confirmation.is-over-grid > aside { background: #101110; }
 .coros-physical-confirmation > aside h1 { margin: 43px 0 24px; font: 20px var(--qc-font-device-plain); }
 .coros-physical-confirmation > aside p { margin: 0; font: 18px var(--qc-font-device-plain); }
 .coros-physical-confirmation > aside footer { position: absolute; left: 32px; right: 32px; bottom: 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }

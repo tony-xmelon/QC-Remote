@@ -189,8 +189,17 @@ function CorOsKeyboardScreen() {
   </section>;
 }
 
-function CorOsDeleteConfirmation() {
-  return <section className="qc-screen coros-physical-confirmation" aria-label="Delete preset confirmation">
+function CorOsDirectoryNameScreen() {
+  const shifted = ["", "", "", "", "", "", "'", "(", ")"];
+  return <section className="qc-screen coros-physical-keyboard is-name-editor" aria-label="New setlist name">
+    <header><button><QcUiIcon kind="close" /></button><span>New Setlist</span><button className="keyboard-save-mark" aria-label="Create setlist"><QcEditorIcon kind="save" /></button></header>
+    <h1><b>New Setlist</b></h1>
+    <div className="physical-keyboard-rows">{KEYBOARD_ROWS.map((row, rowIndex) => <div key={rowIndex}>{row.map((key, keyIndex) => <button key={key} className={key === "Space" ? "is-space" : key === "Shift" ? "is-shift" : key === "Backspace" ? "is-backspace" : key === "Done" ? "is-done" : key === "123" ? "is-numeric" : ""}>{rowIndex < 2 && <small>{rowIndex === 0 ? (keyIndex + 1) % 10 : shifted[keyIndex]}</small>}{key === "Backspace" ? <QcUiIcon kind="backspace" /> : key === "Shift" ? <QcScreenGlyph kind="shift" /> : key}</button>)}</div>)}</div>
+  </section>;
+}
+
+function CorOsDeleteConfirmation({ overGrid = false }: { overGrid?: boolean } = {}) {
+  return <section className={`qc-screen coros-physical-confirmation${overGrid ? " is-over-grid" : ""}`} aria-label="Delete preset confirmation">
     <CorOsDirectoryFixture view="directory-presets" physicalContext />
     <i className="confirmation-scrim" />
     <aside><h1>Demo Rhythm</h1><p>Are you sure you want to delete this item?</p><footer><button>CANCEL</button><button>DELETE</button></footer></aside>
@@ -202,7 +211,7 @@ function CorOsSystemFixture({ view }: { view: SystemFixtureView }) {
   if (view === "recovery-options") return <section className="qc-screen coros-recovery"><div className="recovery-logo"><QcHardwareIcon kind="brand-pulse" /></div><h1>Recovery Mode</h1><p>Select an option to continue.</p><div className="recovery-options">{[["RESTART QUAD CORTEX","Boot CorOS normally"],["REINSTALL COROS","Install the latest available system image"],["FACTORY RESET","Erase user data and restore defaults"],["SHUT DOWN","Power off safely"]].map(([title,detail], index) => <button key={title} className={index === 0 ? "is-active" : index === 2 ? "is-danger" : ""}><strong>{title}</strong><small>{detail}</small><b><QcUiIcon kind="next" /></b></button>)}</div></section>;
   return <section className="qc-screen coros-system-overlay"><div className="overlay-underlay"><header><span>32H Demo Scratch</span><b>A</b></header><main>{[1,2,3,4,5].map(item => <i key={item} />)}</main></div>
     {view === "overlay-keyboard" && <CorOsKeyboardScreen />}
-    {view === "overlay-confirmation" && <CorOsDeleteConfirmation />}
+    {view === "overlay-confirmation" && <CorOsDeleteConfirmation overGrid />}
     {view === "overlay-error" && <aside className="system-dialog"><b className="dialog-icon is-error">!</b><h1>Action unavailable</h1><p>Quad Cortex could not complete the request. Check the connection and try again.</p><footer><button>OK</button></footer></aside>}
     {view === "overlay-busy" && <aside className="system-dialog is-busy"><b className="dialog-spinner" /><h1>Saving preset</h1><p>Please wait. Do not disconnect or power off Quad Cortex.</p></aside>}
   </section>;
@@ -335,7 +344,7 @@ function CorOsCapturedSettings({ view }: { view: CapturedSettingsView }) {
 
 function CorOsSettingsFixture({ view }: { view: SettingsFixtureView }) {
   if (view === "settings-account" || view === "settings-system" || view === "settings-device" || view === "settings-midi") return <CorOsOfficialSettings view={view} />;
-  return <CorOsCapturedSettings view={view === "settings-update" ? "settings-update-idle" : view} />;
+  return <CorOsCapturedSettings view={view} />;
 }
 
 function SceneTileTools() {
@@ -741,7 +750,7 @@ function CorOsCaptureLibrary({ view }: { view: CaptureLibraryView }) {
   const captures = ["4-Comp Custom 1", "4-Comp Custom 2", "4-Comp Custom 3", "4-Comp Custom 4", "4-Comp Custom 5", "4-Comp Custom 6", "4-Comp Custom 7"];
   return <section className="qc-screen capture-library-browser"><CaptureLibraryRail /><header><span>Add device</span>{!recent && <button aria-label="Filter"><QcDirectoryIcon kind="filter" /></button>}{!recent && <button aria-label="Arrange"><QcDirectoryIcon kind="arrange" /></button>}<button aria-label="Search"><QcDirectoryIcon kind="search" /></button><button aria-label="Close"><QcUiIcon kind="close" /></button></header><aside><button className={!recent && !library ? "is-active" : ""}><b><QcLibraryIcon kind="heart" /></b><span>Favorites</span></button><button className={recent ? "is-active" : ""}><b><QcLibraryIcon kind="clock" /></b><span>Recent</span></button><button><b><QcDirectoryIcon kind="download" /></b><span>Downloads</span></button><button className={library ? "is-active" : ""}><b><QcLibraryIcon kind="capture-library" /></b><span>Captures Library</span><small>2127</small></button><i />{["Factory Captures V1","Factory Captures V2","My Captures"].map(label => <button key={label}><b><QcDirectoryIcon kind="folder" /></b><span>{label}</span></button>)}</aside><main>{library
       ? <div className="capture-library-rows">{captures.map((name) => <button key={name}><span>{name}<small>NeuralDSP</small></span><b>4</b></button>)}<aside className="capture-library-index">{["#", "•", "A", "•", "I", "•", "R", "•", "Z"].map((label, index) => <span key={`${label}-${index}`}>{label}</span>)}</aside></div>
-      : <DeviceWaveformGlyph className="capture-library-placeholder" />}</main></section>;
+      : <QcEditorIcon kind="waveform" className="capture-library-placeholder" />}</main></section>;
 }
 
 function CorOsDevicePresetScreen({ save = false, view = "factory" }: { save?: boolean; view?: "factory" | "user" | "actions" | "official-actions" | "official-factory" }) {
