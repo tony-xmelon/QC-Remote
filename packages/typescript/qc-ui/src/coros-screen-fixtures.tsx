@@ -1642,7 +1642,11 @@ function CorOsOfficialSettings({
                 </i>
               </div>
             ))}
-            <footer>▦　▣　♞</footer>
+            <footer aria-label="Footswitch modes">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><QcModeGlyph mode="PRESET" /></svg>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><QcModeGlyph mode="SCENE" /></svg>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><QcModeGlyph mode="STOMP" /></svg>
+            </footer>
           </section>
         ) : view === "settings-midi" ? (
           <section className="settings-midi-detail">
@@ -2464,10 +2468,10 @@ function CorOsRoutingScreen({ view, snapshot }: { view: "splitter-placement" | "
       <div className="splitter-controls">
         <label><strong>TYPE</strong><span className="splitter-toggle"><i/><b>Crossover<br/>A/B<br/><em>Balance</em></b></span></label>
         <label><strong>STEREO</strong><span className="splitter-toggle"><i/><b>Split<br/><em>Normal</em></b></span></label>
-        <label><strong>BALANCE</strong><span className="splitter-knob"/><small>5.0</small></label>
-        <label><strong>LEVEL TO A</strong><span className="splitter-knob angle-a"/><small>0.0 <em>dB</em></small></label>
-        <label><strong>LEVEL TO B</strong><span className="splitter-knob angle-b"/><small>0.0 <em>dB</em></small></label>
-        <label><strong>FREQUENCY</strong><span className="splitter-knob frequency"/><small>400 <em>Hz</em></small></label>
+        <label><strong>BALANCE</strong><QcRotaryDial className="splitter-knob" progress={37} angle={-90} accent="#10456b"/><small>5.0</small></label>
+        <label><strong>LEVEL TO A</strong><QcRotaryDial className="splitter-knob angle-a" progress={58} angle={-18} accent="#10456b"/><small>0.0 <em>dB</em></small></label>
+        <label><strong>LEVEL TO B</strong><QcRotaryDial className="splitter-knob angle-b" progress={58} angle={-18} accent="#10456b"/><small>0.0 <em>dB</em></small></label>
+        <label><strong>FREQUENCY</strong><QcRotaryDial className="splitter-knob frequency" progress={37} angle={-90} accent="#10456b"/><small>400 <em>Hz</em></small></label>
         <label><strong>MODE</strong><span className="splitter-toggle"><i/><b>Invert<br/><em>Regular</em></b></span></label>
         <span className="splitter-empty"/><span className="splitter-empty"/><span className="splitter-empty"/>
       </div>
@@ -2478,12 +2482,12 @@ function CorOsRoutingScreen({ view, snapshot }: { view: "splitter-placement" | "
     <section className="splitter-panel mixer-panel">
       <header><button><QcUiIcon kind="more" /></button><span><strong>Mixer</strong></span><RoutingEditorHeaderControls /><button><QcUiIcon kind="check" /></button></header>
       <div className="splitter-controls mixer-controls">
-        <label><strong>LEVEL A</strong><span className="splitter-knob mixer-knob level-a"/><small>0.0 <em>dB</em></small></label>
-        <label><strong>PAN A</strong><span className="splitter-knob mixer-knob pan"/><small>C</small></label>
-        <label><strong>LEVEL B</strong><span className="splitter-knob mixer-knob level-b"/><small>0.0 <em>dB</em></small></label>
-        <label><strong>PAN B</strong><span className="splitter-knob mixer-knob pan"/><small>C</small></label>
+        <label><strong>LEVEL A</strong><QcRotaryDial className="splitter-knob mixer-knob level-a" progress={37} angle={-18} accent="#8c173e"/><small>0.0 <em>dB</em></small></label>
+        <label><strong>PAN A</strong><QcRotaryDial className="splitter-knob mixer-knob pan" progress={37} angle={-90} accent="#8c173e"/><small>C</small></label>
+        <label><strong>LEVEL B</strong><QcRotaryDial className="splitter-knob mixer-knob level-b" progress={37} angle={-18} accent="#8c173e"/><small>0.0 <em>dB</em></small></label>
+        <label><strong>PAN B</strong><QcRotaryDial className="splitter-knob mixer-knob pan" progress={37} angle={-90} accent="#8c173e"/><small>C</small></label>
         <label><strong>PHASE</strong><span className="splitter-toggle mixer-toggle"><i/><b>On<br/><em>Off</em></b></span></label>
-        <label><strong>MIXER LEVEL</strong><span className="splitter-knob mixer-knob level-a"/><small>0.0 <em>dB</em></small></label>
+        <label><strong>MIXER LEVEL</strong><QcRotaryDial className="splitter-knob mixer-knob level-a" progress={37} angle={-18} accent="#8c173e"/><small>0.0 <em>dB</em></small></label>
         <span className="splitter-empty"/><span className="splitter-empty"/><span className="splitter-empty"/><span className="splitter-empty"/>
       </div>
     </section>
@@ -2749,7 +2753,7 @@ function CorOsAssignmentScreen({ view }: { view: "stomp-assignment" | "scene-ass
   const parameters: Array<[string, string]> = scene ? [["NOISE REDUCTION", "17.3 %"]] : [["GAIN", "0.0 dB"], ["BASS", "6.5"], ["MID", "5.0"], ["TREBLE", "5.0"], ["VOLUME", "14.9 dB"]];
   return <section className={`qc-screen coros-assignment is-${scene ? "scene" : "stomp"}`} aria-label={view.replaceAll("-", " ")}>
     <PhysicalEditorUnderlay slot="4" letter={scene ? "E" : "B"} title={scene ? "QC MCP TEST_2*" : "Top 3 Acoustic Sims"} scene={scene ? "A" : "F"} category={scene ? "UTILITY" : "NEURAL CAPTURE"} device={scene ? "Adaptive Gate" : "Akustyczna"} blocks={scene ? 1 : 2} output={scene ? ["Multi", "Out"] : ["Row", "3/4"]} fit={!scene}>
-      <div className="assignment-parameters">{Array.from({ length: 5 }, (_, index) => parameters[index]).map((parameter, index) => <section key={index}>{parameter && <><span>{parameter[0]}</span>{scene && <em>A B<br />C D</em>}<i className="assignment-knob"><b /></i><strong>{parameter[1]}</strong></>}</section>)}</div>
+      <div className="assignment-parameters">{Array.from({ length: 5 }, (_, index) => parameters[index]).map((parameter, index) => <section key={index}>{parameter && <><span>{parameter[0]}</span>{scene && <em>A B<br />C D</em>}<QcRotaryDial className="assignment-knob" progress={scene ? 37 : 45} angle={scene ? 180 : -90} accent={scene ? "#526e58" : "#657268"} track="#101410" face="#1d271f" pointer="#737d73" /><strong>{parameter[1]}</strong></>}</section>)}</div>
     </PhysicalEditorUnderlay>
     {!scene && <div className="assignment-stomp-message"><aside className="assignment-stomp-dialog"><h1>Assign footswitch</h1><p>Press the target footswitch to assign</p><div className="assignment-stomp-latch"><button className="is-active"><QcEditorIcon kind="footswitch" />Latching</button><button><QcEditorIcon kind="momentary" />Momentary</button></div><footer><button>CANCEL</button><button className="is-primary">UNASSIGN</button></footer></aside></div>}
   </section>;

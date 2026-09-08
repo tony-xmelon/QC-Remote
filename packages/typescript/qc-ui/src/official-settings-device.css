@@ -18,6 +18,7 @@
 .coros-settings-official.settings-system .settings-done > svg { width: 3cqw; height: 3cqw; margin: auto; display: block; }
 .coros-settings-official.settings-system .settings-system-detail > footer { display: flex; align-items: center; gap: 2cqw; height: 3cqw; margin-left: 1cqw; transform: translateY(.875cqw); }
 .coros-settings-official.settings-system .settings-system-detail > footer > svg { width: 3cqw; height: 3cqw; }
+.coros-settings-official.settings-system .settings-system-detail > footer > svg:nth-child(-n+2) { opacity: .18; }
 .coros-settings-official.settings-system .settings-system-detail > div i,
 .coros-settings-official.settings-system .settings-system-detail > div i b { background: #101010; }
 .coros-settings-official.settings-system .settings-system-detail > div i b.is-on { background: #40f860; }
