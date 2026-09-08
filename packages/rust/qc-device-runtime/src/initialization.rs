@@ -8,8 +8,7 @@ use prost::Message;
 use qc_protocol::commands::{self, OutboundMessage};
 use qc_protocol::profile;
 use qc_protocol::proto::cortex_protobuf_v2 as pa;
-use qc_protocol::state::parse_model_repo;
-use std::collections::HashSet;
+use qc_protocol::state::{parse_model_repo, StateDecoder};
 
 /// Cortex Control's device-state lifecycle. The older `InitializationRuntime`
 /// below still owns post-boot preset seeding; this runtime owns the protocol
@@ -69,7 +68,7 @@ pub struct DeviceStartupRuntime {
     next_request_id: u64,
     options: DeviceStartupOptions,
     error: Option<DeviceStartupError>,
-    observed_types: HashSet<u16>,
+    seed_evidence: SeedEvidence,
 }
 
 impl DeviceStartupRuntime {
@@ -90,7 +89,7 @@ impl DeviceStartupRuntime {
                 next_request_id: request_id.saturating_add(1),
                 options,
                 error: None,
-                observed_types: HashSet::new(),
+                seed_evidence: SeedEvidence::default(),
             },
             vec![commands::reset_comms(request_id, session_id)],
         )
@@ -102,6 +101,13 @@ impl DeviceStartupRuntime {
 
     pub fn error(&self) -> Option<DeviceStartupError> {
         self.error
+    }
+
+    /// Reserve the next correlation id from the same sequence used by staged
+    /// startup and post-boot reads. Native adapters must not maintain a second
+    /// counter which can reuse an in-flight lifecycle id.
+    pub fn reserve_request_id(&mut self) -> u64 {
+        self.take_request_id()
     }
 
     /// Begin the bounded live-state seed with every message already observed
@@ -116,9 +122,8 @@ impl DeviceStartupRuntime {
         }
         let request_id = self.take_request_id();
         let mut initialization = InitializationRuntime::start_post_boot(now_ms, request_id);
-        for message_type in &self.observed_types {
-            initialization.observe(*message_type);
-        }
+        initialization.seed_evidence = self.seed_evidence.clone();
+        initialization.synchronized = initialization.seed_evidence.preset;
         Ok(initialization)
     }
 
@@ -137,7 +142,13 @@ impl DeviceStartupRuntime {
         if payload.len() > profile::MAX_FRAME_BYTES {
             return self.fail(DeviceStartupError::ParseMessageFailure);
         }
-        self.observed_types.insert(message_type);
+        // Once connected, the post-boot InitializationRuntime is the sole
+        // readiness reducer. Avoid decoding every live scene/tempo/state push
+        // a second time here; Connection(false) clears the epoch before the
+        // next startup seed is collected.
+        if self.phase != DeviceStartupPhase::Connected {
+            self.seed_evidence.observe_message(message_type, payload);
+        }
 
         if message_type == profile::MESSAGE_TYPE_CONNECTION && self.handles_connection() {
             let message = match pa::ConnectionMessage::decode(payload) {
@@ -151,8 +162,7 @@ impl DeviceStartupRuntime {
                 // A fresh in-session build must prove a fresh authoritative
                 // seed. Observations from the prior Connected epoch cannot
                 // make the rebuilt session ready.
-                self.observed_types.clear();
-                self.observed_types.insert(profile::MESSAGE_TYPE_CONNECTION);
+                self.seed_evidence = SeedEvidence::default();
                 self.phase = DeviceStartupPhase::Disconnected;
                 self.error = None;
                 let request_id = self.take_request_id();
@@ -371,6 +381,81 @@ pub const REQUIRED_SEED_TYPES: &[u16] = &[
 /// seconds matches the proven Windows path and is now defined only here.
 pub const INITIAL_SEED_TIMEOUT_MS: u64 = 3_000;
 
+/// Semantic evidence required for a coherent live control surface. A protobuf
+/// type number by itself is not evidence: malformed or empty messages must not
+/// make one host ready while the other host's decoder rejects them.
+#[derive(Debug, Clone, Default)]
+struct SeedEvidence {
+    preset: bool,
+    setlist_key: bool,
+    position: bool,
+    scene: bool,
+    mode: bool,
+    master_volume: bool,
+    dirty: bool,
+}
+
+impl SeedEvidence {
+    fn observe_message(&mut self, message_type: u16, payload: &[u8]) {
+        if message_type != profile::MESSAGE_TYPE_RECALL_PRESET
+            && !REQUIRED_SEED_TYPES.contains(&message_type)
+        {
+            return;
+        }
+        let mut decoder = StateDecoder::new();
+        let Ok(updates) = decoder.decode(message_type, payload) else {
+            return;
+        };
+        for update in updates {
+            match update.kind.as_str() {
+                "preset" => self.preset = true,
+                "position" => {
+                    self.setlist_key |= update.setlist_key.is_some();
+                    self.position |= update.position.is_some();
+                }
+                "scene" => self.scene |= update.active_scene.is_some(),
+                "mode" => self.mode |= update.mode.is_some(),
+                "master" => self.master_volume |= update.master_volume.is_some(),
+                "dirty" => self.dirty |= update.dirty.is_some(),
+                _ => {}
+            }
+        }
+    }
+
+    #[cfg(test)]
+    fn observe_trusted_type(&mut self, message_type: u16) {
+        match message_type {
+            profile::MESSAGE_TYPE_RECALL_PRESET => self.preset = true,
+            profile::MESSAGE_TYPE_SETLIST_POSITION => {
+                self.setlist_key = true;
+                self.position = true;
+            }
+            profile::MESSAGE_TYPE_SCENE => self.scene = true,
+            profile::MESSAGE_TYPE_MODE => self.mode = true,
+            profile::MESSAGE_TYPE_MASTER_VOLUME => self.master_volume = true,
+            profile::MESSAGE_TYPE_PRESET_DIRTY => self.dirty = true,
+            _ => {}
+        }
+    }
+
+    fn satisfies_type(&self, message_type: u16) -> bool {
+        match message_type {
+            profile::MESSAGE_TYPE_SETLIST_POSITION => self.setlist_key && self.position,
+            profile::MESSAGE_TYPE_SCENE => self.scene,
+            profile::MESSAGE_TYPE_MODE => self.mode,
+            profile::MESSAGE_TYPE_MASTER_VOLUME => self.master_volume,
+            profile::MESSAGE_TYPE_PRESET_DIRTY => self.dirty,
+            _ => false,
+        }
+    }
+
+    fn complete(&self) -> bool {
+        REQUIRED_SEED_TYPES
+            .iter()
+            .all(|message_type| self.satisfies_type(*message_type))
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum InitializationPhase {
     InitialPreset,
@@ -391,7 +476,7 @@ pub struct InitializationRuntime {
     phase: InitializationPhase,
     deadline_ms: u64,
     request_id: u64,
-    observed_types: HashSet<u16>,
+    seed_evidence: SeedEvidence,
     synchronized: bool,
 }
 
@@ -404,7 +489,7 @@ impl InitializationRuntime {
                 phase: InitializationPhase::InitialPreset,
                 deadline_ms: now_ms.saturating_add(profile::INITIAL_SYNC_TIMEOUT_MS),
                 request_id,
-                observed_types: HashSet::new(),
+                seed_evidence: SeedEvidence::default(),
                 synchronized: false,
             },
             commands::initialization(unix_time_ms),
@@ -420,16 +505,20 @@ impl InitializationRuntime {
             phase: InitializationPhase::InitialPreset,
             deadline_ms: now_ms.saturating_add(profile::INITIAL_SYNC_TIMEOUT_MS),
             request_id,
-            observed_types: HashSet::new(),
+            seed_evidence: SeedEvidence::default(),
             synchronized: false,
         }
     }
 
-    pub fn observe(&mut self, message_type: u16) {
-        self.observed_types.insert(message_type);
-        if message_type == profile::MESSAGE_TYPE_RECALL_PRESET {
-            self.synchronized = true;
-        }
+    pub fn observe_message(&mut self, message_type: u16, payload: &[u8]) {
+        self.seed_evidence.observe_message(message_type, payload);
+        self.synchronized = self.seed_evidence.preset;
+    }
+
+    #[cfg(test)]
+    fn observe(&mut self, message_type: u16) {
+        self.seed_evidence.observe_trusted_type(message_type);
+        self.synchronized = self.seed_evidence.preset;
     }
 
     pub fn synchronized(&self) -> bool {
@@ -470,7 +559,7 @@ impl InitializationRuntime {
         let messages = REQUIRED_SEED_TYPES
             .iter()
             .copied()
-            .filter(|message_type| !self.observed_types.contains(message_type))
+            .filter(|message_type| !self.seed_evidence.satisfies_type(*message_type))
             .map(commands::read)
             .collect::<Vec<_>>();
         if messages.is_empty() {
@@ -486,9 +575,7 @@ impl InitializationRuntime {
     }
 
     fn seed_complete(&self) -> bool {
-        REQUIRED_SEED_TYPES
-            .iter()
-            .all(|message_type| self.observed_types.contains(message_type))
+        self.seed_evidence.complete()
     }
 
     fn ready(&self) -> bool {
@@ -535,6 +622,16 @@ mod tests {
                         .to_vec(),
                 ),
             ),
+            ..Default::default()
+        }
+        .encode_to_vec()
+    }
+
+    fn valid_preset() -> Vec<u8> {
+        pa::RecallPresetMessage {
+            preset: Some(pa::recall_preset_message::Preset::Preset(
+                qc_protocol::proto::BinaryPreset::default(),
+            )),
             ..Default::default()
         }
         .encode_to_vec()
@@ -587,7 +684,7 @@ mod tests {
 
         // Mere state traffic cannot bypass the final Updater gate.
         assert_eq!(
-            runtime.observe(profile::MESSAGE_TYPE_RECALL_PRESET, &[]),
+            runtime.observe(profile::MESSAGE_TYPE_RECALL_PRESET, &valid_preset()),
             DeviceStartupAction::Wait
         );
         let updater = pa::UpdaterMessage {
@@ -614,6 +711,7 @@ mod tests {
         assert!(messages
             .iter()
             .all(|message| message.message_type != profile::MESSAGE_TYPE_RECALL_PRESET));
+        assert_eq!(runtime.reserve_request_id(), 11);
     }
 
     #[test]
@@ -697,7 +795,7 @@ mod tests {
         let (mut runtime, _) = DeviceStartupRuntime::start(7, "session");
         enter_building(&mut runtime);
         assert_eq!(
-            runtime.observe(profile::MESSAGE_TYPE_RECALL_PRESET, &[]),
+            runtime.observe(profile::MESSAGE_TYPE_RECALL_PRESET, &valid_preset()),
             DeviceStartupAction::Wait
         );
         let disconnected = pa::ConnectionMessage {
@@ -759,6 +857,23 @@ mod tests {
         assert!(seed
             .iter()
             .all(|message| message.message_type != profile::MESSAGE_TYPE_RECALL_PRESET));
+    }
+
+    #[test]
+    fn malformed_or_empty_seed_messages_never_satisfy_readiness() {
+        let mut runtime = InitializationRuntime::start_post_boot(0, 41);
+        runtime.observe_message(profile::MESSAGE_TYPE_RECALL_PRESET, &[]);
+        runtime.observe_message(profile::MESSAGE_TYPE_SETLIST_POSITION, &[]);
+        assert!(!runtime.synchronized());
+
+        runtime.observe_message(profile::MESSAGE_TYPE_RECALL_PRESET, &valid_preset());
+        assert!(runtime.synchronized());
+        let InitializationAction::Send(messages) = runtime.advance(1) else {
+            panic!("an empty position message must leave seed fields missing");
+        };
+        assert!(messages
+            .iter()
+            .any(|message| message.message_type == profile::MESSAGE_TYPE_SETLIST_POSITION));
     }
 
     #[test]

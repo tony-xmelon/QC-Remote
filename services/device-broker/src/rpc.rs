@@ -311,13 +311,6 @@ fn gateway_list_models(controller: &DeviceController) -> Result<Value, String> {
     serde_json::to_value(controller.list_models()?).map_err(|error| error.to_string())
 }
 
-fn next_request_id() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_nanos() as u64
-}
-
 fn request_command(
     controller: &DeviceController,
     command: qc_protocol::commands::OutboundMessage,
@@ -339,7 +332,8 @@ fn execute_single_gateway_read(
     method: &str,
     params: &Value,
 ) -> Result<Value, String> {
-    let plan = runtime_request::plan_gateway_read(method, params, next_request_id())?;
+    let plan =
+        runtime_request::plan_gateway_read(method, params, controller.reserve_request_id()?)?;
     let timeout = Duration::from_millis(plan.timeout_ms);
     let messages = plan
         .operation
@@ -621,7 +615,8 @@ fn unix_ms() -> u64 {
 }
 
 fn dispatch_gateway_refresh(controller: &DeviceController, method: &str) -> Result<(), String> {
-    let plan = runtime_request::plan_gateway_read(method, &json!({}), next_request_id())?;
+    let plan =
+        runtime_request::plan_gateway_read(method, &json!({}), controller.reserve_request_id()?)?;
     for message in plan
         .operation
         .try_encode()
@@ -1115,7 +1110,7 @@ fn execute_preset_recall(
     let verification = plan.verification();
     let verification_policy =
         runtime_request::gateway_write_verification_policy("device.recallPreset");
-    controller.send_command(recall_message(next_request_id()))?;
+    controller.send_command(recall_message(controller.reserve_request_id()?))?;
     let after = match verify_gateway_write_on_schedule(
         controller,
         &device_events,

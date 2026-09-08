@@ -658,6 +658,7 @@ test("one shared Rust transport runtime owns reconnect, handshake, keepalive, fr
   const responses = source("packages/rust/qc-protocol/src/responses.rs");
   const brokerUsb = source("services/device-broker/src/usb.rs");
   const brokerWorker = source("services/device-broker/src/worker.rs");
+  const brokerRpc = source("services/device-broker/src/rpc.rs");
   const androidJni = source("packages/rust/qc-android/src/lib.rs");
   const androidPlugin = source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java");
   for (const policy of ["schedule_reconnect", "reconnect_due", "reconnect_attempted", "next_handshake_attempt", "keepalive_due", "read_failed", "outbound"]) assert.match(transport, new RegExp(policy));
@@ -672,6 +673,13 @@ test("one shared Rust transport runtime owns reconnect, handshake, keepalive, fr
   assert.match(androidPlugin, /stateDecoder\.sessionScheduleReconnect/);
   assert.match(androidPlugin, /stateDecoder\.sessionReconnectDue/);
   assert.match(androidPlugin, /stateDecoder\.sessionReconnectAttempted/);
+  assert.match(androidPlugin, /stateDecoder\.nextRequestId\(\)/);
+  assert.doesNotMatch(androidPlugin, /AtomicLong requestIds/);
+  assert.match(androidJni, /reserve_request_id\(\)/);
+  assert.match(brokerUsb, /pub fn reserve_request_id/);
+  assert.match(brokerWorker, /Command::ReserveRequestId/);
+  assert.match(brokerRpc, /controller\.reserve_request_id\(\)\?/);
+  assert.doesNotMatch(brokerRpc, /fn next_request_id|as_nanos\(\) as u64/);
   assert.match(transport, /SessionPhase::Syncing/);
   assert.match(responses, /pub fn decode_recalled_preset_name/);
   assert.match(responses, /pub fn decode_selected_scene/);

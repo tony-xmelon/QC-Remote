@@ -63,6 +63,10 @@ pub struct ConnectedQc {
 }
 
 impl ConnectedQc {
+    pub fn reserve_request_id(&mut self) -> u64 {
+        self.startup.reserve_request_id()
+    }
+
     /// Keep the staged device controller alive for the full USB session.
     /// Connected-state Version reads and Connection(false) rebuilds therefore
     /// take the same shared path on Windows and Android.
@@ -72,7 +76,7 @@ impl ConnectedQc {
         now_ms: u64,
     ) -> Result<(), UsbError> {
         if let Some(initialization) = self.initialization.as_mut() {
-            initialization.observe(message.message_type);
+            initialization.observe_message(message.message_type, &message.payload);
         }
         let action = self.startup.observe(message.message_type, &message.payload);
         self.apply_startup_action(action, now_ms)
@@ -541,7 +545,7 @@ impl QcUsb {
                 InitializationAction::Complete { synchronized } => break synchronized,
             }
             if let Some(message) = self.read_message(session, 100)? {
-                initialization.observe(message.message_type);
+                initialization.observe_message(message.message_type, &message.payload);
                 record_initial(
                     &mut initial_messages,
                     &mut message_counts,

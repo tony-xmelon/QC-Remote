@@ -117,11 +117,14 @@ connection phases, keepalive reservation, reconnect cadence, read-error
 tolerance, post-handshake initialization, and preset-catalog verification
 policy. Its readiness projection is bidirectional: an authoritative rebuild
 returns a live session to `Syncing` until a fresh seed restores `Ready`. It
-also owns encoded-write pacing, mutation confirmation/readback
+derives seed evidence from shared decoded semantic fields rather than raw
+message-type arrival, so malformed or partial payloads behave identically on
+both hosts. It also owns encoded-write pacing, mutation confirmation/readback
 cadence, the event-driven verification state machine, preflight/readback/refresh
 selection, post-write refreshes, composite read dependencies, response
-type/request-id correlation, and monotonic request deadlines. Windows links it
-directly into the native broker; Android reaches it
+type/request-id correlation, monotonic request deadlines, and the single
+session-scoped request-ID sequence used by lifecycle and application traffic.
+Windows links it directly into the native broker; Android reaches it
 through JNI and passes raw endpoint bytes into it. `qc-core` owns pending-command
 reconciliation, command transactions, batch reduction, and the provider-neutral
 bounded chat/tool-loop controller, so both clients share wire interpretation,

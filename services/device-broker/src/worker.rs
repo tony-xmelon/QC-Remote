@@ -78,6 +78,9 @@ impl Default for BrokerStatus {
 }
 
 enum Command {
+    ReserveRequestId {
+        reply: mpsc::Sender<Result<u64, String>>,
+    },
     Reconnect {
         force: bool,
         reply: mpsc::Sender<()>,
@@ -697,6 +700,18 @@ impl DeviceController {
             .map_err(|error| error.to_string())?
     }
 
+    /// Reserve a correlation id from the same retained session sequence used
+    /// by staged startup and post-boot synchronization.
+    pub fn reserve_request_id(&self) -> Result<u64, String> {
+        let (reply, response) = mpsc::channel();
+        self.commands
+            .send(Command::ReserveRequestId { reply })
+            .map_err(|_| "Native QC worker is not available".to_string())?;
+        response
+            .recv_timeout(Duration::from_secs(1))
+            .map_err(|_| "Native QC request-id reservation timed out".to_string())?
+    }
+
     pub fn create_backup(&self, timeout: Duration) -> Result<String, String> {
         let (reply, response) = mpsc::channel();
         self.commands
@@ -982,6 +997,13 @@ fn run(
                 break;
             };
             match command {
+                Command::ReserveRequestId { reply } => {
+                    let result = connection
+                        .as_mut()
+                        .map(ConnectedQc::reserve_request_id)
+                        .ok_or_else(|| "Quad Cortex is not connected".to_string());
+                    let _ = reply.send(result);
+                }
                 Command::Reconnect { force, reply } => {
                     let phase = state.lock_recover().phase.clone();
                     if reconnect_is_satisfied(force, connection.is_some(), &phase) {

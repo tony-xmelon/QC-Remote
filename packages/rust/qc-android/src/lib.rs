@@ -1318,6 +1318,32 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeStar
 }
 
 #[no_mangle]
+pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeNextRequestId(
+    mut env: JNIEnv,
+    _class: JClass,
+    value: jlong,
+) -> jlong {
+    let result = (|| {
+        let native = handle(value)?;
+        let request_id = native
+            .startup
+            .lock()
+            .map_err(|_| "native QC startup lock was poisoned".to_string())?
+            .as_mut()
+            .ok_or_else(|| "no native QC session is active".to_string())?
+            .reserve_request_id();
+        i64::try_from(request_id).map_err(|_| "QC request id exceeds the JNI range".to_string())
+    })();
+    match result {
+        Ok(request_id) => request_id,
+        Err(error) => {
+            let _ = env.throw_new("java/lang/IllegalStateException", error);
+            0
+        }
+    }
+}
+
+#[no_mangle]
 pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativePostBootInitializationStarted(
     mut env: JNIEnv,
     _class: JClass,
@@ -1352,19 +1378,23 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeInit
     _class: JClass,
     value: jlong,
     message_type: jint,
+    payload: JByteArray,
 ) {
     let result = (|| {
         let native = handle(value)?;
         let message_type = u16::try_from(message_type)
             .map_err(|_| "invalid QC initialization message type".to_string())?;
-        if let Some(runtime) = native
+        let mut initialization = native
             .initialization
             .lock()
-            .map_err(|_| "native QC initialization lock was poisoned".to_string())?
-            .as_mut()
-        {
-            runtime.observe(message_type);
-        }
+            .map_err(|_| "native QC initialization lock was poisoned".to_string())?;
+        let Some(runtime) = initialization.as_mut() else {
+            return Ok::<_, String>(());
+        };
+        let payload = env
+            .convert_byte_array(payload)
+            .map_err(|error| error.to_string())?;
+        runtime.observe_message(message_type, &payload);
         Ok::<_, String>(())
     })();
     if let Err(error) = result {
@@ -1381,13 +1411,17 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeInit
 ) -> jstring {
     let result = (|| {
         let native = handle(value)?;
-        let action = native
+        let mut initialization = native
             .initialization
             .lock()
-            .map_err(|_| "native QC initialization lock was poisoned".to_string())?
+            .map_err(|_| "native QC initialization lock was poisoned".to_string())?;
+        let action = initialization
             .as_mut()
             .map(|runtime| runtime.advance(now_ms.max(0) as u64))
             .unwrap_or(InitializationAction::Wait);
+        if matches!(action, InitializationAction::Complete { .. }) {
+            *initialization = None;
+        }
         initialization_envelope(action)
     })();
     json_result(&mut env, result)

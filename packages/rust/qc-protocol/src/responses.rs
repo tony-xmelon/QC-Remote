@@ -2010,6 +2010,8 @@ mod tests {
         #[test]
         fn arbitrary_bounded_reply_bytes_never_panic(payload in proptest::collection::vec(any::<u8>(), 0..4096)) {
             let _ = decode_tempo_clock(&payload);
+            let _ = decode_recalled_preset_name(&payload);
+            let _ = decode_selected_scene(&payload);
             let _ = decode_device_identity(&payload);
             let _ = decode_recents_favorites(&payload, 1);
             let _ = decode_pinned_models(&payload);

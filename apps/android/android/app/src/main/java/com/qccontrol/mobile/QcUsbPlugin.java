@@ -87,7 +87,6 @@ public class QcUsbPlugin extends Plugin {
     private volatile int lastMessageType = -1;
     private volatile long connectedAt;
     private volatile String lastError;
-    private final AtomicLong requestIds = new AtomicLong(1);
     private volatile long readAttempts;
     private volatile long negativeReads;
     private volatile int selectedInterfaceId = -1;
@@ -630,7 +629,7 @@ public class QcUsbPlugin extends Plugin {
 
     private void dispatchGatewayRefresh(String method) throws Exception {
         QcNativeStateDecoder.PlannedGatewayRead refresh = stateDecoder.gatewayRead(
-            method, new JSObject(), requestIds.getAndIncrement());
+            method, new JSObject(), stateDecoder.nextRequestId());
         for (QcNativeStateDecoder.EncodedMessage message : refresh.messages) writeMessage(message);
     }
 
@@ -852,7 +851,7 @@ public class QcUsbPlugin extends Plugin {
     private CompletableFuture<org.json.JSONObject> relayGatewayReadOnCurrentSession(
         String method, org.json.JSONObject params
     ) throws Exception {
-        long requestId = requestIds.getAndIncrement();
+        long requestId = stateDecoder.nextRequestId();
         QcNativeStateDecoder.PlannedGatewayRead plan = stateDecoder.gatewayRead(
             method, JSObject.fromJSONObject(params), requestId);
         CompletableFuture<org.json.JSONObject> result = new CompletableFuture<>();
@@ -952,7 +951,7 @@ public class QcUsbPlugin extends Plugin {
                 // Rebuild it once after the persistent mutation, then keep all
                 // eventual-consistency retries on that fresh session. The
                 // mutation itself is never replayed.
-                long verificationId = requestIds.getAndIncrement();
+                long verificationId = stateDecoder.nextRequestId();
                 stateDecoder.catalogVerificationStarted(verificationId, monotonicMillis());
                 catalog = relayReconnect("USB session refreshed for saved preset verification")
                     .thenCompose(ignored -> relayWorkflowCatalogRead(
@@ -1515,7 +1514,6 @@ public class QcUsbPlugin extends Plugin {
             // probe on Windows and Android, retaining the 128-byte fallback for
             // Android stacks which omit the report-ID byte from SET_REPORT.
             includeReportId = handshake.includeReportId;
-            requestIds.updateAndGet(current -> Math.max(current, handshake.requestId + 1));
             resetReply = new CountDownLatch(1);
             try {
                 QcNativeStateDecoder.StartupDecision entry = handshake.startup;
@@ -1852,7 +1850,9 @@ public class QcUsbPlugin extends Plugin {
                 lastError = "Could not advance QC startup: " + error.getMessage();
             }
         }
-        stateDecoder.initializationObserved(decoded.messageType);
+        if (!initializationComplete) {
+            stateDecoder.initializationObserved(decoded.messageType, decoded.payload);
+        }
         advanceInitialization();
         if (decoded.messageType == QcUsbProfile.MESSAGE_TYPE_FILE) {
             android.util.Log.i("QcUsbPlugin", "Received preset catalog frame");

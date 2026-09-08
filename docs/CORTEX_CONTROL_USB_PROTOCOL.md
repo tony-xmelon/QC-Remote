@@ -217,11 +217,17 @@ into a single burst. The following binary-evidenced corrections are implemented:
 - Treat synchronization as authoritative in both directions. An in-session
   rebuild returns transport readiness from `Ready` to `Syncing`; only its fresh
   bounded seed may restore `Ready`.
+- Count readiness seed evidence only after the shared state decoder accepts the
+  payload and projects the required semantic fields. A message-type arrival or
+  empty protobuf alone cannot make either host synchronized.
 - Keep native HID adapters byte-transparent after report assembly. Bounded gzip
   decoding belongs to the shared `qc-protocol` state/response decoders, so
   Windows and Android consume identical logical payloads.
 - Allocate post-boot seed request IDs inside `DeviceStartupRuntime`; native
   hosts no longer maintain a parallel startup request-id sequence.
+- Reserve gateway and verification IDs on both native hosts from that same
+  retained runtime, preventing lifecycle and application requests from reusing
+  one another's correlation IDs.
 - Own automatic reconnect reservation and its 750 ms cadence in
   `TransportRuntime`. Android now repeats failed automatic attempts through the
   same due/attempted gate as Windows instead of using a one-shot local timer.
