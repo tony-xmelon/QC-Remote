@@ -305,7 +305,54 @@ type CapturedSettingsView = "settings-support" | "settings-wifi" | "settings-sto
   | "settings-device-scene-bypass" | "settings-device-stomp-bypass" | "settings-device-hold-timing" | "settings-device-swap-tempo-tuner" | "settings-device-gig-view" | "settings-device-latency"
   | "settings-support-report" | "settings-support-licenses" | "settings-account-backups" | "settings-restart-confirm";
 
-type SettingsFixtureView = CapturedSettingsView | "settings-account" | "settings-system" | "settings-device" | "settings-midi";
+type SettingsFixtureView = CapturedSettingsView | "settings-account" | "settings-system" | "settings-device" | "settings-midi"
+  | "settings-diagnostics-dsp" | "settings-diagnostics-footswitch" | "settings-diagnostics-usb";
+
+const USB_STATISTICS: Array<[string, string, string?]> = [
+  ["USBConnected", "Yes"], ["IN rd/wr idx", "0/0"], ["OUT rd/wr idx", "0/0"],
+  ["UI to DSP HID count (tx/rx)", "468829/468809"],
+  ["USBAudioInRdWrDistanceAverage", "0", "is-red"], ["USBAudioOutRdWrDistanceAverage", "0", "is-red"],
+  ["USBAudioRxFrame", "0"], ["USBAudioTxFrame", "0"], ["USBAudioTxFrameSkipped", "0"],
+  ["USBAudioTxFrameAborted", "0"], ["USBAudioOUTGapsDetected", "0"], ["USBAudioOUTGapResets", "0"],
+  ["USBAudioOUTBufferResets", "0"], ["USBAudioPlusOneSampleCount", "0", "is-green"],
+  ["USBAudioMinusOneSampleCount", "0", "is-blue"], ["USBAudioStreamingEPEnabled", "0"],
+  ["USBAudioStreamingEPDisabled", "0"], ["USBMidiInCount", "18"], ["USBMidiOutCount", "0"],
+  ["HID driver sent report count", "468809"], ["HID driver received report count", "3779"]
+];
+
+const FOOTSWITCH_STATISTICS: Array<[string, string, string]> = [
+  ["A", "(p: 2, r: 2)", "(l: 0, r: 0)"], ["B", "(p: 0, r: 0)", "(l: 0, r: 0)"],
+  ["C", "(p: 0, r: 0)", "(l: 0, r: 0)"], ["D", "(p: 0, r: 0)", "(l: 0, r: 0)"],
+  ["DOWN", "(p: 0, r: 0)", "(l: 0, r: 0)"], ["E", "(p: 0, r: 0)", "(l: 0, r: 0)"],
+  ["F", "(p: 0, r: 0)", "(l: 0, r: 0)"], ["G", "(p: 0, r: 0)", "(l: 0, r: 0)"],
+  ["H", "(p: 0, r: 0)", "(l: 0, r: 0)"], ["TEMPO", "(p: 0, r: 0)", "(l: 0, r: 0)"],
+  ["UP", "(p: 0, r: 0)", "(l: 0, r: 0)"]
+];
+
+/** Five columns: the frame shows four, and clips SOC2 ARM the way CorOS does. */
+const DSP_CORES = ["Core 1", "Core 2", "Core 3", "Core 4", "SOC2 ARM"];
+const DSP_DIAGNOSTICS: Array<[string, string[]]> = [
+  ["Drp Msg:", ["0", "0", "0", "0", "-1"]],
+  ["FP exc:", ["0", "0", "0", "0", "-1"]],
+  ["CPU Av/Pk(%):", ["3.3/3.6/1.7", "32/33/0.58", "4.8/4.9/1.3", "1.3/1.5/0", "-1"]],
+  ["EMDMA (%):", ["0", "7.91", "0", "0", "-1"]],
+  ["Heap(%):", ["DM:0.177/PM:0/SD:0.00687", "DM:3.3/PM:6.74/SD:0.208", "DM:0.135/PM:0/SD:0.00687", "DM:0.135/PM:0/SD:0.00687", "-1"]]
+];
+
+function CorOsDiagnosticsDialog({ view }: { view: "settings-diagnostics-dsp" | "settings-diagnostics-footswitch" | "settings-diagnostics-usb" }) {
+  const title = view === "settings-diagnostics-dsp" ? "DSP Diagnostics"
+    : view === "settings-diagnostics-footswitch" ? "Footswitch Statistics" : "USB Statistics";
+  return <section className={`qc-screen coros-diagnostics-dialog ${view}`} aria-label={title}>
+    <header><h1>{title}</h1><button className="settings-done"><QcUiIcon kind="check" /></button></header>
+    {view === "settings-diagnostics-usb" && <div className="usb-statistics">{USB_STATISTICS.map(([label, value, tone]) => <span key={label}><b>{label}</b><i className={tone}>{value}</i></span>)}</div>}
+    {view === "settings-diagnostics-footswitch" && <div className="footswitch-statistics">{FOOTSWITCH_STATISTICS.map(([name, press, hold]) => <span key={name}><b>{name}</b><i>{press}</i><em>{hold}</em></span>)}</div>}
+    {view === "settings-diagnostics-dsp" && <div className="dsp-diagnostics">
+      <header>{[["SOC1.1", "53873"], ["SOC1.2", "21457"], ["SOC2.0", "0"]].map(([soc, count]) => <span key={soc}><b>{soc}</b><i>{count}</i></span>)}</header>
+      <div className="dsp-cores">{DSP_CORES.map((core) => <span key={core}><button>Off</button><small>{core}</small></span>)}</div>
+      <div className="dsp-table">{DSP_DIAGNOSTICS.map(([label, values]) => <section key={label}><b>{label}</b>{values.map((value, index) => <i key={index}>{value}</i>)}</section>)}</div>
+    </div>}
+  </section>;
+}
 
 const DEVICE_COPY = {
   gigView: `Enable this feature to toggle Gig View by pressing and holding  and TEMPO footswitches simultaneously.
@@ -453,6 +500,7 @@ function CorOsSettingsFixture({ view }: { view: SettingsFixtureView }) {
   // The restart confirmation is CorOS's `ConfirmationMessage` drawn over the
   // pane that raised it: a title, a message, and two buttons whose captions the
   // message itself carries.
+  if (view === "settings-diagnostics-dsp" || view === "settings-diagnostics-footswitch" || view === "settings-diagnostics-usb") return <CorOsDiagnosticsDialog view={view} />;
   if (view === "settings-restart-confirm") return <div className="coros-restart-confirm">
     <CorOsCapturedSettings view="settings-system-power" />
     <div className="restart-scrim" />
