@@ -10,7 +10,7 @@ export type QcLibraryIconName = "capture-library" | "capture-header" | "impulse-
 export type QcCaptureFilterIconName = "Default" | "Amp" | "Combo Amp" | "Amp + Cab" | "Cab" | "Overdrive" | "Fuzz" | "Compressor";
 export type QcScreenHeaderGlyphName = "undo" | "save" | "export" | "menu";
 export type QcSettingsIconName = "connection" | "updates" | "brightness" | "power" | "volume" | "storage" | "factory-reset";
-export type QcUiIconName = "add" | "subtract" | "previous" | "next" | "cab-previous" | "cab-next" | "up" | "down" | "more" | "check" | "close" | "refresh" | "backspace" | "microphone" | "attachment" | "file" | "send" | "stop" | "save-as" | "edit" | "midi" | "favorite" | "delete" | "capture" | "modes" | "tempo" | "cpu" | "settings";
+export type QcUiIconName = "add" | "subtract" | "previous" | "next" | "cab-previous" | "cab-next" | "up" | "down" | "collapse" | "more" | "check" | "close" | "refresh" | "backspace" | "microphone" | "attachment" | "file" | "send" | "stop" | "save-as" | "edit" | "midi" | "favorite" | "delete" | "capture" | "modes" | "tempo" | "cpu" | "settings";
 
 type ReferenceRasterName = keyof typeof QC_REFERENCE_ICON_RASTERS;
 
@@ -80,6 +80,12 @@ export function QcUiIcon({ kind, className, monochrome = false }: { kind: QcUiIc
     return (
       <svg className={classes} viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
         <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M5 8h14v1h-14ZM6 9h12v1h-12ZM6 10h12v1h-12ZM7 11h10v1h-10ZM8 12h8v1h-8ZM9 13h6v1h-6ZM10 14h5v1h-5ZM10 15h4v1h-4ZM11 16h2v1h-2Z" />
+      </svg>
+    );
+  if (kind === "collapse")
+    return (
+      <svg className={classes} viewBox="0 0 24 24" aria-hidden="true">
+        <path d="m5 9 7 7 7-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     );
   if (kind === "close")

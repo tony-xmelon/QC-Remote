@@ -123,11 +123,20 @@
 .directory-search-official > header .directory-search-tab { width: 12.625cqw; font-size: 2cqw; }
 .directory-search-official > header .directory-search-tab.is-active { width: 12.375cqw; }
 .directory-search-official > header .directory-search-tab.is-active { background: #b0b0b0; color: #333; }
+.directory-search-official > header .directory-search-tab { position: relative; display: block; }
+.directory-search-official > header .directory-search-tab svg { position: absolute; left: 2.5cqw; top: 1.25cqw; width: 3cqw; height: 3cqw; }
+.directory-search-official > header .directory-search-tab > span { position: absolute; left: 6.5cqw; top: 0; bottom: 0; display: flex; align-items: center; }
+.directory-search-official > header .directory-search-tab:nth-of-type(4) svg { left: 3cqw; }
+.directory-search-official > header .directory-search-tab:nth-of-type(4) > span { left: 7.125cqw; }
+.directory-search-official > header .directory-search-tab:nth-of-type(3) svg { color: #929692; }
+.directory-search-official > header .directory-search-tab:nth-of-type(4) svg { color: #929692; }
 .directory-search-official > header button:last-child { margin-left: 1.75cqw; }
 .directory-search-official > main { display: block; padding: 0 1cqw 1cqw; }
 .directory-search-official .directory-official-list { height: 100%; border-radius: 1cqw; }
 .directory-search-official .directory-official-list > header { height: 5.5cqw; display: flex; align-items: center; padding: 0 2cqw; background: #4b4d4b; font-size: 1.75cqw; }
 .directory-search-official .directory-official-list > header b { margin-left: auto; font-size: 3cqw; }
+.directory-search-official .directory-official-list > header b svg { width: 3cqw; height: 3cqw; }
+.directory-search-official .directory-official-list > header b .qc-ui-icon-collapse { fill: none; stroke: currentColor; }
 .directory-search-official .directory-official-list > button { grid-template-columns: 1fr 5cqw; }
 .directory-upload-official > header .directory-official-category { color: #344037; }
 .directory-upload-official > header .is-cloud { border: 1px solid #2df36a; color: #2df36a; }

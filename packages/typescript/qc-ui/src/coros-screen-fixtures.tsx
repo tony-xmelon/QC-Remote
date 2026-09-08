@@ -249,17 +249,17 @@ function CorOsOfficialDirectory({
             <DirectoryIcon kind="search" />
             <span>Brit</span>
           </button>
-          <button className="directory-search-tab is-active">▦ (15)</button>
-          <button className="directory-search-tab">◉ (50)</button>
-          <button className="directory-search-tab">≋ (0)</button>
+          <button className="directory-search-tab is-active"><QcModeGlyph mode="PRESET" /><span>(15)</span></button>
+          <button className="directory-search-tab"><CaptureHeaderIcon /><span>(50)</span></button>
+          <button className="directory-search-tab"><QcLibraryIcon kind="impulse-response" /><span>(0)</span></button>
           <span />
-          <button>↥</button>
-          <button>✓</button>
+          <button><DirectoryIcon kind="arrange" /></button>
+          <button><DirectoryIcon kind="done" /></button>
         </header>
         <main>
           <section className="directory-official-list">
             <header>
-              DEVICE DIRECTORIES <b>⌄</b>
+              DEVICE DIRECTORIES <b><QcUiIcon kind="collapse" /></b>
             </header>
             {rows.map((name) => (
               <button key={name}>

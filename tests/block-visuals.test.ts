@@ -268,6 +268,17 @@ test("manual IR Directory keeps device-status rows separate from action tiles", 
   assert.match(icons, /kind === "check" && monochrome[\s\S]*?referencePath\("interface\.check"\)[\s\S]*?fill="currentColor"/);
 });
 
+test("official Directory search header uses the shared icon vocabulary", () => {
+  const fixture = readFileSync("packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", "utf8");
+  const icons = readFileSync("packages/typescript/qc-ui/src/theme-icons.tsx", "utf8");
+  assert.match(fixture, /directory-search-tab is-active"><QcModeGlyph mode="PRESET" \/>/);
+  assert.match(fixture, /directory-search-tab"><CaptureHeaderIcon \/>/);
+  assert.match(fixture, /directory-search-tab"><QcLibraryIcon kind="impulse-response" \/>/);
+  assert.match(fixture, /DEVICE DIRECTORIES <b><QcUiIcon kind="collapse" \/><\/b>/);
+  assert.doesNotMatch(fixture, /directory-search-tab[^\n]*[▦◉≋]/);
+  assert.match(icons, /QcUiIconName = [^;]*"collapse"/);
+});
+
 test("official System brightness values keep the alignment the device uses", () => {
   const css = readFileSync("packages/typescript/qc-ui/src/official-settings-device.css", "utf8");
   const fixture = readFileSync("packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", "utf8");
