@@ -1858,7 +1858,8 @@ public class QcUsbPlugin extends Plugin {
                 QcNativeStateDecoder.StartupDecision startup =
                     stateDecoder.startupObserved(decoded.messageType, decoded.payload);
                 if (decoded.messageType == QcUsbProfile.MESSAGE_TYPE_RESET_COMMS_BUFFERS
-                    && "versionValidating".equals(startup.phase) && resetReply != null) {
+                    && startup.kind == QcNativeStateDecoder.StartupDecision.SEND
+                    && resetReply != null) {
                     resetReply.countDown();
                 }
                 dispatchStartupDecision(startup, decoded.messageType);

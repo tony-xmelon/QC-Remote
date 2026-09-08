@@ -209,6 +209,9 @@ assert(!/PERFORMANCE_MIDI_GAP_MS[\s\S]{0,120}System\.currentTimeMillis/.test(and
   "Android must enforce shared performance-MIDI pacing on a monotonic clock.");
 assert(androidUsbHost.includes("handshakeAttempt(monotonicMillis(), session)"),
   "Android must drive shared handshake deadlines with its monotonic clock.");
+assert(/MESSAGE_TYPE_RESET_COMMS_BUFFERS[\s\S]{0,120}StartupDecision\.SEND/.test(androidUsbHost)
+  && !/"versionValidating"\.equals\(startup\.phase\)/.test(androidUsbHost),
+  "Android handshake completion must use the typed shared action, not a rendered phase name.");
 assert(/InitializationDecision\.COMPLETE[\s\S]{0,400}sessionHandshakeComplete\([\s\S]{0,100}decision\.synchronizedState/.test(androidUsbHost),
   "Android must advance shared transport readiness at the same post-seed boundary as Windows.");
 assert(/InitializationDecision\.SEND[\s\S]{0,300}connection == null \|\| !stateDecoder\.startupConnected\(\)/.test(androidUsbHost),
