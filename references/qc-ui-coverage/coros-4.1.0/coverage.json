@@ -1074,7 +1074,8 @@
       "id": "ST-07",
       "renderer": "settings-storage",
       "physical": [
-        "settings-storage"
+        "settings-storage",
+        "settings-system-reset"
       ],
       "smoke": [
         "settings-storage"

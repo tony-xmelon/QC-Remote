@@ -370,7 +370,7 @@ function CorOsOfficialSettings({ view }: { view: "settings-account" | "settings-
 }
 
 type CapturedSettingsView = "settings-support" | "settings-wifi" | "settings-storage" | "settings-info" | "settings-diagnostics"
-  | "settings-system-power" | "settings-system-volume" | "settings-update-idle";
+  | "settings-system-power" | "settings-system-volume" | "settings-update-idle" | "settings-system-reset";
 
 const SUPPORT_QR = [
   "11111111011111001101011111111", "10000001011001011100010000001", "10111101001100011111010111101", "10111101000101111111010111101", "10111101000001111101010111101", "10111101011001111100010111101", "10000001011110110001010000001", "11111111011010101101011111111", "00000000011100001110000000000", "11110011011101100110111110011", "11110111011101110111111111011", "01110100000000110111011011011", "00000001111110100111011011101", "00011000100011101101101111000", "00011011011110100111011000001", "01011100001110010111111000011", "11011101101101010111010011101", "11111111111111011111111111101", "00110010011011001101101111000", "11110101100011001101111110010", "00000000011101110001000110001", "11111111000011000001010110001", "10000001011101101111000110001", "10111101000011000111111110010", "10111101000111110111111110110", "10111101001111110110100110110", "10111101011011000111001111011", "10000001011010100001001110000", "11111111011001100001100011001"
@@ -421,13 +421,13 @@ function CorOsCapturedSettings({ view }: { view: CapturedSettingsView }) {
   // The category selector is drawn on some panes and not others. Every frame
   // that reaches these three shows the dialog without it, and the menu below
   // does not move when it goes, so only the header changes.
-  const selector = !["settings-system-power", "settings-system-volume", "settings-update-idle"].includes(view);
+  const selector = !["settings-system-power", "settings-system-volume", "settings-update-idle", "settings-system-reset"].includes(view);
   const rows = support
     ? [["about", "About and Contact"], ["info", "Device Information"], ["report", "Send Report"], ["diagnostics", "Diagnostics"], ["licenses", "3rd Party Licenses"]]
     : [["wifi", "Connection"], ["updates", "Updates"], ["brightness", "Brightness"], ["power", "Power Functions"], ["volume", "Master Volume Knob"], ["storage", "Device Storage"], ["factory", "Factory Reset"]];
   const active = ({
     "settings-support": 0, "settings-info": 1, "settings-diagnostics": 3, "settings-wifi": 0,
-    "settings-update-idle": 1, "settings-system-power": 3, "settings-system-volume": 4, "settings-storage": 5
+    "settings-update-idle": 1, "settings-system-power": 3, "settings-system-volume": 4, "settings-storage": 5, "settings-system-reset": 6
   } as Record<string, number>)[view] ?? 5;
   return <section className={`qc-screen coros-settings-official coros-settings-captured ${view}`} aria-label={view.replaceAll("-", " ")}>
     <header>{selector && <button className="settings-section"><b><CapturedSettingsIcon kind={support ? "support" : "system"} /></b>{support ? "Support" : "System"}<i /></button>}{view === "settings-info" && <button className="settings-edit" aria-label="Edit device name"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5v15h15v-8M11 14 20 5l-3-3-9 9-1 4 4-1Z" /></svg></button>}<button className="settings-done"><QcUiIcon kind="check" /></button></header>
@@ -437,6 +437,13 @@ function CorOsCapturedSettings({ view }: { view: CapturedSettingsView }) {
         {view === "settings-diagnostics" && <div className="captured-list">{["DSP Diagnostics", "Footswitch Statistics", "USB Statistics"].map(label => <button key={label}>{label}<span>›</span></button>)}</div>}
         {view === "settings-storage" && <><h1>Device Storage</h1><div className="storage-captured">{[["presets", "My Presets", "270/3072", 9], ["captures", "My Captures", "65/2048", 3], ["irs", "My Impulse Responses", "0/2048", 0]].map(([kind, label, value, amount]) => <div key={String(label)}><span><CapturedSettingsIcon kind={String(kind)} /><strong>{label}</strong><i>›</i><em>{value}</em></span><b><i style={{ width: `${amount}%` }} /></b></div>)}</div></>}
         {view === "settings-info" && <><h1>Device information</h1><div className="information-table"><span><b>Serial number:</b><i /></span><span><b>Device name:</b><i>Neural DSP Quad Cortex</i></span><span><b>MAC address:</b><i /></span></div><hr /><h1>Software information</h1><div className="information-table"><span><b>CorOS:</b><i>4.1.0</i></span><span><b>Linux kernel:</b><i>Linux buildroot 4.0.0-ADI-1.3.0 #1 PREEMPT Tue<br />Aug 18 01:26:58 EEST 2026 armv7l (none)</i></span><span><b>U-Boot:</b><i>U-Boot 2015.01 ADI-1.3.0 (Sep 30 2021 -<br />01:01:44)</i></span><span><b>Zenjack FW app:</b><i>d14e</i></span><span><b>Zenjack FW bootloader:</b><i>b113</i></span><span><b>Zencoder FW app:</b><i>d111</i></span><span><b>Zencoder FW bootloader:</b><i>b103</i></span><span><b>Zenwireless FW:</b><i>cf9daede4300aaae664fc527cede12ae</i></span></div></>}
+        {view === "settings-system-reset" && <>
+          <h1>Choose a Recovery option</h1>
+          <p className="reset-lead"><strong>Reset Settings</strong> will restore Quad Cortex to its default settings. User data (Presets, Captures, etc.) will not be removed.</p>
+          <button className="reset-settings">RESET SETTINGS</button>
+          <p className="reset-factory-lead"><strong>Factory Reset</strong> will remove all user data and the device will be restored to factory settings.</p>
+          <button className="reset-factory">FACTORY RESET</button>
+        </>}
         {view === "settings-system-power" && <>
           <h1>Power Functions</h1>
           <h2>Power Button Sensitivity</h2>

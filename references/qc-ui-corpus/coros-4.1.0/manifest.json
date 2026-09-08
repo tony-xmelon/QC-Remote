@@ -3770,6 +3770,19 @@
       "height": 480,
       "capturedAt": "2026-09-08T02:17:50.503930Z",
       "actions": []
+    },
+    {
+      "id": "settings-system-reset",
+      "label": "Settings > System > Factory Reset",
+      "screen": "unknown",
+      "image": "settings-system-reset.png",
+      "graphicsTree": "settings-system-reset.tree.txt",
+      "sha256": "361280b5c53f42aa73927a5a443d62d130dab7c2c51527ada30d25906dee4ddf",
+      "bytes": 41323,
+      "width": 800,
+      "height": 480,
+      "capturedAt": "2026-09-08T02:47:00.448395Z",
+      "actions": []
     }
   ]
 }
