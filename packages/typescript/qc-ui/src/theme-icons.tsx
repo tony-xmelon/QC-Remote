@@ -1,12 +1,50 @@
 import type { PresetSnapshot } from "@qc-remote/client";
-import { QC_COLORS, QC_TYPOGRAPHY } from "@qc-remote/theme";
+import { QC_COLORS, QC_SCREEN_ICON_VECTORS, QC_TYPOGRAPHY } from "@qc-remote/theme";
 
 export type QcDirectoryIconName = "grid" | "download" | "cloud" | "cloud-upload" | "folder" | "new-folder" | "sort" | "filter" | "arrange" | "upload" | "search" | "trash" | "done";
-export type QcEditorIconName = "save" | "change" | "copy" | "paste" | "reset" | "expression" | "looper" | "mute" | "model-update" | "model-downgrade" | "remove" | "assignment-expression" | "band-power" | "footswitch" | "scene-previous" | "scene-next" | "bypass" | "confirm" | "waveform";
+export type QcEditorIconName = "save" | "change" | "copy" | "paste" | "reset" | "expression" | "looper" | "mute" | "model-update" | "model-downgrade" | "remove" | "assignment-expression" | "band-power" | "footswitch" | "momentary" | "scene-previous" | "scene-next" | "bypass" | "confirm" | "waveform";
 export type QcHardwareIconName = "power" | "brand-pulse";
-export type QcLibraryIconName = "capture-library" | "capture-header" | "heart" | "clock" | "binoculars" | "broken-heart";
+export type QcIoIconName = "usb" | "jack" | "midi" | "combo" | "input" | "headphones-symbol";
+export type QcLibraryIconName = "capture-library" | "capture-header" | "impulse-response" | "heart" | "clock" | "binoculars" | "broken-heart";
 export type QcScreenHeaderGlyphName = "undo" | "save" | "export" | "menu";
 export type QcUiIconName = "add" | "subtract" | "previous" | "next" | "cab-previous" | "cab-next" | "up" | "down" | "more" | "check" | "close" | "refresh" | "backspace" | "microphone" | "attachment" | "file" | "send" | "stop" | "save-as" | "edit" | "midi" | "favorite" | "delete" | "capture" | "modes" | "tempo" | "cpu" | "settings";
+
+type ScreenVectorName = keyof typeof QC_SCREEN_ICON_VECTORS;
+
+function QcScreenVector({ icon, color, className, crisp = true }: { icon: ScreenVectorName; color: string; className?: string; crisp?: boolean }) {
+  const vector = QC_SCREEN_ICON_VECTORS[icon];
+  const path = (vector.paths as Record<string, string>)[color];
+  return <svg className={className} width={vector.width} height={vector.height} viewBox={`0 0 ${vector.width} ${vector.height}`} shapeRendering={crisp ? "crispEdges" : "auto"} aria-hidden="true"><path d={path} fill={color} stroke="none" /></svg>;
+}
+
+function QcScreenVectorLayers({ icon, className }: { icon: ScreenVectorName; className?: string }) {
+  const raster = QC_SCREEN_ICON_VECTORS[icon];
+  const shapeRendering = icon === "editor.scene-previous" || icon === "editor.scene-next" ? "auto" : "crispEdges";
+  return <svg className={className} width={raster.width} height={raster.height} viewBox={`0 0 ${raster.width} ${raster.height}`} shapeRendering={shapeRendering} aria-hidden="true">{Object.entries(raster.paths).map(([color, path]) => <path key={color} d={path} fill={color} stroke="none" />)}</svg>;
+}
+
+function screenVectorPath(icon: ScreenVectorName, index = 0) {
+  return Object.values(QC_SCREEN_ICON_VECTORS[icon].paths)[index];
+}
+
+function directoryReferenceIcon(kind: QcDirectoryIconName): "directory.download" | "directory.cloud" | "directory.cloud-upload-header" | "directory.trash" | undefined {
+  return kind === "download" ? "directory.download" : kind === "cloud" ? "directory.cloud" : kind === "cloud-upload" ? "directory.cloud-upload-header" : kind === "trash" ? "directory.trash" : undefined;
+}
+
+function editorScreenVector(kind: QcEditorIconName): ScreenVectorName | undefined {
+  const icons = {
+    change: "editor.change", copy: "editor.copy", paste: "editor.paste", reset: "editor.reset",
+    save: "editor.save", expression: "editor.expression", mute: "editor.mute",
+    "model-update": "editor.model-update", "model-downgrade": "editor.model-downgrade",
+    remove: "editor.remove", confirm: "editor.confirm", bypass: "editor.bypass",
+    "scene-previous": "editor.scene-previous", "scene-next": "editor.scene-next"
+  } as const;
+  return kind in icons ? icons[kind as keyof typeof icons] : undefined;
+}
+
+export function QcIoIcon({ kind, className }: { kind: QcIoIconName; className?: string }) {
+  return <QcScreenVectorLayers icon={`io.${kind}` as ScreenVectorName} className={className} />;
+}
 
 export function QcPresetStackIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 4-8 4-8-4 8-4Zm8 8-8 4-8-4m16 4-8 4-8-4" /></svg>;
@@ -15,26 +53,16 @@ export function QcPresetStackIcon() {
 /** Shared app/CorOS glyph vocabulary. Text characters must not be used as icons. */
 export function QcUiIcon({ kind, className }: { kind: QcUiIconName; className?: string }) {
   const classes = `qc-ui-icon qc-ui-icon-${kind}${className ? ` ${className}` : ""}`;
-  if (kind === "cab-previous")
-    return (
-      <svg className={classes} viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
-        <path fill={QC_COLORS.captured.cabArrowDark} stroke="none" d="M15 3h1v1h-1ZM14 4h1v1h-1ZM16 4h1v1h-1ZM13 5h1v1h-1ZM15 5h1v1h-1ZM12 6h1v1h-1ZM14 6h1v1h-1ZM11 7h1v1h-1ZM13 7h1v1h-1ZM10 8h1v1h-1ZM12 8h1v1h-1ZM9 9h1v1h-1ZM11 9h1v1h-1ZM8 10h1v1h-1ZM10 10h1v1h-1ZM7 11h1v1h-1ZM9 11h1v1h-1ZM7 12h1v1h-1ZM9 12h1v1h-1ZM8 13h1v1h-1ZM10 13h1v1h-1ZM9 14h1v1h-1ZM11 14h1v1h-1ZM10 15h1v1h-1ZM12 15h1v1h-1ZM11 16h1v1h-1ZM13 16h1v1h-1ZM12 17h1v1h-1ZM14 17h1v1h-1ZM13 18h1v1h-1ZM15 18h1v1h-1ZM14 19h1v1h-1ZM16 19h1v1h-1ZM15 20h1v1h-1Z" />
-        <path fill={QC_COLORS.captured.cabArrowLight} stroke="none" d="M15 4h1v1h-1ZM14 5h1v1h-1ZM13 6h1v1h-1ZM12 7h1v1h-1ZM11 8h1v1h-1ZM10 9h1v1h-1ZM9 10h1v1h-1ZM8 11h1v1h-1ZM8 12h1v1h-1ZM9 13h1v1h-1ZM10 14h1v1h-1ZM11 15h1v1h-1ZM12 16h1v1h-1ZM13 17h1v1h-1ZM14 18h1v1h-1ZM15 19h1v1h-1Z" />
-      </svg>
-    );
-  if (kind === "cab-next")
-    return (
-      <svg className={classes} viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
-        <path fill={QC_COLORS.captured.cabArrowDark} stroke="none" d="M8 3h1v1h-1ZM7 4h1v1h-1ZM9 4h1v1h-1ZM8 5h1v1h-1ZM10 5h1v1h-1ZM9 6h1v1h-1ZM11 6h1v1h-1ZM10 7h1v1h-1ZM12 7h1v1h-1ZM11 8h1v1h-1ZM13 8h1v1h-1ZM12 9h1v1h-1ZM14 9h1v1h-1ZM13 10h1v1h-1ZM15 10h1v1h-1ZM14 11h1v1h-1ZM16 11h1v1h-1ZM14 12h1v1h-1ZM16 12h1v1h-1ZM13 13h1v1h-1ZM15 13h1v1h-1ZM12 14h1v1h-1ZM14 14h1v1h-1ZM11 15h1v1h-1ZM13 15h1v1h-1ZM10 16h1v1h-1ZM12 16h1v1h-1ZM9 17h1v1h-1ZM11 17h1v1h-1ZM8 18h1v1h-1ZM10 18h1v1h-1ZM7 19h1v1h-1ZM9 19h1v1h-1ZM8 20h1v1h-1Z" />
-        <path fill={QC_COLORS.captured.cabArrowLight} stroke="none" d="M8 4h1v1h-1ZM9 5h1v1h-1ZM10 6h1v1h-1ZM11 7h1v1h-1ZM12 8h1v1h-1ZM13 9h1v1h-1ZM14 10h1v1h-1ZM15 11h1v1h-1ZM15 12h1v1h-1ZM14 13h1v1h-1ZM13 14h1v1h-1ZM12 15h1v1h-1ZM11 16h1v1h-1ZM10 17h1v1h-1ZM9 18h1v1h-1ZM8 19h1v1h-1Z" />
-      </svg>
-    );
-  if (kind === "check")
-    return (
-      <svg className={classes} viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
-        <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M18 7h1v1h-1ZM16 8h4v1h-4ZM15 9h5v1h-5ZM14 10h4v1h-4ZM13 11h4v1h-4ZM5 12h2v1h-2ZM12 12h4v1h-4ZM4 13h4v1h-4ZM11 13h4v1h-4ZM5 14h4v1h-4ZM10 14h4v1h-4ZM6 15h7v1h-7ZM7 16h5v1h-5ZM8 17h3v1h-3ZM9 18h1v1h-1Z" />
-      </svg>
-    );
+  if (kind === "settings" || kind === "check") return <QcScreenVectorLayers icon={`interface.${kind}` as ScreenVectorName} className={classes} />;
+  const referenceIcons = {
+    add: "interface.add", file: "interface.file", midi: "interface.midi", modes: "interface.modes",
+    tempo: "interface.tempo"
+  } as const;
+  if (kind in referenceIcons) return <QcScreenVector icon={referenceIcons[kind as keyof typeof referenceIcons]} color={QC_COLORS.captured.primaryText} className={classes} />;
+  if (kind === "cab-previous" || kind === "cab-next") {
+    const icon = kind === "cab-previous" ? "interface.previous-cab" : "interface.next-cab";
+    return <svg className={classes} viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true"><path d={screenVectorPath(icon, 0)} style={{ fill: QC_COLORS.captured.cabArrowDark, stroke: "none" }} /><path d={screenVectorPath(icon, 1)} style={{ fill: QC_COLORS.captured.cabArrowLight, stroke: "none" }} /></svg>;
+  }
   if (kind === "down")
     return (
       <svg className={classes} viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
@@ -59,12 +87,6 @@ export function QcUiIcon({ kind, className }: { kind: QcUiIconName; className?: 
         <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M3 2h7v1h-7ZM14 2h7v1h-7ZM2 3h9v1h-9ZM13 3h9v1h-9ZM1 4h5v1h-5ZM7 4h10v1h-10ZM18 4h5v1h-5ZM0 5h4v1h-4ZM9 5h6v1h-6ZM20 5h4v1h-4ZM0 6h3v1h-3ZM10 6h4v1h-4ZM21 6h3v1h-3ZM0 7h3v1h-3ZM11 7h2v1h-2ZM21 7h3v1h-3ZM0 8h2v1h-2ZM21 8h3v1h-3ZM0 9h3v1h-3ZM21 9h3v1h-3ZM0 10h3v1h-3ZM21 10h3v1h-3ZM0 11h4v1h-4ZM20 11h4v1h-4ZM1 12h4v1h-4ZM19 12h4v1h-4ZM2 13h4v1h-4ZM18 13h4v1h-4ZM3 14h4v1h-4ZM17 14h4v1h-4ZM4 15h4v1h-4ZM16 15h4v1h-4ZM5 16h4v1h-4ZM15 16h4v1h-4ZM6 17h4v1h-4ZM14 17h4v1h-4ZM7 18h4v1h-4ZM13 18h4v1h-4ZM8 19h8v1h-8ZM9 20h6v1h-6ZM10 21h4v1h-4ZM11 22h2v1h-2Z" />
       </svg>
     );
-  if (kind === "add")
-    return (
-      <svg className={classes} viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
-        <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M10 0h4v1h-4ZM10 1h4v1h-4ZM10 2h4v1h-4ZM10 3h4v1h-4ZM11 4h2v1h-2ZM2 5h3v1h-3ZM11 5h2v1h-2ZM19 5h3v1h-3ZM1 6h5v1h-5ZM11 6h2v1h-2ZM18 6h5v1h-5ZM1 7h6v1h-6ZM11 7h2v1h-2ZM17 7h6v1h-6ZM2 8h20v1h-20ZM5 9h14v1h-14ZM7 10h10v1h-10ZM8 11h8v1h-8ZM8 12h8v1h-8ZM6 13h12v1h-12ZM5 14h14v1h-14ZM2 15h6v1h-6ZM9 15h6v1h-6ZM16 15h6v1h-6ZM1 16h6v1h-6ZM11 16h2v1h-2ZM17 16h6v1h-6ZM1 17h5v1h-5ZM11 17h2v1h-2ZM18 17h5v1h-5ZM2 18h3v1h-3ZM11 18h2v1h-2ZM19 18h3v1h-3ZM11 19h2v1h-2ZM10 20h4v1h-4ZM10 21h4v1h-4ZM10 22h4v1h-4ZM10 23h4v1h-4Z" />
-      </svg>
-    );
   if (kind === "save-as")
     return (
       <svg className={classes} viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
@@ -77,23 +99,11 @@ export function QcUiIcon({ kind, className }: { kind: QcUiIconName; className?: 
         <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M2 1h11v1h-11ZM19 1h1v1h-1ZM1 2h12v1h-12ZM18 2h3v1h-3ZM1 3h3v1h-3ZM17 3h5v1h-5ZM1 4h2v1h-2ZM16 4h7v1h-7ZM1 5h2v1h-2ZM15 5h8v1h-8ZM1 6h2v1h-2ZM14 6h8v1h-8ZM1 7h2v1h-2ZM13 7h8v1h-8ZM1 8h2v1h-2ZM12 8h8v1h-8ZM1 9h2v1h-2ZM11 9h8v1h-8ZM1 10h2v1h-2ZM10 10h8v1h-8ZM1 11h2v1h-2ZM10 11h7v1h-7ZM1 12h2v1h-2ZM11 12h5v1h-5ZM1 13h2v1h-2ZM8 13h1v1h-1ZM12 13h3v1h-3ZM21 13h2v1h-2ZM1 14h2v1h-2ZM7 14h3v1h-3ZM13 14h1v1h-1ZM21 14h2v1h-2ZM1 15h2v1h-2ZM7 15h4v1h-4ZM21 15h2v1h-2ZM1 16h2v1h-2ZM7 16h5v1h-5ZM21 16h2v1h-2ZM1 17h2v1h-2ZM7 17h1v1h-1ZM21 17h2v1h-2ZM1 18h2v1h-2ZM21 18h2v1h-2ZM1 19h2v1h-2ZM21 19h2v1h-2ZM1 20h3v1h-3ZM20 20h3v1h-3ZM1 21h22v1h-22ZM2 22h20v1h-20Z" />
       </svg>
     );
-  if (kind === "file")
-    return (
-      <svg className={classes} viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
-        <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M8 1h14v1h-14ZM7 2h16v1h-16ZM7 3h4v1h-4ZM19 3h4v1h-4ZM7 4h3v1h-3ZM20 4h3v1h-3ZM21 5h2v1h-2ZM21 6h2v1h-2ZM2 7h14v1h-14ZM21 7h2v1h-2ZM1 8h16v1h-16ZM21 8h2v1h-2ZM1 9h4v1h-4ZM13 9h4v1h-4ZM21 9h2v1h-2ZM1 10h3v1h-3ZM14 10h3v1h-3ZM21 10h2v1h-2ZM1 11h2v1h-2ZM15 11h2v1h-2ZM21 11h2v1h-2ZM1 12h2v1h-2ZM15 12h2v1h-2ZM21 12h2v1h-2ZM1 13h2v1h-2ZM15 13h2v1h-2ZM20 13h3v1h-3ZM1 14h2v1h-2ZM15 14h2v1h-2ZM19 14h4v1h-4ZM1 15h2v1h-2ZM15 15h2v1h-2ZM19 15h4v1h-4ZM1 16h2v1h-2ZM15 16h2v1h-2ZM19 16h3v1h-3ZM1 17h2v1h-2ZM15 17h2v1h-2ZM1 18h2v1h-2ZM15 18h2v1h-2ZM1 19h3v1h-3ZM14 19h3v1h-3ZM1 20h4v1h-4ZM13 20h4v1h-4ZM1 21h16v1h-16ZM2 22h14v1h-14Z" />
-      </svg>
-    );
   if (kind === "next")
     return (
       <svg className={classes} viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
         <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M16 3h3v1h-3ZM17 4h3v1h-3ZM18 5h3v1h-3ZM19 6h3v1h-3ZM1 7h21v1h-21ZM18 8h3v1h-3ZM18 9h2v1h-2ZM17 10h2v1h-2ZM17 11h1v1h-1ZM5 13h3v1h-3ZM4 14h3v1h-3ZM3 15h3v1h-3ZM2 16h3v1h-3ZM2 17h21v1h-21ZM3 18h3v1h-3ZM4 19h2v1h-2ZM5 20h2v1h-2ZM6 21h1v1h-1Z" />
         <path fill={QC_COLORS.captured.editorMuted} stroke="none" d="M16 2h2v1h-2ZM16 4h1v1h-1ZM20 4h1v1h-1ZM17 5h1v1h-1ZM21 5h1v1h-1ZM1 6h18v1h-18ZM22 6h1v1h-1ZM22 7h1v1h-1ZM1 8h17v1h-17ZM21 8h1v1h-1ZM17 9h1v1h-1ZM20 9h1v1h-1ZM16 10h1v1h-1ZM19 10h1v1h-1ZM16 11h1v1h-1ZM18 11h1v1h-1ZM6 12h2v1h-2ZM17 12h1v1h-1ZM3 14h1v1h-1ZM7 14h1v1h-1ZM2 15h1v1h-1ZM6 15h1v1h-1ZM1 16h1v1h-1ZM5 16h18v1h-18ZM1 17h1v1h-1ZM2 18h1v1h-1ZM6 18h17v1h-17ZM3 19h1v1h-1ZM6 19h1v1h-1ZM4 20h1v1h-1ZM7 20h1v1h-1ZM5 21h1v1h-1ZM7 21h1v1h-1ZM6 22h1v1h-1Z" />
-      </svg>
-    );
-  if (kind === "midi")
-    return (
-      <svg className={classes} viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
-        <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M8 1h8v1h-8ZM6 2h12v1h-12ZM4 3h7v1h-7ZM13 3h7v1h-7ZM3 4h8v1h-8ZM13 4h8v1h-8ZM3 5h8v1h-8ZM13 5h8v1h-8ZM2 6h3v1h-3ZM8 6h8v1h-8ZM19 6h3v1h-3ZM1 7h4v1h-4ZM8 7h8v1h-8ZM19 7h4v1h-4ZM1 8h22v1h-22ZM1 9h22v1h-22ZM1 10h22v1h-22ZM1 11h2v1h-2ZM5 11h14v1h-14ZM21 11h2v1h-2ZM1 12h2v1h-2ZM6 12h12v1h-12ZM21 12h2v1h-2ZM1 13h2v1h-2ZM5 13h14v1h-14ZM21 13h2v1h-2ZM1 14h22v1h-22ZM1 15h22v1h-22ZM2 16h20v1h-20ZM2 17h20v1h-20ZM3 18h18v1h-18ZM4 19h16v1h-16ZM5 20h4v1h-4ZM15 20h4v1h-4ZM7 21h2v1h-2ZM15 21h2v1h-2Z" />
       </svg>
     );
   if (kind === "delete")
@@ -114,28 +124,10 @@ export function QcUiIcon({ kind, className }: { kind: QcUiIconName; className?: 
         <path fill={QC_COLORS.captured.contextCaptureBlack} stroke="none" d="M16 0h1v1h-1ZM18 1h1v1h-1ZM4 2h1v1h-1ZM3 3h1v1h-1ZM22 5h1v1h-1ZM22 6h1v1h-1ZM0 15h1v1h-1ZM2 19h1v1h-1ZM6 22h1v1h-1ZM18 22h1v1h-1ZM8 23h1v1h-1Z" />
       </svg>
     );
-  if (kind === "modes")
-    return (
-      <svg className={classes} viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
-        <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M19 3h2v1h-2ZM11 4h1v1h-1ZM18 4h3v1h-3ZM9 5h4v1h-4ZM17 5h6v1h-6ZM8 6h15v1h-15ZM7 7h16v1h-16ZM5 8h18v1h-18ZM4 9h14v1h-14ZM19 9h5v1h-5ZM3 10h13v1h-13ZM17 10h7v1h-7ZM2 11h10v1h-10ZM13 11h8v1h-8ZM1 12h7v1h-7ZM9 12h8v1h-8ZM1 13h4v1h-4ZM6 13h7v1h-7ZM2 14h8v1h-8ZM1 15h5v1h-5ZM7 16h3v1h-3ZM6 17h4v1h-4ZM6 18h4v1h-4ZM3 19h10v1h-10ZM3 20h10v1h-10ZM3 21h10v1h-10ZM3 22h10v1h-10ZM3 23h10v1h-10Z" />
-      </svg>
-    );
-  if (kind === "tempo")
-    return (
-      <svg className={classes} viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
-        <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M8 1h8v1h-8ZM7 2h9v1h-9ZM7 3h3v1h-3ZM14 3h3v1h-3ZM6 4h3v1h-3ZM14 4h3v1h-3ZM6 5h3v1h-3ZM14 5h3v1h-3ZM19 5h3v1h-3ZM6 6h3v1h-3ZM14 6h3v1h-3ZM18 6h5v1h-5ZM6 7h3v1h-3ZM15 7h2v1h-2ZM18 7h5v1h-5ZM6 8h2v1h-2ZM15 8h1v1h-1ZM17 8h5v1h-5ZM5 9h3v1h-3ZM16 9h4v1h-4ZM5 10h3v1h-3ZM15 10h4v1h-4ZM5 11h3v1h-3ZM14 11h4v1h-4ZM5 12h3v1h-3ZM13 12h4v1h-4ZM5 13h3v1h-3ZM12 13h4v1h-4ZM17 13h1v1h-1ZM5 14h2v1h-2ZM11 14h4v1h-4ZM16 14h3v1h-3ZM4 15h3v1h-3ZM10 15h4v1h-4ZM16 15h3v1h-3ZM4 16h15v1h-15ZM4 17h15v1h-15ZM4 18h3v1h-3ZM17 18h2v1h-2ZM4 19h2v1h-2ZM17 19h3v1h-3ZM4 20h3v1h-3ZM16 20h4v1h-4ZM4 21h15v1h-15ZM5 22h13v1h-13Z" />
-      </svg>
-    );
   if (kind === "cpu")
     return (
       <svg className={classes} viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
         <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M7 0h2v1h-2ZM15 0h2v1h-2ZM7 1h2v1h-2ZM15 1h2v1h-2ZM3 2h18v1h-18ZM2 3h20v1h-20ZM2 4h3v1h-3ZM19 4h3v1h-3ZM2 5h2v1h-2ZM20 5h2v1h-2ZM2 6h2v1h-2ZM20 6h2v1h-2ZM0 7h4v1h-4ZM7 7h10v1h-10ZM20 7h4v1h-4ZM0 8h4v1h-4ZM7 8h10v1h-10ZM20 8h4v1h-4ZM2 9h2v1h-2ZM7 9h2v1h-2ZM15 9h2v1h-2ZM20 9h2v1h-2ZM2 10h2v1h-2ZM7 10h2v1h-2ZM15 10h2v1h-2ZM20 10h2v1h-2ZM2 11h2v1h-2ZM7 11h2v1h-2ZM15 11h2v1h-2ZM20 11h2v1h-2ZM2 12h2v1h-2ZM7 12h2v1h-2ZM15 12h2v1h-2ZM20 12h2v1h-2ZM2 13h2v1h-2ZM7 13h2v1h-2ZM15 13h2v1h-2ZM20 13h2v1h-2ZM2 14h2v1h-2ZM7 14h2v1h-2ZM15 14h2v1h-2ZM20 14h2v1h-2ZM0 15h4v1h-4ZM7 15h10v1h-10ZM20 15h4v1h-4ZM0 16h4v1h-4ZM7 16h10v1h-10ZM20 16h4v1h-4ZM2 17h2v1h-2ZM20 17h2v1h-2ZM2 18h2v1h-2ZM20 18h2v1h-2ZM2 19h3v1h-3ZM19 19h3v1h-3ZM2 20h20v1h-20ZM3 21h18v1h-18ZM7 22h2v1h-2ZM15 22h2v1h-2ZM7 23h2v1h-2ZM15 23h2v1h-2Z" />
-      </svg>
-    );
-  if (kind === "settings")
-    return (
-      <svg className={classes} viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
-        <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M9 0h6v1h-6ZM9 1h6v1h-6ZM8 2h3v1h-3ZM13 2h3v1h-3ZM3 3h8v1h-8ZM13 3h8v1h-8ZM2 4h8v1h-8ZM14 4h8v1h-8ZM2 5h7v1h-7ZM15 5h7v1h-7ZM1 6h3v1h-3ZM20 6h3v1h-3ZM1 7h3v1h-3ZM20 7h3v1h-3ZM2 8h3v1h-3ZM9 8h6v1h-6ZM19 8h3v1h-3ZM2 9h3v1h-3ZM8 9h8v1h-8ZM19 9h3v1h-3ZM2 10h3v1h-3ZM8 10h8v1h-8ZM19 10h3v1h-3ZM0 11h5v1h-5ZM8 11h3v1h-3ZM13 11h3v1h-3ZM19 11h5v1h-5ZM0 12h4v1h-4ZM8 12h3v1h-3ZM13 12h3v1h-3ZM20 12h4v1h-4ZM0 13h3v1h-3ZM8 13h8v1h-8ZM21 13h3v1h-3ZM0 14h3v1h-3ZM8 14h8v1h-8ZM21 14h3v1h-3ZM0 15h5v1h-5ZM9 15h6v1h-6ZM19 15h5v1h-5ZM0 16h7v1h-7ZM17 16h7v1h-7ZM1 17h6v1h-6ZM17 17h6v1h-6ZM4 18h3v1h-3ZM17 18h3v1h-3ZM4 19h3v1h-3ZM10 19h4v1h-4ZM17 19h3v1h-3ZM4 20h3v1h-3ZM9 20h6v1h-6ZM17 20h3v1h-3ZM4 21h16v1h-16ZM5 22h6v1h-6ZM13 22h6v1h-6ZM7 23h3v1h-3ZM14 23h3v1h-3Z" />
       </svg>
     );
   if (kind === "subtract")
@@ -215,20 +207,18 @@ export function QcHardwareIcon({ kind, className }: { kind: QcHardwareIconName; 
 export function QcScreenHeaderGlyph({ kind }: { kind: QcScreenHeaderGlyphName }) {
   if (kind === "undo") return <path shapeRendering="crispEdges" fill={QC_COLORS.captured.headerUndo} d="M619 12h2v1h-2ZM617 13h5v1h-5ZM616 14h8v1h-8ZM615 15h11v1h-11ZM615 16h13v1h-13ZM617 17h5v1h-5ZM623 17h6v1h-6ZM619 18h2v1h-2ZM625 18h4v1h-4ZM626 19h4v1h-4ZM627 20h3v1h-3ZM628 21h3v1h-3ZM628 22h3v1h-3ZM628 23h3v1h-3ZM609 24h2v1h-2ZM628 24h4v1h-4ZM608 25h4v1h-4ZM628 25h4v1h-4ZM608 26h4v1h-4ZM628 26h4v1h-4ZM609 27h3v1h-3ZM628 27h3v1h-3ZM609 28h3v1h-3ZM628 28h3v1h-3ZM609 29h4v1h-4ZM627 29h4v1h-4ZM610 30h4v1h-4ZM626 30h4v1h-4ZM610 31h5v1h-5ZM625 31h5v1h-5ZM611 32h5v1h-5ZM624 32h5v1h-5ZM612 33h16v1h-16ZM613 34h14v1h-14ZM615 35h10v1h-10ZM619 36h2v1h-2Z" />;
   if (kind === "save") return <path shapeRendering="crispEdges" fill={QC_COLORS.captured.primaryText} d="M706 13h17v1h-17ZM705 14h19v1h-19ZM705 15h2v18h-2ZM722 15h3v1h-3ZM723 16h3v1h-3ZM709 17h6v3h-6ZM717 17h3v3h-3ZM724 17h3v1h-3ZM725 18h2v15h-2ZM709 20h11v3h-11ZM705 33h22v1h-22ZM706 34h20v1h-20Z" />;
-  if (kind === "export") return <path shapeRendering="crispEdges" fill={QC_COLORS.captured.headerSave} d="M706 11h15v1h-15ZM705 12h17v1h-17ZM704 13h19v1h-19ZM704 14h20v1h-20ZM704 15h3v1h-3ZM708 15h6v1h-6ZM716 15h3v1h-3ZM721 15h4v1h-4ZM704 16h16v1h-16ZM722 16h4v1h-4ZM704 17h16v1h-16ZM723 17h4v1h-4ZM704 18h16v1h-16ZM723 18h4v1h-4ZM704 19h16v1h-16ZM723 19h4v1h-4ZM704 20h16v1h-16ZM723 20h4v1h-4ZM704 21h16v1h-16ZM723 21h4v1h-4ZM704 22h3v1h-3ZM708 22h11v1h-11ZM724 22h2v1h-2ZM704 23h3v1h-3ZM720 23h3v1h-3ZM704 24h3v1h-3ZM720 24h4v1h-4ZM704 25h3v1h-3ZM720 25h5v1h-5ZM704 26h3v1h-3ZM721 26h5v1h-5ZM704 27h3v1h-3ZM722 27h5v1h-5ZM704 28h3v1h-3ZM715 28h13v1h-13ZM704 29h3v1h-3ZM714 29h14v1h-14ZM704 30h3v1h-3ZM715 30h13v1h-13ZM704 31h9v1h-9ZM722 31h5v1h-5ZM704 32h11v1h-11ZM721 32h5v1h-5ZM705 33h10v1h-10ZM720 33h5v1h-5ZM706 34h8v1h-8ZM720 34h4v1h-4ZM720 35h3v1h-3Z" />;
+  if (kind === "export") return <path shapeRendering="crispEdges" fill={QC_COLORS.captured.headerSave} d={screenVectorPath("screen-header.export")} transform="translate(704 10)" />;
   return <path shapeRendering="crispEdges" fill={QC_COLORS.captured.headerMenu} d="M765 13h1v1h-1ZM764 14h3v1h-3ZM763 15h5v1h-5ZM764 16h3v1h-3ZM765 17h1v1h-1ZM765 21h1v1h-1ZM764 22h3v1h-3ZM763 23h5v1h-5ZM764 24h3v1h-3ZM765 25h1v1h-1ZM765 29h1v1h-1ZM764 30h3v1h-3ZM763 31h5v1h-5ZM764 32h3v1h-3ZM765 33h1v1h-1Z" />;
 }
 
-const ROUTE_ANALOG_INPUT_RASTER = "M14 0h3v1h-3ZM10 1h12v1h-12ZM8 2h3v1h-3ZM21 2h3v1h-3ZM7 3h2v1h-2ZM23 3h2v1h-2ZM5 4h3v1h-3ZM24 4h3v1h-3ZM4 5h2v1h-2ZM26 5h2v1h-2ZM4 6h1v1h-1ZM27 6h1v1h-1ZM3 7h1v1h-1ZM27 7h2v1h-2ZM28 8h2v1h-2ZM29 9h1v1h-1ZM13 10h1v1h-1ZM29 10h2v1h-2ZM12 11h3v1h-3ZM30 11h1v1h-1ZM12 12h4v1h-4ZM30 12h1v1h-1ZM13 13h4v1h-4ZM30 13h1v1h-1ZM14 14h4v1h-4ZM30 14h2v1h-2ZM0 15h18v1h-18ZM30 15h2v1h-2ZM0 16h18v1h-18ZM30 16h2v1h-2ZM14 17h4v1h-4ZM30 17h2v1h-2ZM13 18h4v1h-4ZM30 18h1v1h-1ZM12 19h4v1h-4ZM30 19h1v1h-1ZM12 20h3v1h-3ZM30 20h1v1h-1ZM13 21h1v1h-1ZM29 21h2v1h-2ZM29 22h1v1h-1ZM28 23h2v1h-2ZM3 24h1v1h-1ZM27 24h2v1h-2ZM4 25h1v1h-1ZM27 25h1v1h-1ZM4 26h2v1h-2ZM26 26h2v1h-2ZM5 27h3v1h-3ZM24 27h3v1h-3ZM7 28h2v1h-2ZM23 28h2v1h-2ZM8 29h3v1h-3ZM21 29h3v1h-3ZM10 30h12v1h-12ZM14 31h3v1h-3Z";
 const ROUTE_STEREO_OUTPUT_RASTER = "M23 3h2v1h-2ZM22 4h4v1h-4ZM23 5h3v1h-3ZM24 6h3v1h-3ZM24 7h4v1h-4ZM4 8h25v1h-25ZM4 9h25v1h-25ZM24 10h4v1h-4ZM24 11h3v1h-3ZM23 12h3v1h-3ZM22 13h4v1h-4ZM23 14h2v1h-2ZM23 17h2v1h-2ZM22 18h4v1h-4ZM23 19h3v1h-3ZM24 20h3v1h-3ZM24 21h4v1h-4ZM4 22h25v1h-25ZM4 23h25v1h-25ZM24 24h4v1h-4ZM24 25h3v1h-3ZM23 26h3v1h-3ZM22 27h4v1h-4ZM23 28h2v1h-2Z";
-const ROUTE_SEND_RASTER = "M5 1h22v1h-22ZM3 2h26v1h-26ZM2 3h2v1h-2ZM28 3h2v1h-2ZM2 4h1v1h-1ZM29 4h1v1h-1ZM1 5h2v1h-2ZM29 5h2v1h-2ZM1 6h2v1h-2ZM29 6h2v1h-2ZM1 11h1v1h-1ZM15 11h11v1h-11ZM28 11h3v1h-3ZM1 12h3v1h-3ZM15 12h7v1h-7ZM23 12h3v1h-3ZM28 12h3v1h-3ZM1 13h4v1h-4ZM15 13h6v1h-6ZM24 13h6v1h-6ZM1 14h6v1h-6ZM15 14h3v1h-3ZM24 14h6v1h-6ZM1 15h7v1h-7ZM15 15h6v1h-6ZM25 15h4v1h-4ZM1 16h7v1h-7ZM15 16h6v1h-6ZM25 16h4v1h-4ZM1 17h6v1h-6ZM15 17h3v1h-3ZM24 17h6v1h-6ZM1 18h4v1h-4ZM15 18h3v1h-3ZM23 18h7v1h-7ZM1 19h3v1h-3ZM15 19h3v1h-3ZM23 19h3v1h-3ZM28 19h3v1h-3ZM1 20h1v1h-1ZM15 20h3v1h-3ZM22 20h4v1h-4ZM28 20h4v1h-4ZM1 25h2v1h-2ZM29 25h2v1h-2ZM1 26h2v1h-2ZM29 26h2v1h-2ZM2 27h1v1h-1ZM29 27h1v1h-1ZM2 28h2v1h-2ZM28 28h2v1h-2ZM3 29h26v1h-26ZM5 30h22v1h-22Z";
 
 /** Shared CorOS routing glyph vocabulary used by both app hosts. */
 export function QcRouteGlyph({ side, label }: { side: "input" | "output"; label: string }) {
   if (side === "input" && /^(?:In|Input) \d+$/.test(label))
     return (
       <svg viewBox="0 0 32 32" shapeRendering="crispEdges" aria-hidden="true">
-        <path d={ROUTE_ANALOG_INPUT_RASTER} fill={QC_COLORS.captured.primaryText} stroke="none" />
+        <path d={screenVectorPath("route.analog-input")} fill={QC_COLORS.captured.primaryText} stroke="none" />
       </svg>
     );
   if (label === "Internal")
@@ -261,7 +251,7 @@ export function QcRouteGlyph({ side, label }: { side: "input" | "output"; label:
   if (label.startsWith("Send "))
     return (
       <svg viewBox="0 0 32 32" shapeRendering="crispEdges" aria-hidden="true">
-        <path d={ROUTE_SEND_RASTER} fill={QC_COLORS.captured.primaryText} stroke="none" />
+        <path d={screenVectorPath("route.send")} fill={QC_COLORS.captured.primaryText} stroke="none" />
       </svg>
     );
   if (label === "Out 1/2")
@@ -279,6 +269,12 @@ export function QcRouteGlyph({ side, label }: { side: "input" | "output"; label:
         <circle cx="15.8" cy="14.2" r="1.15" />
       </svg>
     );
+  if (label.includes("/"))
+    return (
+      <svg viewBox="0 0 32 32" shapeRendering="crispEdges" aria-hidden="true">
+        <path d={ROUTE_STEREO_OUTPUT_RASTER} fill={QC_COLORS.captured.primaryText} stroke="none" />
+      </svg>
+    );
   if (label.startsWith("Out "))
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -292,12 +288,6 @@ export function QcRouteGlyph({ side, label }: { side: "input" | "output"; label:
         <path d="M26 3h2v1h-2ZM26 4h3v1h-3ZM26 5h4v1h-4ZM2 6h30v1h-30ZM2 7h30v1h-30ZM26 8h5v1h-5ZM26 9h3v1h-3ZM26 10h2v1h-2ZM30 16h2v1h-2ZM30 17h2v1h-2ZM30 18h2v1h-2ZM30 19h2v1h-2ZM30 20h2v1h-2ZM6 21h2v1h-2ZM30 21h2v1h-2ZM5 22h3v1h-3ZM30 22h2v1h-2ZM4 23h4v1h-4ZM30 23h2v1h-2ZM2 24h30v1h-30ZM2 25h30v1h-30ZM3 26h5v1h-5ZM5 27h3v1h-3ZM6 28h2v1h-2Z" fill={QC_COLORS.captured.primaryText} stroke="none" />
       </svg>
     );
-  if (label.includes("/"))
-    return (
-      <svg viewBox="0 0 32 32" shapeRendering="crispEdges" aria-hidden="true">
-        <path d={ROUTE_STEREO_OUTPUT_RASTER} fill={QC_COLORS.captured.primaryText} stroke="none" />
-      </svg>
-    );
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <circle cx="7" cy="12" r="3" />
@@ -307,61 +297,17 @@ export function QcRouteGlyph({ side, label }: { side: "input" | "output"; label:
 }
 
 export function QcModeGlyph({ mode }: { mode: PresetSnapshot["mode"] }) {
-  if (mode === "PRESET")
-    return (
-      <g fill="currentColor">
-        {[0, 8, 16].map((y) => (
-          <g key={y} transform={`translate(0 ${y})`}>
-            <rect x="0" y="1" width="6" height="6" rx=".8" />
-            <rect x="9" y="1" width="6" height="6" rx=".8" />
-            <rect x="18" y="1" width="6" height="6" rx=".8" />
-            <rect x="5" y="3" width="5" height="2" />
-            <rect x="14" y="3" width="5" height="2" />
-          </g>
-        ))}
-      </g>
-    );
-  if (mode === "SCENE")
-    return (
-      <g fill="currentColor" fontFamily={QC_TYPOGRAPHY.devicePlain} fontWeight="800" fontSize="7.5" textAnchor="middle">
-        <rect x="0" y="0" width="11" height="11" />
-        <rect x="13" y="0" width="11" height="11" />
-        <rect x="0" y="13" width="11" height="11" />
-        <rect x="13" y="13" width="11" height="11" />
-        <text x="5.5" y="8" fill={QC_COLORS.device.panel}>
-          A
-        </text>
-        <text x="18.5" y="8" fill={QC_COLORS.device.panel}>
-          B
-        </text>
-        <text x="5.5" y="21" fill={QC_COLORS.device.panel}>
-          C
-        </text>
-        <text x="18.5" y="21" fill={QC_COLORS.device.panel}>
-          D
-        </text>
-      </g>
-    );
-  if (mode === "HYBRID")
-    return (
-      <g>
-        <g transform="scale(.68)">
-          <QcModeGlyph mode="SCENE" />
-        </g>
-        <g transform="translate(9 8) scale(.62)">
-          <QcModeGlyph mode="STOMP" />
-        </g>
-      </g>
-    );
-  return (
-    <g transform="translate(-525 -78)" fill="currentColor">
-      <path d="M535.723 79.2008C532.977 81.2508 530.778 82.8924 529.127 84.1255L528.27 84.7656C527.385 85.4269 526.705 85.9358 526.228 86.2924C525.319 86.9726 524.915 87.9041 525.015 89.087L542.055 84.521C541.833 83.0083 542.929 81.2361 545.255 79.1766C544.988 78.8037 544.691 78.4115 544.363 78C542.639 80.0488 540.862 81.2219 539.031 81.5192C537.2 81.8165 536.097 81.0437 535.723 79.2008ZM543.102 84.2407L547.01 83.1933C547.096 82.4398 546.701 81.3799 545.825 80.0139C543.899 81.7499 543.016 83.1667 543.102 84.2407ZM547.559 85.3468L525.619 91.2257C525.399 90.7294 525.237 90.2624 525.135 89.8246L525.201 90.0724L547.243 84.1663L547.559 85.3468ZM529.966 92.3084L533.966 91.2257V94.675L536.966 94.675V98.675H526.966V94.675L529.966 94.675V92.3084Z" />
-    </g>
-  );
+  const icon = `mode.${mode.toLowerCase()}` as ScreenVectorName;
+  const raster = QC_SCREEN_ICON_VECTORS[icon];
+  return <svg width="24" height="24" viewBox={`0 0 ${raster.width} ${raster.height}`} className={`qc-mode-glyph qc-mode-glyph-${mode.toLowerCase()}`} shapeRendering="crispEdges" aria-hidden="true">
+    {Object.entries(raster.paths).map(([color, path]) => <path key={color} d={path} fill={color} stroke="none" />)}
+  </svg>;
 }
 
 export function QcDirectoryIcon({ kind, number }: { kind: QcDirectoryIconName; number?: number }) {
   const classes = `qc-directory-icon qc-directory-icon-${kind}`;
+  const referenceIcon = directoryReferenceIcon(kind);
+  if (referenceIcon) return <QcScreenVector icon={referenceIcon} color={QC_COLORS.captured.iconPrimary} className={classes} />;
   if (kind === "grid")
     return (
       <svg className={classes} viewBox="0 0 24 24" aria-hidden="true">
@@ -376,29 +322,10 @@ export function QcDirectoryIcon({ kind, number }: { kind: QcDirectoryIconName; n
         ))}
       </svg>
     );
-  if (kind === "download")
-    return (
-      <svg className={classes} viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 3v12m-4-4 4 4 4-4M4 17v4h16v-4" fill="none" />
-      </svg>
-    );
-  if (kind === "cloud")
-    return (
-      <svg className={classes} viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M6.5 19h11a4 4 0 0 0 .7-7.94A6.5 6.5 0 0 0 5.7 9.4 4.8 4.8 0 0 0 6.5 19Z" />
-      </svg>
-    );
-  if (kind === "cloud-upload")
-    return (
-      <svg className={classes} viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M6.5 20h11a4 4 0 0 0 .7-7.94A6.5 6.5 0 0 0 5.7 10.4 4.8 4.8 0 0 0 6.5 20Z" />
-        <path className="cloud-upload-arrow" d="M12 16V7m0 0-3 3m3-3 3 3" fill="none" />
-      </svg>
-    );
   if (kind === "folder")
     return (
       <svg className={classes} viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M0 0h10l3 4h11v17H0Z" />
+        <path d="M0 0h10l3 4.5h11V20H0Z" />
         {number !== undefined && (
           <text className="folder-number" x="12" y="14" textAnchor="middle" fontFamily={QC_TYPOGRAPHY.devicePlain} fontSize={number === 0 ? "8" : "9"} fontWeight="700" transform={number === 0 ? "translate(0 -2.8) scale(1 1.4)" : undefined}>
             {number}
@@ -443,22 +370,17 @@ export function QcDirectoryIcon({ kind, number }: { kind: QcDirectoryIconName; n
         <path fillRule="evenodd" clipRule="evenodd" d="M10 2a8 8 0 1 0 4.914 14.314L19.6 21 21 19.6l-4.686-4.686A8 8 0 0 0 10 2Zm-6 8a6 6 0 1 1 12 0 6 6 0 0 1-12 0Z" fill={QC_COLORS.captured.iconPrimary} stroke="none" />
       </svg>
     );
-  if (kind === "trash")
-    return (
-      <svg className={classes} viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 6h16M8 3h8M5 8h14v14H5ZM9 12l6 7m0-7-6 7" fill="none" />
-      </svg>
-    );
-  return (
-    <svg className={classes} viewBox="0 0 24 24" aria-hidden="true">
-      <path d="m4 13 5 5L20 6" fill="none" />
-    </svg>
-  );
+  if (kind === "done") return <QcScreenVectorLayers icon="interface.check" className={classes} />;
+  // `trash` is handled by directoryReferenceIcon above; all directory icon
+  // variants must resolve explicitly so a new variant cannot silently render
+  // as an unrelated glyph.
+  return null;
 }
 
 export function QcLibraryIcon({ kind, className }: { kind: QcLibraryIconName; className?: string }) {
   const classes = `qc-library-icon qc-library-icon-${kind}${className ? ` ${className}` : ""}`;
   const heartPath = "M12 21 4.4 13.7C.5 9.8 3 4 7.4 4c2.1 0 3.4 1.2 4.6 2.7C13.2 5.2 14.5 4 16.6 4 21 4 23.5 9.8 19.6 13.7Z";
+  if (kind === "clock") return <QcScreenVector icon="library.clock" color={QC_COLORS.captured.iconPrimary} className={classes} />;
   if (kind === "capture-library")
     return (
       <svg className={classes} viewBox="0 0 24 24" aria-hidden="true">
@@ -477,21 +399,13 @@ export function QcLibraryIcon({ kind, className }: { kind: QcLibraryIconName; cl
         <path d="M12 1h4v1h-4ZM12 5h9v1h-9ZM12 9h11v1H12ZM12 13h11v1H12ZM12 17h10v1H12ZM12 21h6v1H12Z" fill={QC_COLORS.captured.iconPrimary} stroke="none" />
       </svg>
     );
-  if (kind === "clock")
+  if (kind === "impulse-response")
     return (
       <svg className={classes} viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="12" cy="12" r="9" fill="none" />
-        <path d="M12 6v6l4 2" fill="none" />
+        <path d="M2 3v18M6 7v10M10 5v14M14 10v4M18 8v8M22 11v2" fill="none" stroke={QC_COLORS.captured.iconPrimary} strokeWidth="1.8" strokeLinecap="butt" />
       </svg>
     );
-  if (kind === "binoculars")
-    return (
-      <svg className={classes} viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M7 8 4 17a3 3 0 1 0 5.7 1l.8-4h3l.8 4A3 3 0 1 0 20 17l-3-9-3-2-2 3-2-3Z" fill="none" />
-        <circle cx="6.5" cy="17" r="2.3" fill="none" />
-        <circle cx="17.5" cy="17" r="2.3" fill="none" />
-      </svg>
-    );
+  if (kind === "binoculars") return <QcScreenVector icon="library.binoculars" color={QC_COLORS.captured.iconPrimary} className={classes} crisp={false} />;
   if (kind === "broken-heart")
     return (
       <svg className={classes} viewBox="0 0 24 24" aria-hidden="true">
@@ -507,102 +421,21 @@ export function QcLibraryIcon({ kind, className }: { kind: QcLibraryIconName; cl
 }
 
 export function QcEditorIcon({ kind }: { kind: QcEditorIconName }) {
-  if (kind === "model-update")
-    return (
-      <svg viewBox="0 0 24 24" shapeRendering="crispEdges" data-qc-icon={kind} aria-hidden="true">
-        <path fill={QC_COLORS.captured.editorDisabled} stroke="none" d="M7 3h10v1h-10ZM5 4h14v1h-14ZM4 5h7v1h-7ZM13 5h7v1h-7ZM4 6h7v1h-7ZM13 6h7v1h-7ZM3 7h7v1h-7ZM14 7h7v1h-7ZM3 8h6v1h-6ZM15 8h6v1h-6ZM3 9h6v1h-6ZM15 9h6v1h-6ZM3 10h5v1h-5ZM16 10h5v1h-5ZM3 11h4v1h-4ZM17 11h4v1h-4ZM3 12h7v1h-7ZM14 12h7v1h-7ZM3 13h7v1h-7ZM14 13h7v1h-7ZM3 14h7v1h-7ZM14 14h7v1h-7ZM3 15h7v1h-7ZM14 15h7v1h-7ZM3 16h7v1h-7ZM14 16h7v1h-7ZM4 17h6v1h-6ZM14 17h6v1h-6ZM4 18h16v1h-16ZM5 19h14v1h-14ZM7 20h10v1h-10Z" />
-        <path fill={QC_COLORS.captured.editorDisabledShadow} stroke="none" d="M7 1h10v1h-10ZM5 2h14v1h-14ZM3 3h2v1h-2ZM18 3h3v1h-3ZM3 4h1v1h-1ZM20 4h1v1h-1ZM2 5h2v1h-2ZM21 5h1v1h-1ZM2 6h1v1h-1ZM12 6h1v1h-1ZM21 6h1v1h-1ZM1 7h2v1h-2ZM11 7h2v1h-2ZM21 7h2v1h-2ZM1 8h2v1h-2ZM10 8h4v1h-4ZM21 8h2v1h-2ZM1 9h2v1h-2ZM9 9h6v1h-6ZM21 9h2v1h-2ZM1 10h2v1h-2ZM9 10h7v1h-7ZM21 10h2v1h-2ZM1 11h2v1h-2ZM11 11h2v1h-2ZM21 11h2v1h-2ZM1 12h2v1h-2ZM11 12h2v1h-2ZM21 12h2v1h-2ZM1 13h2v1h-2ZM11 13h2v1h-2ZM21 13h2v1h-2ZM1 14h2v1h-2ZM11 14h2v1h-2ZM21 14h2v1h-2ZM1 15h2v1h-2ZM11 15h2v1h-2ZM21 15h2v1h-2ZM1 16h2v1h-2ZM11 16h2v1h-2ZM21 16h2v1h-2ZM2 17h1v1h-1ZM11 17h2v1h-2ZM21 17h1v1h-1ZM2 18h2v1h-2ZM20 18h2v1h-2ZM3 19h1v1h-1ZM20 19h1v1h-1ZM3 20h3v1h-3ZM19 20h2v1h-2ZM5 21h14v1h-14ZM7 22h10v1h-10Z" />
-        <path fill={QC_COLORS.captured.editorDisabledAccent} stroke="none" d="M5 3h1v1h-1ZM4 4h1v1h-1ZM19 4h1v1h-1ZM20 5h1v1h-1ZM11 6h1v1h-1ZM10 7h1v1h-1ZM8 10h1v1h-1ZM8 11h3v1h-3ZM13 11h3v1h-3ZM4 19h1v1h-1ZM19 19h1v1h-1ZM18 20h1v1h-1Z" />
-        <path fill={QC_COLORS.captured.editorDisabledEdge} stroke="none" d="M13 7h1v1h-1Z" />
-      </svg>
-    );
-  if (kind === "model-downgrade")
-    return (
-      <svg viewBox="0 0 24 24" shapeRendering="crispEdges" data-qc-icon={kind} aria-hidden="true">
-        <path fill={QC_COLORS.captured.editorDisabled} stroke="none" d="M11 6h2v1h-2ZM11 7h2v1h-2ZM11 8h2v1h-2ZM11 9h2v1h-2ZM11 10h2v1h-2ZM11 11h2v1h-2ZM8 12h8v1h-8ZM8 13h8v1h-8ZM9 14h6v1h-6ZM10 15h4v1h-4ZM10 16h4v1h-4ZM11 17h2v1h-2Z" />
-      </svg>
-    );
-  if (kind === "remove")
-    return (
-      <svg viewBox="0 0 24 24" shapeRendering="crispEdges" data-qc-icon={kind} aria-hidden="true">
-        <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M10 0h4v1h-4ZM10 1h5v1h-5ZM3 2h18v1h-18ZM3 3h18v1h-18ZM3 6h18v1h-18ZM3 7h18v1h-18ZM3 8h18v1h-18ZM3 9h3v1h-3ZM18 9h3v1h-3ZM3 10h3v1h-3ZM18 10h3v1h-3ZM3 11h3v1h-3ZM9 11h1v1h-1ZM14 11h1v1h-1ZM18 11h3v1h-3ZM3 12h3v1h-3ZM8 12h3v1h-3ZM13 12h3v1h-3ZM18 12h3v1h-3ZM3 13h3v1h-3ZM9 13h6v1h-6ZM18 13h3v1h-3ZM3 14h3v1h-3ZM10 14h4v1h-4ZM18 14h3v1h-3ZM3 15h3v1h-3ZM10 15h4v1h-4ZM18 15h3v1h-3ZM3 16h3v1h-3ZM9 16h6v1h-6ZM18 16h3v1h-3ZM3 17h3v1h-3ZM8 17h3v1h-3ZM13 17h3v1h-3ZM18 17h3v1h-3ZM3 18h3v1h-3ZM18 18h3v1h-3ZM3 19h3v1h-3ZM18 19h3v1h-3ZM3 20h3v1h-3ZM18 20h3v1h-3ZM3 21h18v1h-18ZM4 22h16v1h-16ZM5 23h14v1h-14Z" />
-      </svg>
-    );
+  const referenceIcon = editorScreenVector(kind);
+  if (referenceIcon) return <QcScreenVectorLayers icon={referenceIcon} />;
+  if (kind === "looper") {
+    return <svg viewBox="0 0 26 24" shapeRendering="crispEdges" aria-hidden="true"><path d={screenVectorPath("editor.looper", 1)} fill={QC_COLORS.captured.looperRing} stroke="none" /><path d={screenVectorPath("editor.looper", 0)} fill={QC_COLORS.captured.iconPrimary} stroke="none" /></svg>;
+  }
   if (kind === "band-power")
     return (
       <svg viewBox="0 0 24 24" shapeRendering="crispEdges" data-qc-icon={kind} aria-hidden="true">
-        <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M11 6h2v1h-2ZM6 7h2v1h-2ZM11 7h2v1h-2ZM16 7h2v1h-2ZM5 8h3v1h-3ZM11 8h2v1h-2ZM16 8h3v1h-3ZM4 9h4v1h-4ZM11 9h2v1h-2ZM16 9h4v1h-4ZM3 10h4v1h-4ZM11 10h2v1h-2ZM17 10h4v1h-4ZM3 11h3v1h-3ZM11 11h2v1h-2ZM18 11h3v1h-3ZM2 12h3v1h-3ZM11 12h2v1h-2ZM19 12h3v1h-3ZM2 13h3v1h-3ZM11 13h2v1h-2ZM19 13h3v1h-3ZM2 14h3v1h-3ZM11 14h2v1h-2ZM19 14h3v1h-3ZM2 15h2v1h-2ZM20 15h2v1h-2ZM2 16h2v1h-2ZM20 16h2v1h-2ZM2 17h3v1h-3ZM19 17h3v1h-3ZM2 18h3v1h-3ZM19 18h3v1h-3ZM2 19h3v1h-3ZM19 19h3v1h-3ZM3 20h3v1h-3ZM18 20h3v1h-3ZM3 21h4v1h-4ZM17 21h4v1h-4ZM4 22h4v1h-4ZM16 22h4v1h-4ZM5 23h6v1h-6ZM13 23h6v1h-6Z" />
-      </svg>
-    );
-  if (kind === "looper")
-    return (
-      <svg viewBox="0 0 26 24" shapeRendering="crispEdges" aria-hidden="true">
-        <path fill={QC_COLORS.captured.looperRing} stroke="none" d="M9 1h9v1h-9ZM7 2h13v1h-13ZM6 3h6v1h-6ZM15 3h6v1h-6ZM5 4h4v1h-4ZM13 4h1v1h-1ZM18 4h4v1h-4ZM4 5h4v1h-4ZM10 5h2v1h-2ZM16 5h2v1h-2ZM20 5h1v1h-1ZM4 6h3v1h-3ZM8 6h1v1h-1ZM18 6h1v1h-1ZM3 7h3v1h-3ZM7 7h1v1h-1ZM17 7h1v1h-1ZM2 8h3v1h-3ZM16 8h1v1h-1ZM19 8h2v1h-2ZM2 9h3v1h-3ZM6 9h1v1h-1ZM15 9h1v1h-1ZM18 9h1v1h-1ZM2 10h3v1h-3ZM6 10h1v1h-1ZM14 10h1v1h-1ZM17 10h1v1h-1ZM21 10h1v1h-1ZM2 11h3v1h-3ZM14 11h1v1h-1ZM16 11h1v1h-1ZM21 11h1v1h-1ZM2 12h2v1h-2ZM15 12h1v1h-1ZM21 12h1v1h-1ZM2 13h2v1h-2ZM21 13h1v1h-1ZM2 14h3v1h-3ZM21 14h1v1h-1ZM2 15h3v1h-3ZM6 15h1v1h-1ZM21 15h1v1h-1ZM2 16h3v1h-3ZM6 16h1v1h-1ZM20 16h1v1h-1ZM3 17h3v1h-3ZM7 17h1v1h-1ZM3 18h3v1h-3ZM8 18h1v1h-1ZM19 18h1v1h-1ZM4 19h3v1h-3ZM9 19h1v1h-1ZM17 19h1v1h-1ZM5 20h1v1h-1ZM11 20h5v1h-5Z" />
-        <path fill={QC_COLORS.captured.iconPrimary} stroke="none" d="M12 5h4v1h-4ZM9 6h9v1h-9ZM8 7h9v1h-9ZM7 8h9v1h-9ZM7 9h8v1h-8ZM19 9h2v1h-2ZM7 10h7v1h-7ZM18 10h3v1h-3ZM6 11h8v1h-8ZM17 11h4v1h-4ZM6 12h9v1h-9ZM16 12h5v1h-5ZM6 13h15v1h-15ZM6 14h15v1h-15ZM7 15h14v1h-14ZM7 16h13v1h-13ZM8 17h12v1h-12ZM9 18h10v1h-10ZM10 19h7v1h-7Z" />
+        <path fill="currentColor" stroke="none" d="M11 6h2v1h-2ZM6 7h2v1h-2ZM11 7h2v1h-2ZM16 7h2v1h-2ZM5 8h3v1h-3ZM11 8h2v1h-2ZM16 8h3v1h-3ZM4 9h4v1h-4ZM11 9h2v1h-2ZM16 9h4v1h-4ZM3 10h4v1h-4ZM11 10h2v1h-2ZM17 10h4v1h-4ZM3 11h3v1h-3ZM11 11h2v1h-2ZM18 11h3v1h-3ZM2 12h3v1h-3ZM11 12h2v1h-2ZM19 12h3v1h-3ZM2 13h3v1h-3ZM11 13h2v1h-2ZM19 13h3v1h-3ZM2 14h3v1h-3ZM11 14h2v1h-2ZM19 14h3v1h-3ZM2 15h2v1h-2ZM20 15h2v1h-2ZM2 16h2v1h-2ZM20 16h2v1h-2ZM2 17h3v1h-3ZM19 17h3v1h-3ZM2 18h3v1h-3ZM19 18h3v1h-3ZM2 19h3v1h-3ZM19 19h3v1h-3ZM3 20h3v1h-3ZM18 20h3v1h-3ZM3 21h4v1h-4ZM17 21h4v1h-4ZM4 22h4v1h-4ZM16 22h4v1h-4ZM5 23h6v1h-6ZM13 23h6v1h-6Z" />
       </svg>
     );
   if (kind === "footswitch")
     return (
       <svg viewBox="0 0 24 24" shapeRendering="crispEdges" data-qc-icon={kind} aria-hidden="true">
-        <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M18 3h2v1h-2ZM10 4h1v1h-1ZM17 4h3v1h-3ZM8 5h4v1h-4ZM16 5h6v1h-6ZM7 6h15v1h-15ZM6 7h16v1h-16ZM4 8h18v1h-18ZM3 9h14v1h-14ZM18 9h5v1h-5ZM2 10h13v1h-13ZM16 10h7v1h-7ZM1 11h10v1h-10ZM12 11h8v1h-8ZM0 12h7v1h-7ZM8 12h8v1h-8ZM0 13h4v1h-4ZM5 13h7v1h-7ZM1 14h8v1h-8ZM0 15h5v1h-5ZM6 16h3v1h-3ZM5 17h4v1h-4ZM5 18h4v1h-4ZM2 19h10v1h-10ZM2 20h10v1h-10ZM2 21h10v1h-10ZM2 22h10v1h-10ZM2 23h10v1h-10Z" />
-      </svg>
-    );
-  if (kind === "bypass")
-    return (
-      <svg viewBox="0 0 24 24" shapeRendering="crispEdges" data-qc-icon={kind} aria-hidden="true">
-        <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M10 2h2v1h-2ZM5 3h2v1h-2ZM10 3h2v1h-2ZM15 3h2v1h-2ZM4 4h3v1h-3ZM10 4h2v1h-2ZM15 4h3v1h-3ZM3 5h4v1h-4ZM10 5h2v1h-2ZM15 5h4v1h-4ZM2 6h4v1h-4ZM10 6h2v1h-2ZM16 6h4v1h-4ZM2 7h3v1h-3ZM10 7h2v1h-2ZM17 7h3v1h-3ZM1 8h3v1h-3ZM10 8h2v1h-2ZM18 8h3v1h-3ZM1 9h3v1h-3ZM10 9h2v1h-2ZM18 9h3v1h-3ZM1 10h3v1h-3ZM10 10h2v1h-2ZM18 10h3v1h-3ZM1 11h2v1h-2ZM19 11h2v1h-2ZM1 12h2v1h-2ZM19 12h2v1h-2ZM1 13h3v1h-3ZM18 13h3v1h-3ZM1 14h3v1h-3ZM18 14h3v1h-3ZM1 15h3v1h-3ZM18 15h3v1h-3ZM2 16h3v1h-3ZM17 16h3v1h-3ZM2 17h4v1h-4ZM16 17h4v1h-4ZM3 18h4v1h-4ZM15 18h4v1h-4ZM4 19h6v1h-6ZM12 19h6v1h-6ZM5 20h12v1h-12ZM7 21h8v1h-8Z" />
-      </svg>
-    );
-  if (kind === "change")
-    return (
-      <svg viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
-        <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M17 3h3v1h-3ZM18 4h3v1h-3ZM19 5h3v1h-3ZM20 6h3v1h-3ZM2 7h21v1h-21ZM19 8h3v1h-3ZM19 9h2v1h-2ZM18 10h2v1h-2ZM18 11h1v1h-1ZM6 13h3v1h-3ZM5 14h3v1h-3ZM4 15h3v1h-3ZM3 16h3v1h-3ZM3 17h21v1h-21ZM4 18h3v1h-3ZM5 19h2v1h-2ZM6 20h2v1h-2ZM7 21h1v1h-1Z" />
-        <path fill={QC_COLORS.captured.editorMuted} stroke="none" d="M17 2h2v1h-2ZM17 4h1v1h-1ZM21 4h1v1h-1ZM18 5h1v1h-1ZM22 5h1v1h-1ZM2 6h18v1h-18ZM23 6h1v1h-1ZM23 7h1v1h-1ZM2 8h17v1h-17ZM22 8h1v1h-1ZM18 9h1v1h-1ZM21 9h1v1h-1ZM17 10h1v1h-1ZM20 10h1v1h-1ZM17 11h1v1h-1ZM19 11h1v1h-1ZM7 12h2v1h-2ZM18 12h1v1h-1ZM4 14h1v1h-1ZM8 14h1v1h-1ZM3 15h1v1h-1ZM7 15h1v1h-1ZM2 16h1v1h-1ZM6 16h18v1h-18ZM2 17h1v1h-1ZM3 18h1v1h-1ZM7 18h17v1h-17ZM4 19h1v1h-1ZM7 19h1v1h-1ZM5 20h1v1h-1ZM8 20h1v1h-1ZM6 21h1v1h-1ZM8 21h1v1h-1ZM7 22h1v1h-1Z" />
-      </svg>
-    );
-  if (kind === "copy")
-    return (
-      <svg viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
-        <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M9 1h14v1h-14ZM8 2h16v1h-16ZM8 3h4v1h-4ZM20 3h4v1h-4ZM8 4h3v1h-3ZM21 4h3v1h-3ZM22 5h2v1h-2ZM22 6h2v1h-2ZM3 7h14v1h-14ZM22 7h2v1h-2ZM2 8h16v1h-16ZM22 8h2v1h-2ZM2 9h4v1h-4ZM14 9h4v1h-4ZM22 9h2v1h-2ZM2 10h3v1h-3ZM15 10h3v1h-3ZM22 10h2v1h-2ZM2 11h2v1h-2ZM16 11h2v1h-2ZM22 11h2v1h-2ZM2 12h2v1h-2ZM16 12h2v1h-2ZM22 12h2v1h-2ZM2 13h2v1h-2ZM16 13h2v1h-2ZM21 13h3v1h-3ZM2 14h2v1h-2ZM16 14h2v1h-2ZM20 14h4v1h-4ZM2 15h2v1h-2ZM16 15h2v1h-2ZM20 15h4v1h-4ZM2 16h2v1h-2ZM16 16h2v1h-2ZM20 16h3v1h-3ZM2 17h2v1h-2ZM16 17h2v1h-2ZM2 18h2v1h-2ZM16 18h2v1h-2ZM2 19h3v1h-3ZM15 19h3v1h-3ZM2 20h4v1h-4ZM14 20h4v1h-4ZM2 21h16v1h-16ZM3 22h14v1h-14Z" />
-      </svg>
-    );
-  if (kind === "reset")
-    return (
-      <svg viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
-        <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M12 0h2v1h-2ZM10 1h4v1h-4ZM9 2h8v1h-8ZM8 3h11v1h-11ZM9 4h11v1h-11ZM11 5h3v1h-3ZM17 5h4v1h-4ZM12 6h2v1h-2ZM18 6h4v1h-4ZM19 7h4v1h-4ZM20 8h3v1h-3ZM21 9h3v1h-3ZM21 10h3v1h-3ZM21 11h3v1h-3ZM2 12h2v1h-2ZM22 12h2v1h-2ZM2 13h2v1h-2ZM22 13h2v1h-2ZM2 14h3v1h-3ZM21 14h3v1h-3ZM2 15h3v1h-3ZM21 15h3v1h-3ZM2 16h3v1h-3ZM21 16h3v1h-3ZM3 17h3v1h-3ZM20 17h3v1h-3ZM3 18h3v1h-3ZM20 18h3v1h-3ZM4 19h3v1h-3ZM19 19h3v1h-3ZM4 20h5v1h-5ZM17 20h5v1h-5ZM5 21h7v1h-7ZM14 21h7v1h-7ZM7 22h12v1h-12ZM9 23h8v1h-8Z" />
-      </svg>
-    );
-  if (kind === "save")
-    return (
-      <svg viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
-        <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M2 1h17v1h-17ZM2 2h1v1h-1ZM18 2h2v1h-2ZM2 3h1v1h-1ZM19 3h2v1h-2ZM2 4h1v1h-1ZM20 4h2v1h-2ZM2 5h1v1h-1ZM21 5h1v1h-1ZM2 6h1v1h-1ZM21 6h1v1h-1ZM2 7h1v1h-1ZM21 7h1v1h-1ZM2 8h1v1h-1ZM21 8h1v1h-1ZM2 9h1v1h-1ZM21 9h1v1h-1ZM2 10h1v1h-1ZM21 10h1v1h-1ZM2 11h1v1h-1ZM21 11h1v1h-1ZM2 12h1v1h-1ZM21 12h1v1h-1ZM2 13h1v1h-1ZM21 13h1v1h-1ZM2 14h1v1h-1ZM21 14h1v1h-1ZM2 15h1v1h-1ZM21 15h1v1h-1ZM2 16h1v1h-1ZM21 16h1v1h-1ZM2 17h1v1h-1ZM21 17h1v1h-1ZM2 18h1v1h-1ZM21 18h1v1h-1ZM2 19h1v1h-1ZM21 19h1v1h-1ZM2 20h20v1h-20Z" />
-        <path fill={QC_COLORS.captured.editorSaveMid} stroke="none" d="M3 0h15v1h-15ZM1 2h1v1h-1ZM3 2h1v1h-1ZM17 2h1v1h-1ZM1 3h1v1h-1ZM18 3h1v1h-1ZM1 4h1v1h-1ZM19 4h1v1h-1ZM1 5h1v1h-1ZM20 5h1v1h-1ZM22 5h1v1h-1ZM1 6h1v1h-1ZM22 6h1v1h-1ZM1 7h1v1h-1ZM22 7h1v1h-1ZM1 8h1v1h-1ZM22 8h1v1h-1ZM1 9h1v1h-1ZM22 9h1v1h-1ZM1 10h1v1h-1ZM22 10h1v1h-1ZM1 11h1v1h-1ZM22 11h1v1h-1ZM1 12h1v1h-1ZM22 12h1v1h-1ZM1 13h1v1h-1ZM22 13h1v1h-1ZM1 14h1v1h-1ZM22 14h1v1h-1ZM1 15h1v1h-1ZM22 15h1v1h-1ZM1 16h1v1h-1ZM22 16h1v1h-1ZM1 17h1v1h-1ZM22 17h1v1h-1ZM1 18h1v1h-1ZM22 18h1v1h-1ZM1 19h1v1h-1ZM3 19h1v1h-1ZM20 19h1v1h-1ZM22 19h1v1h-1ZM3 21h18v1h-18Z" />
-        <path fill={QC_COLORS.captured.editorSaveDark} stroke="none" d="M2 0h1v1h-1ZM18 0h1v1h-1ZM1 1h1v1h-1ZM19 1h1v1h-1ZM4 2h13v1h-13ZM20 2h1v1h-1ZM3 3h1v1h-1ZM21 3h1v1h-1ZM3 4h1v1h-1ZM22 4h1v1h-1ZM3 5h1v1h-1ZM5 5h6v1h-6ZM13 5h3v1h-3ZM3 6h1v1h-1ZM5 6h6v1h-6ZM13 6h3v1h-3ZM20 6h1v1h-1ZM3 7h1v1h-1ZM5 7h6v1h-6ZM13 7h3v1h-3ZM20 7h1v1h-1ZM3 8h1v1h-1ZM5 8h11v1h-11ZM20 8h1v1h-1ZM3 9h1v1h-1ZM5 9h11v1h-11ZM20 9h1v1h-1ZM3 10h1v1h-1ZM5 10h11v1h-11ZM20 10h1v1h-1ZM3 11h1v1h-1ZM20 11h1v1h-1ZM3 12h1v1h-1ZM20 12h1v1h-1ZM3 13h1v1h-1ZM20 13h1v1h-1ZM3 14h1v1h-1ZM20 14h1v1h-1ZM3 15h1v1h-1ZM20 15h1v1h-1ZM3 16h1v1h-1ZM20 16h1v1h-1ZM3 17h1v1h-1ZM20 17h1v1h-1ZM3 18h1v1h-1ZM20 18h1v1h-1ZM4 19h16v1h-16ZM1 20h1v1h-1ZM22 20h1v1h-1ZM2 21h1v1h-1ZM21 21h1v1h-1Z" />
-      </svg>
-    );
-  if (kind === "expression")
-    return (
-      <svg viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
-        <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M9 1h8v1h-8ZM9 2h1v1h-1ZM16 2h1v1h-1ZM9 3h1v1h-1ZM16 3h1v1h-1ZM9 4h1v1h-1ZM16 4h1v1h-1ZM9 5h1v1h-1ZM16 5h1v1h-1ZM9 6h1v1h-1ZM16 6h1v1h-1ZM9 7h1v1h-1ZM16 7h1v1h-1ZM9 8h1v1h-1ZM16 8h1v1h-1ZM9 9h1v1h-1ZM16 9h1v1h-1ZM9 10h1v1h-1ZM16 10h1v1h-1ZM9 11h1v1h-1ZM16 11h1v1h-1ZM9 12h1v1h-1ZM16 12h1v1h-1ZM9 13h1v1h-1ZM16 13h1v1h-1ZM9 14h1v1h-1ZM16 14h1v1h-1ZM9 15h1v1h-1ZM16 15h1v1h-1ZM9 16h1v1h-1ZM16 16h1v1h-1ZM9 17h1v1h-1ZM16 17h1v1h-1ZM9 18h1v1h-1ZM16 18h1v1h-1ZM9 19h8v1h-8Z" />
-        <path
-          fill={QC_COLORS.captured.utilityMark}
-          stroke="none"
-          d="M8 0h10v1h-10ZM8 1h1v1h-1ZM17 1h1v1h-1ZM5 2h4v1h-4ZM10 2h6v1h-6ZM17 2h4v1h-4ZM5 3h4v1h-4ZM17 3h4v1h-4ZM5 4h2v1h-2ZM8 4h1v1h-1ZM10 4h1v1h-1ZM15 4h1v1h-1ZM17 4h1v1h-1ZM19 4h2v1h-2ZM5 5h2v1h-2ZM8 5h1v1h-1ZM10 5h1v1h-1ZM15 5h1v1h-1ZM17 5h4v1h-4ZM5 6h4v1h-4ZM10 6h1v1h-1ZM15 6h1v1h-1ZM17 6h4v1h-4ZM5 7h4v1h-4ZM10 7h1v1h-1ZM15 7h1v1h-1ZM17 7h4v1h-4ZM6 8h3v1h-3ZM10 8h1v1h-1ZM15 8h1v1h-1ZM17 8h3v1h-3ZM6 9h3v1h-3ZM10 9h1v1h-1ZM15 9h1v1h-1ZM17 9h3v1h-3ZM6 10h3v1h-3ZM10 10h1v1h-1ZM15 10h1v1h-1ZM17 10h3v1h-3ZM6 11h3v1h-3ZM10 11h1v1h-1ZM15 11h1v1h-1ZM17 11h3v1h-3ZM6 12h3v1h-3ZM10 12h1v1h-1ZM15 12h1v1h-1ZM17 12h3v1h-3ZM6 13h2v1h-2ZM10 13h1v1h-1ZM15 13h1v1h-1ZM18 13h2v1h-2ZM6 14h2v1h-2ZM10 14h1v1h-1ZM15 14h1v1h-1ZM18 14h2v1h-2ZM6 15h2v1h-2ZM10 15h1v1h-1ZM15 15h1v1h-1ZM18 15h2v1h-2ZM6 16h2v1h-2ZM10 16h1v1h-1ZM15 16h1v1h-1ZM18 16h2v1h-2ZM6 17h2v1h-2ZM10 17h1v1h-1ZM15 17h1v1h-1ZM18 17h2v1h-2ZM6 18h2v1h-2ZM10 18h6v1h-6ZM18 18h2v1h-2ZM6 19h2v1h-2ZM18 19h2v1h-2ZM6 20h2v1h-2ZM9 20h8v1h-8ZM18 20h2v1h-2ZM6 21h14v1h-14ZM6 22h14v1h-14ZM7 23h12v1h-12Z"
-        />
-      </svg>
-    );
-  if (kind === "mute")
-    return (
-      <svg viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
-        <path fill={QC_COLORS.captured.primaryText} stroke="none" d="M3 1h8v1h-8ZM2 2h10v1h-10ZM2 3h10v1h-10ZM2 4h10v1h-10ZM2 5h10v1h-10ZM2 6h10v1h-10ZM2 7h10v1h-10ZM2 8h10v1h-10ZM2 9h10v1h-10ZM3 10h8v1h-8ZM4 13h2v1h-2ZM4 14h2v1h-2ZM4 15h2v1h-2ZM4 16h2v1h-2ZM8 16h2v1h-2ZM5 17h7v1h-7ZM6 18h6v1h-6ZM8 19h2v1h-2Z" />
-        <path fill={QC_COLORS.captured.utilityMark} stroke="none" d="M2 1h1v1h-1ZM11 1h1v1h-1ZM17 3h1v1h-1ZM15 4h3v1h-3ZM13 5h9v1h-9ZM13 6h10v1h-10ZM15 7h3v1h-3ZM21 7h2v1h-2ZM17 8h1v1h-1ZM21 8h2v1h-2ZM21 9h2v1h-2ZM2 10h1v1h-1ZM11 10h1v1h-1ZM21 10h2v1h-2ZM14 13h10v1h-10ZM14 14h10v1h-10ZM8 15h2v1h-2ZM14 15h10v1h-10ZM6 16h1v1h-1ZM10 16h1v1h-1ZM14 16h10v1h-10ZM4 17h1v1h-1ZM12 17h1v1h-1ZM14 17h10v1h-10ZM5 18h1v1h-1ZM12 18h1v1h-1ZM14 18h10v1h-10ZM10 19h1v1h-1ZM14 19h10v1h-10ZM8 20h2v1h-2ZM14 20h10v1h-10ZM14 21h10v1h-10ZM14 22h10v1h-10Z" />
-      </svg>
-    );
-  if (kind === "paste")
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M9 6H5v15h14V6h-4" />
-        <rect x="8" y="3" width="8" height="5" rx="1.5" />
+        <path fill="currentColor" stroke="none" d="M18 3h2v1h-2ZM10 4h1v1h-1ZM17 4h3v1h-3ZM8 5h4v1h-4ZM16 5h6v1h-6ZM7 6h15v1h-15ZM6 7h16v1h-16ZM4 8h18v1h-18ZM3 9h14v1h-14ZM18 9h5v1h-5ZM2 10h13v1h-13ZM16 10h7v1h-7ZM1 11h10v1h-10ZM12 11h8v1h-8ZM0 12h7v1h-7ZM8 12h8v1h-8ZM0 13h4v1h-4ZM5 13h7v1h-7ZM1 14h8v1h-8ZM0 15h5v1h-5ZM6 16h3v1h-3ZM5 17h4v1h-4ZM5 18h4v1h-4ZM2 19h10v1h-10ZM2 20h10v1h-10ZM2 21h10v1h-10ZM2 22h10v1h-10ZM2 23h10v1h-10Z" />
       </svg>
     );
   if (kind === "assignment-expression")
@@ -611,29 +444,12 @@ export function QcEditorIcon({ kind }: { kind: QcEditorIconName }) {
         <path d="M6 18h12l-1.6-8.4H8.1L6 18Zm2.2-8.4 1-3.6h5.7l1.5 3.6M9 21h6" />
       </svg>
     );
-  if (kind === "scene-previous")
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M11 4 3 12l8 8Z" fill="currentColor" />
-        <path d="M21 4l-8 8 8 8Z" fill={QC_COLORS.captured.sceneControlMuted} />
-      </svg>
-    );
-  if (kind === "scene-next")
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="m13 4 8 8-8 8Z" fill="currentColor" />
-        <path d="M3 4l8 8-8 8Z" fill={QC_COLORS.captured.sceneControlMuted} />
-      </svg>
-    );
-  if (kind === "confirm")
-    return (
-      <svg viewBox="0 0 32 32" aria-hidden="true">
-        <path d="m8 16.5 5.2 5.1L24.5 10" />
-      </svg>
-    );
-  return (
+  if (kind === "momentary")
+    return <svg viewBox="0 0 24 24" data-qc-icon={kind} aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor" stroke="none" /><path d="m13.2 3.8-7 10.1h4.6l-1 6.3 7.5-10.7h-4.7z" fill={QC_COLORS.captured.screen} stroke="none" /></svg>;
+  if (kind === "waveform") return (
     <svg viewBox="0 0 80 32" aria-hidden="true">
       <path d="M2 16h11l7-12 14 24L48 4l7 12h23" />
     </svg>
   );
+  return null;
 }

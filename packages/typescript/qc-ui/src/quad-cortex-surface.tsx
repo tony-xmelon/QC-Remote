@@ -342,7 +342,7 @@ function CorOsGrid({ snapshot, presetSlotAccent, selectedBlockId, onAction, onOp
   };
   const railLabel = (label: string | undefined, x: number, y: number) => {
     const lines = routeLines(label);
-    if (label === "+") return <g stroke={QC_COLORS.captured.utilityMark} strokeWidth="1.7" strokeLinecap="round"><path d={`M${x - 10} ${y}h20`} /><path d={`M${x} ${y - 10}v20`} /></g>;
+    if (label === "+") return <g stroke={QC_COLORS.captured.utilityMark} strokeWidth="2" strokeLinecap="round"><path d={`M${x - 10} ${y}h20`} /><path d={`M${x} ${y - 10}v20`} /></g>;
     const firstY = y - (lines.length - 1) * 8.5;
     return <text x={x} y={firstY} fill={QC_COLORS.captured.routeText} stroke="none" fontFamily={QC_TYPOGRAPHY.deviceRoute} fontWeight="400" fontSize="14.5">{lines.map((line, index) => <tspan key={`${line}-${index}`} x={x} dy={index ? 17 : 0}>{line}</tspan>)}</text>;
   };
@@ -421,18 +421,18 @@ function CorOsGrid({ snapshot, presetSlotAccent, selectedBlockId, onAction, onOp
   return <div className="qc-screen coros-vector-screen" aria-label="CorOS Grid">
     <svg className="coros-vector-canvas" viewBox="0 0 800 480" preserveAspectRatio="none" role="img" aria-label={`${snapshot.presetLocation} ${snapshot.presetName}, ${snapshot.mode} mode`}>
       <rect width="800" height="480" fill={QC_COLORS.captured.screen} />
-      <g transform="matrix(.96 0 0 1 -4 0)" fontFamily={QC_TYPOGRAPHY.devicePlain} fontWeight="800" fontSize="68"><text x="14" y="75"><tspan fill={QC_COLORS.hardware.whiteLed} letterSpacing="-1">{presetBank}</tspan><tspan fill={presetSlotAccent} letterSpacing="-1">{presetSlot}</tspan><tspan className={`preset-title${snapshot.dirty ? " is-dirty" : ""}${titlePresentation.dimmed ? " is-unsaved" : ""}`} dx={presetTitleGutter} dy={presetTitleBaseline - 75} fill={titlePresentation.dimmed ? QC_COLORS.captured.unsaved : QC_COLORS.hardware.whiteLed} fontSize={presetTitleFontSize} fontStyle={titlePresentation.italic ? "italic" : "normal"} textLength={squeezePresetTitle ? presetTitleMaxWidth : undefined} lengthAdjust={squeezePresetTitle ? "spacingAndGlyphs" : undefined}>{presetTitle}</tspan></text></g>
+      <g transform="matrix(1.012 0 0 1 -2 0)" fontFamily={QC_TYPOGRAPHY.devicePlain} fontWeight="800" fontSize="68"><text x="14" y="75"><tspan fill={QC_COLORS.hardware.whiteLed} letterSpacing="-1">{presetBank}</tspan><tspan fill={presetSlotAccent} letterSpacing="-1">{presetSlot}</tspan><tspan className={`preset-title${snapshot.dirty ? " is-dirty" : ""}${titlePresentation.dimmed ? " is-unsaved" : ""}`} dx={presetTitleGutter} dy={presetTitleBaseline - 75} fill={titlePresentation.dimmed ? QC_COLORS.captured.unsaved : QC_COLORS.hardware.whiteLed} fontSize={presetTitleFontSize} fontStyle={titlePresentation.italic ? "italic" : "normal"} textLength={squeezePresetTitle ? presetTitleMaxWidth : undefined} lengthAdjust={squeezePresetTitle ? "spacingAndGlyphs" : undefined}>{presetTitle}</tspan></text></g>
       <QcScreenHeaderGlyph kind="undo" />
       <QcScreenHeaderGlyph kind="save" />
       <rect x="656" y="12" width="25" height="25" rx="3" fill={QC_COLORS.captured.sceneBadge} /><text x="668.5" y="33" textAnchor="middle" fill={QC_COLORS.device.panel} fontFamily={QC_TYPOGRAPHY.devicePlain} fontWeight="800" fontSize="22">{sceneLetter}</text>
       <QcScreenHeaderGlyph kind="menu" />
-      <g transform="translate(657 55)" color={QC_COLORS.hardware.whiteLed}><QcModeGlyph mode={snapshot.mode} /></g><text x="693" y="78" fill={QC_COLORS.hardware.whiteLed} fontFamily={QC_TYPOGRAPHY.devicePlain} fontWeight="800" fontSize="21.5">{snapshot.mode}</text>
+      <g transform="translate(656 60)" color={QC_COLORS.hardware.whiteLed}><QcModeGlyph mode={snapshot.mode} /></g><text x="692" y="80" fill={QC_COLORS.hardware.whiteLed} fontFamily={QC_TYPOGRAPHY.devicePlain} fontWeight="800" fontSize="21.5">{snapshot.mode}</text>
       <g fill={QC_COLORS.captured.routePill} stroke={QC_COLORS.captured.screen} strokeWidth="1.2" fontFamily={QC_TYPOGRAPHY.deviceRoute} textAnchor="middle">
         {rowY.flatMap((y, row) => [<rect key={`in-${row}`} x="8" y={y - 39} width="44" height="78" rx="15" />, <rect key={`out-${row}`} x="748" y={y - 39} width="44" height="78" rx="15" />])}
         {rowY.flatMap((_, row) => [connectionMark("input", row), connectionMark("output", row)])}
         {rowY.map((y, row) => <g key={`rails-${row}`}>{railLabel(displayInput(row), 30, y)}{railLabel(displayOutput(row), 770, y)}</g>)}
       </g>
-      <g fill="none" stroke={QC_COLORS.captured.routeRail} strokeWidth="1.7">{rowY.map((_, row) => rowRail(row))}</g>
+      <g fill="none" stroke={QC_COLORS.captured.routeRail} strokeWidth="2">{rowY.map((_, row) => rowRail(row))}</g>
       {rowY.map((_, row) => splitPath(row))}
       {!screenBlocks.length && <g aria-label="Empty device slot">
         <rect x="66" y="119" width="64" height="64" rx="14" fill={QC_COLORS.captured.routePill} stroke={QC_COLORS.captured.screen} strokeWidth="1.2" />

@@ -151,10 +151,13 @@ impl SessionMachine {
     fn state_observed(&mut self, _now_ms: u64, preset_synchronized: bool) {
         self.consecutive_read_errors = 0;
         self.liveness_probe_sent_at_ms = None;
-        if preset_synchronized && matches!(self.phase, SessionPhase::Syncing | SessionPhase::Ready)
-        {
-            self.synchronized = true;
-            self.phase = SessionPhase::Ready;
+        if matches!(self.phase, SessionPhase::Syncing | SessionPhase::Ready) {
+            self.synchronized = preset_synchronized;
+            self.phase = if preset_synchronized {
+                SessionPhase::Ready
+            } else {
+                SessionPhase::Syncing
+            };
         }
     }
 
@@ -647,5 +650,22 @@ mod tests {
         runtime.reconnect_attempted(100 + delay);
         assert!(!runtime.reconnect_due(100 + delay));
         assert!(runtime.reconnect_due(100 + delay * 2));
+    }
+
+    #[test]
+    fn authoritative_state_can_return_a_ready_session_to_syncing() {
+        let mut runtime = TransportRuntime::new(0);
+        runtime.transport_opened(0);
+        runtime.handshake_completed(1, true);
+        assert_eq!(runtime.phase(), SessionPhase::Ready);
+        assert!(runtime.synchronized());
+
+        runtime.state_observed(2, false);
+        assert_eq!(runtime.phase(), SessionPhase::Syncing);
+        assert!(!runtime.synchronized());
+
+        runtime.state_observed(3, true);
+        assert_eq!(runtime.phase(), SessionPhase::Ready);
+        assert!(runtime.synchronized());
     }
 }

@@ -15,6 +15,22 @@ const shouldCapture = (id) => !requestedIds.size || requestedIds.has(id);
 let captureCount = 0;
 await mkdir(outputDirectory, { recursive: true });
 
+async function waitForVisualAssets(page) {
+  await page.evaluate(async () => {
+    const sources = [...document.querySelectorAll("svg image")]
+      .map((element) => element.getAttribute("href") ?? element.getAttribute("xlink:href"))
+      .filter(Boolean);
+    await Promise.all([...new Set(sources)].map((source) => new Promise((resolve) => {
+      const image = new Image();
+      image.onload = resolve;
+      image.onerror = resolve;
+      image.src = source;
+      if (image.complete) resolve();
+    })));
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  });
+}
+
 const browser = await chromium.launch({ headless: true, executablePath: process.env.QC_BROWSER_EXECUTABLE, args: ["--disable-lcd-text"] });
 const page = await browser.newPage({ viewport: { width: 802, height: 482 }, deviceScaleFactor: 1 });
 page.setDefaultTimeout(10000);
@@ -34,15 +50,19 @@ async function load(extra = {}) {
   for (const [key, value] of Object.entries(extra)) url.searchParams.set(key, value);
   await page.goto(url.href, { waitUntil: "networkidle" });
   await page.addStyleTag({ content: captureCss });
+  await page.evaluate(() => document.fonts.ready);
+  await waitForVisualAssets(page);
   if (forcedFont) {
     await page.addStyleTag({ content: `html body .qc-screen-bezel, html body .qc-screen-bezel * { font-family: ${JSON.stringify(forcedFont)} !important; }` });
     await page.evaluate(() => document.fonts.ready);
+    await waitForVisualAssets(page);
   }
   await page.locator(".dialog-close").click({ timeout: 1000 }).catch(() => undefined);
 }
 
 async function capture(id) {
   if (!shouldCapture(id)) return;
+  await waitForVisualAssets(page);
   const screen = page.locator(".qc-screen-bezel");
   const box = await screen.boundingBox();
   if (!box || Math.round(box.width) !== 800 || Math.round(box.height) !== 480) throw new Error(`${id}: expected 800x480, got ${box?.width}x${box?.height}`);
@@ -102,13 +122,19 @@ for (const [id, mode] of [["gig-view", "STOMP"], ["gig-view-preset", "PRESET"], 
   await load({ screen: "gig", mode });
   await capture(id);
 }
-for (const [id, screen] of [["device-browser-plugin-list", "plugin-list"], ["device-browser-plugin-models", "plugin-models"], ["device-browser-plugin-locked", "plugin-locked"], ["plugin-browser-ready", "plugin-list"], ["overlay-busy", "plugin-refresh"], ["device-browser-base", "corpus-device-browser-root"], ["device-browser-top", "corpus-device-browser-root"], ["device-browser-middle-deep", "corpus-device-browser-root"], ["device-browser-middle-reverb", "corpus-device-browser-root"], ["device-browser-neural-capture", "device-favorites"], ["device-favorites", "device-favorites"], ["device-recents", "device-recents"], ["device-search-entry", "device-search-entry"], ["device-search", "device-search-suggestions"], ["device-search-results", "device-search-results"], ["overlay-error", "device-search-results"], ["io-overview", "io-overview"], ["io-output", "io-output"], ["io-send-return", "io-send-return"], ["io-headphones", "io-headphones"], ["fixture-editor-capture", "fixture-editor-capture"], ["device-presets-exotic-z-boost", "device-presets"], ["device-presets-user", "device-presets-user"], ["device-preset-actions", "device-preset-actions"], ["block-context", "block-context"], ["block-context-bottom", "block-context"], ["device-preset-save", "device-preset-save"], ["onscreen-keyboard", "overlay-keyboard"], ["directory-item-context", "directory-item-context"], ["delete-confirmation", "fixture-delete"], ["generic-confirmation", "overlay-confirmation"], ["splitter-editor", "splitter-editor"], ["mixer-editor", "mixer-editor"], ["input-gate-control", "fixture-input-gate"], ["tempo-metronome", "tempo"], ["tuner", "tuner"], ["tuner-live-enabled", "tuner-live-enabled"], ["gig-view-live-tuner", "gig-live-tuner"], ["preset-midi-out", "midi-out"], ["modes-configuration", "modes"], ["save-as-editor", "save-as"], ["edit-details-editor", "edit-details"], ["settings-support", "settings-support"], ["settings-info", "settings-info"], ["settings-diagnostics", "settings-diagnostics"], ["settings-wifi", "settings-wifi"], ["settings-storage", "settings-storage"]]) {
+for (const [id, screen] of [["device-browser-plugin-list", "plugin-list"], ["device-browser-plugin-models", "plugin-models"], ["device-browser-plugin-locked", "plugin-locked"], ["plugin-browser-ready", "plugin-list"], ["overlay-busy", "plugin-refresh"], ["device-browser-base", "corpus-device-browser-root"], ["device-browser-top", "corpus-device-browser-root"], ["device-browser-middle-deep", "corpus-device-browser-root"], ["device-browser-middle-reverb", "corpus-device-browser-root"], ["device-browser-neural-capture", "device-favorites"], ["device-favorites", "device-favorites"], ["device-recents", "device-recents"], ["device-search-entry", "device-search-entry"], ["device-search", "device-search-suggestions"], ["device-search-results", "device-search-results"], ["overlay-error", "device-search-results"], ["io-overview", "io-overview"], ["io-output", "io-output"], ["io-send-return", "io-send-return"], ["io-headphones", "io-headphones"], ["fixture-editor-capture", "fixture-editor-capture"], ["device-presets-exotic-z-boost", "device-presets"], ["device-presets-user", "device-presets-user"], ["device-preset-actions", "device-preset-actions"], ["block-context", "block-context"], ["block-context-bottom", "block-context"], ["device-preset-save", "device-preset-save"], ["onscreen-keyboard", "overlay-keyboard"], ["directory-item-context", "directory-item-context"], ["capture-intro", "capture-intro"], ["capture-routing", "capture-routing"], ["capture-monitoring", "capture-monitoring"], ["capture-connect-out", "capture-connect-out"], ["capture-connect-input-2", "capture-connect-input-2"], ["capture-calibration", "capture-calibration"], ["capture-progress", "capture-progress"], ["capture-sanity-error", "capture-sanity-error"], ["capture-result", "capture-result"], ["capture-save", "capture-save"], ["scene-assignment", "scene-assignment"], ["directory-copy", "directory-copy"], ["stomp-assignment", "stomp-assignment"], ["directory-nested", "directory-nested"], ["directory-filter", "directory-filter"], ["plugin-refresh", "plugin-refresh"], ["gig-view-hybrid", "gig-official-hybrid"], ["cloud-upload-overwrite", "overlay-confirmation"], ["directory-cloud-upload", "directory-cloud-upload"], ["fixture-editor-pages", "fixture-editor-pages"], ["looper-editor", "looper-editor"], ["directory-new-folder", "directory-new-folder"], ["io-input", "io-input"], ["io-usb", "io-usb"], ["global-eq", "global-eq"], ["expression-parameter", "expression-parameter"], ["expression-bypass", "expression-bypass"], ["empty-slot", "empty-slot"], ["plugin-folders", "plugin-folders"], ["settings-system", "settings-system"], ["cpu-monitor", "cpu-monitor"], ["settings-account", "settings-account"], ["settings-device", "settings-device"], ["settings-midi", "settings-midi"], ["directory-categories", "directory-categories"], ["directory-captures", "directory-captures"], ["directory-irs", "directory-irs"], ["directory-plugins", "directory-plugins"], ["directory-favorites", "directory-favorites"], ["directory-search", "directory-search"], ["directory-search-results", "directory-search-results"], ["directory-sort", "directory-sort"], ["directory-arrange", "directory-arrange"], ["delete-confirmation", "fixture-delete"], ["generic-confirmation", "overlay-confirmation"], ["splitter-editor", "splitter-editor"], ["mixer-editor", "mixer-editor"], ["input-gate-control", "fixture-input-gate"], ["tempo-metronome", "tempo"], ["tuner", "tuner"], ["tuner-live-enabled", "tuner-live-enabled"], ["gig-view-live-tuner", "gig-live-tuner"], ["preset-midi-out", "midi-out"], ["modes-configuration", "modes"], ["save-as-editor", "save-as"], ["edit-details-editor", "edit-details"], ["settings-support", "settings-support"], ["settings-info", "settings-info"], ["settings-diagnostics", "settings-diagnostics"], ["settings-wifi", "settings-wifi"], ["settings-storage", "settings-storage"]]) {
   if (!shouldCapture(id)) continue;
-  await load({ screen, ...(screen === "tempo" ? { tempo: "56" } : {}), ...(screen === "corpus-device-browser-root" ? { variant: "reference-browser" } : {}) });
+  const resolvedScreen = id === "device-browser-neural-capture" ? "device-browser-neural-capture"
+    : id === "directory-search" ? "device-search-entry"
+      : id === "cloud-upload-overwrite" ? "overlay-overwrite"
+        : id === "plugin-folders" ? "plugin-list-reference"
+          : screen;
+  const browserVariant = id === "device-browser-middle-deep" || id === "device-browser-middle-reverb" ? "deep-browser" : "reference-browser";
+  await load({ screen: resolvedScreen, ...(screen === "tempo" ? { tempo: "56" } : {}), ...(screen === "corpus-device-browser-root" ? { variant: browserVariant } : {}) });
   if (id === "device-browser-base") await page.locator(".coros-device-browser > nav").evaluate((element) => { element.scrollTop = element.scrollHeight; });
   if (id === "device-browser-middle-deep") await page.locator(".coros-device-browser > nav").evaluate((element) => { element.scrollTop = 554; });
   if (id === "device-browser-middle-reverb") await page.locator(".coros-device-browser > nav").evaluate((element) => { element.scrollTop = 242; });
-  if (id === "block-context-bottom") await page.locator(".coros-block-context > aside").evaluate((element) => { element.scrollTop = element.scrollHeight; });
+  if (id === "block-context-bottom") await page.locator(".coros-block-context > aside").evaluate((element) => { element.scrollTop = element.scrollHeight; }).catch(() => undefined);
   await capture(id);
 }
 for (const [id, mode] of [["official-gig-view-stomp", "STOMP"], ["official-gig-view-preset", "PRESET"], ["official-gig-view-scene", "SCENE"], ["official-gig-view-hybrid", "HYBRID"]]) {

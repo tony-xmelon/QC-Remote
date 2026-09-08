@@ -152,8 +152,7 @@ impl DeviceStartupRuntime {
                 // seed. Observations from the prior Connected epoch cannot
                 // make the rebuilt session ready.
                 self.observed_types.clear();
-                self.observed_types
-                    .insert(profile::MESSAGE_TYPE_CONNECTION);
+                self.observed_types.insert(profile::MESSAGE_TYPE_CONNECTION);
                 self.phase = DeviceStartupPhase::Disconnected;
                 self.error = None;
                 let request_id = self.take_request_id();
@@ -697,6 +696,10 @@ mod tests {
     fn connection_false_returns_an_active_startup_to_disconnected() {
         let (mut runtime, _) = DeviceStartupRuntime::start(7, "session");
         enter_building(&mut runtime);
+        assert_eq!(
+            runtime.observe(profile::MESSAGE_TYPE_RECALL_PRESET, &[]),
+            DeviceStartupAction::Wait
+        );
         let disconnected = pa::ConnectionMessage {
             connected: Some(pa::connection_message::Connected::Connected(false)),
             ..Default::default()
@@ -707,6 +710,41 @@ mod tests {
             DeviceStartupAction::SendThenBuild(commands::disconnect_initialization_exact(9))
         );
         assert_eq!(runtime.phase(), DeviceStartupPhase::Disconnected);
+
+        assert!(matches!(
+            runtime.begin_building(),
+            DeviceStartupAction::Send(_)
+        ));
+        assert!(matches!(
+            runtime.observe(profile::MESSAGE_TYPE_MODEL_REPO, &valid_model_repo()),
+            DeviceStartupAction::Send(_)
+        ));
+        let module_stats = pa::ModuleStatsMessage {
+            action: pa::message_action::Enum::Update as i32,
+            stats: vec![pa::ModuleStatsItem::default()],
+            ..Default::default()
+        }
+        .encode_to_vec();
+        assert!(matches!(
+            runtime.observe(profile::MESSAGE_TYPE_MODULE_STATS, &module_stats),
+            DeviceStartupAction::Send(_)
+        ));
+        let updater = pa::UpdaterMessage {
+            action: pa::message_action::Enum::Update as i32,
+            ..Default::default()
+        }
+        .encode_to_vec();
+        assert_eq!(
+            runtime.observe(profile::MESSAGE_TYPE_UPDATER, &updater),
+            DeviceStartupAction::Connected
+        );
+        let seed = runtime
+            .post_boot_initialization(100)
+            .expect("rebuilt startup may begin a fresh seed");
+        assert!(
+            !seed.synchronized(),
+            "the prior connected epoch's preset must not satisfy a rebuild"
+        );
     }
 
     #[test]

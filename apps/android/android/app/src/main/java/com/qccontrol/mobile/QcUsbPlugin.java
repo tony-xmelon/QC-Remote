@@ -1566,8 +1566,9 @@ public class QcUsbPlugin extends Plugin {
             commandIo.execute(() -> {
                 try {
                     writeMessage(stateDecoder.systemTimeCommand(System.currentTimeMillis()));
-                    stateDecoder.postBootInitializationStarted(
-                        monotonicMillis(), requestIds.getAndIncrement());
+                    initializationComplete = false;
+                    presetSynchronized = false;
+                    stateDecoder.postBootInitializationStarted(monotonicMillis());
                     if (flight != null) flight.event("post-boot-seed-started");
                     advanceInitialization();
                 } catch (Exception error) {
@@ -1591,6 +1592,12 @@ public class QcUsbPlugin extends Plugin {
                 flight.event("initialization-sent");
             }
             if (decision.beginBuilding) {
+                // SendThenBuild is also the in-session Connection(false)
+                // transition. Downgrade readiness until a fresh seed proves
+                // the rebuilt state is coherent.
+                initializationComplete = false;
+                presetSynchronized = false;
+                stateDecoder.sessionStateObserved(monotonicMillis(), false);
                 QcNativeStateDecoder.StartupDecision building =
                     stateDecoder.startupBeginBuilding();
                 if (building.kind == QcNativeStateDecoder.StartupDecision.SEND) {

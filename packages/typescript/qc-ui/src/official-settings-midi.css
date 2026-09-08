@@ -15,6 +15,6 @@
 .coros-settings-official.settings-account b > svg { width: 3cqw; height: 3cqw; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .coros-settings-official.settings-account .settings-account-detail > header { height: 4.875cqw; }
 .coros-midi-out > header > span { transform: translateY(-1px); }
-.coros-midi-out > header .midi-trash { width: 8.25cqw; transform: translateX(-.375cqw); background: #101510; }
+.coros-midi-out > header .midi-trash { width: 8.25cqw; transform: translateX(-.375cqw); background: #081008; }
 
 }

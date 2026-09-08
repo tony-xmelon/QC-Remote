@@ -67,6 +67,7 @@
     "legal:check": "node tools/verify-public-release-legal.mjs",
     "test:ui": "playwright test",
     "verify:qc-corpora": "node tools/verify-qc-ui-corpora.mjs",
+    "verify:qc-screen-text": "python tools/verify_screen_tree_coverage.py",
     "verify:qc-coverage": "node tools/verify_qc_screen_coverage.mjs && node tools/verify_qc_physical_capture_plan.mjs",
     "verify:qc-iconography": "node tools/verify-qc-iconography.mjs",
     "verify:qc-iconography:complete": "node tools/verify-qc-iconography.mjs --require-complete-coverage",
@@ -78,7 +79,10 @@
     "security:audit": "npm audit --omit=dev --audit-level=moderate && npm audit --audit-level=high",
     "security:platform": "node tools/verify-release-platform-security.mjs",
     "security:incidents": "node tools/verify-release-incidents.mjs",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "verify:cortex-protocol": "python tools/generate_cortex_protos.py --check && python tools/generate_cortex_message_registry.py --check && python tools/verify_cortex_protocol_fidelity.py && python tools/verify_cortex_protocol_message_types.py",
+    "verify:qc-geometry": "python tools/verify_screen_geometry.py",
+    "verify:test-assertions": "node tools/audit_vacuous_assertions.mjs"
   },
   "engines": {
     "node": ">=22"

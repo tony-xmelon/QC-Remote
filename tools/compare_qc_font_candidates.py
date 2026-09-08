@@ -37,12 +37,25 @@ def masked_metrics(reference_path: Path, rendered_path: Path, no_text_path: Path
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, default=Path(".artifacts/font-corpus/report.json"))
+    parser.add_argument(
+        "--candidate",
+        action="append",
+        default=[],
+        metavar="NAME=PATH",
+        help="add or replace a rendered candidate root (repeatable)",
+    )
+    parser.add_argument("--no-default-candidates", action="store_true")
     args = parser.parse_args()
-    candidates = {
+    candidates = {} if args.no_default_candidates else {
         "baseline": Path(".artifacts/typography-baseline"),
         "arimo": Path(".artifacts/font-corpus/arimo"),
         "roboto": Path(".artifacts/font-corpus/roboto"),
     }
+    for value in args.candidate:
+        name, separator, path = value.partition("=")
+        if not separator or not name.strip() or not path.strip():
+            parser.error(f"--candidate must use NAME=PATH syntax, received {value!r}")
+        candidates[name.strip()] = Path(path.strip())
     sources = {
         "physical": (Path("references/qc-ui-corpus/coros-4.1.0"), "corpus"),
         "official": (Path("references/qc-ui-official-manual/coros-4.1.0"), "official"),
@@ -69,6 +82,14 @@ def main() -> int:
     summaries = {}
     for candidate in candidates:
         measurements = [screen["candidates"][candidate] for screen in screens if candidate in screen["candidates"]]
+        if not measurements:
+            summaries[candidate] = {
+                "screens": 0,
+                "wins": 0,
+                "meanStructuralMatchPercent": None,
+                "meanColorMatchPercent": None,
+            }
+            continue
         summaries[candidate] = {
             "screens": len(measurements),
             "wins": sum(screen["winner"] == candidate for screen in screens),

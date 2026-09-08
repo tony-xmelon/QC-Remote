@@ -1,6 +1,5 @@
 use crate::flight::FlightRecorder;
 use hidapi::{HidApi, HidDevice};
-use prost::Message;
 use qc_device_runtime::initialization::{
     DeviceStartupAction, DeviceStartupRuntime, InitializationAction,
 };
@@ -8,11 +7,8 @@ use qc_device_runtime::transport::{ReportLayout, TransportRuntime};
 use qc_protocol::commands::{self, OutboundMessage};
 use qc_protocol::framing;
 use qc_protocol::profile;
-use qc_protocol::proto;
-use qc_protocol::proto::cortex_protobuf_v2 as pa;
 use std::cell::UnsafeCell;
 use std::collections::HashMap;
-use std::io::Read;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread::{self, JoinHandle};
@@ -62,6 +58,95 @@ pub struct ConnectedQc {
     /// silently discards incremental pushes — a preset-folder listing arrives
     /// as one message per folder, and only the final folder would survive.
     pub initial_messages: Vec<IncomingMessage>,
+    startup: DeviceStartupRuntime,
+    initialization: Option<qc_device_runtime::initialization::InitializationRuntime>,
+}
+
+impl ConnectedQc {
+    /// Keep the staged device controller alive for the full USB session.
+    /// Connected-state Version reads and Connection(false) rebuilds therefore
+    /// take the same shared path on Windows and Android.
+    pub fn observe_lifecycle(
+        &mut self,
+        message: &IncomingMessage,
+        now_ms: u64,
+    ) -> Result<(), UsbError> {
+        if let Some(initialization) = self.initialization.as_mut() {
+            initialization.observe(message.message_type);
+        }
+        let action = self.startup.observe(message.message_type, &message.payload);
+        self.apply_startup_action(action, now_ms)
+    }
+
+    pub fn advance_lifecycle(&mut self, now_ms: u64) -> Result<(), UsbError> {
+        let Some(initialization) = self.initialization.as_mut() else {
+            return Ok(());
+        };
+        match initialization.advance(now_ms) {
+            InitializationAction::Wait => {}
+            InitializationAction::Send(messages) => {
+                for message in messages {
+                    self.usb.send_command(message);
+                }
+            }
+            InitializationAction::Complete { synchronized } => {
+                self.synchronized = synchronized;
+                self.initialization = None;
+            }
+        }
+        Ok(())
+    }
+
+    fn apply_startup_action(
+        &mut self,
+        mut action: DeviceStartupAction,
+        now_ms: u64,
+    ) -> Result<(), UsbError> {
+        loop {
+            action = match action {
+                DeviceStartupAction::Wait => return Ok(()),
+                DeviceStartupAction::Send(messages) => {
+                    for message in messages {
+                        self.usb.send_command(message);
+                    }
+                    return Ok(());
+                }
+                DeviceStartupAction::SendThenBuild(messages) => {
+                    self.synchronized = false;
+                    self.initialization = None;
+                    for message in messages {
+                        self.usb.send_command(message);
+                    }
+                    self.startup.begin_building()
+                }
+                DeviceStartupAction::Connected => {
+                    self.synchronized = false;
+                    self.usb
+                        .send_command(commands::sync_system_time(unix_time_ms()));
+                    self.initialization = Some(
+                        self.startup
+                            .post_boot_initialization(now_ms)
+                            .map_err(|error| {
+                                UsbError::Initialization(format!(
+                                    "could not restart state seed: {error:?}"
+                                ))
+                            })?,
+                    );
+                    return self.advance_lifecycle(now_ms);
+                }
+                DeviceStartupAction::Invalid(error) => {
+                    return Err(UsbError::Initialization(format!(
+                        "device rejected active session: {error:?}"
+                    )))
+                }
+                DeviceStartupAction::Failed(error) => {
+                    return Err(UsbError::Initialization(format!(
+                        "active session protocol error: {error:?}"
+                    )))
+                }
+            };
+        }
+    }
 }
 
 /// Bounds the retained initialization burst. The collection deadlines already
@@ -358,8 +443,7 @@ impl QcUsb {
                         let (mut startup, _) =
                             DeviceStartupRuntime::start(attempt.request_id(), attempt.session_id());
                         let first_action = startup.observe(message.message_type, &message.payload);
-                        let connected =
-                            usb.finish_hello(startup, first_action, session)?;
+                        let connected = usb.finish_hello(startup, first_action, session)?;
                         session.handshake_completed(
                             session_clock.elapsed().as_millis() as u64,
                             connected.synchronized,
@@ -442,11 +526,9 @@ impl QcUsb {
         // only after the Updater gate and seed it from everything captured
         // during staged boot. This cannot replay Version/ModelRepo/subscriptions.
         let now_ms = initialization_clock.elapsed().as_millis() as u64;
-        let mut initialization = startup
-            .post_boot_initialization(now_ms)
-            .map_err(|error| {
-                UsbError::Initialization(format!("could not start state seed: {error:?}"))
-            })?;
+        let mut initialization = startup.post_boot_initialization(now_ms).map_err(|error| {
+            UsbError::Initialization(format!("could not start state seed: {error:?}"))
+        })?;
         let synchronized = loop {
             let now_ms = initialization_clock.elapsed().as_millis() as u64;
             match initialization.advance(now_ms) {
@@ -482,6 +564,8 @@ impl QcUsb {
             message_counts,
             latest_messages,
             initial_messages,
+            startup,
+            initialization: None,
         })
     }
 
@@ -527,26 +611,11 @@ impl QcUsb {
             return Ok(None);
         };
         let message_type = frame.message_type;
-        let mut payload = frame.payload;
+        let payload = frame.payload;
         self.flight.inbound(message_type, frame.report_count);
-        // ModelRepo is the largest compressed message. Keep its decompression
-        // off this permanent USB worker; the metadata worker inflates it only
-        // when the catalog is actually consumed.
-        if message_type != profile::MESSAGE_TYPE_MODEL_REPO && payload.starts_with(&[0x1f, 0x8b]) {
-            let mut decoded = Vec::new();
-            flate2::read::GzDecoder::new(payload.as_slice())
-                .take(profile::MAX_INFLATED_BYTES as u64 + 1)
-                .read_to_end(&mut decoded)
-                .map_err(|error| {
-                    UsbError::Read(format!("gzip payload could not be decoded: {error}"))
-                })?;
-            if decoded.len() > profile::MAX_INFLATED_BYTES {
-                return Err(UsbError::Read(
-                    "gzip payload exceeds the inflated-size limit".into(),
-                ));
-            }
-            payload = decoded;
-        }
+        // Preserve the wire payload exactly. Shared qc-protocol decoders own
+        // bounded gzip handling, matching Android and keeping this adapter at
+        // the HID/report boundary.
         let sequence = self.next_sequence;
         self.next_sequence = self.next_sequence.saturating_add(1);
         Ok(Some(IncomingMessage {
@@ -566,16 +635,15 @@ impl QcUsb {
 }
 
 pub fn preset_name(payload: &[u8]) -> Option<String> {
-    let message = pa::RecallPresetMessage::decode(payload).ok()?;
-    let pa::recall_preset_message::Preset::Preset(preset) = message.preset?;
-    let proto::binary_preset::Name::Name(name) = preset.name?;
-    Some(name)
+    qc_protocol::responses::decode_recalled_preset_name(payload)
+        .ok()
+        .flatten()
 }
 
 pub fn scene_value(payload: &[u8]) -> Option<u32> {
-    let message = pa::SceneMessage::decode(payload).ok()?;
-    let pa::scene_message::SelectedScene::SelectedScene(scene) = message.selected_scene?;
-    Some(scene)
+    qc_protocol::responses::decode_selected_scene(payload)
+        .ok()
+        .flatten()
 }
 
 impl Drop for QcUsb {

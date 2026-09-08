@@ -421,16 +421,17 @@ test("one shared action registry drives model tools and MCP safety classes", () 
   assert.match(pythonParityTests, /test_every_python_tool_emits_exactly_the_canonical_gateway_arguments/);
 });
 
-test("both USB readers defer ModelRepo work away from realtime I/O", () => {
+test("both native USB readers preserve wire bytes and defer ModelRepo work away from realtime I/O", () => {
   const rust = source("services/device-broker/src/usb.rs");
+  const compression = source("packages/rust/qc-protocol/src/compression.rs");
   const initializationRuntime = source("packages/rust/qc-device-runtime/src/initialization.rs");
-  const python = source("services/device-gateway/src/qc_device_gateway/native_transport.py");
   const android = source("apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java");
-  assert.match(rust, /message_type != profile::MESSAGE_TYPE_MODEL_REPO && payload\.starts_with/);
+  assert.doesNotMatch(rust, /GzDecoder|payload\.starts_with\(&\[0x1f, 0x8b\]\)/);
+  assert.match(compression, /pub\(crate\) fn maybe_gunzip/);
+  assert.match(compression, /MAX_INFLATED_BYTES/);
   assert.match(rust, /post_boot_initialization/);
   assert.match(initializationRuntime, /InitializationPhase::InitialPreset if self\.synchronized/);
   assert.doesNotMatch(rust, /parse_model_repo/);
-  assert.match(python, /payload\.startswith\(b"\\x1f\\x8b"\)[\s\S]*_gunzip_bounded/);
   assert.match(android, /type == QcUsbProfile\.MESSAGE_TYPE_MODEL_REPO[\s\S]*scheduleModelCatalogDecode/);
   assert.match(android, /metadataIo\.execute/);
   assert.match(source("services/device-broker/src/worker.rs"), /qc-native-metadata/);
@@ -654,6 +655,7 @@ test("Windows and Android request block details from the same native ModelRepo p
 
 test("one shared Rust transport runtime owns reconnect, handshake, keepalive, framing, and read-error policy", () => {
   const transport = source("packages/rust/qc-device-runtime/src/transport.rs");
+  const responses = source("packages/rust/qc-protocol/src/responses.rs");
   const brokerUsb = source("services/device-broker/src/usb.rs");
   const brokerWorker = source("services/device-broker/src/worker.rs");
   const androidJni = source("packages/rust/qc-android/src/lib.rs");
@@ -670,7 +672,11 @@ test("one shared Rust transport runtime owns reconnect, handshake, keepalive, fr
   assert.match(androidPlugin, /stateDecoder\.sessionScheduleReconnect/);
   assert.match(androidPlugin, /stateDecoder\.sessionReconnectDue/);
   assert.match(androidPlugin, /stateDecoder\.sessionReconnectAttempted/);
+  assert.match(transport, /SessionPhase::Syncing/);
+  assert.match(responses, /pub fn decode_recalled_preset_name/);
+  assert.match(responses, /pub fn decode_selected_scene/);
   assert.doesNotMatch(`${brokerUsb}\n${brokerWorker}\n${androidJni}`, /qc_protocol::session::SessionMachine/);
+  assert.doesNotMatch(brokerUsb, /GzDecoder|prost::Message|proto::/);
   assert.doesNotMatch(androidPlugin, /lastUsbWriteAt|consecutiveReadErrors/);
 });
 

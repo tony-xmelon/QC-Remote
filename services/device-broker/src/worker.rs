@@ -1208,6 +1208,17 @@ fn run(
             {
                 Ok(Some(message)) => {
                     session.read_succeeded();
+                    let was_synchronized = connected.synchronized;
+                    if let Err(error) = connected.observe_lifecycle(&message, now_ms) {
+                        let detail = format!("QC session lifecycle failed: {error}");
+                        set_phase(&state, "searching", &detail, false, false);
+                        fail_pending(&mut pending_requests, &detail);
+                        fail_backup(&mut backup, &detail);
+                        session.disconnect(now_ms, true);
+                        connection = None;
+                        continue;
+                    }
+                    update_lifecycle_status(&state, connected, was_synchronized);
                     session.state_observed(
                         session_clock.elapsed().as_millis() as u64,
                         connected.synchronized,
@@ -1278,6 +1289,17 @@ fn run(
                 Some(BackupAction::Wait) | None => {}
             }
             let now_ms = session_clock.elapsed().as_millis() as u64;
+            let was_synchronized = connected.synchronized;
+            if let Err(error) = connected.advance_lifecycle(now_ms) {
+                let detail = format!("QC session lifecycle failed: {error}");
+                set_phase(&state, "searching", &detail, false, false);
+                fail_pending(&mut pending_requests, &detail);
+                fail_backup(&mut backup, &detail);
+                session.disconnect(now_ms, true);
+                connection = None;
+                continue;
+            }
+            update_lifecycle_status(&state, connected, was_synchronized);
             // Device loss is detected by read errors, as in the reference
             // client: a write carries no information because every QC write
             // stalls its status stage. The old Version-probe teardown is gone
@@ -1304,6 +1326,31 @@ fn run(
             session_clock.elapsed().as_millis() as u64,
         );
     }
+}
+
+fn update_lifecycle_status(
+    state: &Arc<Mutex<BrokerStatus>>,
+    connected: &ConnectedQc,
+    was_synchronized: bool,
+) {
+    if connected.synchronized == was_synchronized {
+        return;
+    }
+    set_phase(
+        state,
+        if connected.synchronized {
+            "ready"
+        } else {
+            "syncing"
+        },
+        if connected.synchronized {
+            "Active preset synchronized"
+        } else {
+            "QC requested an in-session state rebuild"
+        },
+        true,
+        connected.synchronized,
+    );
 }
 
 /// Deliver a backup's terminal outcome and restore the session phase.

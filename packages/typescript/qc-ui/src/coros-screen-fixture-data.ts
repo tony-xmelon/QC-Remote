@@ -1,7 +1,7 @@
 import { QC_SCENE_COLORS, type GridBlock, type PresetSnapshot } from "@qc-remote/client";
 import { QC_COLORS } from "@qc-remote/theme";
 
-export type CorOsScreenView = "grid" | "grid-official-brit" | "corpus-device-browser-root" | "corpus-device-browser-models" | "corpus-device-browser-models-clean" | "gig" | "gig-live-tuner" | "gig-official-preset" | "gig-official-scene" | "gig-official-stomp" | "gig-official-hybrid" | "tuner" | "tuner-live-enabled" | "tempo" | "midi-out" | "cpu-monitor" | "io-overview" | "io-input" | "io-output" | "io-send-return" | "io-usb" | "io-headphones" | "global-eq" | "power-overlay" | "splitter-placement" | "splitter-editor" | "mixer-editor" | "empty-slot" | "device-search" | "device-search-entry" | "device-search-suggestions" | "device-search-results" | "device-favorites" | "device-recents" | "device-browser-amp-official" | "plugin-devices-official" | "plugin-folders" | "plugin-list" | "plugin-models" | "plugin-locked" | "plugin-refresh" | "looper-editor" | "device-presets" | "device-presets-user" | "device-presets-official" | "device-preset-actions" | "device-preset-actions-official" | "device-preset-save" | "stomp-assignment" | "scene-assignment" | "expression-parameter" | "expression-bypass" | "block-context" | "directory-presets" | "directory-categories" | "directory-captures" | "directory-irs" | "directory-plugins" | "directory-favorites" | "directory-search" | "directory-search-results" | "directory-sort" | "directory-filter" | "directory-arrange" | "directory-copy" | "directory-nested" | "directory-new-folder" | "directory-item-context" | "directory-cloud-upload" | "capture-intro" | "capture-type" | "capture-routing" | "capture-calibration" | "capture-progress" | "capture-result" | "capture-save" | "settings-account" | "settings-system" | "settings-device" | "settings-support" | "settings-wifi" | "settings-update" | "settings-storage" | "settings-midi" | "settings-info" | "settings-diagnostics" | "recovery-entry" | "recovery-options" | "overlay-keyboard" | "overlay-confirmation" | "overlay-error" | "overlay-busy" | "fixture-boot" | "fixture-shutdown" | "fixture-copy-scene" | "fixture-swap-scene" | "fixture-delete" | "fixture-input-gate" | "fixture-editor-pages" | "fixture-editor-cab" | "fixture-editor-eq" | "fixture-editor-capture" | "fixture-warning-clip" | "fixture-warning-dsp" | "modes" | "modes-official" | "save-as" | "edit-details";
+export type CorOsScreenView = "grid" | "grid-official-brit" | "corpus-device-browser-root" | "corpus-device-browser-models" | "corpus-device-browser-models-clean" | "gig" | "gig-live-tuner" | "gig-official-preset" | "gig-official-scene" | "gig-official-stomp" | "gig-official-hybrid" | "tuner" | "tuner-live-enabled" | "tempo" | "midi-out" | "cpu-monitor" | "io-overview" | "io-input" | "io-output" | "io-send-return" | "io-usb" | "io-headphones" | "global-eq" | "power-overlay" | "splitter-placement" | "splitter-editor" | "mixer-editor" | "empty-slot" | "device-search" | "device-search-entry" | "device-search-suggestions" | "device-search-results" | "device-favorites" | "device-recents" | "device-browser-neural-capture" | "device-browser-amp-official" | "plugin-devices-official" | "plugin-folders" | "plugin-list" | "plugin-list-reference" | "plugin-models" | "plugin-locked" | "plugin-refresh" | "looper-editor" | "device-presets" | "device-presets-user" | "device-presets-official" | "device-preset-actions" | "device-preset-actions-official" | "device-preset-save" | "stomp-assignment" | "scene-assignment" | "expression-parameter" | "expression-bypass" | "block-context" | "directory-presets" | "directory-categories" | "directory-captures" | "directory-irs" | "directory-plugins" | "directory-favorites" | "directory-search" | "directory-search-results" | "directory-sort" | "directory-filter" | "directory-arrange" | "directory-copy" | "directory-nested" | "directory-new-folder" | "directory-item-context" | "directory-cloud-upload" | "capture-intro" | "capture-monitoring" | "capture-connect-out" | "capture-connect-input-2" | "capture-routing" | "capture-calibration" | "capture-progress" | "capture-sanity-error" | "capture-result" | "capture-save" | "settings-account" | "settings-system" | "settings-device" | "settings-support" | "settings-wifi" | "settings-update" | "settings-storage" | "settings-midi" | "settings-info" | "settings-diagnostics" | "recovery-entry" | "recovery-options" | "overlay-keyboard" | "overlay-confirmation" | "overlay-overwrite" | "overlay-error" | "overlay-busy" | "fixture-boot" | "fixture-shutdown" | "fixture-copy-scene" | "fixture-swap-scene" | "fixture-delete" | "fixture-input-gate" | "fixture-editor-pages" | "fixture-editor-cab" | "fixture-editor-eq" | "fixture-editor-capture" | "fixture-warning-clip" | "fixture-warning-dsp" | "modes" | "modes-official" | "save-as" | "edit-details";
 
 function officialBrit2203Snapshot(base: PresetSnapshot): PresetSnapshot {
   const blocks: GridBlock[] = [
@@ -26,15 +26,15 @@ function officialBrit2203Snapshot(base: PresetSnapshot): PresetSnapshot {
 function captureTypeSnapshot(base: PresetSnapshot): PresetSnapshot {
   return {
     ...base,
-    presetLocation: "2E",
-    presetPosition: 12,
+    presetLocation: "2F",
+    presetPosition: 13,
     presetName: "QC MCP TEST",
     mode: "PRESET",
     footswitchModes: ["PRESET", "PRESET"],
     activeScene: 0,
     sceneColors: [QC_SCENE_COLORS[6], ...QC_SCENE_COLORS.slice(1)],
     dirty: false,
-    blocks: [{ id: "capture-type", name: "Neural Capture", kind: "capture", category: "Neural Capture", row: 0, column: 0 }],
+    blocks: [{ id: "capture-type", name: "Neural Capture", kind: "capture", category: "Neural Capture", glyph: "capture-wave", row: 0, column: 0 }],
     routes: [
       { row: 0, inputId: 1, outputId: 19, input: "In 1", output: "Multi Out", splitMuted: false },
       { row: 1, inputId: 0, outputId: 0, input: "", output: "", splitMuted: false },
@@ -57,8 +57,8 @@ function referenceModalSnapshot(base: PresetSnapshot): PresetSnapshot {
     dirty: false,
     footswitchStates: [{ index: 2, active: true, assigned: true, color: QC_COLORS.captured.presetBrown }],
     blocks: [
-      { id: "ilia-cab", name: "Cab", kind: "cab", category: "Cab", row: 0, column: 1 },
-      { id: "ilia-looper", name: "Looper", kind: "utility", category: "Looper", row: 0, column: 2 }
+      { id: "ilia-reverb", name: "Reverb", kind: "reverb", category: "Reverb", row: 0, column: 1, bypassed: true },
+      { id: "ilia-looper", name: "Looper", kind: "utility", category: "Looper", row: 0, column: 2, bypassed: true }
     ],
     routes: [
       { row: 0, inputId: 1, outputId: 19, input: "In 1", output: "Multi Out", splitMuted: false },
@@ -74,6 +74,34 @@ function referenceBrowserSnapshot(base: PresetSnapshot): PresetSnapshot {
     ...captureTypeSnapshot(base),
     presetLocation: "2F",
     presetPosition: 13
+  };
+}
+
+function deepBrowserSnapshot(base: PresetSnapshot): PresetSnapshot {
+  const block = (id: string, category: string, row: number, column: number): GridBlock => ({
+    id, name: id, kind: category === "Amp" ? "amp" : category === "Delay" ? "delay" : category === "Reverb" ? "reverb" : "utility", category, row, column
+  });
+  return {
+    ...base,
+    presetLocation: "3C",
+    presetPosition: 18,
+    presetName: "12 String B",
+    mode: "PRESET",
+    activeScene: 0,
+    sceneColors: [QC_COLORS.captured.presetBrown, ...QC_SCENE_COLORS.slice(1)],
+    dirty: false,
+    blocks: [
+      block("r1-gate", "Utility", 0, 0), block("r1-mod", "Modulation", 0, 1), block("r1-morph", "Morph", 0, 2), block("r1-filter", "Filter", 0, 3),
+      block("r2-gate", "Utility", 1, 0), block("r2-mod", "Modulation", 1, 1), block("r2-morph", "Morph", 1, 2), block("r2-filter", "Filter", 1, 3),
+      block("r3-morph", "Morph", 2, 2), block("r3-amp", "Amp", 2, 3),
+      block("r4-gate", "Utility", 3, 0), block("r4-morph", "Morph", 3, 2)
+    ],
+    routes: [
+      { row: 0, input: "In 1", output: "Multi Out", splitMuted: false },
+      { row: 1, input: "In 1", output: "Multi Out", splitMuted: false },
+      { row: 2, input: "Prev. Row", output: "Multi Out", splitMuted: false },
+      { row: 3, input: "In 1", output: "Multi Out", splitMuted: false }
+    ]
   };
 }
 
@@ -94,7 +122,7 @@ export function coros410FixtureSnapshot(base: PresetSnapshot, overrides: Partial
     masterVolume: 40,
     dirty: false,
     routes: [
-      { row: 0, inputId: 1, outputId: 0, input: "In 1", output: "Multi Out", splitMuted: false },
+      { row: 0, inputId: 1, outputId: 19, input: "In 1", output: "Multi Out", splitMuted: false },
       { row: 1, inputId: 0, outputId: 0, input: "", output: "", splitMuted: false },
       { row: 2, inputId: 0, outputId: 0, input: "", output: "", splitMuted: false },
       { row: 3, inputId: 0, outputId: 0, input: "", output: "", splitMuted: false }
@@ -141,6 +169,8 @@ export function corosFixtureConfiguration(search: string, base: PresetSnapshot):
         ? referenceModalSnapshot(initialSnapshot)
         : enabled && params.get("variant") === "reference-browser"
           ? referenceBrowserSnapshot(initialSnapshot)
+          : enabled && params.get("variant") === "deep-browser"
+            ? deepBrowserSnapshot(initialSnapshot)
           : initialSnapshot,
     screenView: params.get("screen") as CorOsScreenView | null
   };

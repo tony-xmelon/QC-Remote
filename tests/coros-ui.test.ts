@@ -90,7 +90,7 @@ test("neutral Grid colors match the native QC capture", () => {
   assert.match(surfaceSource, /QC_COLORS/);
   assert.match(themeSource, /"unsaved": "#313031"/);
   assert.match(themeSource, /"routePill": "#101010"/);
-  assert.match(themeSource, /"routeText": "#dedfde"/);
+  assert.match(themeSource, /"routeText": "#ffffff"/);
   assert.match(themeSource, /"routeRail": "#c6c3c6"/);
   assert.match(themeSource, /"utilityMark": "#949694"/);
   assert.match(surfaceSource, /fill=\{QC_COLORS\.captured\.routePill\}/);
@@ -101,7 +101,7 @@ test("neutral Grid colors match the native QC capture", () => {
 test("Grid contextual menu starts with the device Create New command", () => {
   assert.equal(GRID_CONTEXT_MENU[0].label, "Create New");
   assert.deepEqual(GRID_CONTEXT_MENU.map((item) => item.label), [
-    "Create New", "Save as…", "Edit Details", "Copy Scene A", "Swap Scene A",
+    "Create New", "Save as...", "Edit Details", "Copy Scene A", "Swap Scene A",
     "Preset MIDI Out", "Add to favorites", "Delete Preset", "New Neural Capture",
     "Modes Configuration", "Tempo", "CPU Monitor", "Settings"
   ]);
@@ -749,7 +749,7 @@ test("preset navigation waits on QC state events and reads only as recovery", ()
   assert.match(brokerSource, /verify_gateway_write_on_schedule[\s\S]*GatewayVerificationAction::Refresh \{ method \}[\s\S]*dispatch_gateway_refresh\(controller, method\)/);
   assert.doesNotMatch(recallFlow, /controller\.send_command\(recall_message[\s\S]*controller\.send_command\(recall_message/,
     "recovery must inspect synchronized state instead of replaying the recall");
-  assert.doesNotMatch(recallFlow, /wait_for_gateway_snapshot/);
+  assert.match(recallFlow, /reset_session\(\)[\s\S]*wait_for_gateway_snapshot/, "a full snapshot read is reserved for transport recovery");
   assert.doesNotMatch(recallFlow, /thread::sleep/);
 });
 

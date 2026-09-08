@@ -73,7 +73,7 @@ function FavoriteIcon({ kind }: { kind: "heart" | "clock" | "binoculars" | "brok
 function DirectoryCategoryGlyph({ label }: { label: string }) {
   if (label === "Presets") return <QcDirectoryIcon kind="grid" />;
   if (label === "Neural Captures") return <QcLibraryIcon kind="capture-header" />;
-  if (label === "Impulse Responses") return <DeviceCategoryGlyph label="IR Loader" />;
+  if (label === "Impulse Responses") return <QcLibraryIcon kind="impulse-response" />;
   return <DeviceCategoryGlyph label="Plugins" />;
 }
 

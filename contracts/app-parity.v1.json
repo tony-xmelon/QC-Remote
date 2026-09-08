@@ -153,8 +153,8 @@
       "parity": "required",
       "owner": "shared",
       "sharedEvidence": [{ "path": "packages/rust/qc-device-runtime/src/state_runtime.rs", "contains": "pub struct DeviceStateRuntime" }, { "path": "packages/rust/qc-device-runtime/src/initialization.rs", "contains": "pub struct DeviceStartupRuntime" }, { "path": "packages/rust/qc-device-runtime/src/initialization.rs", "contains": "self.synchronized && self.seed_complete()" }],
-      "windows": { "status": "implemented", "evidence": [{ "path": "services/device-broker/src/worker.rs", "contains": "DeviceStateRuntime::new()" }, { "path": "services/device-broker/src/usb.rs", "contains": "DeviceStartupRuntime::start" }, { "path": "services/device-broker/src/usb.rs", "contains": "post_boot_initialization" }] },
-      "android": { "status": "implemented", "evidence": [{ "path": "packages/rust/qc-android/src/lib.rs", "contains": "DeviceStateRuntime" }, { "path": "packages/rust/qc-android/src/lib.rs", "contains": "DeviceStartupRuntime::start" }, { "path": "apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java", "contains": "stateDecoder.handshakeAttempt" }] }
+      "windows": { "status": "implemented", "evidence": [{ "path": "services/device-broker/src/worker.rs", "contains": "DeviceStateRuntime::new()" }, { "path": "services/device-broker/src/usb.rs", "contains": "DeviceStartupRuntime::start" }, { "path": "services/device-broker/src/usb.rs", "contains": "post_boot_initialization" }, { "path": "services/device-broker/src/usb.rs", "contains": "observe_lifecycle" }] },
+      "android": { "status": "implemented", "evidence": [{ "path": "packages/rust/qc-android/src/lib.rs", "contains": "DeviceStateRuntime" }, { "path": "packages/rust/qc-android/src/lib.rs", "contains": "DeviceStartupRuntime::start" }, { "path": "apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java", "contains": "stateDecoder.handshakeAttempt" }, { "path": "apps/android/android/app/src/main/java/com/qccontrol/mobile/QcUsbPlugin.java", "contains": "sessionStateObserved(monotonicMillis(), false)" }] }
     },
     {
       "id": "verified-device-operations",

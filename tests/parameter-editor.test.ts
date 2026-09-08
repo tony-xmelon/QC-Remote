@@ -212,13 +212,15 @@ test("editor-only styling and assignments follow the hardware rules", () => {
 test("parameter scene navigation uses the QC reference double chevrons", () => {
   const editorSource = readFileSync(new URL("../packages/typescript/qc-ui/src/parameter-editor.tsx", import.meta.url), "utf8");
   const iconSource = readFileSync(new URL("../packages/typescript/qc-ui/src/theme-icons.tsx", import.meta.url), "utf8");
+  const vectorSource = readFileSync(new URL("../packages/typescript/qc-theme/src/screen-icon-vectors.ts", import.meta.url), "utf8");
   assert.match(editorSource, /QcEditorIcon kind="scene-previous"/);
   assert.match(editorSource, /QcEditorIcon kind="scene-next"/);
-  assert.match(iconSource, /M11 4 3 12l8 8Z/);
-  assert.match(iconSource, /M21 4l-8 8 8 8Z/);
-  assert.match(iconSource, /QC_COLORS\.captured\.sceneControlMuted/);
-  assert.match(iconSource, /m13 4 8 8-8 8Z/);
-  assert.match(iconSource, /M3 4l8 8-8 8Z/);
+  assert.match(iconSource, /"scene-previous": "editor\.scene-previous"/);
+  assert.match(iconSource, /"scene-next": "editor\.scene-next"/);
+  assert.match(vectorSource, /"editor\.scene-previous"/);
+  assert.match(vectorSource, /"editor\.scene-next"/);
+  assert.doesNotMatch(iconSource, /M11 4 3 12l8 8Z/);
+  assert.doesNotMatch(iconSource, /M21 4l-8 8 8 8Z/);
   assert.doesNotMatch(iconSource, /M15\.8 3\.8 7\.6 12/);
   assert.doesNotMatch(iconSource, /m8\.2 3\.8 8\.2 8\.2/);
 });

@@ -210,6 +210,18 @@ into a single burst. The following binary-evidenced corrections are implemented:
 - Advance `TransportRuntime` from Handshaking only after staged startup and the
   bounded authoritative seed complete, passing the same synchronized result on
   both hosts.
+- Retain `DeviceStartupRuntime` for the entire open USB session on both hosts.
+  A later Version `READ` and an in-session `Connection(false)` therefore enter
+  the same shared transitions; a rebuild clears observations from the prior
+  connected epoch and must prove a fresh preset/state seed.
+- Treat synchronization as authoritative in both directions. An in-session
+  rebuild returns transport readiness from `Ready` to `Syncing`; only its fresh
+  bounded seed may restore `Ready`.
+- Keep native HID adapters byte-transparent after report assembly. Bounded gzip
+  decoding belongs to the shared `qc-protocol` state/response decoders, so
+  Windows and Android consume identical logical payloads.
+- Allocate post-boot seed request IDs inside `DeviceStartupRuntime`; native
+  hosts no longer maintain a parallel startup request-id sequence.
 - Own automatic reconnect reservation and its 750 ms cadence in
   `TransportRuntime`. Android now repeats failed automatic attempts through the
   same due/attempted gate as Windows instead of using a one-shot local timer.

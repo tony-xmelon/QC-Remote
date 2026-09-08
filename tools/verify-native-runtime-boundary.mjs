@@ -183,6 +183,10 @@ assert(androidUsbHost.includes("handshakeAttempt(monotonicMillis(), session)"),
   "Android must drive shared handshake deadlines with its monotonic clock.");
 assert(/InitializationDecision\.COMPLETE[\s\S]{0,260}sessionHandshakeComplete\([\s\S]{0,100}decision\.synchronizedState/.test(androidUsbHost),
   "Android must advance shared transport readiness at the same post-seed boundary as Windows.");
+assert(androidUsbHost.includes("postBootInitializationStarted(monotonicMillis())"),
+  "Android must let the shared startup runtime allocate post-boot request IDs.");
+assert(/decision\.beginBuilding[\s\S]{0,500}sessionStateObserved\(monotonicMillis\(\), false\)/.test(androidUsbHost),
+  "Android must return shared transport readiness to Syncing during an in-session rebuild.");
 assert(androidUsbHost.includes("sessionScheduleReconnect(monotonicMillis())"),
   "Android must obtain automatic reconnect cadence from the shared transport runtime.");
 assert(androidUsbHost.includes("sessionReconnectDue(now)"),
@@ -235,6 +239,12 @@ assert(windowsUsb.includes("next_handshake_write"), "Windows must obtain its res
 assert(windowsUsb.includes("attempt.matches_reply"), "Windows must use shared opaque-session handshake correlation.");
 assert(windowsUsb.includes("post_boot_initialization"),
   "Windows must seed readiness from the shared staged-startup observations.");
+assert(windowsUsb.includes("pub fn observe_lifecycle"),
+  "Windows must retain the shared startup controller for connected-state protocol events.");
+assert(windowsUsb.includes("self.startup.observe(message.message_type"),
+  "Windows connected-state Version and Connection events must use the shared lifecycle runtime.");
+assert((await text("services/device-broker/src/worker.rs")).includes("connected.synchronized"),
+  "Windows must feed the shared transport runtime the authoritative lifecycle synchronization state.");
 assert(windowsUsb.includes("commands::sync_system_time(unix_time_ms())"),
   "Windows must send the same shared device-facing system-time command after staged startup.");
 await rejectPatterns(
@@ -248,6 +258,7 @@ await rejectPatterns(
     ["host-owned QC session machine", /qc_protocol::session::SessionMachine/],
     ["host-owned QC frame assembler", /FrameAssembler::new\s*\(/],
     ["host-owned QC frame encoder", /framing::encode\s*\(/],
+    ["host-owned QC payload decompressor", /(?:GzDecoder|maybe_gunzip)/],
     ["host-owned QC backup assembler", /BackupAssembler/],
     ["host-owned QC backup deadline policy", /BACKUP_(?:FIRST_CHUNK|STREAM_STALL|MAXIMUM_ATTEMPTS)/],
     ["host-owned QC request-id extraction", /qc_protocol::wire::request_id/],

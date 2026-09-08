@@ -2189,6 +2189,7 @@ mod tests {
                 row: 0,
                 column: 3,
                 stomp_index: 4,
+                ..Default::default()
             }],
             single_stomp_labels: HashMap::from([(4, "Gate".into())]),
             stomp_is_momentary: HashMap::from([(4, true)]),

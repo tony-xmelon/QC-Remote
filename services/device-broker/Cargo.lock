@@ -442,7 +442,6 @@ name = "qc-device-broker"
 version = "0.1.0"
 dependencies = [
  "base64",
- "flate2",
  "hidapi",
  "prost",
  "qc-device-runtime",

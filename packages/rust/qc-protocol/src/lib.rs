@@ -2,7 +2,7 @@
 //!
 //! The protobuf schema and framing are derived from the MIT-licensed
 //! `pyquadcortex` 0.40.0 reference implementation. See
-//! `PYQUADCORTEX-LICENSE.txt` and `SCHEMA-SOURCE.md`.
+//! `../../../legal/COMMUNITY-PROTOCOL-LICENSE.txt` and `SCHEMA-SOURCE.md`.
 
 pub mod commands;
 mod compression;
@@ -10,6 +10,7 @@ pub mod domain;
 pub mod forward;
 pub mod framing;
 pub mod generated_payloads;
+pub mod message_registry;
 pub mod profile;
 pub mod responses;
 pub mod state;

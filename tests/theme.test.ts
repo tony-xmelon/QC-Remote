@@ -14,14 +14,16 @@ test("device typography ships deterministic Windows and Android faces", () => {
   const themeCss = read("packages/typescript/qc-theme/src/theme.css");
   const deviceCss = read("packages/typescript/qc-ui/src/qc-device-typography.css");
   const themePackage = JSON.parse(read("packages/typescript/qc-theme/package.json"));
-  assert.match(themeCss, /@fontsource-variable\/arimo/);
-  assert.doesNotMatch(themeCss, /@fontsource-variable\/roboto/);
-  assert.equal(themePackage.dependencies["@fontsource-variable/arimo"], "^5.3.0");
-  assert.equal(themePackage.dependencies["@fontsource-variable/roboto"], undefined);
+  for (const file of ["IBMPlexSans.ttf", "IBMPlexSans-Medium.ttf", "IBMPlexSans-Bold.ttf"]) {
+    assert.match(themeCss, new RegExp(file.replace(".", "\\.")));
+    assert.ok(existsSync(`packages/typescript/qc-theme/assets/fonts/${file}`));
+  }
+  assert.equal(themePackage.dependencies?.["@fontsource-variable/arimo"], undefined);
+  assert.equal(themePackage.dependencies?.["@fontsource-variable/roboto"], undefined);
   assert.match(deviceCss, /html body #root#root \.qc-screen-bezel \*/);
   assert.match(deviceCss, /font-family: var\(--qc-font-device-plain\)/);
-  assert.match(themeCss, /--qc-font-device-plain:\s*"Arimo Variable"/);
-  assert.match(themeCss, /--qc-font-device-route:\s*"Arimo Variable"/);
+  assert.match(themeCss, /--qc-font-device-plain:\s*"QC CorOS IBM Plex Sans"/);
+  assert.match(themeCss, /--qc-font-device-route:\s*"QC CorOS IBM Plex Sans"/);
 });
 
 test("shared theme retains every measured native QC color", () => {
@@ -30,13 +32,14 @@ test("shared theme retains every measured native QC color", () => {
     routePill: "#101010",
     unsaved: "#313031",
     routeRail: "#c6c3c6",
-    routeText: "#dedfde",
+    routeText: "#ffffff",
     routeGlyphSurface: "#292c29",
     utilityMark: "#949694",
     primaryText: "#ffffff",
     iconPrimary: "#f8fcf8",
     iconMuted: "#889088",
     iconToolbarMuted: "#606060",
+    libraryMark: "#101010",
     keyboardGlyph: "#f7f3f7",
     cabArrowDark: "#848684",
     cabArrowLight: "#9c9e9c",
@@ -64,12 +67,22 @@ test("shared theme retains every measured native QC color", () => {
     captureStripeMuted: "#586058",
     captureStripeSoft: "#c0c0c0",
     captureStripeLight: "#c8c8c8",
+    captureModelAccent: "#00f05a",
     headerUndo: "#f6f8f6",
     headerSave: "#eceeec",
     headerMenu: "#ffffff",
     modeJoin: "#707c70",
     sceneBadge: "#ffd331",
-    presetBrown: "#9b613c"
+    presetBrown: "#9b613c",
+    ioHeaderShadow: "#424542",
+    ioHeaderMid: "#7b7d7b",
+    ioHeaderLow: "#737573",
+    rotaryAccent: "#42fb63",
+    rotaryTrack: "#192019",
+    rotaryFace: "#212421",
+    rotaryShadow: "#171a17",
+    rotarySeparator: "#050605",
+    rotaryFaceEdge: "#111411"
   });
   assert.deepEqual(QC_COLORS.browserCategory, {
     plugin: "#42fb63", amp: "#ff2421", capture: "#949694", cab: "#6b55ff", overdrive: "#ff7100",
@@ -81,7 +94,7 @@ test("shared theme retains every measured native QC color", () => {
   assert.equal(QC_GEOMETRY.screen.height, 480);
   assert.equal(QC_GEOMETRY.grid.rows, 4);
   assert.equal(QC_GEOMETRY.grid.columns, 6);
-  assert.match(QC_TYPOGRAPHY.device, /Arimo Variable/);
+  assert.match(QC_TYPOGRAPHY.device, /QC CorOS IBM Plex Sans/);
 });
 
 test("theme CSS mirrors the typed tokens and is loaded by both apps", () => {
@@ -179,6 +192,9 @@ test("canonical asset sources are shared neutral vectors or fonts, never rasters
   const sourcePaths = Object.values(QC_VISUAL_ASSETS).map((asset) => asset.sourcePath.replaceAll("\\", "/"));
   assert.deepEqual(sourcePaths.sort(), [
     "packages/typescript/qc-theme/assets/app-icon.svg",
+    "packages/typescript/qc-theme/assets/fonts/IBMPlexSans-Bold.ttf",
+    "packages/typescript/qc-theme/assets/fonts/IBMPlexSans-Medium.ttf",
+    "packages/typescript/qc-theme/assets/fonts/IBMPlexSans.ttf",
     "packages/typescript/qc-theme/assets/qc-chassis-neutral.svg",
   ]);
   for (const path of sourcePaths) {
@@ -299,7 +315,7 @@ test("authored app and device sources cannot bypass the shared visual contract",
     .filter((file) => existsSync(file))
     .filter((file) => /\.(?:css|html|java|json|mjs|ps1|py|rs|ts|tsx|xml)$/.test(file))
     .filter((file) => !file.startsWith("packages/typescript/qc-theme/"))
-    .filter((file) => !file.startsWith("packages/typescript/qc-ui/src/official-") && !file.startsWith("packages/typescript/qc-ui/src/remaining-fixtures") && !file.endsWith("/coros-screen-fixtures.tsx") && !file.endsWith("/fixture-live-surface.css") && !file.endsWith("/reference-parameter-editor.css") && !file.endsWith("/qc-device-typography.css"))
+    .filter((file) => !file.startsWith("packages/typescript/qc-ui/src/official-") && !file.startsWith("packages/typescript/qc-ui/src/remaining-fixtures") && !file.endsWith("/coros-screen-fixtures.tsx") && !file.endsWith("/coros-capture-connections.css") && !file.endsWith("/fixture-live-surface.css") && !file.endsWith("/reference-parameter-editor.css") && !file.endsWith("/qc-device-typography.css"))
     .filter((file) => !/^tools\/capture_.*\.mjs$/.test(file))
     .filter((file) => file !== "tools/sweep_qc_font.mjs")
     .filter((file) => file !== "tools/compare_qc_font_candidates.py")

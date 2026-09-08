@@ -282,8 +282,8 @@ final class QcNativeStateDecoder implements AutoCloseable {
         return nativeStartupConnected(requireHandle()) == 1;
     }
 
-    void postBootInitializationStarted(long nowMs, long requestId) {
-        nativePostBootInitializationStarted(requireHandle(), nowMs, requestId);
+    void postBootInitializationStarted(long nowMs) {
+        nativePostBootInitializationStarted(requireHandle(), nowMs);
     }
 
     void initializationObserved(int messageType) {
@@ -595,7 +595,7 @@ final class QcNativeStateDecoder implements AutoCloseable {
     private static native String nativeStartupBeginBuilding(long handle);
     private static native int nativeStartupConnected(long handle);
     private static native void nativePostBootInitializationStarted(
-        long handle, long nowMs, long requestId);
+        long handle, long nowMs);
     private static native void nativeInitializationObserved(long handle, int messageType);
     private static native String nativeInitializationAdvance(long handle, long nowMs);
     private static native void nativeCatalogVerificationStarted(

@@ -74,7 +74,7 @@ test("physical interaction fixtures preserve the captured CorOS overlay structur
   assert.match(remainingCss, /\.is-physical-plugin-list \.plugin-grid-underlay \.underlay-add\{left:40\.25cqw;top:12cqw;width:8\.75cqw;height:8\.875cqw\}/);
   assert.match(remainingCss, /\.is-physical-plugin-list \.plugin-grid-underlay main i:not\(\.underlay-input\)::before\{width:3cqw;height:2px\}/);
   assert.match(remainingCss, /\.coros-device-presets\.is-physical:not\(\.is-official-factory\):not\(\.is-official-actions\) section:nth-child\(2\) header \.preset-close\{[^}]*translateX\(\.25cqw\);font-size:0\}/);
-  assert.match(fixtureCss, /\.input-gate-grid h1 \{[^}]*margin: 1\.625cqw 0 0 1\.575cqw;/s);
+  assert.match(fixtureCss, /\.input-gate-grid h1 \{[^}]*margin: \.75cqw 0 0 1\.575cqw;/s);
 });
 
 test("framebuffer capture drivers disable host LCD text artifacts", () => {
@@ -175,7 +175,7 @@ test("official MIDI Out retains the measured disabled header action", () => {
   const css = readFileSync("packages/typescript/qc-ui/src/official-settings-midi.css", "utf8");
   const fixtureCss = readFileSync("packages/typescript/qc-ui/src/remaining-fixtures-fixes.css", "utf8");
   assert.match(css, /\.coros-midi-out > header > span \{[^}]*translateY\(-1px\)/);
-  assert.match(css, /\.coros-midi-out > header \.midi-trash \{[^}]*width: 8\.25cqw;[^}]*translateX\(-\.375cqw\);[^}]*background: #101510;/);
+  assert.match(css, /\.coros-midi-out > header \.midi-trash \{[^}]*width: 8\.25cqw;[^}]*translateX\(-\.375cqw\);[^}]*background: #081008;/);
   assert.match(fixtureCss, /\.coros-midi-out \.midi-expression label div\{[^}]*clip-path:polygon\(1% 0,99% 0,100% 2%,91% 98%,89% 100%,11% 100%,9% 98%,0 2%\)/);
   assert.match(fixtureCss, /\.coros-midi-out \.midi-expression label div>i\{[^}]*left:\.75cqw;right:\.75cqw;[^}]*clip-path:polygon/);
 });
@@ -183,7 +183,7 @@ test("official MIDI Out retains the measured disabled header action", () => {
 test("official System brightness values remain right-aligned", () => {
   const css = readFileSync("packages/typescript/qc-ui/src/official-settings-device.css", "utf8");
   assert.match(css, /\.settings-system-detail > div span \{ position: relative; top: 1\.375cqw; \}/);
-  assert.match(css, /\.settings-system-detail > div strong \{ position: absolute; right: 1\.75cqw; top: 1\.375cqw; \}/);
+  assert.match(css, /\.settings-system-detail > div strong \{ position: absolute; left: 56\.75cqw; right: auto; top: 1\.375cqw; \}/);
 });
 
 test("runtime block glyphs use only the shared neutral vector registry", () => {

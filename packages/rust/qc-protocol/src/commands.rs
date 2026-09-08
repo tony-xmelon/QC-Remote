@@ -976,6 +976,7 @@ pub fn set_favorite(
                 folder_name,
                 is_factory,
                 is_plugin: false,
+                product_key: String::new(),
             }],
             ..Default::default()
         },
@@ -1600,6 +1601,7 @@ pub fn set_footswitch(row: u32, column: u32, footswitch: Option<u32>) -> Vec<Out
         row,
         column,
         stomp_index: footswitch.unwrap_or_default(),
+        ..Default::default()
     };
     let delete = OutboundMessage::encoded(
         profile::MESSAGE_TYPE_GRID,
@@ -1620,6 +1622,7 @@ pub fn set_footswitch(row: u32, column: u32, footswitch: Option<u32>) -> Vec<Out
             row,
             column,
             stomp_index: footswitch,
+            ..Default::default()
         }],
         ..Default::default()
     });

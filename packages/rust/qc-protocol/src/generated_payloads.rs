@@ -197,8 +197,6 @@ pub struct GlobalEqSettings {
     pub parameters: Vec<GlobalEqParameter>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub bypassed: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub has_user_defaults: Option<bool>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

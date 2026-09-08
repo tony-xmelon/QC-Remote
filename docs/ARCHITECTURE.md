@@ -109,13 +109,15 @@ Each request carries a protocol version, request ID, command kind, payload, and 
 
 Realtime native adapters timestamp observations at the device boundary and
 batch all updates decoded from one device frame. `qc-protocol` owns the
-stateless HID codec, protobuf schemas, typed commands, state normalization, and
+stateless HID codec, bounded payload decompression, protobuf schemas, typed commands, state normalization, and
 complete ModelRepo parameter/display semantics. The long-lived
 `qc-device-runtime::transport::TransportRuntime` owns native report-layout
 normalization, receive-frame assembly and recovery, handshake selection,
 connection phases, keepalive reservation, reconnect cadence, read-error
 tolerance, post-handshake initialization, and preset-catalog verification
-policy. It also owns encoded-write pacing, mutation confirmation/readback
+policy. Its readiness projection is bidirectional: an authoritative rebuild
+returns a live session to `Syncing` until a fresh seed restores `Ready`. It
+also owns encoded-write pacing, mutation confirmation/readback
 cadence, the event-driven verification state machine, preflight/readback/refresh
 selection, post-write refreshes, composite read dependencies, response
 type/request-id correlation, and monotonic request deadlines. Windows links it

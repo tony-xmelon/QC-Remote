@@ -3,7 +3,7 @@
 .coros-io-settings > header .io-global-eq { background: #181c18; }
 .coros-io-settings > header { padding-left: 1.25cqw; background: #101010; font-size: 2.25cqw; }
 .coros-io-settings > header .io-heading { display: flex; align-items: center; gap: 1cqw; }
-.coros-io-settings > header .io-heading > i { width: 5.5cqw; height: 5.5cqw; display: grid; place-items: center; border-radius: 1cqw; background: #282c28; color: #9a9e9a; font-size: 1.4cqw; font-style: normal; }
+.coros-io-settings > header .io-heading > i { width: 5.5cqw; height: 5.5cqw; display: grid; place-items: center; border-radius: 1cqw; background: #292c29; color: #9a9e9a; font-size: 1.4cqw; font-style: normal; }
 .coros-io-settings > header .io-heading > span { display: grid; line-height: 1.05; }
 .coros-io-settings > header .io-heading small { color: #a8aaa8; font-size: 1.75cqw; font-weight: 400; }
 .coros-io-settings > header .io-heading strong { color: #25ef59; font-size: 2.5cqw; font-weight: 400; }
@@ -11,9 +11,10 @@
 .coros-io-settings > header .io-global-eq { font-size: 1.75cqw; }
 .coros-io-settings.is-input > header .io-global-eq { width: 13.625cqw; height: 5.5cqw; border-radius: 1cqw; }
 .coros-io-settings.is-usb > header .io-global-eq { width: 13.625cqw; height: 5.5cqw; border-radius: 1cqw; }
-.coros-io-settings > header button:last-child { background: #282c28; }
+.coros-io-settings > header button:last-child { background: #292c29; }
+.coros-io-settings > header button:last-child > svg { width: 3.75cqw; height: 3cqw; display: block; margin: auto; }
 .coros-io-settings .io-ports { background: #101010; }
-.coros-io-settings .io-editor { background: #282c28; }
+.coros-io-settings .io-editor { background: #292c29; }
 .io-ports { position: relative; grid-template-columns: repeat(12, 1fr); align-items: stretch; padding: 0 1cqw; }
 .io-ports button { position: relative; height: 100%; display: block; font-size: 1.5cqw; }
 .io-ports button > span { position: absolute; left: -1cqw; right: -1cqw; top: .25cqw; text-align: center; white-space: nowrap; }
@@ -21,6 +22,7 @@
 .io-ports button > span.io-headphone-label svg { width: 2.5cqw; height: 2.5cqw; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .io-ports button > i { position: absolute; left: 50%; top: 4.5cqw; width: 5cqw; height: 5cqw; margin-left: -2.5cqw; }
 .io-ports button.is-paired > i + i { top: 11.875cqw; }
+.io-ports button.is-paired > .io-port-linked { position: absolute; left: calc(50% - 1.125cqw); top: 10.375cqw; width: 2.25cqw; height: 1.5cqw; }
 .io-ports button > small { position: absolute; left: -1.5cqw; right: -1.5cqw; bottom: .25cqw; font-size: 1.5cqw; text-align: center; white-space: nowrap; }
 .coros-io-settings.is-usb .io-ports > button:nth-child(1)::after,
 .coros-io-settings.is-usb .io-ports > button:nth-child(3)::after,
@@ -41,7 +43,7 @@
 .io-ports button.is-input > span { top: 2.5cqw; color: #eee; font-size: 1.5cqw; }
 .io-ports button.is-combo > i:first-of-type { top: 3.25cqw; width: 7.25cqw; height: 7.25cqw; margin-left: -3.625cqw; }
 .io-ports .io-input-selectors { position: absolute; right: 1.5cqw; bottom: .5cqw; width: 17cqw; height: 6cqw; display: grid; grid-template-columns: 1fr 1fr; gap: .75cqw; }
-.io-ports .io-input-selectors button { height: 6cqw; border-radius: 1cqw; background: #282c28; color: #eee; font-size: 2cqw; text-align: center; }
+.io-ports .io-input-selectors button { height: 6cqw; border-radius: 1cqw; background: #292c29; color: #eee; font-size: 2cqw; text-align: center; }
 .io-ports .io-input-selectors button + button { background: #181c18; color: #929692; }
 .io-ports button.is-midi > i { top: 4.5cqw; }
 .io-ports button > i > svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -61,7 +63,8 @@
 .io-ports button:nth-child(10), .io-ports button:nth-child(11) { transform: translateX(-2.375cqw); }
 .io-ports button:nth-child(12) { transform: translateX(-1.875cqw); }
 .coros-io-settings .io-editor { transform: translateY(-.25cqw); }
-.io-editor.is-headphones { position: absolute; left: 1%; right: 1%; top: 28.125cqw; height: 31cqw; display: grid; grid-template-columns: 19.5cqw 19.875cqw 1fr; grid-template-rows: 17.5cqw 13.5cqw; transform: none; }
+.io-editor.is-headphones { position: absolute; left: 1%; right: 1%; top: 32.125cqw; height: 27cqw; display: grid; grid-template-columns: 19.5cqw 19.875cqw 1fr; grid-template-rows: 107px 109px; transform: none; }
+.io-editor.is-headphones::after { content: ""; position: absolute; left: 0; right: 0; top: 107px; height: 2px; background: #101010; }
 .io-editor.is-headphones > section { position: relative; border-right: 1px solid #171918; }
 .io-editor.is-headphones > section > span,.io-headphone-meter > span { position: absolute; left: 1cqw; top: 1.125cqw; color: #e9ebe9; font-size: 2cqw; }
 .io-editor.is-headphones .io-dial-wrap { inset: 4.875cqw 1cqw auto; height: 8cqw; }
@@ -79,11 +82,13 @@
 .io-editor.is-analog .io-dial { width: 8.125cqw; height: 8.125cqw; }
 .io-editor.is-analog > section:nth-child(1) .io-dial { right: .0625cqw; }
 .io-editor.is-usb .io-dial-wrap { inset: 4.75cqw 1cqw auto; }
-.io-editor.is-usb .io-dial { width: 7.5cqw; height: 7.5cqw; }
-.io-editor.is-usb > section:first-child .io-dial { background: radial-gradient(circle at center, #282c28 0 68%, transparent 70%), conic-gradient(from 220deg, #40f860 0 83%, #101010 83%); }
-.io-editor.is-usb > section:nth-child(2) .io-dial { background: #282c28; }
-.io-editor.is-usb > section:nth-child(2) .io-dial::after { content: ""; position: absolute; right: -.125cqw; bottom: .25cqw; width: .75cqw; height: .75cqw; border-radius: 50%; background: #40f860; }
-.io-editor .io-dial { background: radial-gradient(circle at center, #282c28 0 68%, transparent 70%), conic-gradient(from 220deg, #40f860 0 46%, #101010 46%); }
+.io-editor.is-usb > section:first-child .io-dial { right: -.4375cqw; width: 9.375cqw; height: 9.375cqw; transform: translateY(-.4375cqw); }
+.io-editor.is-usb > section:nth-child(2) .io-dial { width: 7.5cqw; height: 7.5cqw; transform: translateY(1.375cqw); }
+.io-editor.is-usb > section:first-child .io-dial { background: radial-gradient(circle at center, #292c29 0 68%, transparent 70%), conic-gradient(from 220deg, #40f860 0 83%, #101010 83%); }
+.io-editor.is-usb > section:nth-child(2) .io-dial { background: #292c29; }
+.io-editor.is-usb > section:nth-child(2) .io-dial-wrap::after { content: ""; position: absolute; right: 1cqw; top: 7cqw; width: .625cqw; height: .625cqw; border-radius: 50%; background: #40f860; }
+.io-editor.is-usb > section { padding-left: 1.25cqw; }
+.io-editor .io-dial { background: radial-gradient(circle at center, #292c29 0 68%, transparent 70%), conic-gradient(from 220deg, #40f860 0 46%, #101010 46%); }
 .io-editor .io-dial b { height: 3cqw; }
 .io-editor.is-analog > section:nth-child(1) .io-dial b { transform: rotate(-90deg); }
 .io-editor.is-analog > section:nth-child(2) .io-dial b { transform: rotate(105deg); }
@@ -92,7 +97,7 @@
 .io-editor .io-dial-wrap > strong { bottom: 1.4cqw; }
 .io-editor.is-analog .io-dial-wrap > strong { bottom: 1.525cqw; }
 .io-editor.is-analog > section:nth-child(2) .io-dial { right: -.625cqw; }
-.io-meter-grid > span { padding-left: 1.125cqw; }
+.io-meter-grid > span { padding-left: 1.375cqw; }
 .io-meter-grid b { position: relative; top: .375cqw; font-size: 2cqw; }
 .io-meter-grid i { position: absolute; right: 2cqw; top: 1.5cqw; width: 2.75cqw; height: 2.75cqw; display: grid; place-items: center; margin: 0; border-radius: 50%; background: #101210; color: #282d29; font-size: 1.5cqw; }
 .io-meter-grid small { position: relative; top: .25cqw; display: block; margin-top: 1cqw; font-size: 1.75cqw; white-space: nowrap; }

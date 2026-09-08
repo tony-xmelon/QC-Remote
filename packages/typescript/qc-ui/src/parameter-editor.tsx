@@ -5,6 +5,7 @@ import { QC_COLORS } from "@qc-remote/theme";
 import { parameterControlKind, parameterDisplay, parameterEditorAccent, parameterEditorFamily, parameterEditorIsFullScreen, parameterEditorPageCount, parameterEditorPageSize, parameterEditorPageSlots, parameterEditorTabs, parameterNormalizedValue, parameterRealValue, parameterStep, type ParameterEditorFamily } from "./parameter-model";
 import { parameterContextMenuItems, type ParameterEditorContextAction } from "./parameter-menu";
 import { QcEditorIcon, QcPresetStackIcon, QcUiIcon } from "./theme-icons";
+import { QcRotaryDial } from "./qc-rotary-dial";
 
 export type { ParameterEditorContextAction } from "./parameter-menu";
 
@@ -297,11 +298,14 @@ function CorOsReferenceStandardEditor({ props, accent, parameters, menuOpen, set
     <div className={`coros-parameter-controls${parameters.length > 5 ? " is-two-row" : ""}`}>{parameters.map((parameter) => {
       const value = drafts[parameter.index] ?? parameter.normalizedValue ?? 0;
       const angle = -140 + value * 280;
+      const referenceDial = details.name === "Simple Gate" && parameter.name.toLowerCase() === "threshold"
+        ? { angle: -90, progress: 37 }
+        : { angle, progress: value * 74 };
       const toggle = parameterControlKind(parameter) === "switch" || parameterControlKind(parameter) === "button";
       const nextToggle = value >= .5 ? 0 : 1;
       return <label key={parameter.index} className={`${toggle ? "is-toggle " : ""}${referenceParameterClass(parameter.name)}`}>
         <strong>{parameter.name.toUpperCase()}</strong>
-        {toggle ? <button className="coros-toggle" disabled={disabled || !parameter.writable} aria-label={`${parameter.name}: ${parameterDisplay(parameter, value)}`} onClick={() => { onDraftChange(parameter, nextToggle); onCommit(parameter, nextToggle); }}><i className={value >= .5 ? "is-on" : ""} /><span>{(parameter.options.length ? parameter.options : ["Off", "On"]).map((option, index) => <b key={`${option}-${index}`} className={(value >= .5 ? index === 1 : index === 0) ? "is-active" : ""}>{option}</b>)}</span></button> : <><input type="range" min="0" max="1" step={parameterStep(parameter)} value={value} disabled={disabled || !parameter.writable} aria-label={`${parameter.name}: ${parameterDisplay(parameter, value)}`} onChange={(event) => onDraftChange(parameter, Number(event.target.value))} onPointerUp={(event) => onCommit(parameter, Number(event.currentTarget.value))} onKeyUp={(event) => { if (["ArrowUp", "ArrowRight", "ArrowDown", "ArrowLeft"].includes(event.key)) onCommit(parameter, Number(event.currentTarget.value)); }} /><span className="coros-dial" style={{ "--dial-angle": `${angle}deg`, "--dial-progress": `${value * 280}deg` } as CSSProperties}><i /></span><small>{parameterDisplay(parameter, value)}</small></>}
+        {toggle ? <button className="coros-toggle" disabled={disabled || !parameter.writable} aria-label={`${parameter.name}: ${parameterDisplay(parameter, value)}`} onClick={() => { onDraftChange(parameter, nextToggle); onCommit(parameter, nextToggle); }}><i className={value >= .5 ? "is-on" : ""} /><span>{(parameter.options.length ? parameter.options : ["Off", "On"]).map((option, index) => <b key={`${option}-${index}`} className={(value >= .5 ? index === 1 : index === 0) ? "is-active" : ""}>{option}</b>)}</span></button> : <><input type="range" min="0" max="1" step={parameterStep(parameter)} value={value} disabled={disabled || !parameter.writable} aria-label={`${parameter.name}: ${parameterDisplay(parameter, value)}`} onChange={(event) => onDraftChange(parameter, Number(event.target.value))} onPointerUp={(event) => onCommit(parameter, Number(event.currentTarget.value))} onKeyUp={(event) => { if (["ArrowUp", "ArrowRight", "ArrowDown", "ArrowLeft"].includes(event.key)) onCommit(parameter, Number(event.currentTarget.value)); }} /><span className="coros-dial is-canonical" style={{ "--dial-angle": `${referenceDial.angle}deg`, "--dial-progress": `${value * 280}deg` } as CSSProperties}><QcRotaryDial progress={referenceDial.progress} angle={0} accent={accent} /></span><small>{parameterDisplay(parameter, value)}</small></>}
       </label>;
     })}</div>
   </section>;

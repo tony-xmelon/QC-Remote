@@ -3,7 +3,7 @@
 .qc-screen.plugin-folders-official { position: absolute; inset: 0; display: block; overflow: hidden; background: #101010; color: #eee; container-type: inline-size; }
 .plugin-folders-official button { border: 0; color: inherit; font: inherit; }
 .plugin-folders-official > header { height: 7.5cqw; display: flex; align-items: center; gap: 1cqw; padding: 0 1cqw; }
-.plugin-folders-official > header button { height: 5.5cqw; border-radius: 1cqw; background: #282c28; font-size: 2.25cqw; }
+.plugin-folders-official > header button { height: 5.5cqw; border-radius: 1cqw; background: #292c29; font-size: 2.25cqw; }
 .plugin-folders-official > header button:first-child { width: 12.25cqw; font-size: 3cqw; }
 .plugin-folders-official > header button:nth-child(2) { width: 18.75cqw; }
 .plugin-folders-official > header span { flex: 1; }
@@ -16,7 +16,7 @@
 .plugin-folders-official > header .plugin-folder-category small { font-size: 1.75cqw; }
 .plugin-folders-official > header button:nth-last-child(3), .plugin-folders-official > header button:nth-last-child(2) { transform: translateX(-1.25cqw); }
 .plugin-folders-official > main { position: absolute; inset: 7.5cqw 0 0; display: grid; grid-template-columns: 32cqw 65cqw; gap: 1cqw; padding: 0 1cqw 1cqw; }
-.plugin-folders-official nav, .plugin-folders-official main > section { overflow: hidden; border-radius: 1cqw; background: #282c28; }
+.plugin-folders-official nav, .plugin-folders-official main > section { overflow: hidden; border-radius: 1cqw; background: #292c29; }
 .plugin-folders-official nav { position: relative; }
 .plugin-folders-official nav::before { content: ""; position: absolute; left: 2cqw; top: 7.5cqw; width: 2cqw; height: 19cqw; border-left: 1px solid #4a504b; border-bottom: 1px solid #4a504b; border-radius: 0 0 0 1cqw; pointer-events: none; }
 .plugin-folders-official nav button { width: 100%; height: 7.5cqw; display: grid; grid-template-columns: 4.75cqw 1fr 3cqw; align-items: center; padding: 0 2cqw; background: transparent; text-align: left; font-size: 2cqw; }

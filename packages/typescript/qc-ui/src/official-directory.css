@@ -19,16 +19,18 @@
 .directory-official nav .qc-directory-icon-new-folder { translate: 1px 2px; }
 .directory-official .qc-directory-icon-trash { translate: 1px -1px; }
 .directory-official > header { height: 7.5cqw; display: flex; align-items: center; gap: 1cqw; padding: 0 1cqw; }
-.directory-official > header button { width: 8.25cqw; height: 5.5cqw; border-radius: 1cqw; background: #282c28; font-size: 3cqw; }
+.directory-official > header button { width: 8.25cqw; height: 5.5cqw; border-radius: 1cqw; background: #292c29; font-size: 3cqw; }
 .directory-official > header .directory-official-category { width: 32cqw; display: flex; align-items: center; gap: 1.5cqw; padding: 0 2cqw; text-align: left; font-size: 2cqw; }
 .directory-official > header .directory-official-category b { margin-left: auto; font-size: 1.75cqw; }
 .directory-official > header span { flex: 1; }
 .directory-official > header button:last-child { width: 12.25cqw; }
 .directory-official > main { position: absolute; inset: 7.5cqw 0 0; display: grid; grid-template-columns: 32cqw 65cqw; gap: 1cqw; padding: 0 1cqw 1cqw; }
-.directory-official nav, .directory-official-list { overflow: hidden; border-radius: 1cqw; background: #282c28; }
+.directory-official nav, .directory-official-list { overflow: hidden; border-radius: 1cqw; background: #292c29; }
 .directory-official nav button { width: 100%; height: 7.5cqw; display: grid; grid-template-columns: 5cqw 1fr 4cqw; align-items: center; padding: 0 2cqw; background: transparent; text-align: left; font-size: 2cqw; }
 .directory-official nav button.is-active { background: #181c18; color: #2df36a; }
 .directory-captures-official nav button.is-active .qc-library-icon-capture-library { color: var(--qc-icon-primary); }
+.directory-captures-official nav button { grid-template-columns: 4.625cqw 1fr 4cqw; }
+.directory-captures-official nav button:nth-child(2) { height: 6.5cqw; }
 .directory-official nav button.is-child { width: calc(100% - 2cqw); margin-left: 2cqw; }
 .directory-official nav button.is-muted { color: var(--qc-icon-muted); }
 .directory-official nav button b { font-size: 3cqw; font-weight: 400; }
@@ -51,8 +53,11 @@
 .directory-favorites-official .directory-official-list > button { grid-template-columns: 1fr 17.25cqw 3.75cqw; }
 .directory-favorites-official .directory-official-list > button > i b svg { width: 3.5cqw; height: 3.5cqw; fill: none; }
 .directory-favorites-official .directory-official-list > button > i b:last-child svg { fill: var(--qc-icon-primary); }
-.directory-favorites-official .directory-official-list .qc-library-icon-binoculars { translate: 0 -3px; }
+.directory-favorites-official .directory-official-list .qc-library-icon-binoculars { translate: 1px -1px; }
 .directory-irs-official .directory-official-list > button { grid-template-columns: 1fr 17.25cqw; padding-right: 1cqw; }
+.directory-irs-official > header .directory-official-category > .qc-library-icon { flex: 0 0 3cqw; }
+.directory-irs-official nav button.is-child { width: 100%; margin-left: 0; }
+.directory-irs-official nav .qc-library-icon-impulse-response { width: 3cqw; height: 3cqw; }
 .directory-irs-official .directory-official-list > button > i > b:first-child > span { width: 3cqw; height: 3cqw; display: grid; place-items: center; border-radius: 50%; background: #2df36a; color: #071008; font-size: 2cqw; }
 .directory-irs-official .directory-official-list > button > i > b svg { width: 3cqw; height: 3cqw; fill: none; color: var(--qc-icon-primary); }
 .directory-irs-official .directory-official-list .qc-directory-icon-trash { translate: 1px -2px; }
@@ -63,7 +68,22 @@
 .directory-captures-official > header > span { flex: 0 0 0; }
 .directory-captures-official .directory-official-list > button { padding-right: 6.625cqw; }
 .directory-captures-official nav button.is-child { grid-template-columns: 4.75cqw 1fr 0; }
-.directory-captures-official .directory-capture-index { position: absolute; right: 0; top: 0; bottom: 0; width: 4.625cqw; display: flex; flex-direction: column; align-items: center; justify-content: space-around; border-left: 1px solid #171918; background: #282c28; color: #929692; font-size: 1cqw; }
+.directory-captures-official .directory-capture-index { position: absolute; right: 0; top: 0; bottom: 0; width: 4.625cqw; display: flex; flex-direction: column; align-items: center; justify-content: space-around; border-left: 1px solid #171918; background: #292c29; color: #929692; font-size: 1cqw; }
+.directory-filter-official > header .directory-filter-back { width: 12.25cqw; }
+.directory-filter-official > header .directory-filter-back svg { width: 3cqw; height: 3cqw; fill: none; }
+.directory-filter-official > header .directory-official-category { width: 18.75cqw; }
+.directory-filter-official > header > span { flex: 1; }
+.directory-filter-official > header .is-filter-active { position: relative; z-index: 5; background: #000; }
+.directory-filter-official > header button:nth-last-child(2) { margin-right: 1.25cqw; }
+.directory-filter-official nav button.is-filter-root { height: 7.5cqw; grid-template-columns: 4.75cqw 1fr; color: var(--qc-icon-primary); }
+.directory-filter-official nav button.is-filter-root span { line-height: 1.25; }
+.directory-filter-official nav button.is-filter-root span small { display: block; color: #2df36a; }
+.directory-filter-official nav button.is-filter-child { position: relative; width: calc(100% - 2cqw); margin-left: 2cqw; grid-template-columns: 4.75cqw 1fr; }
+.directory-filter-official nav button.is-filter-child::before { content: ""; position: absolute; left: 0; top: 0; width: 1.75cqw; height: 3.75cqw; border-left: 2px solid #59605a; border-bottom: 2px solid #59605a; border-radius: 0 0 0 1cqw; }
+.directory-filter-official nav button.is-filter-child:not(:last-child)::after { content: ""; position: absolute; left: 0; top: 3.75cqw; bottom: -3.75cqw; border-left: 2px solid #59605a; }
+.directory-filter-official nav button.is-filter-root b svg,
+.directory-filter-official nav button.is-filter-child b svg { fill: none; }
+.directory-filter-official .directory-official-list > button { height: 7.5cqw; }
 .directory-nested-official > header .directory-nested-back { width: 12.25cqw; }
 .directory-nested-official > header .directory-official-category { width: 18.75cqw; }
 .directory-nested-official > header button:last-child { margin-left: 1.25cqw; }
@@ -113,8 +133,8 @@
 .directory-upload-official > header .is-cloud svg { color: var(--qc-icon-primary); }
 .directory-upload-official > main { grid-template-columns: 32cqw 14.125cqw 49.875cqw; }
 .directory-upload-official .directory-upload-banks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 6.625cqw; gap: .875cqw; background: transparent; }
-.directory-upload-official .directory-upload-banks button { border-radius: 1cqw; background: #282c28; font-size: 2cqw; }
-.directory-upload-official .directory-upload-banks button:first-child { color: #2df36a; }
+.directory-upload-official .directory-upload-banks button { border-radius: 1cqw; background: #292c29; font-size: 2cqw; }
+.directory-upload-official .directory-upload-banks button:nth-child(4) { color: #2df36a; }
 .directory-upload-official .directory-official-list > button { grid-template-columns: 1fr 8.25cqw; }
 .directory-upload-official .directory-official-list > button b { width: 8.25cqw; height: 4.75cqw; display: grid; place-items: center; border-radius: 1cqw; background: #181c18; color: var(--qc-icon-primary); font-size: 3cqw; }
 .directory-upload-official .directory-official-list > button b svg { width: 3.25cqw; height: 3.25cqw; }
@@ -124,7 +144,7 @@
 .directory-upload-official .directory-official-list .qc-directory-icon-cloud-upload { translate: 1px -2px; }
 .directory-presets-official > main { grid-template-columns: 32cqw 14cqw 50cqw; }
 .directory-presets-official .directory-preset-banks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 6.625cqw; gap: .875cqw; background: transparent; }
-.directory-presets-official .directory-preset-banks button { border-radius: 1cqw; background: #282c28; font-size: 2cqw; }
+.directory-presets-official .directory-preset-banks button { border-radius: 1cqw; background: #292c29; font-size: 2cqw; }
 .directory-presets-official .directory-preset-banks button:first-child { color: #2df36a; }
 .directory-presets-official > header > button:not(.directory-official-category):not(:last-child) { transform: translateX(-1.25cqw); }
 .directory-presets-official nav button.is-active b { color: var(--qc-icon-primary); }
@@ -144,5 +164,13 @@
 .directory-upload-official .directory-official-list > button, .directory-presets-official .directory-official-list > button { height: 6.375cqw; }
 .directory-upload-official .directory-official-list > button { height: 6.375cqw; padding-right: 1cqw; }
 .directory-upload-official .directory-official-list > button { border-bottom: 0; }
+.directory-upload-official .directory-official-list > button.is-selected { color: #2df36a; }
+.directory-upload-official .directory-official-list > button.is-muted { color: #8b8f8b; }
 
 }
+
+/* directory-irs.png: My IRs is open and empty, so the pane holds only the
+   placeholder waveform on #181c18, and the library row carries its count. */
+.directory-irs-official .directory-official-list { display: grid; place-items: center; background: #181c18; }
+.directory-irs-official .ir-directory-logo { width: 13.125cqw; height: 15.625cqw; fill: none; stroke: #101010; stroke-width: 12; stroke-linecap: butt; stroke-linejoin: miter; }
+.directory-official nav button > em { color: #c8ccc8; font-size: 2cqw; font-style: normal; text-align: right; }

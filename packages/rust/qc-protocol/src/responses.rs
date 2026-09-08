@@ -11,7 +11,7 @@ use crate::{
     },
     profile,
     proto::cortex_protobuf_v2 as pa,
-    proto::{param, param_value, Param},
+    proto::{binary_preset, param, param_value, Param},
 };
 use prost::Message;
 use serde::Serialize;
@@ -303,6 +303,25 @@ pub fn decode_tempo_clock(payload: &[u8]) -> Result<Option<TempoClock>, Response
         current_bar: status.current_bar,
         current_tick: status.current_tick,
     }))
+}
+
+/// Decode the active preset name without exposing prost's generated optional
+/// field wrappers to either native host.
+pub fn decode_recalled_preset_name(payload: &[u8]) -> Result<Option<String>, ResponseDecodeError> {
+    let message: pa::RecallPresetMessage = decode_reply(payload)?;
+    let Some(pa::recall_preset_message::Preset::Preset(preset)) = message.preset else {
+        return Ok(None);
+    };
+    Ok(preset.name.map(|binary_preset::Name::Name(name)| name))
+}
+
+/// Decode the selected scene without leaking generated presence wrappers into
+/// native adapters.
+pub fn decode_selected_scene(payload: &[u8]) -> Result<Option<u32>, ResponseDecodeError> {
+    let message: pa::SceneMessage = decode_reply(payload)?;
+    Ok(message
+        .selected_scene
+        .map(|pa::scene_message::SelectedScene::SelectedScene(scene)| scene))
 }
 
 pub fn decode_device_identity(payload: &[u8]) -> Result<DeviceIdentity, ResponseDecodeError> {
@@ -792,9 +811,6 @@ pub fn decode_global_eq(payload: &[u8]) -> Result<GlobalEqSettings, ResponseDeco
         bypassed: message
             .bypassed
             .map(|pa::global_eq_message::Bypassed::Bypassed(value)| value),
-        has_user_defaults: message
-            .has_user_defaults
-            .map(|pa::global_eq_message::HasUserDefaults::HasUserDefaults(value)| value),
     })
 }
 
@@ -1234,6 +1250,43 @@ pub fn decode_graphics_tree(payload: &[u8]) -> Result<String, ResponseDecodeErro
 mod tests {
     use super::*;
     use proptest::prelude::*;
+
+    #[test]
+    fn recalled_preset_name_hides_generated_oneof_wrappers() {
+        let payload = pa::RecallPresetMessage {
+            preset: Some(pa::recall_preset_message::Preset::Preset(
+                crate::proto::BinaryPreset {
+                    name: Some(binary_preset::Name::Name("Shared preset".into())),
+                    ..Default::default()
+                },
+            )),
+            ..Default::default()
+        }
+        .encode_to_vec();
+        assert_eq!(
+            decode_recalled_preset_name(&payload).unwrap().as_deref(),
+            Some("Shared preset")
+        );
+        assert_eq!(
+            decode_recalled_preset_name(&pa::RecallPresetMessage::default().encode_to_vec())
+                .unwrap(),
+            None
+        );
+    }
+
+    #[test]
+    fn selected_scene_hides_generated_presence_wrappers() {
+        let payload = pa::SceneMessage {
+            selected_scene: Some(pa::scene_message::SelectedScene::SelectedScene(6)),
+            ..Default::default()
+        }
+        .encode_to_vec();
+        assert_eq!(decode_selected_scene(&payload).unwrap(), Some(6));
+        assert_eq!(
+            decode_selected_scene(&pa::SceneMessage::default().encode_to_vec()).unwrap(),
+            None
+        );
+    }
 
     /// Shaped after a real reply from the unit; see `commands::read_graphics_tree`.
     #[test]
@@ -1724,9 +1777,6 @@ mod tests {
                 value: 0.75,
             }],
             bypassed: Some(pa::global_eq_message::Bypassed::Bypassed(false)),
-            has_user_defaults: Some(pa::global_eq_message::HasUserDefaults::HasUserDefaults(
-                true,
-            )),
             ..Default::default()
         }
         .encode_to_vec();
@@ -1776,12 +1826,14 @@ mod tests {
             // Favorites replies observed on-device can omit the flag, leaving
             // its protobuf default false. Request correlation is authoritative.
             is_favorites: false,
+            r#type: pa::recents_favorites_message::RecentFavoriteType::Preset as i32,
             items: vec![pa::RecentsFavoritesItem {
                 name: "Stage".into(),
                 folder_key: "/media/p4/Presets/Live".into(),
                 folder_name: "Live".into(),
                 is_factory: false,
                 is_plugin: true,
+                product_key: String::new(),
             }],
         }
         .encode_to_vec();

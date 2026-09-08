@@ -19,5 +19,20 @@
       "Tauri icon generator from the canonical SVG",
       "scripts/generate-android-branding.ps1"
     ]
+  },
+  "corosFontRegular": {
+    "sourcePath": "packages/typescript/qc-theme/assets/fonts/IBMPlexSans.ttf",
+    "sha256": "1306c741d8d26fab364dd6d4b0dc73852de42d42523979f452c77e2e7753dbce",
+    "source": "IBM Plex Sans Regular under SIL Open Font License 1.1"
+  },
+  "corosFontMedium": {
+    "sourcePath": "packages/typescript/qc-theme/assets/fonts/IBMPlexSans-Medium.ttf",
+    "sha256": "d19b58422cc69c86166ed39dc28b3151b27482a64e7661bd642c5d5f7b9e7f95",
+    "source": "IBM Plex Sans Medium under SIL Open Font License 1.1"
+  },
+  "corosFontBold": {
+    "sourcePath": "packages/typescript/qc-theme/assets/fonts/IBMPlexSans-Bold.ttf",
+    "sha256": "afb18cee6998d476be0964c0058cfcceb02f066cc6319c1edeff49aa78cd3517",
+    "source": "IBM Plex Sans Bold under SIL Open Font License 1.1"
   }
 }

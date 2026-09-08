@@ -1631,7 +1631,9 @@ fn save_stage(
         verification: verification_for_operation(&operation, &Value::Null, None),
         write: PlannedWrite::HidOperation(operation),
         timeout_ms: 15_000,
-        settle_ms: 0,
+        // The active-preset push precedes completion of the CorOS storage
+        // transaction. Keep subsequent persistent commands out of that window.
+        settle_ms: 3_000,
     }
 }
 
@@ -5235,6 +5237,7 @@ mod tests {
         )
         .unwrap();
         assert_eq!(save.stages.len(), 1);
+        assert_eq!(save.stages[0].settle_ms, 3_000);
         assert_eq!(save.instrument, 2);
 
         let rename = plan_preset_mutation(

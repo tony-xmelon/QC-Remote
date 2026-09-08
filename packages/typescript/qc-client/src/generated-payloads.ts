@@ -116,7 +116,6 @@ export interface GlobalEqParameter {
 export interface GlobalEqSettings {
   parameters: GlobalEqParameter[];
   bypassed?: boolean;
-  hasUserDefaults?: boolean;
 }
 
 export interface ModeCycle {

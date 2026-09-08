@@ -24,7 +24,7 @@ const defaultViews = [
   "directory-favorites", "directory-search", "directory-search-results", "directory-sort",
   "directory-filter", "directory-arrange", "directory-copy", "directory-nested",
   "directory-new-folder", "directory-item-context", "directory-cloud-upload",
-  "capture-intro", "capture-type", "capture-routing", "capture-calibration",
+  "capture-intro", "capture-monitoring", "capture-connect-out", "capture-connect-input-2", "capture-routing", "capture-calibration",
   "capture-progress", "capture-result", "capture-save",
   "recovery-entry", "recovery-options", "overlay-keyboard", "overlay-confirmation",
   "overlay-error", "overlay-busy",
@@ -60,6 +60,7 @@ async function capture(host, baseUrl, viewport, css) {
     url.searchParams.set("screen", view);
     await page.goto(url.href, { waitUntil: "networkidle" });
     if (css) await page.addStyleTag({ content: css });
+    await page.evaluate(() => document.fonts.ready);
     await page.locator(".dialog-close").click({ timeout: 1000 }).catch(() => undefined);
     const screen = page.locator(".qc-screen-bezel");
     const box = await screen.boundingBox();

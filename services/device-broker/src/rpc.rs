@@ -128,6 +128,7 @@ fn handle(
         }
         Some(generated_gateway::BrokerDispatch::Snapshot) => controller
             .gateway_snapshot()
+            .filter(|snapshot| !snapshot.setlist_key.is_empty() && !snapshot.preset_name.is_empty())
             .map(|snapshot| serde_json::to_value(snapshot).map_err(|error| error.to_string()))
             .unwrap_or_else(|| Err("No Quad Cortex preset has been synchronized yet".into())),
         Some(generated_gateway::BrokerDispatch::ListModels) => gateway_list_models(controller),
@@ -286,7 +287,7 @@ fn ready_connection_state(controller: &DeviceController, detail: &str) -> Value 
         // preset is queryable by the very next gateway call.
         let _ = controller.wait_for_gateway_snapshot(
             Duration::from_millis(profile::COMMAND_CONFIRMATION_TIMEOUT_MS),
-            |_| true,
+            |snapshot| !snapshot.setlist_key.is_empty() && !snapshot.preset_name.is_empty(),
         );
     }
     json!({
@@ -391,12 +392,40 @@ fn execute_gateway_read(
     method: &str,
     params: &Value,
 ) -> Result<Value, String> {
-    let primary = execute_single_gateway_read(controller, method, params)?;
+    let primary = match execute_single_gateway_read(controller, method, params) {
+        Ok(value) => value,
+        Err(error) if gateway_read_timeout_is_recoverable(method, &error) => {
+            controller.reset_session()?;
+            let status = controller.wait_for_ready(preset_recall_recovery_timeout());
+            if status.phase != "ready" {
+                return Err(format!(
+                    "{error} Read recovery ended in {}: {}",
+                    status.phase, status.detail
+                ));
+            }
+            controller
+                .wait_for_gateway_snapshot(
+                    Duration::from_millis(profile::COMMAND_CONFIRMATION_TIMEOUT_MS),
+                    |snapshot| !snapshot.setlist_key.is_empty() && !snapshot.preset_name.is_empty(),
+                )
+                .ok_or_else(|| format!("{error} Read recovery published no active preset"))?;
+            execute_single_gateway_read(controller, method, params).map_err(|retry_error| {
+                format!("{error} Recovery retry also failed: {retry_error}")
+            })?
+        }
+        Err(error) => return Err(error),
+    };
     let Some(followup_method) = runtime_request::gateway_read_followup_method(method) else {
         return Ok(primary);
     };
     let followup = execute_single_gateway_read(controller, followup_method, &Value::Null)?;
     runtime_request::compose_global_tempo_settings(&primary, &followup)
+}
+
+fn gateway_read_timeout_is_recoverable(method: &str, error: &str) -> bool {
+    method != "device.diagnostics"
+        && error.starts_with("The Quad Cortex did not return a valid ")
+        && error.contains(" reply within ")
 }
 
 fn gateway_identity(controller: &DeviceController) -> Result<Value, String> {
@@ -1112,7 +1141,7 @@ fn execute_preset_recall(
             let recovered = controller
                 .wait_for_gateway_snapshot(
                     Duration::from_millis(profile::COMMAND_CONFIRMATION_TIMEOUT_MS),
-                    |_| true,
+                    |snapshot| !snapshot.setlist_key.is_empty() && !snapshot.preset_name.is_empty(),
                 )
                 .ok_or_else(|| {
                     "The recovered QC session did not publish its active position".to_string()
@@ -1272,6 +1301,10 @@ fn execute_preset_mutation(
 ) -> Result<Value, String> {
     let mut observed = None;
     for stage in std::mem::take(&mut plan.stages) {
+        let catalog_verified_save = matches!(
+            &stage.write,
+            PlannedWrite::HidOperation(qc_protocol::commands::DeviceOperation::SavePreset { .. })
+        );
         let events = controller.subscribe_state_events();
         let before_sequence = controller.latest_state_sequence();
         execute_planned_write(controller, &stage.write)?;
@@ -1285,16 +1318,20 @@ fn execute_preset_mutation(
                 verification.clone(),
                 before_sequence,
                 &verification_policy,
-            )?
-            .ok_or_else(|| {
-                "The preset operation did not produce a verified device snapshot".to_string()
-            })?;
-            if !verification.matches(&after, None) {
+            )?;
+            if let Some(after) = after {
+                if !verification.matches(&after, None) {
+                    return Err(
+                        "The preset operation completed, but live-state verification failed."
+                            .into(),
+                    );
+                }
+                observed = Some(after);
+            } else if !catalog_verified_save {
                 return Err(
-                    "The preset operation completed, but live-state verification failed.".into(),
+                    "The preset operation did not produce a verified device snapshot".into(),
                 );
             }
-            observed = Some(after);
         }
         if stage.settle_ms > 0 {
             thread::sleep(Duration::from_millis(stage.settle_ms));
@@ -1307,7 +1344,7 @@ fn execute_preset_mutation(
     // authoritative for the catalog name and slot.
     if !plan.saved_presets.is_empty() {
         let expected = plan.saved_presets.clone();
-        let listing = controller.wait_for_fresh_preset_listing(&plan.setlist_key, |listing| {
+        let listing_matches = |listing: &qc_protocol::state::PresetFolderListing| {
             expected.iter().all(|preset| {
                 listing.files.iter().any(|file| {
                     file.position == preset.position
@@ -1315,7 +1352,41 @@ fn execute_preset_mutation(
                         && runtime_request::stored_preset_name_matches(&preset.name, &file.name)
                 })
             })
-        })?;
+        };
+        let listing = match controller
+            .wait_for_fresh_preset_listing(&plan.setlist_key, listing_matches)
+        {
+            Ok(listing) => listing,
+            Err(stale_error) => {
+                // Persistent writes are not safe to replay. CorOS can commit a
+                // save while continuing to serve an old File stream, so reset
+                // the session once and verify the committed catalog instead.
+                controller.reset_session()?;
+                let status = controller.wait_for_ready(preset_recall_recovery_timeout());
+                if status.phase != "ready" {
+                    return Err(format!(
+                        "{stale_error} Catalog recovery ended in {}: {}",
+                        status.phase, status.detail
+                    ));
+                }
+                let recovered = controller
+                    .wait_for_gateway_snapshot(
+                        Duration::from_millis(profile::COMMAND_CONFIRMATION_TIMEOUT_MS),
+                        |snapshot| {
+                            !snapshot.setlist_key.is_empty() && !snapshot.preset_name.is_empty()
+                        },
+                    )
+                    .ok_or_else(|| {
+                        format!("{stale_error} Catalog recovery published no active preset")
+                    })?;
+                observed = Some(recovered);
+                controller
+                    .wait_for_fresh_preset_listing(&plan.setlist_key, listing_matches)
+                    .map_err(|recovery_error| {
+                        format!("{stale_error} Recovery verification also failed: {recovery_error}")
+                    })?
+            }
+        };
         for preset in &mut plan.saved_presets {
             let file = listing
                 .files
@@ -1673,6 +1744,20 @@ mod tests {
             preset_recall_recovery_timeout(),
             Duration::from_millis(profile::READY_WAIT_TIMEOUT_MS)
         );
+    }
+
+    #[test]
+    fn only_safe_timed_out_reads_trigger_session_recovery() {
+        let timeout = "The Quad Cortex did not return a valid device.irs reply within 30 seconds";
+        assert!(gateway_read_timeout_is_recoverable("device.irs", timeout));
+        assert!(!gateway_read_timeout_is_recoverable(
+            "device.diagnostics",
+            "The Quad Cortex did not return a valid device.diagnostics reply within 8 seconds"
+        ));
+        assert!(!gateway_read_timeout_is_recoverable(
+            "device.irs",
+            "folder must not contain path traversal"
+        ));
     }
 
     #[test]
