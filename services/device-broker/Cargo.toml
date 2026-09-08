@@ -6,7 +6,7 @@ edition = "2021"
 description = "Native single-owner Quad Cortex USB broker"
 
 [dependencies]
-base64 = "0.22"
+base64 = "0.23"
 # The pure-Rust Windows backend exposes independent read/write OVERLAPPED
 # state. The broker places those two lanes on dedicated threads while retaining
 # one exclusive HID handle.
