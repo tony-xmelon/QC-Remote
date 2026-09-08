@@ -705,21 +705,18 @@
 .coros-directory-fixture.is-physical-context .directory-fixture-items button > span { font-size: 16px; }
 .coros-directory-fixture.is-physical-context .directory-fixture-items button.is-current .physical-preset-name { color: #43ef72; }
 .coros-directory-fixture.is-physical-context .directory-fixture-items button small { font-size: 9px; }
-.coros-directory-fixture .directory-item-menu { left: 528px; right: auto; top: 264px; width: 256px; height: 208px; overflow: hidden; border: 0; border-radius: 8px; background: #000; box-shadow: none; }
-.coros-directory-fixture .directory-item-menu button { box-sizing: border-box; width: 100%; height: 54px; padding: 0 16px; border: 0; background: #000; color: #f0f0f0; font: 16px var(--qc-font-device-plain); text-align: left; }
-.coros-directory-fixture .directory-item-menu button:nth-child(2) { transform: translateY(-1px); }
-.coros-directory-fixture .directory-item-menu button:nth-child(3) { transform: translateY(-3px); }
-.coros-directory-fixture .directory-item-menu button:nth-child(4) { transform: translateY(-6px); }
+.coros-directory-fixture .directory-item-menu { left: 528px; right: auto; top: 212px; width: 256px; height: 260px; overflow: hidden; border: 0; border-radius: 8px; background: #000; box-shadow: none; }
+.coros-directory-fixture .directory-item-menu button { box-sizing: border-box; width: 100%; height: 52px; padding: 0 16px; border: 0; background: #000; color: #f0f0f0; font: 16px var(--qc-font-device-plain); text-align: left; }
 .qc-screen.coros-physical-confirmation { position: absolute; inset: 0; z-index: 11; overflow: hidden; background: #111; color: #f1f1f1; font-family: var(--qc-font-device-plain); }
 .coros-physical-confirmation > .coros-directory-fixture { position: absolute; inset: 0; }
 .coros-physical-confirmation > .confirmation-scrim { position: absolute; inset: 0; z-index: 4; background: rgba(92,96,92,.65); }
-.coros-physical-confirmation > aside { position: absolute; z-index: 5; left: 190px; top: 125px; box-sizing: border-box; width: 420px; height: 230px; border-radius: 10px; background: #101110; text-align: center; }
-.coros-physical-confirmation.is-over-grid > aside { background: #101110; }
+.coros-physical-confirmation > aside { position: absolute; z-index: 5; left: 190px; top: 125px; box-sizing: border-box; width: 420px; height: 230px; border-radius: 10px; background: #101010; color: #fff; text-align: center; }
+.coros-physical-confirmation.is-over-grid > aside { background: #ff594a; color: #000; }
 .coros-physical-confirmation > aside h1 { margin: 43px 0 24px; font: 20px var(--qc-font-device-plain); }
 .coros-physical-confirmation > aside p { margin: 0; font: 18px var(--qc-font-device-plain); }
 .coros-physical-confirmation > aside footer { position: absolute; left: 32px; right: 32px; bottom: 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
-.coros-physical-confirmation > aside button { height: 45px; border: 0; border-radius: 8px; background: #030303; color: #efefef; font: 16px var(--qc-font-device-plain); }
-.coros-physical-confirmation > aside button:last-child { background: #2040ff; }
+.coros-physical-confirmation > aside button { height: 45px; border: 0; border-radius: 8px; background: #000; color: #fff; font: 16px var(--qc-font-device-plain); }
+.coros-physical-confirmation > aside button:last-child { background: #1838ff; }
 
 /* Physical editor overflow menu. */
 .qc-screen.coros-block-context { position: absolute; inset: 0; overflow: hidden; background: #111; color: #f2f2f2; font-family: var(--qc-font-device-plain); }
@@ -762,7 +759,7 @@
 .physical-eq-footer-power { position: absolute; left: 7%; top: 40px; width: 50px; height: 45px; border-radius: 7px; background: #171b18; }
 .physical-eq-footer-power::before { content: ""; position: absolute; left: 50%; top: 50%; width: 17px; height: 17px; translate: -50% -50%; border: 2px solid #dfe1df; border-top-color: transparent; border-radius: 50%; }
 .physical-eq-footer-power::after { content: ""; position: absolute; left: calc(50% - 1px); top: 11px; width: 2px; height: 10px; background: #dfe1df; }
-.coros-block-context > .block-context-scrim { position: absolute; inset: 0; z-index: 2; background: rgba(71,74,71,.92); }
+.coros-block-context > .block-context-scrim { position: absolute; inset: 0; z-index: 2; background: rgba(85,88,85,.72); }
 .qc-screen.coros-block-context > aside { position: absolute; z-index: 3; left: 30px; right: auto; top: 30px; bottom: 29px; width: 322px; display: block; overflow-x: hidden; overflow-y: auto; scrollbar-width: none; border-radius: 7px; background: #101010; box-shadow: none; }
 .qc-screen.coros-block-context > aside::-webkit-scrollbar { display: none; }
 .qc-screen.coros-block-context > aside::after { content: ""; position: absolute; right: 8px; top: 10px; bottom: 132px; border-right: 2px solid #343735; }
@@ -867,6 +864,37 @@
    left of the action bar - a 44px overflow button at x 8 and the category over
    the device name from x 59 - and the parameters run as five 156px cells on
    #101410 between y 256 and 363. */
+.physical-grid-underlay { position: absolute; inset: 0; overflow: hidden; background: #101010; color: #848684; font-family: var(--qc-font-device-plain); }
+.physical-grid-underlay .underlay-grid { position: absolute; inset: 0 0 auto; height: 196px; background: #000; }
+.physical-grid-underlay > .underlay-grid > header { position: relative; height: 96px; display: flex; align-items: flex-start; padding: 20px 13.6px; box-sizing: border-box; }
+.physical-grid-underlay > .underlay-grid > header > strong { color: #427184; font-size: 71px; line-height: .82; font-weight: 700; letter-spacing: 1.4px; transform: translateY(5px); }
+.physical-grid-underlay > .underlay-grid > header > strong span { color: #848684; }
+.physical-grid-underlay > .underlay-grid > header h1 { margin: 6px 0 0 12.6px; color: #848684; font-size: 58px; line-height: 1; font-weight: 700; }
+.physical-grid-underlay > .underlay-grid > header nav { position: absolute; right: 24px; top: 12px; display: flex; align-items: center; gap: 24px; color: #848684; font-style: normal; }
+.physical-grid-underlay > .underlay-grid > header nav i { width: 24px; height: 24px; display: grid; place-items: center; font-style: normal; }
+.physical-grid-underlay > .underlay-grid > header nav i svg { width: 26px; height: 26px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.physical-grid-underlay > .underlay-grid > header nav i:last-child svg circle { fill: currentColor; stroke: none; }
+.physical-grid-underlay > .underlay-grid > header nav b { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 4px; background: #846d18; color: #101010; font-size: 17px; font-weight: 700; }
+.physical-grid-underlay > .underlay-grid > header em { position: absolute; right: 35px; top: 62px; display: flex; align-items: center; gap: 12px; color: #848684; font-size: 21px; font-style: normal; font-weight: 700; }
+.physical-grid-underlay > .underlay-grid > header em svg { width: 24px; height: 24px; fill: currentColor; }
+.physical-grid-underlay > .underlay-grid > main { position: absolute; left: 0; right: 0; top: 96px; bottom: 0; }
+.physical-grid-underlay .underlay-route,
+.physical-grid-underlay .underlay-output { position: absolute; top: 13px; width: 44px; height: 76px; display: grid; place-items: center; border-radius: 14px; background: #080808; color: #737573; font-size: 14px; line-height: 1.35; text-align: center; }
+.physical-grid-underlay .underlay-route { left: 8px; }
+.physical-grid-underlay .underlay-output { right: 6px; font-size: 15px; }
+.physical-grid-underlay .underlay-cable { position: absolute; left: 52px; right: 52px; top: 50px; height: 2px; background: #636563; }
+.physical-grid-underlay .underlay-editor-bar { position: absolute; right: 8px; top: 204px; height: 44px; display: flex; align-items: stretch; gap: 8px; }
+.physical-grid-underlay .underlay-editor-bar button { box-sizing: border-box; width: 66px; padding: 0; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: #181c18; color: #f2f2f2; font: 700 17px var(--qc-font-device-plain); }
+.physical-grid-underlay .underlay-editor-bar svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.physical-grid-underlay .underlay-editor-bar .editor-expression { gap: 1px; }
+.physical-grid-underlay .underlay-editor-bar .editor-expression svg { width: 22px; height: 22px; fill: currentColor; stroke: none; }
+.physical-grid-underlay .underlay-editor-bar .editor-expression small { font-size: 17px; }
+.physical-grid-underlay .underlay-editor-bar .editor-scene { width: 132px; gap: 17px; }
+.physical-grid-underlay .underlay-editor-bar .editor-step { width: 21px; height: 24px; fill: currentColor; stroke: none; }
+.physical-grid-underlay .underlay-editor-bar .editor-step .is-dim { fill: #525152; }
+.physical-grid-underlay .underlay-editor-bar .editor-scene b { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 4px; background: #ffd331; color: #101010; font-size: 17px; font-weight: 700; }
+.physical-grid-underlay .underlay-editor-bar .editor-divider { width: 2px; height: 28px; align-self: center; background: #292c29; }
+.physical-grid-underlay .underlay-editor-bar .editor-confirm { background: #292c29; }
 .physical-grid-underlay .underlay-editor-more { position: absolute; left: 8px; top: 204px; width: 44px; height: 44px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 8px; background: #181c18; color: #f2f2f2; }
 .physical-grid-underlay .underlay-editor-more svg { width: 24px; height: 24px; fill: currentColor; stroke: none; }
 .physical-grid-underlay .underlay-editor-label { position: absolute; left: 59px; top: 204px; height: 44px; display: grid; align-content: center; gap: 3px; }

@@ -131,16 +131,16 @@ function CorOsDirectoryFixture({ view, physicalContext = false }: { view: Direct
     {view === "directory-arrange" && <div className="directory-mode-bar"><strong>ARRANGE</strong><span>Drag items to reorder them</span><button>CANCEL</button><button>DONE</button></div>}
     {view === "directory-copy" && <aside className="directory-copy-dialog"><header>Copy 3 items to…</header>{["My Presets", "Live Set", "Festival", "Studio"].map((label, index) => <button key={label} className={index === 2 ? "is-active" : ""}><DirectoryIcon kind="folder" />{label}<b><QcUiIcon kind="next" /></b></button>)}<footer><button>CANCEL</button><button>COPY HERE</button></footer></aside>}
     {view === "directory-new-folder" && <aside className="directory-name-dialog"><header>New Setlist</header><label>NAME<input readOnly value="New Setlist" /></label><footer><button>CANCEL</button><button>CREATE</button></footer></aside>}
-    {view === "directory-item-context" && <><i className="directory-context-scrim" /><aside className="directory-item-menu">{["Edit", "Copy", "Cut", "Delete"].map(label => <button key={label}>{label}</button>)}</aside></>}
+    {view === "directory-item-context" && <><i className="directory-context-scrim" /><aside className="directory-item-menu">{["Edit", "Copy", "Cut", "Paste to replace", "Delete"].map(label => <button key={label}>{label}</button>)}</aside></>}
     {view === "directory-cloud-upload" && <div className="directory-mode-bar is-cloud"><strong>UPLOAD TO CORTEX CLOUD</strong><span>Select Presets, Neural Captures, or IRs</span><button>CANCEL</button><button>UPLOAD (2)</button></div>}
   </section>;
 }
 
 type RemainingFixtureView = "fixture-boot" | "fixture-shutdown" | "fixture-copy-scene" | "fixture-swap-scene" | "fixture-delete" | "fixture-input-gate" | "fixture-editor-pages" | "fixture-editor-cab" | "fixture-editor-eq" | "fixture-editor-capture" | "fixture-warning-clip" | "fixture-warning-dsp";
 
-function CorOsRemainingFixture({ view }: { view: RemainingFixtureView }) {
+function CorOsRemainingFixture({ view, snapshot }: { view: RemainingFixtureView; snapshot: PresetSnapshot }) {
   if (view === "fixture-boot") return <section className="qc-screen coros-boot"><b><QcHardwareIcon kind="brand-pulse" /></b><h1>QUAD CORTEX</h1><i><span /></i><small>STARTING COROS</small></section>;
-  if (view === "fixture-delete") return <CorOsDeleteConfirmation />;
+  if (view === "fixture-delete") return <CorOsDeleteConfirmation snapshot={snapshot} />;
   const dialog = view === "fixture-shutdown" ? ["POWER OFF?", "Any unsaved changes will be lost.", "POWER OFF"] : view === "fixture-warning-clip" ? ["INPUT CLIPPING", "Reduce Input 1 gain to prevent unwanted distortion.", "OPEN I/O SETTINGS"] : view === "fixture-warning-dsp" ? ["DSP LIMIT REACHED", "There is not enough processing power to add this device.", "OK"] : undefined;
   if (dialog) return <section className="qc-screen coros-fixture-dialog"><div className="fixture-grid-ghost">{Array.from({length:7},(_,i)=><i key={i}/>)}</div><aside className={view.includes("warning") ? "is-warning" : ""}><b>{view.includes("warning") ? "!" : "?"}</b><h1>{dialog[0]}</h1><p>{dialog[1]}</p><footer><button>CANCEL</button><button>{dialog[2]}</button></footer></aside></section>;
   if (view === "fixture-copy-scene" || view === "fixture-swap-scene") return <section className="qc-screen coros-fixture-dialog is-scene-command"><div className="scene-command-grid"><header><strong><span>32</span>D</strong><span>Unsaved</span><nav><GridToolbarIcon kind="undo" /><b>A</b><GridToolbarIcon kind="save" /><QcUiIcon kind="more" /></nav></header><span className="scene-command-mode"><svg viewBox="0 0 24 24" aria-hidden="true"><ModeGlyph mode="STOMP" /></svg><b>STOMP</b></span><main><span className="scene-command-insert"><QcUiIcon kind="add" /></span>{Array.from({ length: 8 }, (_, index) => <i key={index}>{index === 0 ? <>In<br />1</> : index === 1 ? <>Multi<br />Out</> : <QcUiIcon kind="add" />}</i>)}</main></div><aside><h1>{view === "fixture-copy-scene" ? "Copy Scene A" : "Swap Scene A"}</h1><p>Press Scene destination footswitch.</p><footer><button>CANCEL</button></footer></aside></section>;
@@ -198,20 +198,28 @@ function CorOsDirectoryNameScreen() {
   </section>;
 }
 
-function CorOsDeleteConfirmation({ overGrid = false }: { overGrid?: boolean } = {}) {
-  return <section className={`qc-screen coros-physical-confirmation${overGrid ? " is-over-grid" : ""}`} aria-label="Delete preset confirmation">
-    <CorOsDirectoryFixture view="directory-presets" physicalContext />
+function CorOsDeleteConfirmation({ snapshot }: { snapshot: PresetSnapshot }) {
+  const gridSnapshot: PresetSnapshot = {
+    ...snapshot,
+    presetLocation: "4E",
+    presetName: "QC MCP TEST_2",
+    mode: "STOMP",
+    blocks: [],
+    routes: [0, 1, 2, 3].map((row) => ({ row, inputId: 1, outputId: 1, input: "In 1", output: "Multi Out", splitMuted: false })),
+  };
+  return <section className="qc-screen coros-physical-confirmation is-over-grid" aria-label="Delete preset confirmation">
+    <CorOsOfficialGrid snapshot={gridSnapshot} />
     <i className="confirmation-scrim" />
-    <aside><h1>Demo Rhythm</h1><p>Are you sure you want to delete this item?</p><footer><button>CANCEL</button><button>DELETE</button></footer></aside>
+    <aside><h1>QC MCP TEST_2</h1><p>Are you sure you want to delete this preset?</p><footer><button>CANCEL</button><button>DELETE PRESET</button></footer></aside>
   </section>;
 }
 
-function CorOsSystemFixture({ view }: { view: SystemFixtureView }) {
+function CorOsSystemFixture({ view, snapshot }: { view: SystemFixtureView; snapshot: PresetSnapshot }) {
   if (view === "recovery-entry") return <section className="qc-screen coros-recovery"><div className="recovery-logo"><QcHardwareIcon kind="brand-pulse" /></div><h1>Recovery Mode</h1><p>Keep footswitches A and H pressed while powering on Quad Cortex.</p><div className="recovery-switches"><b>A</b><span>HOLD</span><b>H</b></div><small>Release the switches when the recovery menu appears.</small></section>;
   if (view === "recovery-options") return <section className="qc-screen coros-recovery"><div className="recovery-logo"><QcHardwareIcon kind="brand-pulse" /></div><h1>Recovery Mode</h1><p>Select an option to continue.</p><div className="recovery-options">{[["RESTART QUAD CORTEX","Boot CorOS normally"],["REINSTALL COROS","Install the latest available system image"],["FACTORY RESET","Erase user data and restore defaults"],["SHUT DOWN","Power off safely"]].map(([title,detail], index) => <button key={title} className={index === 0 ? "is-active" : index === 2 ? "is-danger" : ""}><strong>{title}</strong><small>{detail}</small><b><QcUiIcon kind="next" /></b></button>)}</div></section>;
   return <section className="qc-screen coros-system-overlay"><div className="overlay-underlay"><header><span>32H Demo Scratch</span><b>A</b></header><main>{[1,2,3,4,5].map(item => <i key={item} />)}</main></div>
     {view === "overlay-keyboard" && <CorOsKeyboardScreen />}
-    {view === "overlay-confirmation" && <CorOsDeleteConfirmation overGrid />}
+    {view === "overlay-confirmation" && <CorOsDeleteConfirmation snapshot={snapshot} />}
     {view === "overlay-error" && <aside className="system-dialog"><b className="dialog-icon is-error">!</b><h1>Action unavailable</h1><p>Quad Cortex could not complete the request. Check the connection and try again.</p><footer><button>OK</button></footer></aside>}
     {view === "overlay-busy" && <aside className="system-dialog is-busy"><b className="dialog-spinner" /><h1>Saving preset</h1><p>Please wait. Do not disconnect or power off Quad Cortex.</p></aside>}
   </section>;
@@ -1236,8 +1244,8 @@ export function CorOsScreenFixture({ view, snapshot, gigPresetList, onClose = ()
   if ((view as string) === "iconography-audit") return <IconographyAuditFixture />;
   if (view === "grid-official-brit") return <CorOsOfficialGrid snapshot={snapshot} />;
   if (view === "corpus-device-browser-root" || view === "corpus-device-browser-models" || view === "corpus-device-browser-models-clean" || view === "device-browser-middle-deep" || view === "device-browser-middle-reverb") return <CorOsCorpusDeviceBrowser snapshot={snapshot} view={view} />;
-  if (view.startsWith("fixture-")) return <CorOsRemainingFixture view={view as RemainingFixtureView} />;
-  if (view.startsWith("recovery-") || view.startsWith("overlay-")) return <CorOsSystemFixture view={view as SystemFixtureView} />;
+  if (view.startsWith("fixture-")) return <CorOsRemainingFixture view={view as RemainingFixtureView} snapshot={snapshot} />;
+  if (view.startsWith("recovery-") || view.startsWith("overlay-")) return <CorOsSystemFixture view={view as SystemFixtureView} snapshot={snapshot} />;
   if (view === "tuner-live-enabled") return <CorOsTuner liveTuner onClose={onClose} />;
   if (view.startsWith("gig-official-")) return <CorOsOfficialGig mode={view.replace("gig-official-", "") as OfficialGigMode} />;
   if (view === "device-presets-official") return <CorOsDevicePresetScreen view="official-factory" />;

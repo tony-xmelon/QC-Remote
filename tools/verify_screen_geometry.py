@@ -936,7 +936,18 @@ def check_plugin_lock() -> None:
     """The padlock beside a locked plugin, against the box the stylesheet gives it."""
     sheet = "remaining-fixtures-fixes.css"
     selector = ".coros-browser-fixture.is-physical-plugin-list .plugin-license-lock"
-    svg = component_svg("PluginLockIcon")
+    # PluginLockIcon deliberately delegates to the shared screen-glyph owner.
+    # The lock is QcScreenGlyph's fallback shape, so measure that definition
+    # instead of requiring the fixture to duplicate its SVG.
+    glyph_source = (STYLES / "screen-glyphs.tsx").read_text(encoding="utf-8")
+    lock = re.search(
+        r'return <svg \{\.\.\.frame\}>(<path d="M4 10V7a8 8 0 0 1 16 0v3".*?</svg>);',
+        glyph_source,
+        re.S,
+    )
+    if not lock:
+        raise SystemExit("the shared lock screen glyph is not defined")
+    svg = '<svg viewBox="0 0 24 24">' + lock.group(1)
     view = re.search(r"""viewBox=["']([\d.\s-]+)["']""", svg)
     _, _, view_width, view_height = [float(part) for part in view.group(1).split()]
     extents = svg_extents(svg, selector)
@@ -948,6 +959,9 @@ def check_plugin_lock() -> None:
     box_height = declared(sheet, selector, "height")
     # An inline SVG meets its box the same way `contain` does.
     scale = min(box_width / view_width, box_height / view_height)
+    svg_transform = declaration(sheet, f"{selector} svg", "transform") or ""
+    stretch = re.search(r"scaleY\(([\d.]+)\)", svg_transform)
+    vertical_scale = float(stretch.group(1)) if stretch else 1.0
 
     pixels, _ = frame(CORPUS, "device-browser-plugin-list.png")
     measured = ink_box(pixels, lambda c: max(c) > 110, (515, 130, 550, 172))
@@ -957,7 +971,7 @@ def check_plugin_lock() -> None:
     compare(f"{selector} ink width (device-browser-plugin-list.png)",
             measured["width"], (right - left) * scale)
     compare(f"{selector} ink height (device-browser-plugin-list.png)",
-            measured["height"], (bottom - top) * scale)
+            measured["height"], (bottom - top) * scale * vertical_scale)
 
 
 def check_tuner_footer() -> None:
@@ -1038,16 +1052,33 @@ def check_expression_treadle() -> None:
 
 def check_preset_action_glyph() -> None:
     """The sixth device-preset category glyph, against the screen that shows it."""
-    sheet = "official-device-browser.css"
-    selector = ".coros-device-presets.is-official-actions > nav button:nth-child(6) i > span"
+    sheet = "remaining-fixtures-fixes.css"
+    container = ".coros-device-presets.is-physical>nav button i"
+    selector = ".coros-device-presets.is-physical>nav svg"
     pixels, _ = frame(MANUAL, "official-device-preset-actions.png")
     measured = ink_box(pixels, lambda p: max(p) > 100, (10, 410, 95, 465))
     if measured is None:
         problems.append("official-device-preset-actions.png: the sixth rail glyph did not resolve")
         return
-    painted = glyph_ink(sheet, selector)
-    compare(f"{selector} ink width", measured["width"], painted["width"])
-    compare(f"{selector} ink height", measured["height"], painted["height"])
+    box = declared(sheet, container, "width")
+    width = declaration(sheet, selector, "width")
+    if box is None or width is None or not width.endswith("%"):
+        raise SystemExit("the shared preset-category SVG must have a declared container and percentage size")
+    glyph_source = (STYLES / "device-category-glyph.tsx").read_text(encoding="utf-8")
+    glyph = re.search(r'if \(label === "Reverb"\) return (<svg\b.*?</svg>);', glyph_source, re.S)
+    if not glyph:
+        raise SystemExit("the shared Reverb category glyph is not defined")
+    svg = glyph.group(1)
+    view = re.search(r'viewBox="([\d.\s-]+)"', svg)
+    if not view:
+        raise SystemExit("the shared Reverb category glyph has no viewBox")
+    _, _, view_width, view_height = [float(part) for part in view.group(1).split()]
+    extents = svg_extents(svg, "shared Reverb category glyph")
+    scale = box * float(width[:-1]) / 100 / view_width
+    painted_width = (max(item[2] for item in extents) - min(item[0] for item in extents)) * scale
+    painted_height = (max(item[3] for item in extents) - min(item[1] for item in extents)) * scale
+    compare(f"{selector} ink width", measured["width"], painted_width)
+    compare(f"{selector} ink height", measured["height"], painted_height)
 
 
 def main() -> int:
