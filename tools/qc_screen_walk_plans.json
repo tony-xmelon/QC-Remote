@@ -127,10 +127,24 @@
         ]
       ],
       "marker": "Dynamic Latency Compensation"
+    },
+    {
+      "slug": "settings-system-reset",
+      "label": "Settings > System > Factory Reset",
+      "route": [
+        "settings"
+      ],
+      "rows": [
+        [
+          140,
+          450
+        ]
+      ],
+      "marker": "zenUI::ResetMenu"
     }
   ],
   "deliberately-not-captured": {
     "System > Connection": "the pane lists the owner's Wi-Fi networks, their BSSIDs and the unit's IP address; settings-wifi already covers the layout with those values redacted",
-    "System > Factory Reset": "selecting the row is harmless, but the pane it opens carries FACTORY RESET, and no screen is worth putting that under a stray tap"
+    "System > Factory Reset buttons": "the pane is captured; its RESET SETTINGS and FACTORY RESET buttons are never tapped, and no plan step puts a tap outside the x=140 menu column"
   }
 }

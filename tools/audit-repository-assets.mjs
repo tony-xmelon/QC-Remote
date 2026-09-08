@@ -19,7 +19,7 @@ const rasterExtensions = new Set([".avif", ".gif", ".ico", ".jpeg", ".jpg", ".pn
 const sourceExtensions = new Set([".css", ".html", ".java", ".js", ".json", ".mjs", ".nsh", ".ps1", ".py", ".rs", ".ts", ".tsx", ".xml"]);
 const productionRoots = /^(?:apps|packages|services)\//;
 const visualAndroidXml = /^apps\/android\/android\/app\/src\/main\/res\/(?:drawable|mipmap|font)[^/]*\/.*\.xml$/i;
-const vectorNode = /<(?:svg|path|circle|ellipse|line|polygon|polyline|rect)\b/i;
+const vectorNode = /<(?:svg|path|circle|ellipse|line|polygon|polyline|rect)\b|\bpath:\s*["']M/i;
 const mediaUrl = /https?:\/\/[^\s"')>]+\.(?:avif|gif|ico|jpe?g|otf|png|svg|ttf|webp|woff2?)(?:[?#][^\s"')>]*)?/gi;
 const staticDataMedia = /data:(?:image|audio|video)\/[a-z0-9.+-]+(?:;[^,]*)?,/gi;
 
@@ -58,10 +58,20 @@ export function auditRepositoryAssets() {
   }
 
   const visualFiles = all.filter((path) => visualExtensions.has(extname(path).toLowerCase()) || visualAndroidXml.test(path));
+  const generatedVisuals = new Map(ledger.generatedVisualArtifacts.map((entry) => [posix(entry.path), entry]));
   for (const path of visualFiles) {
     if (!owns(path, exact, prefixes)) errors.push(`unowned visual/media asset: ${path}`);
-    if (rasterExtensions.has(extname(path).toLowerCase()) && !prefixes.some((prefix) => path.startsWith(prefix))) {
-      errors.push(`raster is not a declared generated platform output: ${path}`);
+    if (!exact.has(path) && !generatedVisuals.has(path)) errors.push(`derived visual/media asset is absent from the exact generated ledger: ${path}`);
+    if (rasterExtensions.has(extname(path).toLowerCase()) && !generatedVisuals.has(path)) errors.push(`raster is not a declared generated platform output: ${path}`);
+  }
+  for (const [path, entry] of generatedVisuals) {
+    if (!tracked.includes(path)) errors.push(`declared generated visual is not tracked: ${path}`);
+    else if (!visualFiles.includes(path)) errors.push(`declared generated visual is not recognized as visual media: ${path}`);
+    else {
+      const bytes = readFileSync(resolve(root, path));
+      if (bytes.length !== entry.bytes) errors.push(`generated visual byte count differs: ${path}`);
+      if (sha256(bytes) !== entry.sha256) errors.push(`generated visual fingerprint differs: ${path}`);
+      if (!prefixes.some((prefix) => path.startsWith(prefix))) errors.push(`generated visual is outside a canonical asset's derived prefixes: ${path}`);
     }
   }
 
@@ -88,9 +98,18 @@ export function auditRepositoryAssets() {
 
   const vectorOwners = tracked.filter((path) => /\.(?:ts|tsx)$/.test(path) && productionRoots.test(path))
     .filter((path) => vectorNode.test(readFileSync(resolve(root, path), "utf8")));
-  const declaredVectorOwners = [...ledger.embeddedVectorOwners].map(posix).sort();
-  for (const path of vectorOwners) if (!declaredVectorOwners.includes(path)) errors.push(`embedded vector owner is not declared: ${path}`);
-  for (const path of declaredVectorOwners) if (!vectorOwners.includes(path)) errors.push(`declared embedded vector owner no longer contains vector markup: ${path}`);
+  const declaredVectorSources = new Map(ledger.embeddedVectorSources.map((entry) => [posix(entry.path), entry]));
+  const declaredVectorOwners = [...declaredVectorSources.keys()].sort();
+  for (const path of vectorOwners) if (!declaredVectorSources.has(path)) errors.push(`embedded vector owner is not declared: ${path}`);
+  for (const path of declaredVectorOwners) {
+    const entry = declaredVectorSources.get(path);
+    if (!vectorOwners.includes(path)) errors.push(`declared embedded vector owner no longer contains vector geometry: ${path}`);
+    else {
+      const normalized = readFileSync(resolve(root, path), "utf8").replaceAll("\r\n", "\n");
+      if (sha256(Buffer.from(normalized)) !== entry.sha256) errors.push(`embedded vector source fingerprint differs: ${path}`);
+      if (!entry.purpose?.trim()) errors.push(`embedded vector source has no purpose: ${path}`);
+    }
+  }
 
   const dynamicMediaOwners = new Set(ledger.dynamicMediaOwners.map(posix));
   const sourceFindings = { externalProductionMedia: [], staticEmbeddedMedia: [], developmentEmbeddedMedia: [], dynamicMediaOwners: [], developmentReferenceUrls: [] };
@@ -120,7 +139,7 @@ export function auditRepositoryAssets() {
       untrackedNonIgnoredFiles: untracked.length,
       visualAndMediaFiles: visualFiles.length,
       canonicalVisualAssets: exact.size,
-      derivedVisualOutputs: visualFiles.filter((path) => !exact.has(path)).length,
+      derivedVisualOutputs: generatedVisuals.size,
       embeddedVectorOwners: vectorOwners.length,
       classifiedNonVisualBinaries: nonVisual.size,
       developmentReferenceUrls: sourceFindings.developmentReferenceUrls.length,

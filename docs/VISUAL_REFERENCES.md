@@ -26,12 +26,14 @@ The manual’s current CorOS 4.1 screenshots define the screen treatment:
 - input/output and add-row pills on the left and right rails;
 - a dark eight-item Scene dropdown opened from the Scene indicator.
 
-The Windows and Android hardware renderers share the same measured layout and
-canonical exact-vector sources. The top-panel SVG overlay and verified block
-sample sheet are bundled through the shared theme asset manifest.
+The Windows and Android hardware renderers share the same measured layout,
+neutral chassis SVG, IBM Plex font files, semantic palette, and TypeScript SVG
+vector registry from `@qc-remote/theme`. No manufacturer screenshot, block
+sprite, or external image is shipped by either client.
 
-Device glyphs use the verified block sample sheet and exact retained category
-artwork, including the dedicated Pitch, Delay, and Compressor sources where the
-sheet is incomplete. Toolbar and parameter-screen vectors are pinned by the
-iconography manifest and tests. They must not be approximated or substituted
-without review and explicit approval.
+Device, toolbar, routing, directory, and parameter-screen glyphs are clean
+vector geometry rendered by the shared UI package. Plugin badges remain a
+separate generated text-and-color layer rather than being baked into block
+artwork. The repository asset ledger fingerprints the canonical physical files
+and every source file that owns vector geometry; local comparison captures and
+their private measurement manifests remain ignored development evidence.

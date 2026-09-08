@@ -151,7 +151,7 @@ test("screen vector layers are ordered, semantic, theme-resolved, and neutral", 
 test("screen controls use shared vectors and theme-owned fonts without character or raster fallbacks", () => {
   const sourceFiles = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "--", "apps/windows/src", "apps/android/src", "packages/typescript/qc-ui/src"], { encoding: "utf8" })
     .trim().split(/\r?\n/).filter((file) => /\.(?:css|ts|tsx)$/.test(file) && existsSync(file));
-  const iconCharacter = /[▲▼►▶◀◁▷‹›⌄⌃⋮＋✕✓✔✚⏵⏴■↵⇥✎☆⌫◇♩▥⚙▤↑↓⏻↶↻◉♜▰◴◫♞▣]/u;
+  const iconCharacter = /[▲▼►▶◀◁▷‹›⌄⌃⋮＋✕✓✔✚⏵⏴■↵⇥✎☆⌫◇♩▥⚙▤↑↓⏻Ø↶↻◉♜▰◴◫♞▣]/u;
   const jsxIconCharacter = />\s*[→⏻]\s*</u;
   const literalFont = /(font(?:-family)?|fontFamily)\s*[:=][^;\n}]*(?:Arial|Roboto|Helvetica|Segoe UI|sans-serif|system-ui)/i;
   for (const file of sourceFiles) {
@@ -365,7 +365,7 @@ test("authored app and device sources cannot bypass the shared visual contract",
   const colorLiteral = /#[0-9a-f]{3,8}\b|rgba?\s*\(|hsla?\s*\(/i;
   const deployedAssetUrl = /url\([^)]*\.(?:svg|png|webp|jpe?g|ico)\b/i;
   const literalFontStack = /["'](?:Arial Narrow|Arial|Helvetica Neue|Helvetica|Roboto Condensed|Roboto|DM Mono|Cascadia Mono|IBM Plex Sans|Segoe UI Variable|Segoe UI|Inter|Consolas)["']|fontFamily=["']|android:fontFamily">\s*(?!@(?:string|font)\/)[^<]+/mi;
-  const iconCharacter = /[▲▼►▶◀◁▷‹›⌄⌃⋮＋✕✓✔✚⏵⏴■↵⇥✎☆⌫◇♩▥⚙▤↑↓⏻]/u;
+  const iconCharacter = /[▲▼►▶◀◁▷‹›⌄⌃⋮＋✕✓✔✚⏵⏴■↵⇥✎☆⌫◇♩▥⚙▤↑↓⏻Ø]/u;
   const jsxIconCharacter = />\s*[→⏻]\s*</u;
   for (const file of files) {
     const fullSource = read(file);
