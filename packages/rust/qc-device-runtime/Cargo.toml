@@ -6,7 +6,7 @@ edition = "2021"
 description = "Platform-neutral Quad Cortex state and operation runtime"
 
 [dependencies]
-base64 = "0.22"
+base64 = "0.23"
 prost = "0.14"
 qc-protocol = { path = "../qc-protocol" }
 serde = { version = "1", features = ["derive"] }
