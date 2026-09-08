@@ -174,11 +174,15 @@ for (const symbol of ["handshakeAttempt", "startupObserved", "startupBeginBuildi
 }
 assert(androidUsbHost.includes("initializationObserved(decoded.messageType, decoded.payload)"),
   "Android must feed payload-validated semantic seed evidence into the shared readiness runtime.");
-assert(/if \(!presetSynchronized\) \{\s*stateDecoder\.initializationObserved/.test(androidUsbHost)
+assert(/if \(!stateSynchronized\) \{\s*stateDecoder\.initializationObserved/.test(androidUsbHost)
   && androidJni.includes("*initialization = None"),
   "Android must retain an incomplete seed for late recovery, then release it at Ready and avoid steady-state JNI payload replay.");
 assert(/synchronizationChanged[\s\S]{0,500}sessionStateObserved\([\s\S]{0,100}decision\.synchronizedState/.test(androidUsbHost),
   "Android must advance the shared transport from Syncing to Ready when a late authoritative seed completes.");
+assert(!/"preset"\.equals\(kind\)[\s\S]{0,100}stateSynchronized\s*=\s*true/.test(androidUsbHost),
+  "Android must not promote a preset observation to full authoritative synchronization.");
+assert(!/publishStateBatch\([\s\S]*?sessionStateObserved\(monotonicMillis\(\),\s*stateSynchronized\)/.test(androidUsbHost),
+  "Android must not bypass the shared semantic-seed decision when publishing an ordinary state batch.");
 assert(/advance_lifecycle\(now_ms\)[\s\S]{0,700}session\.state_observed\(now_ms, connected\.synchronized\)/.test(windowsWorker),
   "Windows must advance the shared transport after lifecycle completion, including late seed recovery.");
 assert(androidUsbHost.includes("decision.beginBuilding"),

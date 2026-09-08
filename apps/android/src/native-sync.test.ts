@@ -67,7 +67,7 @@ test("tempo synchronizes in both directions over the native USB bridge", () => {
 
 test("USB attachment requires an explicit connect and reports synchronization separately", () => {
   assert.match(servicesSource, /connected: boolean; synchronized: boolean/);
-  assert.match(javaSource, /isReady\(\) && presetSynchronized && currentSetlist != null/);
+  assert.match(javaSource, /isReady\(\) && stateSynchronized && currentSetlist != null/);
   assert.doesNotMatch(appSource, /if \(state === "available"\)[\s\S]{0,120}attemptUsbConnection\(\)/);
   assert.match(appSource, /if \(!devices\.length\)[\s\S]{0,120}transitionConnection\("available"\)/);
   assert.match(appSource, /state\.kind === "preset"[\s\S]*usbSessionReady\.current[\s\S]*transitionConnection\("connected"\)/);
@@ -146,7 +146,7 @@ test("large model metadata never blocks the permanent USB reader", () => {
   assert.match(javaSource, /stateDecoder\.postBootInitializationStarted\(/);
   assert.match(javaSource, /stateDecoder\.systemTimeCommand\(System\.currentTimeMillis\(\)\)/);
   assert.match(javaSource, /stateDecoder\.initializationAdvance\(/);
-  assert.match(javaSource, /initializationComplete && presetSynchronized/);
+  assert.match(javaSource, /initializationComplete && stateSynchronized/);
   assert.match(javaSource, /QcUsbProfile\.POST_INITIALIZATION_WRITE_DELAY_MS/);
   assert.match(rustInitializationSource, /self\.synchronized && self\.seed_complete\(\)/);
   assert.match(rustCommandsSource, /profile::LIVE_SUBSCRIPTIONS/);
@@ -502,7 +502,7 @@ test("Android requires explicit attachment connect but recovers an unexpected re
   assert.match(javaSource, /sessionReconnectAttempted\(now\)/);
   assert.match(javaSource, /stateDecoder\.nextRequestId\(\)/);
   assert.doesNotMatch(javaSource, /AtomicLong requestIds/);
-  assert.match(javaSource, /if \(!presetSynchronized\) \{\s*stateDecoder\.initializationObserved\(decoded\.messageType, decoded\.payload\)/);
+  assert.match(javaSource, /if \(!stateSynchronized\) \{\s*stateDecoder\.initializationObserved\(decoded\.messageType, decoded\.payload\)/);
   assert.match(javaSource, /synchronizationChanged[\s\S]*sessionStateObserved\([\s\S]*decision\.synchronizedState/);
   assert.match(javaSource, /decision\.beginBuilding[\s\S]*sessionStateObserved\(monotonicMillis\(\), false\)/);
   assert.doesNotMatch(javaSource, /scheduleAutomaticReconnect[\s\S]{0,800},\s*250,\s*TimeUnit\.MILLISECONDS/);
