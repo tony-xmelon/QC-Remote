@@ -74,8 +74,14 @@
     "temporaryDeviceName": "QC MCP TEST"
   },
   "screenTap": {
-    "x": 20,
-    "y": 20,
+    "x": 100,
+    "y": 147,
+    "swipeSetupX": 742,
+    "swipeSetupY": 72,
+    "swipeX": 400,
+    "swipeY": 400,
+    "swipeToX": 400,
+    "swipeToY": 150,
     "restoreX": 742,
     "restoreY": 30,
     "restoreTaps": 2

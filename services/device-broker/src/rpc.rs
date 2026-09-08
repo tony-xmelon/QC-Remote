@@ -1,4 +1,4 @@
-use crate::worker::DeviceController;
+use crate::worker::{BrokerStatus, DeviceController};
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 use qc_device_runtime::{
     generated_gateway,
@@ -389,8 +389,7 @@ fn execute_gateway_read(
     let primary = match execute_single_gateway_read(controller, method, params) {
         Ok(value) => value,
         Err(error) if gateway_read_timeout_is_recoverable(method, &error) => {
-            controller.reset_session()?;
-            let status = controller.wait_for_ready(preset_recall_recovery_timeout());
+            let status = recover_session_after_timeout(controller)?;
             if status.phase != "ready" {
                 return Err(format!(
                     "{error} Read recovery ended in {}: {}",
@@ -418,8 +417,29 @@ fn execute_gateway_read(
 
 fn gateway_read_timeout_is_recoverable(method: &str, error: &str) -> bool {
     method != "device.diagnostics"
-        && error.starts_with("The Quad Cortex did not return a valid ")
-        && error.contains(" reply within ")
+        && ((error.starts_with("The Quad Cortex did not return a valid ")
+            && error.contains(" reply within "))
+            || (error.starts_with("No correlated QC message type ")
+                && error.contains(" response for request ")
+                && error.ends_with(" before timeout")))
+}
+
+fn in_session_rebuild_active(phase: &str) -> bool {
+    phase == "syncing"
+}
+
+fn recover_session_after_timeout(controller: &DeviceController) -> Result<BrokerStatus, String> {
+    // A Connection(false) push makes the existing worker rebuild the live
+    // session in place. Let that Cortex Control sequence finish; resetting at
+    // the same time starts a second handshake and can strand the QC in Building.
+    if in_session_rebuild_active(&controller.status().phase) {
+        let status = controller.wait_for_ready(preset_recall_recovery_timeout());
+        if status.phase == "ready" {
+            return Ok(status);
+        }
+    }
+    controller.reset_session()?;
+    Ok(controller.wait_for_ready(preset_recall_recovery_timeout()))
 }
 
 fn gateway_identity(controller: &DeviceController) -> Result<Value, String> {
@@ -1067,13 +1087,38 @@ fn gateway_operation(
         plan.verification.clone(),
         after_sequence,
         &verification_policy,
-    )?
-    .ok_or_else(|| {
-        format!(
-            "{} was sent, but authoritative preset readback did not confirm it",
-            plan.detail
-        )
-    })?;
+    )?;
+    let snapshot = match snapshot {
+        Some(snapshot) => snapshot,
+        None if in_session_rebuild_active(&controller.status().phase) => {
+            // CorOS can request a full in-session state rebuild while applying a
+            // write. Never replay the non-idempotent mutation: let that rebuild
+            // finish, or reset once as fallback, then verify the fresh snapshot.
+            let status = recover_session_after_timeout(controller)?;
+            if status.phase != "ready" {
+                return Err(format!(
+                    "{} was sent, but write-verification recovery ended in {}: {}",
+                    plan.detail, status.phase, status.detail
+                ));
+            }
+            controller
+                .wait_for_gateway_snapshot(preset_recall_recovery_timeout(), |snapshot| {
+                    !snapshot.setlist_key.is_empty() && !snapshot.preset_name.is_empty()
+                })
+                .ok_or_else(|| {
+                    format!(
+                        "{} was sent, but write-verification recovery published no active preset",
+                        plan.detail
+                    )
+                })?
+        }
+        None => {
+            return Err(format!(
+                "{} was sent, but authoritative preset readback did not confirm it",
+                plan.detail
+            ));
+        }
+    };
     let parameter = plan
         .verification
         .parameter_target()
@@ -1120,10 +1165,9 @@ fn execute_preset_recall(
     )? {
         Some(after) => after,
         None => {
-            // Match Android's recovery rule: reset the transport once, trust
-            // the fresh synchronized snapshot, and never replay the mutation.
-            controller.reset_session()?;
-            let status = controller.wait_for_ready(preset_recall_recovery_timeout());
+            // Match Android's recovery rule: finish an active rebuild or reset
+            // once, trust the fresh snapshot, and never replay the mutation.
+            let status = recover_session_after_timeout(controller)?;
             if status.phase != "ready" {
                 return Err(format!(
                     "Preset recall required USB recovery, but reconnection ended in {}: {}",
@@ -1354,10 +1398,9 @@ fn execute_preset_mutation(
             Ok(listing) => listing,
             Err(stale_error) => {
                 // Persistent writes are not safe to replay. CorOS can commit a
-                // save while continuing to serve an old File stream, so reset
-                // the session once and verify the committed catalog instead.
-                controller.reset_session()?;
-                let status = controller.wait_for_ready(preset_recall_recovery_timeout());
+                // save while continuing to serve an old File stream, so finish
+                // an active rebuild or reset once and verify the catalog.
+                let status = recover_session_after_timeout(controller)?;
                 if status.phase != "ready" {
                     return Err(format!(
                         "{stale_error} Catalog recovery ended in {}: {}",
@@ -1745,14 +1788,30 @@ mod tests {
     fn only_safe_timed_out_reads_trigger_session_recovery() {
         let timeout = "The Quad Cortex did not return a valid device.irs reply within 30 seconds";
         assert!(gateway_read_timeout_is_recoverable("device.irs", timeout));
+        assert!(gateway_read_timeout_is_recoverable(
+            "device.presetScreenshot",
+            "No correlated QC message type 25 response for request 42 before timeout"
+        ));
         assert!(!gateway_read_timeout_is_recoverable(
             "device.diagnostics",
             "The Quad Cortex did not return a valid device.diagnostics reply within 8 seconds"
         ));
         assert!(!gateway_read_timeout_is_recoverable(
+            "device.diagnostics",
+            "No correlated QC message type 27 response for request 42 before timeout"
+        ));
+        assert!(!gateway_read_timeout_is_recoverable(
             "device.irs",
             "folder must not contain path traversal"
         ));
+    }
+
+    #[test]
+    fn only_an_active_state_rebuild_triggers_write_verification_recovery() {
+        assert!(in_session_rebuild_active("syncing"));
+        assert!(!in_session_rebuild_active("ready"));
+        assert!(!in_session_rebuild_active("disconnected"));
+        assert!(!in_session_rebuild_active("error"));
     }
 
     #[test]

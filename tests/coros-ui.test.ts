@@ -742,6 +742,7 @@ test("interactive synchronization avoids human-visible debounce and full snapsho
 test("preset navigation waits on QC state events and reads only as recovery", () => {
   const brokerSource = readFileSync(new URL("../services/device-broker/src/rpc.rs", import.meta.url), "utf8");
   const recallFlow = brokerSource.slice(brokerSource.indexOf("fn execute_preset_recall"), brokerSource.indexOf("fn gateway_recall_preset"));
+  const recoveryFlow = brokerSource.slice(brokerSource.indexOf("fn recover_session_after_timeout"), brokerSource.indexOf("fn gateway_identity"));
   assert.match(recallFlow, /subscribe_state_events\(\)/);
   assert.match(brokerSource, /GatewayVerificationRuntime::new[\s\S]*events\.recv_timeout\(Duration::from_millis\(delay_ms\)\)/);
   assert.match(recallFlow, /gateway_write_verification_policy/);
@@ -749,7 +750,8 @@ test("preset navigation waits on QC state events and reads only as recovery", ()
   assert.match(brokerSource, /verify_gateway_write_on_schedule[\s\S]*GatewayVerificationAction::Refresh \{ method \}[\s\S]*dispatch_gateway_refresh\(controller, method\)/);
   assert.doesNotMatch(recallFlow, /controller\.send_command\(recall_message[\s\S]*controller\.send_command\(recall_message/,
     "recovery must inspect synchronized state instead of replaying the recall");
-  assert.match(recallFlow, /reset_session\(\)[\s\S]*wait_for_gateway_snapshot/, "a full snapshot read is reserved for transport recovery");
+  assert.match(recallFlow, /recover_session_after_timeout\(controller\)[\s\S]*wait_for_gateway_snapshot/, "a full snapshot read is reserved for transport recovery");
+  assert.match(recoveryFlow, /wait_for_ready[\s\S]*reset_session\(\)[\s\S]*wait_for_ready/, "an active in-session rebuild finishes before a forced reset fallback");
   assert.doesNotMatch(recallFlow, /thread::sleep/);
 });
 

@@ -342,8 +342,8 @@ async function main() {
   }
   assertOpenIncidentAcknowledged(await openReleaseBlockingIncidentIds());
   if ([...enabledHazards].some((value) => value !== "read")) assertMutationAcknowledged();
-  if ((enabledHazards.has("persistent") || enabledHazards.has("system") || enabledHazards.has("screen")) && !enabledHazards.has("live")) {
-    throw new Error("Persistent, system, and screen cases require --live because safe scratch-preset entry and restoration use live actions.");
+  if ((enabledHazards.has("persistent") || enabledHazards.has("system")) && !enabledHazards.has("live")) {
+    throw new Error("Persistent and system cases require --live because safe scratch-preset entry and restoration use live actions.");
   }
 
   if (stressEnabled && !enabledHazards.has("live")) {
@@ -587,6 +587,17 @@ async function main() {
       assert(diagnostics.messagesReceived > 0, `Windows USB worker observed no device messages at ${stage}.`);
     }
   };
+
+  const waitForTransportReady = async (label) => waitForPhysicalObservation(
+    () => transport.status(),
+    (status) => {
+      const diagnostics = status?.usbDiagnostics;
+      return diagnostics?.connected === true
+        && diagnostics?.phase === "ready"
+        && diagnostics?.synchronized !== false;
+    },
+    { timeoutMs: 30000, intervalMs: 250, label }
+  );
 
   const recordLifecycleCheckpoint = async (stage, details = {}) => {
     let status;
@@ -1154,6 +1165,9 @@ async function main() {
         assert(!currentSnapshot.dirty, "Configured scratch preset could not be reverted during preflight.");
         originalSnapshot = currentSnapshot;
       } else if (!scratchAlreadyActive) {
+        if (!enabledHazards.has("live")) {
+          throw new Error("Screen-only execution requires the configured clean scratch preset to already be active.");
+        }
         await recall(config.scratchPreset);
       }
       assert(currentSnapshot.presetName.startsWith(config.scratchPreset.requiredNamePrefix), "Refusing mutations: active preset is not the configured scratch preset.");
@@ -1291,9 +1305,22 @@ async function main() {
         await waitForGigViewDismissal();
       } catch {
         // The retail UI can consume the first idempotent dismissal while a
-        // framebuffer capture is completing. Replay it once, then fail closed.
+        // framebuffer capture is completing. Replay it once before recovery.
         await transport.call("show_gig_view", { shown: false });
-        await waitForGigViewDismissal();
+        try {
+          await waitForGigViewDismissal();
+        } catch {
+          // Some retail sessions acknowledge both hide messages without
+          // dismissing Gig View. A preset reload is the device-supported,
+          // reversible route back to Grid and is verified independently.
+          const restored = await transport.call("reload_preset", {
+            expected_preset_name: currentSnapshot.presetName,
+            expected_position: currentSnapshot.presetPosition,
+            confirm_risky_operation: true
+          });
+          currentSnapshot = resultSnapshot(restored) ?? await snapshot();
+          await waitForGigViewDismissal();
+        }
       }
 
       const modeBySlot = new Map(
@@ -2370,6 +2397,7 @@ async function main() {
       assert(!destinationPresets.presets.some((preset) => preset.name === copiedStoredName), "Moved preset was not deleted during restoration.");
     }
 
+    await waitForTransportReady("QC in-session state rebuild before system recovery");
     await recordTransportHealth("before-system-recovery");
 
     if (enabledHazards.has("system")) {
@@ -2390,21 +2418,63 @@ async function main() {
     }
 
     if (enabledHazards.has("screen")) {
-      await call("swipe_screen", {
-        x: config.screenTap.x,
-        y: config.screenTap.y,
-        to_x: config.screenTap.restoreX,
-        to_y: config.screenTap.restoreY,
+      // A transport reconnect restores the logical preset state, but the QC may
+      // retain an unrelated UI surface (for example Gig View). Establish Grid
+      // explicitly before using the preset-title tap to open the swipe fixture.
+      const screenGrid = await transport.call("reload_preset", {
+        expected_preset_name: currentSnapshot.presetName,
+        expected_position: currentSnapshot.presetPosition,
         confirm_risky_operation: true
       });
-      const afterSwipe = await transport.call("capture_screen", {});
-      assert(pngSignatureIsValid(afterSwipe, 800, 480), "Screen-swipe follow-up returned an invalid PNG.");
+      currentSnapshot = resultSnapshot(screenGrid) ?? await snapshot();
+      await sleep(750);
+      let screenBeforeSwipe = await transport.call("capture_screen", {});
+      assert(pngSignatureIsValid(screenBeforeSwipe, 800, 480), "Screen-swipe baseline returned an invalid PNG.");
+      if (Number.isFinite(config.screenTap.swipeSetupX) && Number.isFinite(config.screenTap.swipeSetupY)) {
+        const gridBeforeSwipeSetup = screenBeforeSwipe;
+        await transport.call("tap_screen", {
+          x: config.screenTap.swipeSetupX,
+          y: config.screenTap.swipeSetupY,
+          confirm_risky_operation: true
+        });
+        screenBeforeSwipe = await waitForPhysicalObservation(
+          () => transport.call("capture_screen", {}),
+          (value) => pngSignatureIsValid(value, 800, 480)
+            && screenDigest(value) !== screenDigest(gridBeforeSwipeSetup),
+          { timeoutMs: 5000, intervalMs: 150, label: "QC swipe test surface" }
+        );
+      }
+      await call("swipe_screen", {
+        x: config.screenTap.swipeX ?? config.screenTap.x,
+        y: config.screenTap.swipeY ?? config.screenTap.y,
+        to_x: config.screenTap.swipeToX ?? config.screenTap.restoreX,
+        to_y: config.screenTap.swipeToY ?? config.screenTap.restoreY,
+        confirm_risky_operation: true
+      });
+      const afterSwipe = await waitForPhysicalObservation(
+        () => transport.call("capture_screen", {}),
+        (value) => pngSignatureIsValid(value, 800, 480)
+          && screenDigest(value) !== screenDigest(screenBeforeSwipe),
+        { timeoutMs: 5000, intervalMs: 150, label: "QC framebuffer change after swipe_screen" }
+      );
+      verified("swipe_screen", {
+        x: config.screenTap.swipeX ?? config.screenTap.x,
+        y: config.screenTap.swipeY ?? config.screenTap.y,
+        toX: config.screenTap.swipeToX ?? config.screenTap.restoreX,
+        toY: config.screenTap.swipeToY ?? config.screenTap.restoreY,
+        beforeSha256: screenDigest(screenBeforeSwipe),
+        afterSha256: screenDigest(afterSwipe)
+      });
       const swipeRestore = await transport.call("reload_preset", {
         expected_preset_name: currentSnapshot.presetName,
         expected_position: currentSnapshot.presetPosition,
         confirm_risky_operation: true
       });
       currentSnapshot = resultSnapshot(swipeRestore) ?? await snapshot();
+      // Preset readback completes before the display compositor necessarily
+      // finishes returning to Grid. Do not race the reversible corner tap
+      // against that final framebuffer transition.
+      await sleep(750);
       const screenBeforeTap = await transport.call("capture_screen", {});
       assert(pngSignatureIsValid(screenBeforeTap, 800, 480), "Screen-tap baseline returned an invalid PNG.");
       await call("tap_screen", { x: config.screenTap.x, y: config.screenTap.y, confirm_risky_operation: true });
