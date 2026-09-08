@@ -200,13 +200,15 @@ assert(!/PERFORMANCE_MIDI_GAP_MS[\s\S]{0,120}System\.currentTimeMillis/.test(and
   "Android must enforce shared performance-MIDI pacing on a monotonic clock.");
 assert(androidUsbHost.includes("handshakeAttempt(monotonicMillis(), session)"),
   "Android must drive shared handshake deadlines with its monotonic clock.");
-assert(/InitializationDecision\.COMPLETE[\s\S]{0,260}sessionHandshakeComplete\([\s\S]{0,100}decision\.synchronizedState/.test(androidUsbHost),
+assert(/InitializationDecision\.COMPLETE[\s\S]{0,400}sessionHandshakeComplete\([\s\S]{0,100}decision\.synchronizedState/.test(androidUsbHost),
   "Android must advance shared transport readiness at the same post-seed boundary as Windows.");
+assert(/InitializationDecision\.SEND[\s\S]{0,300}connection == null \|\| !stateDecoder\.startupConnected\(\)/.test(androidUsbHost),
+  "Android must allow shared post-boot seed writes before public transport readiness.");
 assert(androidUsbHost.includes("postBootInitializationStarted(monotonicMillis())"),
   "Android must let the shared startup runtime allocate post-boot request IDs.");
 assert(androidNativeFacade.includes("sessionConnected()")
   && androidNativeFacade.includes("sessionSynchronized()")
-  && !/(?:handshakeComplete|stateSynchronized)/.test(androidUsbHost),
+  && !/(?:handshakeComplete|stateSynchronized|initializationComplete)/.test(androidUsbHost),
   "Android connection and synchronization projections must come from the shared transport runtime.");
 assert(androidUsbHost.includes("stateDecoder.nextRequestId()") && !androidUsbHost.includes("AtomicLong requestIds"),
   "Android must reserve every correlation id from the retained shared session runtime.");

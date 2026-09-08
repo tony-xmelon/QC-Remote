@@ -146,7 +146,8 @@ test("large model metadata never blocks the permanent USB reader", () => {
   assert.match(javaSource, /stateDecoder\.postBootInitializationStarted\(/);
   assert.match(javaSource, /stateDecoder\.systemTimeCommand\(System\.currentTimeMillis\(\)\)/);
   assert.match(javaSource, /stateDecoder\.initializationAdvance\(/);
-  assert.match(javaSource, /initializationComplete && stateDecoder\.sessionSynchronized\(\)/);
+  assert.match(javaSource, /stateDecoder\.sessionSynchronized\(\) && currentSetlist != null/);
+  assert.match(javaSource, /InitializationDecision\.SEND[\s\S]{0,300}connection == null \|\| !stateDecoder\.startupConnected\(\)/);
   assert.match(javaSource, /QcUsbProfile\.POST_INITIALIZATION_WRITE_DELAY_MS/);
   assert.match(rustInitializationSource, /self\.synchronized && self\.seed_complete\(\)/);
   assert.match(rustCommandsSource, /profile::LIVE_SUBSCRIPTIONS/);
@@ -575,7 +576,7 @@ test("Android's USB maintenance uses the same dedicated shared KeepAlive as Wind
   assert.match(javaSource, /MAINTENANCE_POLL_MS = 1000/);
   assert.match(javaSource, /MAINTENANCE_POLL_MS, MAINTENANCE_POLL_MS, TimeUnit\.MILLISECONDS/);
   assert.match(javaSource, /return connection != null && stateDecoder\.sessionConnected\(\)/);
-  assert.doesNotMatch(javaSource, /handshakeComplete|stateSynchronized/);
+  assert.doesNotMatch(javaSource, /handshakeComplete|stateSynchronized|initializationComplete/);
   assert.match(rustInitializationSource, /SessionValidating[\s\S]*commands::read_version\(\)/);
   assert.doesNotMatch(javaSource, /keepalive\.schedule\([\s\S]{0,500}readCommand\(QcUsbProfile\.MESSAGE_TYPE_VERSION\)/);
 });
