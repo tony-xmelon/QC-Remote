@@ -5,7 +5,7 @@
   "embeddedVectorSources": [
     { "path": "packages/typescript/qc-theme/src/screen-icon-vectors.ts", "sha256": "a5c4552a790fddfda7fb5e0cc50eb2102d6fd2ce8e6c53385e9c16e318e2d72d", "purpose": "canonical neutral screen-icon geometry" },
     { "path": "packages/typescript/qc-ui/src/coros-capture-connections.tsx", "sha256": "5515af113eb777b012a7d805664f0270b95680cd36bce399a193374e05b1c99d", "purpose": "functional capture-cabling diagrams" },
-    { "path": "packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", "sha256": "dae0fc2c89cd2a180cef27176660296e79984d09993c6e446dd6972bf2f8c9a9", "purpose": "shared screen diagrams and fixture composition" },
+    { "path": "packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", "sha256": "0542d20ec41785aba957a5d7ccff80f43115c31d1bc605d2b2afabfff51eee05", "purpose": "shared screen diagrams and fixture composition" },
     { "path": "packages/typescript/qc-ui/src/device-category-glyph.tsx", "sha256": "4af1e03f6b006874b645734462e13f53e8e72b6aac368e02700471d6a745bffa", "purpose": "device-category glyph composition" },
     { "path": "packages/typescript/qc-ui/src/device-glyph.tsx", "sha256": "7588f205f47acbe8269ce5d96a5eaba072ad062184b74a9b1feb1b657cd1b63e", "purpose": "block-tile glyph composition" },
     { "path": "packages/typescript/qc-ui/src/parameter-editor.tsx", "sha256": "a1787d4ef1541b795cba117133960dece03fc55177a69ae5f11704ffe5304fa9", "purpose": "interactive parameter and signal diagrams" },
