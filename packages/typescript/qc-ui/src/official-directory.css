@@ -195,5 +195,7 @@
 .directory-irs-official.is-manual-reference .directory-on-device-check { width: 1.75cqw; height: 1.75cqw; display: grid; place-items: center; border-radius: 50%; background: #697069; color: #292c29; }
 .directory-irs-official.is-manual-reference .directory-on-device-check svg { width: 1.25cqw; height: 1.25cqw; fill: currentColor; stroke: none; }
 .directory-irs-official.is-manual-reference .directory-official-list > button > i > b:first-child > span svg { width: 1.75cqw; height: 1.75cqw; fill: currentColor; stroke: none; }
+.directory-irs-official.is-manual-reference .qc-directory-icon-status-check { color: #071008 !important; fill: none !important; stroke: currentColor !important; }
+.directory-irs-official.is-manual-reference .qc-directory-icon-remove-device { fill: none; stroke: currentColor; }
 .directory-irs-official.is-manual-reference .directory-ir-mark { position: absolute; left: 44cqw; color: #929692; font-size: 1.5cqw; font-style: normal; }
 

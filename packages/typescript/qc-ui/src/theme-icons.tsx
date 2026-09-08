@@ -1,7 +1,7 @@
 import type { PresetSnapshot } from "@qc-remote/client";
 import { QC_COLORS, QC_REFERENCE_ICON_RASTERS, QC_TYPOGRAPHY } from "@qc-remote/theme";
 
-export type QcDirectoryIconName = "grid" | "download" | "cloud" | "cloud-upload" | "folder" | "new-folder" | "sort" | "filter" | "arrange" | "upload" | "search" | "trash" | "done";
+export type QcDirectoryIconName = "grid" | "download" | "cloud" | "cloud-upload" | "folder" | "new-folder" | "sort" | "filter" | "arrange" | "upload" | "search" | "trash" | "sync" | "remove-device" | "status-check" | "done";
 export type QcEditorIconName = "save" | "change" | "copy" | "paste" | "reset" | "expression" | "looper" | "mute" | "model-update" | "model-downgrade" | "remove" | "assignment-expression" | "band-power" | "footswitch" | "momentary" | "scene-previous" | "scene-next" | "bypass" | "confirm" | "waveform";
 export type QcEqIconName = "high-pass";
 export type QcHardwareIconName = "power" | "brand-pulse";
@@ -390,6 +390,21 @@ export function QcDirectoryIcon({ kind, number }: { kind: QcDirectoryIconName; n
         <path fillRule="evenodd" clipRule="evenodd" d="M10 2a8 8 0 1 0 4.914 14.314L19.6 21 21 19.6l-4.686-4.686A8 8 0 0 0 10 2Zm-6 8a6 6 0 1 1 12 0 6 6 0 0 1-12 0Z" fill={QC_COLORS.captured.iconPrimary} stroke="none" />
       </svg>
     );
+  if (kind === "sync")
+    return (
+      <svg className={classes} viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M20 7V2l-2 2A9 9 0 0 0 4.6 7.2M4 17v5l2-2a9 9 0 0 0 13.4-3.2" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" />
+        <path d="M18 4h-5M6 20h5" fill="none" stroke="currentColor" strokeWidth="2" />
+      </svg>
+    );
+  if (kind === "remove-device")
+    return (
+      <svg className={classes} viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M5 6h14v16H5ZM3 6h18M8 3h8M9 14l6 6m0-6-6 6" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="miter" />
+      </svg>
+    );
+  if (kind === "status-check")
+    return <svg className={classes} viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12 4 4 8-9" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square" /></svg>;
   if (kind === "done") return <QcReferenceRasterLayers icon="interface.check" className={classes} />;
   // `trash` is handled by directoryReferenceIcon above; all directory icon
   // variants must resolve explicitly so a new variant cannot silently render

@@ -266,6 +266,9 @@ test("manual IR Directory keeps device-status rows separate from action tiles", 
   assert.match(directoryCss, /is-manual-reference \.directory-official-list > button \{ height: 6\.5cqw;[^}]*background: transparent;/);
   assert.match(directoryCss, /directory-official-list > button > i b \{ background: #181c18; \}/);
   assert.match(icons, /kind === "check" && monochrome[\s\S]*?referencePath\("interface\.check"\)[\s\S]*?fill="currentColor"/);
+  assert.match(fixture, /manualReference[\s\S]*?<DirectoryIcon kind="sync" \/>/);
+  assert.match(fixture, /<DirectoryIcon kind="status-check" \/>/);
+  assert.match(fixture, /manualReference \? "remove-device" : "trash"/);
 });
 
 test("official Directory search header uses the shared icon vocabulary", () => {

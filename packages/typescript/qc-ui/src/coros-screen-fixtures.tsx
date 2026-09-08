@@ -540,7 +540,7 @@ function CorOsOfficialDirectory({
           <>
             {manualReference && (
               <button className="directory-primary-action">
-                <GridToolbarIcon kind="refresh" />
+                <DirectoryIcon kind="sync" />
               </button>
             )}
             <span />
@@ -644,10 +644,10 @@ function CorOsOfficialDirectory({
                 ) : irs ? (
                   <><em className="directory-ir-mark">I</em><i>
                     <b>
-                      <span><QcUiIcon kind="check" monochrome /></span>
+                      <span><DirectoryIcon kind="status-check" /></span>
                     </b>
                     <b>
-                      <DirectoryIcon kind="trash" />
+                      <DirectoryIcon kind={manualReference ? "remove-device" : "trash"} />
                     </b>
                   </i></>
                 ) : (
