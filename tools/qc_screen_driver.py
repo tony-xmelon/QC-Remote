@@ -27,12 +27,19 @@ under names for a menu the dialog was not showing. `expect` matches any text in
 the tree, so verify content - `expect Global Bypass` - not just the widget
 class, which cannot tell two categories of the same dialog apart.
 
-**4. Scroll by dragging the scrollbar, never by swiping the list.** The atomic
-DRAG gesture, and a stepped drag that releases over a row, are both taken as a
-tap on the row under the release often enough to matter: swiping the main menu
-opened the Tempo editor three times in one session, and the Tempo editor's
-animation then stops the framebuffer stream altogether. `drag 740 170 740 430`
-moves the popup's scrollbar instead, and has never activated a row.
+**4. Scroll by dragging the scrollbar, never by swiping the list.** A gesture
+that releases over a row can be taken as a tap on it, and the atomic DRAG is the
+worse of the two. `drag 740 170 740 430` moves a popup's own scrollbar instead
+and has not activated a row.
+
+**5. The unit has its own input, and it will move under you.** Screens appeared
+mid-run that nothing in the script asked for - the Grid became the metronome
+editor between a refused tap and the next `expect`, and a settings menu became
+Gig View - which is the unit's footswitches, not the script. The animated
+metronome screen then stops the framebuffer stream, and `--no-framebuffer`
+connects on the graphics tree alone to navigate off it, the only recovery that
+does not toggle Gig View. This is why rule 3 says *immediately* before: a
+verification from four commands ago is worth nothing here.
 
 Commands are read from stdin, one per line:
 

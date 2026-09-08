@@ -347,6 +347,11 @@ recorded rather than remembered:
   System category, because `capture` did not require a verified screen the way a
   gesture does. They were reverted, and `qc_screen_driver.py` now refuses a
   capture without a fresh `expect`, which it proved immediately by refusing six.
+- The unit takes its own input while a script drives it. Screens appeared that
+  nothing in the run asked for - the Grid became the metronome editor between a
+  refused tap and the next check, a settings menu became Gig View - which is the
+  footswitches. Every step has to re-verify, and the metronome screen's
+  animation stops the framebuffer stream until something navigates off it.
 - The Settings dialog **has no category selector while the System category is
   showing** - the header row is absent from the frame and from the graphics
   tree, and the panes sit five pixels higher. Once the dialog is on System there

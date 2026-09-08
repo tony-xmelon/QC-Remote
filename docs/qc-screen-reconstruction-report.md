@@ -1226,11 +1226,15 @@ remembered. Six panes were written under Device names while the dialog was
 showing the System category, because `capture` did not require a verified screen
 the way a gesture does - they were reverted, and the driver now refuses a
 capture without a fresh `expect`, which it demonstrated by refusing six on the
-next attempt. And scrolling a popup by swiping over its rows is read as a tap on
-the row under the release often enough to matter: it opened the Tempo editor
-three times, whose animation stops the framebuffer stream, and the stream is not
-recoverable without the Gig View toggle this project does not use. Dragging the
-popup's own scrollbar has never done it. Both rules now live in the driver.
+next attempt. And the unit moved under the script: the Grid became the metronome
+editor between a refused tap and the next check, and a settings menu became Gig
+View, neither of which the script asked for. That is the unit's own footswitches,
+and the metronome screen's animation then stops the framebuffer stream, which is
+not recoverable without the Gig View toggle this project does not use - so the
+driver grew `--no-framebuffer`, which connects on the graphics tree alone and is
+enough to navigate off the animation. Scrolling a popup by its scrollbar rather
+than by swiping its rows avoids the other half of it. All of it now lives in the
+driver rather than in someone's memory.
 
 **ST-06 is the one that was seen and could not be kept.** The real Device
 Updates page reads *Your Quad Cortex is currently running* over **CorOS: 4.1.0**,
