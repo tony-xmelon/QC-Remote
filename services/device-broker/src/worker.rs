@@ -1225,10 +1225,9 @@ fn run(
         if let Some(connected) = connection.as_mut() {
             match connected
                 .usb
-                .read_message_poll(&mut session, CONNECTED_IO_POLL_MS)
+                .read_message(&mut session, CONNECTED_IO_POLL_MS)
             {
-                Ok((Some(message), _)) => {
-                    session.read_succeeded();
+                Ok(Some(message)) => {
                     let was_synchronized = connected.synchronized;
                     if let Err(error) = connected.observe_lifecycle(&message, now_ms) {
                         let detail = format!("QC session lifecycle failed: {error}");
@@ -1269,12 +1268,8 @@ fn run(
                         );
                     }
                 }
-                Ok((None, true)) => session.read_succeeded(),
-                Ok((None, false)) => {}
+                Ok(None) => {}
                 Err(error) => {
-                    if !session.read_failed() {
-                        continue;
-                    }
                     set_phase(
                         &state,
                         "searching",

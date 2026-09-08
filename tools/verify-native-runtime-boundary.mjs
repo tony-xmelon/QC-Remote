@@ -289,8 +289,10 @@ assert(windowsUsb.includes("HidReadEvent::Idle")
   && windowsUsb.includes("read_message_poll")
   && !windowsUsb.includes("consecutive_errors"),
   "Windows must report native read activity while leaving error tolerance to the shared transport runtime.");
-assert(/Ok\(\(None, true\)\) => session\.read_succeeded\(\)[\s\S]{0,80}Ok\(\(None, false\)\) => \{\}/.test(windowsWorker),
-  "Windows must not reset shared read-error state for an empty broker queue poll.");
+assert(/read_message_poll[\s\S]{0,500}session\.read_succeeded\(\)[\s\S]{0,500}session\.read_failed\(\)/.test(windowsUsb),
+  "Every Windows handshake, seed, and connected-state read must use the shared read-error policy.");
+assert(!/session\.(?:read_succeeded|read_failed)\(\)/.test(windowsWorker),
+  "The Windows worker must not reimplement read-error policy around the native adapter.");
 await rejectPatterns(
   [
     "packages/rust/qc-android/src/lib.rs",

@@ -607,14 +607,21 @@ impl QcUsb {
         session: &mut TransportRuntime,
         timeout_ms: i32,
     ) -> Result<Option<IncomingMessage>, UsbError> {
-        self.read_message_poll(session, timeout_ms)
-            .map(|(message, _native_read_succeeded)| message)
+        match self.read_message_poll(session, timeout_ms) {
+            Ok((message, true)) => {
+                session.read_succeeded();
+                Ok(message)
+            }
+            Ok((message, false)) => Ok(message),
+            Err(_error) if !session.read_failed() => Ok(None),
+            Err(error) => Err(error),
+        }
     }
 
     /// Poll one Windows HID event without confusing an empty broker queue with
     /// a successful native read. The shared transport resets its error streak
     /// only for an actual OS idle/report completion.
-    pub fn read_message_poll(
+    fn read_message_poll(
         &mut self,
         session: &mut TransportRuntime,
         timeout_ms: i32,
