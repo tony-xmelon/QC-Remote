@@ -127,7 +127,7 @@
   /* CorOS lightens the screen behind a message dialog rather than darkening
      it: 16 goes to 66 and 255 to 132, which is a 72.4% wash of rgb(86 89 86). */
   .restart-scrim { position: absolute; inset: 0; background: rgba(86, 89, 86, .724); }
-  .restart-dialog { position: absolute; left: 23.75cqw; top: 15.625cqw; width: 52.5cqw; height: 28.75cqw; border-radius: 1cqw; background: #101010; color: #f4f4f4; font-family: Roboto, Arial, sans-serif; text-align: center; }
+  .restart-dialog { position: absolute; left: 23.75cqw; top: 15.625cqw; width: 52.5cqw; height: 28.75cqw; border-radius: 1cqw; background: #101010; color: #f4f4f4; font-family: var(--qc-font-device-plain); text-align: center; }
   .restart-dialog h1 { margin: 5.75cqw 0 0; font-size: 3cqw; font-weight: 400; }
   .restart-dialog p { margin: 3.25cqw 0 0; font-size: 2.25cqw; }
   .restart-dialog footer { position: absolute; left: 4cqw; right: 4cqw; top: 19.125cqw; display: flex; justify-content: space-between; }
@@ -137,7 +137,7 @@
   /* The Diagnostics dialogs fill the screen: a title at (24, 22), the done
      button where every settings screen keeps it, and a table of counters whose
      labels are orange and whose values are plain. */
-  .qc-screen.coros-diagnostics-dialog { background: #101010; color: #f4f4f4; font-family: Roboto, Arial, sans-serif; }
+  .qc-screen.coros-diagnostics-dialog { background: #101010; color: #f4f4f4; font-family: var(--qc-font-device-plain); }
   .coros-diagnostics-dialog, .coros-diagnostics-dialog * { box-sizing: border-box; }
   .coros-diagnostics-dialog > header { position: absolute; left: 3cqw; right: 1cqw; top: 1cqw; height: 5.5cqw; display: flex; align-items: center; justify-content: space-between; }
   .coros-diagnostics-dialog h1 { margin: 0; font-size: 2.125cqw; font-weight: 400; }
