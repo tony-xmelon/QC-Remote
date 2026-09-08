@@ -199,6 +199,11 @@ impl SessionMachine {
         self.consecutive_read_errors = self.consecutive_read_errors.saturating_add(1);
         self.consecutive_read_errors >= 2
     }
+
+    fn terminal_read_failed(&mut self) -> bool {
+        self.consecutive_read_errors = 2;
+        true
+    }
 }
 
 /// Layout expected by a host USB write API.
@@ -400,6 +405,13 @@ impl TransportRuntime {
 
     pub fn read_failed(&mut self) -> bool {
         self.session.read_failed()
+    }
+
+    /// Report an OS-level reader failure after which the native endpoint can
+    /// no longer continue. Unlike a transient HID read error, a closed request
+    /// queue does not benefit from retrying on the same handle.
+    pub fn terminal_read_failed(&mut self) -> bool {
+        self.session.terminal_read_failed()
     }
 
     /// Encode an outbound message exactly once, then adapt only its outer HID
@@ -620,6 +632,14 @@ mod tests {
         runtime.disconnect(100, true);
         assert!(!runtime.reconnect_due(100));
         assert!(runtime.reconnect_due(100 + profile::RECONNECT_INTERVAL_MS));
+    }
+
+    #[test]
+    fn a_terminal_native_reader_failure_requests_immediate_recovery() {
+        let mut runtime = TransportRuntime::new(0);
+        runtime.transport_opened(0);
+        runtime.handshake_completed(1, true);
+        assert!(runtime.terminal_read_failed());
     }
 
     #[test]

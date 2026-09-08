@@ -1726,15 +1726,26 @@ public class QcUsbPlugin extends Plugin {
                 readInputReportsAsync(activeConnection, activeEndpoint, generation);
                 return;
             }
-            while (readerIsActive(activeConnection, generation)) {
-                byte[] buffer = new byte[QcNativeStateDecoder.REPORT_SIZE];
-                readAttempts++;
-                int count = activeConnection.bulkTransfer(activeEndpoint, buffer, buffer.length, 250);
-                if (count <= 0) {
-                    if (count < 0) negativeReads++;
-                    continue;
+            try {
+                while (readerIsActive(activeConnection, generation)) {
+                    byte[] buffer = new byte[QcNativeStateDecoder.REPORT_SIZE];
+                    readAttempts++;
+                    int count = activeConnection.bulkTransfer(activeEndpoint, buffer, buffer.length, 250);
+                    if (count <= 0) {
+                        if (count < 0) negativeReads++;
+                        continue;
+                    }
+                    consumeInputReport(buffer, count);
                 }
-                consumeInputReport(buffer, count);
+            } catch (Exception error) {
+                if (readerIsActive(activeConnection, generation)) {
+                    lastReaderError = error.getClass().getName() + ": " + error.getMessage();
+                    lastError = "QC HID reader stopped: " + lastReaderError;
+                    android.util.Log.e("QcUsbPlugin", lastError, error);
+                }
+            } finally {
+                readerExitedAt = System.currentTimeMillis();
+                recoverUnexpectedReaderExit(activeConnection, generation);
             }
         });
     }
@@ -1809,11 +1820,18 @@ public class QcUsbPlugin extends Plugin {
                 try { request.cancel(); } catch (Exception ignored) {}
                 try { request.close(); } catch (Exception ignored) {}
             }
-            if (recoverReader) {
-                if (flight != null) flight.event("reader-exited-unexpectedly");
-                handshakeComplete = false;
-                scheduleAutomaticReconnect("QC HID reader recovered after interruption");
-            }
+            if (recoverReader) recoverUnexpectedReaderExit(activeConnection, generation);
+        }
+    }
+
+    private void recoverUnexpectedReaderExit(
+        UsbDeviceConnection activeConnection, long generation
+    ) {
+        if (!readerIsActive(activeConnection, generation)) return;
+        if (flight != null) flight.event("reader-exited-unexpectedly");
+        handshakeComplete = false;
+        if (stateDecoder.sessionTerminalReadFailed()) {
+            scheduleAutomaticReconnect("QC HID reader recovered after interruption");
         }
     }
 

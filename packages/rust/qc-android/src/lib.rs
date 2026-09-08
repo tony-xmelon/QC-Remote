@@ -1678,6 +1678,15 @@ pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeSess
 }
 
 #[no_mangle]
+pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeSessionTerminalReadFailed(
+    _env: JNIEnv,
+    _class: JClass,
+    value: jlong,
+) -> jint {
+    with_transport(value, |transport| transport.terminal_read_failed() as jint)
+}
+
+#[no_mangle]
 pub extern "system" fn Java_com_qccontrol_mobile_QcNativeStateDecoder_nativeReset(
     mut env: JNIEnv,
     _class: JClass,

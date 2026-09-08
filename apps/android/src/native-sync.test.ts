@@ -495,7 +495,8 @@ test("Android requires explicit attachment connect but recovers an unexpected re
   assert.match(javaSource, /ACTION_USB_DEVICE_ATTACHED/);
   assert.doesNotMatch(javaSource, /scheduleAutomaticReconnect\("Quad Cortex USB reattached"\)/);
   assert.match(javaSource, /boolean recoverReader = readerIsActive\(activeConnection, generation\)/);
-  assert.match(javaSource, /handshakeComplete = false;[\s\S]*scheduleAutomaticReconnect\("QC HID reader recovered after interruption"\)/);
+  assert.match(javaSource, /handshakeComplete = false;[\s\S]*sessionTerminalReadFailed\(\)[\s\S]*scheduleAutomaticReconnect\("QC HID reader recovered after interruption"\)/);
+  assert.match(javaSource, /catch \(Exception error\)[\s\S]{0,700}recoverUnexpectedReaderExit\(activeConnection, generation\)/);
   assert.match(javaSource, /sessionScheduleReconnect\(monotonicMillis\(\)\)/);
   assert.match(javaSource, /sessionReconnectDue\(now\)/);
   assert.match(javaSource, /sessionReconnectAttempted\(now\)/);

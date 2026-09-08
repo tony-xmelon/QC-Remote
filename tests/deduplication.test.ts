@@ -673,6 +673,8 @@ test("one shared Rust transport runtime owns reconnect, handshake, keepalive, fr
   assert.match(androidPlugin, /stateDecoder\.sessionScheduleReconnect/);
   assert.match(androidPlugin, /stateDecoder\.sessionReconnectDue/);
   assert.match(androidPlugin, /stateDecoder\.sessionReconnectAttempted/);
+  assert.match(androidPlugin, /stateDecoder\.sessionTerminalReadFailed/);
+  assert.match(androidJni, /transport\.terminal_read_failed\(\)/);
   assert.match(androidPlugin, /stateDecoder\.nextRequestId\(\)/);
   assert.doesNotMatch(androidPlugin, /AtomicLong requestIds/);
   assert.match(androidJni, /reserve_request_id\(\)/);

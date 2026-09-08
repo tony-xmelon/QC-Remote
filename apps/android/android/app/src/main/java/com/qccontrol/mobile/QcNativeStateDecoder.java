@@ -251,6 +251,9 @@ final class QcNativeStateDecoder implements AutoCloseable {
     void sessionReconnectAttempted(long nowMs) {
         nativeSessionReconnectAttempted(requireHandle(), nowMs);
     }
+    boolean sessionTerminalReadFailed() {
+        return nativeSessionTerminalReadFailed(requireHandle()) == 1;
+    }
 
     HandshakeDecision handshakeAttempt(long nowMs, String sessionId) {
         try {
@@ -652,4 +655,5 @@ final class QcNativeStateDecoder implements AutoCloseable {
     private static native long nativeSessionScheduleReconnect(long handle, long nowMs);
     private static native int nativeSessionReconnectDue(long handle, long nowMs);
     private static native void nativeSessionReconnectAttempted(long handle, long nowMs);
+    private static native int nativeSessionTerminalReadFailed(long handle);
 }

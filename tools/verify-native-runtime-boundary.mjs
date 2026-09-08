@@ -211,6 +211,9 @@ assert(androidUsbHost.includes("sessionScheduleReconnect(monotonicMillis())"),
   "Android must obtain automatic reconnect cadence from the shared transport runtime.");
 assert(androidUsbHost.includes("sessionReconnectDue(now)"),
   "Android must let the shared transport runtime gate automatic reconnect attempts.");
+assert(androidUsbHost.includes("stateDecoder.sessionTerminalReadFailed()")
+  && androidJni.includes("transport.terminal_read_failed()"),
+  "Android terminal endpoint failures must enter the same shared read-failure policy as Windows.");
 assert(!/scheduleAutomaticReconnect[\s\S]{0,800},\s*250,\s*TimeUnit\.MILLISECONDS/.test(androidUsbHost),
   "Android must not hard-code an automatic reconnect delay.");
 assert(androidUsbHost.includes("systemTimeCommand(System.currentTimeMillis())"),
