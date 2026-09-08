@@ -4,7 +4,7 @@ import { QcDeviceCategoryGlyph } from "./device-category-glyph";
 export type QcScreenGlyphName =
   | "about" | "backup" | "brightness" | "capture-target" | "cloud" | "copy"
   | "device" | "diagnostics" | "edit" | "factory" | "gig-view" | "global-bypass"
-  | "info" | "licenses" | "link" | "lock" | "power" | "power-functions" | "report"
+  | "headphones" | "hold" | "info" | "latency" | "licenses" | "link" | "lock" | "midi" | "power" | "power-functions" | "report" | "scene-bypass"
   | "status" | "stomp-bypass" | "storage" | "swap" | "system" | "updates" | "user"
   | "volume" | "wifi" | "progress" | "shift" | "pin"
   | "route-input" | "route-output" | "route-row" | "route-usb";
@@ -18,7 +18,12 @@ export function QcScreenGlyph({ kind, className }: { kind: QcScreenGlyphName; cl
   if (kind === "backup") return <svg {...frame}><path d={cloud} /><path d="m8 12-3 3 3 3m8-6 3 3-3 3M5 15h5m9 0h-5" /></svg>;
   if (kind === "cloud") return <svg {...frame}><path d={cloud} /></svg>;
   if (kind === "global-bypass") return <svg {...frame}><circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="2" /><path d="M4 5 2.5 3.5M20 5l1.5-1.5M4 19l-1.5 1.5M20 19l1.5 1.5" /></svg>;
+  if (kind === "scene-bypass") return <svg {...frame}><path d="M12 3v8" /><path d="M6.5 6.5a8 8 0 1 0 11 0" /></svg>;
   if (kind === "stomp-bypass") return <svg {...frame}><path d="M4 15.5 14.5 11l5.5 2.4-10.5 4.5L4 15.5Zm3.5-2.2 1.3-4.8 7.4-3 1.3 5.4M5 19h9M7 19v2h5v-2" /><circle cx="18.5" cy="18.5" r="1.5" /></svg>;
+  if (kind === "hold") return <svg {...frame}><circle cx="12" cy="12" r="9" /><path d="M12 12V5a7 7 0 0 1 7 7Z" fill="currentColor" stroke="none" /></svg>;
+  if (kind === "latency") return <svg {...frame}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></svg>;
+  if (kind === "midi") return <svg {...frame}><circle cx="12" cy="12" r="9" />{[[8,10],[12,8],[16,10],[9,15],[15,15]].map(([cx, cy]) => <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="1.2" fill="currentColor" />)}</svg>;
+  if (kind === "headphones") return <svg {...frame}><path d="M4 16v-4a8 8 0 0 1 16 0v4" /><rect x="2" y="14" width="5" height="7" rx="2" /><rect x="17" y="14" width="5" height="7" rx="2" /></svg>;
   if (kind === "swap") return <svg {...frame}><path d="M3 8h16m0 0-3.5-3.5M19 8l-3.5 3.5M21 16H5m0 0 3.5-3.5M5 16l3.5 3.5" /></svg>;
   if (kind === "gig-view") return <svg {...frame}><g className="settings-scene-cells"><rect x="2" y="3" width="8" height="8" /><rect x="14" y="3" width="8" height="8" /><rect x="2" y="13" width="8" height="8" /><rect x="14" y="13" width="8" height="8" /></g><path d="M10 7h4M10 17h4" /></svg>;
   if (kind === "power") return <svg {...frame}><path d="M12 2v9M6.35 5.35a8 8 0 1 0 11.3 0" /></svg>;
