@@ -63,8 +63,9 @@ export function QcEqIcon({ kind, className }: { kind: QcEqIconName; className?: 
 }
 
 /** Shared app/CorOS glyph vocabulary. Text characters must not be used as icons. */
-export function QcUiIcon({ kind, className }: { kind: QcUiIconName; className?: string }) {
+export function QcUiIcon({ kind, className, monochrome = false }: { kind: QcUiIconName; className?: string; monochrome?: boolean }) {
   const classes = `qc-ui-icon qc-ui-icon-${kind}${className ? ` ${className}` : ""}`;
+  if (kind === "check" && monochrome) return <svg className={classes} viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true"><path d={referencePath("interface.check")} fill="currentColor" stroke="none" /></svg>;
   if (kind === "settings" || kind === "check") return <QcReferenceRasterLayers icon={`interface.${kind}` as ReferenceRasterName} className={classes} />;
   const referenceIcons = {
     add: "interface.add", file: "interface.file", midi: "interface.midi", modes: "interface.modes",

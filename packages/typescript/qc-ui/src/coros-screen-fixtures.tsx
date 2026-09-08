@@ -628,7 +628,7 @@ function CorOsOfficialDirectory({
                   {name}
                   {!favorite && !filteredCaptures && (
                     <small>
-                      {captures ? "NeuralDSP" : irs ? "✓ On device" : ""}
+                      {captures ? "NeuralDSP" : irs && manualReference ? <><span className="directory-on-device-check"><QcUiIcon kind="check" monochrome /></span><u>On device</u></> : irs ? "✓ On device" : ""}
                     </small>
                   )}
                 </span>
@@ -642,14 +642,14 @@ function CorOsOfficialDirectory({
                     </b>
                   </i>
                 ) : irs ? (
-                  <i>
+                  <><em className="directory-ir-mark">I</em><i>
                     <b>
-                      <span>✓</span>
+                      <span><QcUiIcon kind="check" monochrome /></span>
                     </b>
                     <b>
                       <DirectoryIcon kind="trash" />
                     </b>
-                  </i>
+                  </i></>
                 ) : (
                   <b>{captures ? `${filteredCaptures ? (index === rows.length - 1 ? "I" : "B") : "4"}　⋮` : "⋮"}</b>
                 )}

@@ -257,6 +257,17 @@ test("USB I/O keeps separate measured dial geometry for level and headphone sour
   assert.match(ioCss, /section:nth-child\(2\) \.io-dial \{ right: \.0625cqw; width: 8\.125cqw; height: 8\.125cqw; transform: translateY\(1cqw\); \}/);
 });
 
+test("manual IR Directory keeps device-status rows separate from action tiles", () => {
+  const fixture = readFileSync("packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", "utf8");
+  const directoryCss = readFileSync("packages/typescript/qc-ui/src/official-directory.css", "utf8");
+  const icons = readFileSync("packages/typescript/qc-ui/src/theme-icons.tsx", "utf8");
+  assert.match(fixture, /directory-on-device-check[^<]*<QcUiIcon kind="check" monochrome \/>/);
+  assert.match(fixture, /className="directory-ir-mark">I<\/em>/);
+  assert.match(directoryCss, /is-manual-reference \.directory-official-list > button \{ height: 6\.5cqw;[^}]*background: transparent;/);
+  assert.match(directoryCss, /directory-official-list > button > i b \{ background: #181c18; \}/);
+  assert.match(icons, /kind === "check" && monochrome[\s\S]*?referencePath\("interface\.check"\)[\s\S]*?fill="currentColor"/);
+});
+
 test("official System brightness values keep the alignment the device uses", () => {
   const css = readFileSync("packages/typescript/qc-ui/src/official-settings-device.css", "utf8");
   const fixture = readFileSync("packages/typescript/qc-ui/src/coros-screen-fixtures.tsx", "utf8");
